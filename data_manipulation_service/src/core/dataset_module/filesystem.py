@@ -17,6 +17,16 @@ class FileSystemManager:
         
         self.worker_path = new_path
 
+    def in_dirs(
+            self, 
+            dirs_list: list[str]
+        ):
+        """
+        Move sequentially into a list of subdirectories.
+        """
+        for dir in dirs_list:
+            self.in_dir(dir)
+
     def out_dir(self) -> None:
         
         if self.worker_path == self.root:
