@@ -64,3 +64,9 @@ class FileSystemManager:
         Return names of files in the current directory.
         """
         return [path.name for path in self.worker_path.iterdir() if path.is_file()]
+    
+    def reset(self):
+        """
+        Reset the current working directory to the root directory.
+        """
+        self.worker_path = self.root
