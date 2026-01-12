@@ -3,8 +3,8 @@ from core.dataset_module.models import FileSystemManagerStatus
 
 class FileSystemManager:
     def __init__(self, root: Path | None = None):
-        self.root = (root or Path.cwd() / "datasets").resolve()
-        self.worker_path = self.root
+        self._root = (root or Path.cwd() / "datasets").resolve()
+        self.worker_path = self._root
 
     def in_dir(self, dir_name: str) -> None:
         new_path = (self.worker_path / dir_name).resolve()
@@ -12,7 +12,7 @@ class FileSystemManager:
         if not new_path.is_dir():
             raise FileNotFoundError(f"Directory not found: {dir_name}")
         
-        if not new_path.is_relative_to(self.root):
+        if not new_path.is_relative_to(self._root):
             raise PermissionError("Cannot leave root directory")
         
         self.worker_path = new_path
@@ -29,7 +29,7 @@ class FileSystemManager:
 
     def out_dir(self) -> None:
         
-        if self.worker_path == self.root:
+        if self.worker_path == self._root:
             raise PermissionError("Cannot go above root directory")
         
         self.worker_path = self.worker_path.parent
@@ -41,7 +41,7 @@ class FileSystemManager:
         Structure is inferred purely from the directory hierarchy:
         datasets/{dataset_name}/v_{version}/{class_name}/
         """
-        relative = self.worker_path.relative_to(self.root)
+        relative = self.worker_path.relative_to(self._root)
         parts = relative.parts
 
         dataset = None
@@ -79,4 +79,33 @@ class FileSystemManager:
         """
         Reset the current working directory to the root directory.
         """
-        self.worker_path = self.root
+        self.worker_path = self._root
+
+    def rename_dir(
+            self, 
+            old_name: str, 
+            new_name: str
+        ):
+        dir_list = self.get_all_dir()
+        if old_name not in dir_list:
+            raise FileNotFoundError(f"Dir {old_name} not found")
+        self._rename_obj(old_name, new_name)
+    
+    def rename_file(
+            self,
+            old_name: str,
+            new_name: str, 
+        ):
+        file_list = self.get_all_file()
+        if old_name not in file_list:
+            raise FileNotFoundError(f"Dir {old_name} not found")
+        self._rename_obj(old_name, new_name)
+        
+    def _rename_obj(
+            self, 
+            old_name: str,
+            new_name: str 
+        ): 
+        old_path = Path(self.worker_path / old_name)
+        new_path = Path(self.worker_path / new_name)
+        old_path.rename(new_path)
