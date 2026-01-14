@@ -6,6 +6,7 @@ __pycache__
 
 # local testing function
 *tester.ipynb
+*temp/
 
 # data
 datasets
