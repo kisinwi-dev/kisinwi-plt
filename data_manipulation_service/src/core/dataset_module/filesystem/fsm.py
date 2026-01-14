@@ -2,6 +2,8 @@ import shutil
 from pathlib import Path
 from core.dataset_module.models import FileSystemManagerStatus
 
+IMAGE_SUFFIXES  = ('.jpg', '.jpeg', '.png')
+
 class FileSystemManager:
     def __init__(
             self, 
@@ -154,7 +156,7 @@ class FileSystemManager:
     def _dir_exists(
             self,
             dir_name,
-        )-> bool:
+        )-> bool | None:
         """
         Check if a directory exists in the current directory.
         """
@@ -166,7 +168,7 @@ class FileSystemManager:
     def _file_exists(
             self,
             file_name
-        )-> bool:
+        )-> bool | None:
         """
         Check if a file exists in the current directory.
         """
@@ -174,3 +176,10 @@ class FileSystemManager:
         if file_name not in files:
             raise FileNotFoundError(f"File {file_name} not found")
         return True
+    
+    def all_file_is_image(self) -> bool:
+        for file_name in self.get_all_file():
+            if Path(file_name).suffix.lower() not in IMAGE_SUFFIXES:
+                return False
+        return True
+        
