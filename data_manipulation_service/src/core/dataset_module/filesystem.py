@@ -1,12 +1,19 @@
+import shutil
 from pathlib import Path
 from core.dataset_module.models import FileSystemManagerStatus
 
 class FileSystemManager:
     def __init__(self, root: Path | None = None):
+        """
+        Initialize FileSystemManager with a root datasets directory.
+        """
         self._root = (root or Path.cwd() / "datasets").resolve()
         self.worker_path = self._root
 
     def in_dir(self, dir_name: str) -> None:
+        """
+        Change current working directory to a subdirectory.
+        """
         new_path = (self.worker_path / dir_name).resolve()
         
         if not new_path.is_dir():
@@ -28,7 +35,9 @@ class FileSystemManager:
             self.in_dir(dir)
 
     def out_dir(self) -> None:
-        
+        """
+        Move one level up in the directory hierarchy.
+        """
         if self.worker_path == self._root:
             raise PermissionError("Cannot go above root directory")
         
@@ -86,9 +95,10 @@ class FileSystemManager:
             old_name: str, 
             new_name: str
         ):
-        dir_list = self.get_all_dir()
-        if old_name not in dir_list:
-            raise FileNotFoundError(f"Dir {old_name} not found")
+        """
+        Rename a subdirectory in the current directory.
+        """
+        self._dir_exists(old_name)
         self._rename_obj(old_name, new_name)
     
     def rename_file(
@@ -96,9 +106,10 @@ class FileSystemManager:
             old_name: str,
             new_name: str, 
         ):
-        file_list = self.get_all_file()
-        if old_name not in file_list:
-            raise FileNotFoundError(f"Dir {old_name} not found")
+        """
+        Rename a file in the current directory.
+        """
+        self._file_exists(old_name)
         self._rename_obj(old_name, new_name)
         
     def _rename_obj(
@@ -106,6 +117,57 @@ class FileSystemManager:
             old_name: str,
             new_name: str 
         ): 
-        old_path = Path(self.worker_path / old_name)
-        new_path = Path(self.worker_path / new_name)
+        """
+        Rename a file system object (file or directory).
+        """
+        old_path = self.worker_path / old_name
+        new_path = self.worker_path / new_name
+        if new_path.exists():
+            raise FileExistsError(f"Directory '{new_name}' already exists")
         old_path.rename(new_path)
+
+    def drop_dir(
+            self,
+            dir_name
+        ):
+        """
+        Remove a directory and all its contents recursively.
+        """
+        self._dir_exists(dir_name)
+        path = (self.worker_path / dir_name).resolve()
+
+        if not path.is_relative_to(self._root):
+            raise PermissionError("Cannot remove directory outside root")
+
+        shutil.rmtree(path)
+
+    def drop_file(self, file_name: str) -> None:
+        """
+        Remove a file from the current directory.
+        """
+        self._file_exists(file_name)
+        (self.worker_path / file_name).unlink()
+
+    def _dir_exists(
+            self,
+            dir_name,
+        )-> bool:
+        """
+        Check if a directory exists in the current directory.
+        """
+        dirs = self.get_all_dir()
+        if dir_name not in dirs:
+            raise FileNotFoundError(f"Dir {dir_name} not found")
+        return True
+    
+    def _file_exists(
+            self,
+            file_name
+        )-> bool:
+        """
+        Check if a file exists in the current directory.
+        """
+        files = self.get_all_file()
+        if file_name not in files:
+            raise FileNotFoundError(f"File {file_name} not found")
+        return True
