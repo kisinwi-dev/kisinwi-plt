@@ -7,9 +7,10 @@ logger = get_logger(__name__)
 class DatasetValidator:
     def __init__(
             self,
-            fsm: FileSystemManager | None = None
+            path: Path | None = None
         ):
-        self._fsm = fsm if fsm else FileSystemManager(Path.cwd() / "datasets").resolve()
+        _root_path = path if path else (Path.cwd() / "datasets")
+        self._fsm = FileSystemManager(_root_path)
 
     def check_new_dataset(
             self,
@@ -20,8 +21,6 @@ class DatasetValidator:
         """
         logger.debug(f"Start validatetion dataset:{name_dataset}")
         self._fsm.reset()
-        self._fsm._dir_exists(name_dataset)
-        self._fsm.in_dir(name_dataset)
 
         classes = self._fsm.get_all_dir()
         
