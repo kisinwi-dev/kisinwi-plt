@@ -14,7 +14,7 @@ class ArchiveManager:
 
     def extract(
             self,
-            archive_name: str
+            archive_name: str,
         ) -> Path:
         """
         Extract an archive into the root directory.
