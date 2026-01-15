@@ -1,6 +1,6 @@
 from pathlib import Path
 from shared.logging import get_logger
-from .filesystem import FileSystemManager
+from ..filesystem import FileSystemManager
 
 logger = get_logger(__name__)
 
@@ -12,7 +12,7 @@ class DatasetValidator:
         _root_path = path if path else (Path.cwd() / "datasets")
         self._fsm = FileSystemManager(_root_path)
 
-    def check_new_dataset(
+    def new_dataset(
             self,
             name_dataset: str,
         ) -> bool:

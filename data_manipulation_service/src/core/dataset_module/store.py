@@ -1,6 +1,9 @@
-from .validation import DatasetValidator
+from shared.logging import get_logger
+from .case import DatasetImporter
 from .filesystem import FileSystemManager, ArchiveManager
 from .models import ClassInfo, VersionInfo, DatasetInfo
+
+logger = get_logger(__name__)
 
 class Store:
     def __init__(
@@ -84,9 +87,19 @@ class Store:
 
     # ------------------ Dataset management ------------------
 
-    def set_new_dataset(self, dataset_name: str):
-        self._fsm.reset()
-        (self._fsm.worker_path / dataset_name).mkdir(exist_ok=False)
+    def set_new_dataset(
+        self, 
+        dataset_name: str,
+        archive_name: str,
+        ):
+        logger.debug(
+            f'Start create new dataset(name={dataset_name}, archive_name={archive_name})'
+        )
+        importer = DatasetImporter(
+            datasets_fsm=self._fsm,
+            archive_manager=ArchiveManager()
+        )
+        importer.import_dataset(dataset_name, archive_name)
 
     def drop_dataset(self, dataset_name: str):
         self._fsm.reset()
