@@ -1,4 +1,5 @@
-from .filesystem import FileSystemManager
+from .validation import DatasetValidator
+from .filesystem import FileSystemManager, ArchiveManager
 from .models import ClassInfo, VersionInfo, DatasetInfo
 
 class Store:
@@ -7,6 +8,8 @@ class Store:
             fsm: FileSystemManager | None = None
         ):
         self._fsm = fsm if fsm else FileSystemManager()
+
+    # ------------------ Dataset info methods ------------------
 
     def get_dataset_name(self) -> list[str]:
         self._fsm.reset()
@@ -79,20 +82,62 @@ class Store:
             versions=info_versions
         )
 
-    def set_new_dataset(self):
-        pass
+    # ------------------ Dataset management ------------------
 
-    def drop_dataset(self):
-        pass
+    def set_new_dataset(self, dataset_name: str):
+        self._fsm.reset()
+        (self._fsm.worker_path / dataset_name).mkdir(exist_ok=False)
 
-    def rename_dataset(self):
-        pass
+    def drop_dataset(self, dataset_name: str):
+        self._fsm.reset()
+        self._fsm.drop_dir(dataset_name)
 
-    def rename_dataset_version(self):
-        pass
+    def rename_dataset(self, old_name: str, new_name: str):
+        self._fsm.reset()
+        self._fsm.rename_dir(old_name, new_name)
 
-    def set_new_dataset_version(self):
-        pass
+    def rename_dataset_version(self, dataset_name: str, old_version: str, new_version: str):
+        self._fsm.reset()
+        self._fsm.in_dir(dataset_name)
+        self._fsm.rename_dir(old_version, new_version)
+
+    def set_new_dataset_version(self, dataset_name: str, version_name: str):
+        self._fsm.reset()
+        self._fsm.in_dir(dataset_name)
+        (self._fsm.worker_path / version_name).mkdir(exist_ok=False)
+
+    # ------------------ Class management ------------------
+
+    def set_new_class(
+            self, 
+            dataset_name: str, 
+            version_name: str, 
+            class_name: str
+        ):
+        self._fsm.reset()
+        self._fsm.in_dirs([dataset_name, version_name])
+        (self._fsm.worker_path / class_name).mkdir(exist_ok=False)
+
+    def drop_class(
+            self, 
+            dataset_name: str, 
+            version_name: str, 
+            class_name: str
+        ):
+        self._fsm.reset()
+        self._fsm.in_dirs([dataset_name, version_name])
+        self._fsm.drop_dir(class_name)
+
+    def rename_class(
+            self, 
+            dataset_name: str, 
+            version_name: str, 
+            old_class: str, 
+            new_class: str
+        ):
+        self._fsm.reset()
+        self._fsm.in_dirs([dataset_name, version_name])
+        self._fsm.rename_dir(old_class, new_class)
 
     def validation_dataset(self):
         pass
