@@ -28,7 +28,7 @@ class DatasetImporter:
         try:
             # validate
             validator = self._validator_cls(temp_path)
-            validator.validate_new_dataset()
+            validator.new_dataset()
 
             # move
             target = self._datasets_fsm._root / dataset_name / "v_0"
