@@ -133,7 +133,7 @@ class FileSystemManager:
 
     def drop_dir(
             self,
-            dir_name
+            dir_name: str
         ):
         """
         Remove a directory and all its contents recursively.
@@ -182,4 +182,43 @@ class FileSystemManager:
             if Path(file_name).suffix.lower() not in IMAGE_SUFFIXES:
                 return False
         return True
-        
+
+    def move_dir(
+            self, 
+            dir_name: str, 
+            target_path: Path
+        ):
+        """
+        Move a subdirectory to another location inside the root.
+        """
+        self._dir_exists(dir_name)
+        source = (self.worker_path / dir_name).resolve()
+        target = target_path.resolve()
+
+        if not target.is_relative_to(self._root):
+            raise PermissionError("Cannot move directory outside root")
+
+        if (target / dir_name).exists():
+            raise FileExistsError(f"Directory '{dir_name}' already exists at target location")
+
+        shutil.move(str(source), str(target))
+
+    def move_file(
+            self, 
+            file_name: str, 
+            target_path: Path
+        ) -> None:
+        """
+        Move a file to another location inside the root.
+        """
+        self._file_exists(file_name)
+        source = (self.worker_path / file_name).resolve()
+        target = target_path.resolve()
+
+        if not target.is_relative_to(self._root):
+            raise PermissionError("Cannot move file outside root")
+
+        if (target / file_name).exists():
+            raise FileExistsError(f"File '{file_name}' already exists at target location")     
+
+        shutil.move(str(source), str(target))
