@@ -9,7 +9,7 @@ app = FastAPI(
 
 app.include_router(
     routers,
-    prefix="/api/v1"
+    prefix="/api"
 )
 
 if __name__ == "__main__":
