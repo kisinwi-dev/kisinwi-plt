@@ -3,6 +3,7 @@
 .vs
 *.db
 __pycache__
+*logs/
 
 # local testing function
 *tester.ipynb
