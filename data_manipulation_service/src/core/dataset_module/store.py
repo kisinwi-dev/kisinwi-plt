@@ -1,4 +1,4 @@
-from shared.logging import get_logger
+from logging_ import get_logger
 from .case import DatasetImporter
 from .filesystem import FileSystemManager, ArchiveManager
 from .models import ClassInfo, VersionInfo, DatasetInfo
