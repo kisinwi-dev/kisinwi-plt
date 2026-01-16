@@ -1,5 +1,6 @@
 import shutil
-from .validation import DatasetValidator
+from pathlib import Path
+from .validation import DatasetImageValidator
 from core.dataset_module.filesystem import ArchiveManager, FileSystemManager
 
 class DatasetImporter:
@@ -10,12 +11,13 @@ class DatasetImporter:
     ):
         self._datasets_fsm = datasets_fsm
         self._archive_manager = archive_manager
-        self._validator_cls = DatasetValidator
 
     def import_dataset(
             self, 
             dataset_name: str, 
-            archive_name: str
+            archive_name: str,
+            dataset_type: str,
+            dataset_task: str
         ):
         # check
         self._datasets_fsm.reset()
@@ -27,8 +29,11 @@ class DatasetImporter:
 
         try:
             # validate
-            validator = self._validator_cls(temp_path)
-            validator.new_dataset()
+            self._validation(
+                dataset_type=dataset_type,
+                dataset_task=dataset_task,
+                temp_path=temp_path
+            )
 
             # move
             target = self._datasets_fsm._root / dataset_name / "v_0"
@@ -38,3 +43,18 @@ class DatasetImporter:
         except Exception:
             shutil.rmtree(temp_path, ignore_errors=True)
             raise
+
+    def _validation(
+            self,
+            dataset_type: str,
+            dataset_task: str,
+            temp_path: Path
+        ):
+        if dataset_type == "image":
+            vc = DatasetImageValidator(temp_path)
+            if dataset_task == "classification":
+                vc.new_dataset_classification()
+            else:
+                raise    
+        else:
+            raise 

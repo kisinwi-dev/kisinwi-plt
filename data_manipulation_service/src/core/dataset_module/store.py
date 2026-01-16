@@ -88,9 +88,11 @@ class Store:
     # ------------------ Dataset management ------------------
 
     def set_new_dataset(
-        self, 
-        dataset_name: str,
-        archive_name: str,
+            self, 
+            dataset_name: str,
+            archive_name: str,
+            dataset_type: str,
+            dataset_task: str
         ):
         logger.debug(
             f'Start create new dataset(name={dataset_name}, archive_name={archive_name})'
@@ -99,7 +101,12 @@ class Store:
             datasets_fsm=self._fsm,
             archive_manager=ArchiveManager()
         )
-        importer.import_dataset(dataset_name, archive_name)
+        importer.import_dataset(
+            dataset_name=dataset_name, 
+            archive_name=archive_name,
+            dataset_type=dataset_type, 
+            dataset_task=dataset_task
+        )
 
     def drop_dataset(self, dataset_name: str):
         self._fsm.reset()
