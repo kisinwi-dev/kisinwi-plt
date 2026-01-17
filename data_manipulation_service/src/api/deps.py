@@ -1,4 +1,4 @@
-from core.dataset_module.store import Store
+from core.dataset_module import Store
 
 def get_store() -> Store:
     return Store()
