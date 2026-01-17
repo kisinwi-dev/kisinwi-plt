@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 from .version import VersionSchema
-from .class_ import ClassSchema
+from .classes import ClassSchema
 from .dataset import DatasetSchema
 
 __all__ = [

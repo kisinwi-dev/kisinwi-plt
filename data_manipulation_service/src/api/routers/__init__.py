@@ -14,7 +14,7 @@ routers.include_router(
 
 routers.include_router(
     classes_router,
-    prefix="/classes",
+    prefix="/{dataset_name}/{version_name}/classes",
     tags=["classes"]
 )
 
