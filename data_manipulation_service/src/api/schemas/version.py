@@ -9,3 +9,12 @@ class VersionSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+class VersionCreateRequest(BaseModel):
+    version_name: str
+
+class VersionRenameRequest(BaseModel):
+    new_name: str
+
+class VersionListResponse(BaseModel):
+    versions: list[str]

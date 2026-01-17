@@ -20,6 +20,6 @@ routers.include_router(
 
 routers.include_router(
     versions_router,
-    prefix="/versions",
-    tags=["versions"]
+    prefix="/{dataset_name}/versions",
+    tags=["versions"],
 )

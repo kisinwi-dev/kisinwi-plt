@@ -18,6 +18,3 @@ class DatasetCreateRequest(BaseModel):
     
 class DatasetRenameRequest(BaseModel):
     new_name: str
-
-class MessageResponse(BaseModel):
-    message: str
