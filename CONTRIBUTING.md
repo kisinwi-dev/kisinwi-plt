@@ -1,11 +1,11 @@
 # Contributing to Project
 
 ## Branch naming conventions
-- `feature/<feature-name>` — new feature
-- `fix/<bug-name>` — fix bugs
-- `hotfix/<issue>` — hotfix
-- `chore/<task>` — routine maintenance tasks
-- `refactor/<module>` — refactoring
+- `<sercice>/feature/<feature-name>` — new feature
+- `<sercice>/fix/<bug-name>` — fix bugs
+- `<sercice>/hotfix/<issue>` — hotfix
+- `<sercice>/chore/<task>` — routine maintenance tasks
+- `<sercice>/refactor/<module>` — refactoring
 
 ## Commit message conventions
 We use conventional commits:
@@ -19,8 +19,8 @@ We use conventional commits:
 ### Example:
 
 ```
-feat(data_manipulation/routers): implement create dataset endpoint
-fix(data_manipulation/store): handle missing dataset error
+feat(routers): implement create dataset endpoint
+fix(store): handle missing dataset error
 ```
 
 ## Pull Request Rules
