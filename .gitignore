@@ -3,6 +3,11 @@
 .vs
 *.db
 __pycache__
+*logs/
+
+# local testing function
+*tester.ipynb
+*temp/
 
 # data
 datasets
@@ -21,4 +26,6 @@ redice_data
 trainer/src/datasets
 trainer/src/shared
 utils_old/
-trainer/src/tester.ipynb
+
+# data_manipulation_service
+data_manipulation_service/src/shared
