@@ -1,14 +1,11 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from .version import VersionSchema
+from .version import VersionInfoResponse
 
-class DatasetSchema(BaseModel):
-    name: str = Field(..., example="animals")
+class DatasetInfoResponse(BaseModel):
+    name: str
     description: Optional[str] = None
-    versions: List[VersionSchema]
-
-    class Config:
-        from_attributes = True
+    versions: List[VersionInfoResponse]
 
 class DatasetCreateRequest(BaseModel):
     dataset_name: str

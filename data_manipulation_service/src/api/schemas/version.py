@@ -1,14 +1,11 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from .classes import ClassSchema
+from .classes import ClassInfoResponse
 
-class VersionSchema(BaseModel):
-    name: str = Field(..., example="v_0")
+class VersionInfoResponse(BaseModel):
+    name: str
     description: Optional[str] = None
-    classes: List[ClassSchema]
-
-    class Config:
-        from_attributes = True
+    classes: List[ClassInfoResponse]
 
 class VersionCreateRequest(BaseModel):
     version_name: str

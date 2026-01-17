@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.dataset_module import Store
@@ -22,14 +23,15 @@ def list_datasets(
 @router.get(
     "/{dataset_name}",
     summary="Get dataset info",
+    description="Returns detailed information about a dataset by its name."
 )
 def info_dataset(
         dataset_name: str,
         store: Store = Depends(get_store)
     ):
     try:
-        info = store.get_dataset_info(dataset_name)
-        return info
+        dataset_info = store.get_dataset_info(dataset_name)
+        return DatasetInfoResponse.model_validate(asdict(dataset_info))
     except FileNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

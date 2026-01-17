@@ -1,14 +1,11 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
-class ClassSchema(BaseModel):
-    name: str = Field(..., example="cat")
+class ClassInfoResponse(BaseModel):
+    name: str
     description: Optional[str] = None
-    count_files: int = Field(..., example=120)
-    type_files: Optional[str] = Field(None, example="image")
-
-    class Config:
-        from_attributes = True
+    count_files: Optional[int] = None
+    type_files: Optional[str] = None
 
 class ClassListResponse(BaseModel):
     dataset_name: str
