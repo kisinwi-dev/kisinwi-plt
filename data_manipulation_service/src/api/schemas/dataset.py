@@ -9,3 +9,15 @@ class DatasetSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+class DatasetCreateRequest(BaseModel):
+    dataset_name: str
+    archive_name: str
+    dataset_type: str
+    dataset_task: str
+    
+class DatasetRenameRequest(BaseModel):
+    new_name: str
+
+class MessageResponse(BaseModel):
+    message: str
