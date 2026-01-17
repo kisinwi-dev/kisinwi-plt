@@ -112,9 +112,9 @@ class Store:
         self._fsm.reset()
         self._fsm.drop_dir(dataset_name)
 
-    def rename_dataset(self, old_name: str, new_name: str):
+    def rename_dataset(self, dataset_name: str, new_name: str):
         self._fsm.reset()
-        self._fsm.rename_dir(old_name, new_name)
+        self._fsm.rename_dir(dataset_name, new_name)
 
     # ------------------ Version management ------------------
 

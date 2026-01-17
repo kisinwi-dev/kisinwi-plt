@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Path
 
 from core.dataset_module import Store
 from api.deps import get_store
@@ -23,10 +23,14 @@ def list_datasets(
 @router.get(
     "/{dataset_name}",
     summary="Get dataset info",
-    description="Returns detailed information about a dataset by its name."
+    description="Returns detailed information about a dataset by its name.",
+    responses={
+        200: {"description": "Dataset information successfully returned"},
+        404: {"description": "Dataset not found"}
+    },
 )
 def info_dataset(
-        dataset_name: str,
+        dataset_name: str = DATASET_NAME_PATH,
         store: Store = Depends(get_store)
     ):
     try:
@@ -41,7 +45,16 @@ def info_dataset(
 @router.post(
     "/",
     summary="Create dataset from archive",
+    description="Creates a new dataset from the provided archive. Returns a success message or error details.",
     response_model=MessageResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        201: {"description": "Dataset successfully created"},
+        400: {"description": "Invalid request data"},
+        404: {"description": "Archive not found"},
+        409: {"description": "Dataset already exists"},
+        500: {"description": "Internal server error"},
+    },
 )
 def create_dataset(
         body: DatasetCreateRequest,
@@ -85,10 +98,17 @@ def create_dataset(
 @router.delete(
     "/{dataset_name}",
     summary="Delete dataset",
+    description="Deletes a dataset by its name. Returns a success message if deletion was successful.",
     response_model=MessageResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "Dataset successfully deleted"},
+        404: {"description": "Dataset not found"},
+        500: {"description": "Internal server error"}
+    }
 )
 def delete_dataset(
-        dataset_name: str,
+        dataset_name: str = DATASET_NAME_PATH,
         store: Store = Depends(get_store),
     ):
     try:
@@ -100,22 +120,36 @@ def delete_dataset(
     except FileNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
         )
     
 @router.patch(
     "/{dataset_name}",
     summary="Rename dataset",
+    description="Renames an existing dataset. Returns a message confirming the rename or an error.",
     response_model=MessageResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "Dataset successfully renamed"},
+        400: {"description": "Invalid request data"},
+        404: {"description": "Dataset not found"},
+        409: {"description": "Dataset with new name already exists"},
+        500: {"description": "Internal server error"},
+    }
 )
 def rename_dataset(
-        dataset_name: str,
         body: DatasetRenameRequest,
+        dataset_name: str = DATASET_NAME_PATH,
         store: Store = Depends(get_store),
     ):
     try:
         store.rename_dataset(
-            old_name=body.dataset_name,
+            dataset_name=dataset_name,
             new_name=body.new_name,
         )
         return MessageResponse(
@@ -141,4 +175,9 @@ def rename_dataset(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=str(e)
         )
