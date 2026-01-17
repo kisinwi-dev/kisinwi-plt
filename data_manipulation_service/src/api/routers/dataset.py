@@ -9,13 +9,15 @@ router = APIRouter()
 
 @router.get(
     "/",
-    response_model=list[str],
-    summary="List datasets"
+    response_model=DatasetListResponse,
+    summary="Get list of datasets",
+    description="Returns a list of available dataset names from the storage."
 )
 def list_datasets(
         store: Store = Depends(get_store)
     ):
-    return store.get_dataset_name()
+    datasets = store.get_dataset_name()
+    return DatasetListResponse(datasets=datasets)
 
 @router.get(
     "/{dataset_name}",

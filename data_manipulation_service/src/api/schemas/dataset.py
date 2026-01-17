@@ -15,6 +15,9 @@ class DatasetCreateRequest(BaseModel):
     archive_name: str
     dataset_type: str
     dataset_task: str
-    
+
+class DatasetListResponse(BaseModel):
+    datasets: list[str]
+
 class DatasetRenameRequest(BaseModel):
     new_name: str
