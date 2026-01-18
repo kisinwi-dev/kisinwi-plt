@@ -33,6 +33,13 @@ class DatasetCreateRequest(BaseModel):
         description="Task type for the dataset"
     )
 
+class DatasetRenameRequest(BaseModel):
+    new_name: str = Field(
+        ..., 
+        example="dataset_new", 
+        description="New name for the dataset"
+    )
+
 # ------------------ Response management ------------------
 
 class DatasetInfoResponse(BaseModel):
@@ -57,11 +64,4 @@ class DatasetListResponse(BaseModel):
         ..., 
         example=["dataset_1", "dataset_2"], 
         description="List of available dataset names"
-    )
-
-class DatasetRenameRequest(BaseModel):
-    new_name: str = Field(
-        ..., 
-        example="dataset_new", 
-        description="New name for the dataset"
     )

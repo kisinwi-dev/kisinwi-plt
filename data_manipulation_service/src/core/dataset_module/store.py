@@ -123,12 +123,12 @@ class Store:
         self._fsm.in_dir(dataset_name)
         self._fsm.drop_dir(version_name)
 
-    def rename_version(self, dataset_name: str, old_version: str, new_version: str):
+    def rename_version(self, dataset_name: str, version_name: str, new_version: str):
         self._fsm.reset()
         self._fsm.in_dir(dataset_name)
-        self._fsm.rename_dir(old_version, new_version)
+        self._fsm.rename_dir(version_name, new_version)
 
-    def set_new_version(self, dataset_name: str, version_name: str):
+    def set_dataset_new_version(self, dataset_name: str, version_name: str):
         self._fsm.reset()
         self._fsm.in_dir(dataset_name)
         (self._fsm.worker_path / version_name).mkdir(exist_ok=False)
