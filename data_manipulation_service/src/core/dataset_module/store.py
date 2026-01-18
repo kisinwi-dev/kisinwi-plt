@@ -35,14 +35,14 @@ class Store:
         classes_list = self._fsm.get_all_dir()
         return classes_list
     
-    def get_dataset_files_name(
+    def get_dataset_vesion_class_files_name(
             self,
             dataset_name: str,
-            dataset_version: str,
+            version_name: str,
             class_name: str
         ) -> list[str]:
         self._fsm.reset()
-        self._fsm.in_dirs([dataset_name, dataset_version, class_name])
+        self._fsm.in_dirs([dataset_name, version_name, class_name])
         return self._fsm.get_all_file()
     
     def get_dataset_info(
