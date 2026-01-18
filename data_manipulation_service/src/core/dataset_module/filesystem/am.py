@@ -15,27 +15,29 @@ class ArchiveManager:
 
     def extract(
             self,
-            archive_name: str,
+            archive_path: Path,
     ) -> Path:
         """
         Extract an archive into the root directory.
 
         Supported formats: ZIP
         """
-        logger.debug(f"Start extracting archive: {archive_name}")
-        archive_path = self._root / archive_name
+        logger.debug(f"Start extracting archive: {archive_path}")
+
         if not archive_path.exists() or not archive_path.is_file():
-            raise FileNotFoundError(f"{archive_name} not found")
+            raise FileNotFoundError(f"{archive_path} not found")
 
         suffix = archive_path.suffix.lower()
         logger.debug(f"Detected archive type: {suffix}")
+
         extract_dir_path = self._generate_temp_dir()
+
         if suffix == ".zip":
             self._extract_zip(archive_path, extract_dir_path)
         else:
             raise ValueError(f"Unsupported archive type: {suffix}")
-        logger.info("Archive extracted successfully: %s", archive_name)
 
+        logger.info(f"Archive extracted successfully: {archive_path.name}")
         return extract_dir_path
 
     def _generate_temp_dir(self) -> Path:
