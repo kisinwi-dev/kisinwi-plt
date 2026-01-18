@@ -5,17 +5,18 @@ from pathlib import Path
 
 logger = get_logger(__name__)
 
+
 class ArchiveManager:
     def __init__(
-            self, 
+            self,
             root: Path | None = None
-        ):
+    ):
         self._root = (root or Path.cwd() / "temp").resolve()
 
     def extract(
             self,
             archive_name: str,
-        ) -> Path:
+    ) -> Path:
         """
         Extract an archive into the root directory.
 
@@ -25,7 +26,7 @@ class ArchiveManager:
         archive_path = self._root / archive_name
         if not archive_path.exists() or not archive_path.is_file():
             raise FileNotFoundError(f"{archive_name} not found")
-        
+
         suffix = archive_path.suffix.lower()
         logger.debug(f"Detected archive type: {suffix}")
         extract_dir_path = self._generate_temp_dir()
@@ -44,22 +45,22 @@ class ArchiveManager:
         return path
 
     def _extract_zip(
-            self, 
+            self,
             archive_path: Path,
             target: Path
-        ):
+    ):
         """
         Safely extract a ZIP archive into the root directory.
         """
         with zipfile.ZipFile(archive_path, "r") as zip_ref:
             self._safe_extract(zip_ref.namelist(), target)
             zip_ref.extractall(target)
-    
+
     def _safe_extract(
-            self, 
-            members: list[str], 
+            self,
+            members: list[str],
             target: Path
-        ):
+    ):
         """
         Safely extract a ZIP archive into the given target directory.
         """
