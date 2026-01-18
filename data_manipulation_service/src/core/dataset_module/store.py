@@ -25,13 +25,13 @@ class Store:
         version_list = self._fsm.get_all_dir()
         return version_list        
 
-    def get_dataset_classes_name(
+    def get_dataset_version_classes_name(
             self, 
             dataset_name: str,
-            dataset_version: str,
+            version_name: str,
         ) -> list[str]:
         self._fsm.reset()
-        self._fsm.in_dirs([dataset_name, dataset_version])
+        self._fsm.in_dirs([dataset_name, version_name])
         classes_list = self._fsm.get_all_dir()
         return classes_list
     
@@ -159,12 +159,12 @@ class Store:
             self, 
             dataset_name: str, 
             version_name: str, 
-            old_class: str, 
+            class_name: str, 
             new_class: str
         ):
         self._fsm.reset()
         self._fsm.in_dirs([dataset_name, version_name])
-        self._fsm.rename_dir(old_class, new_class)
+        self._fsm.rename_dir(class_name, new_class)
 
     def validation_dataset(self):
         pass
