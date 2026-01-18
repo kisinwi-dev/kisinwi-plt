@@ -1,4 +1,4 @@
-from .am import ArchiveManager
+from .tm import TempManager
 from .fsm import FileSystemManager
 
-__all__ = ['FileSystemManager', 'ArchiveManager']
+__all__ = ['FileSystemManager', 'TempManager']

@@ -1,17 +1,17 @@
 import shutil
 from pathlib import Path
 from .validation import DatasetImageValidator
-from core.dataset_module.filesystem import ArchiveManager, FileSystemManager
+from core.dataset_module.filesystem import FileSystemManager, TempManager
 
 
 class Importer:
     def __init__(
         self,
-        datasets_fsm: FileSystemManager,
-        archive_manager: ArchiveManager,
+        file_system_manager: FileSystemManager,
+        temp_manager: TempManager,
     ):
-        self._datasets_fsm = datasets_fsm
-        self._archive_manager = archive_manager
+        self._datasets_fsm = file_system_manager
+        self._archive_manager = temp_manager
 
     def import_dataset(
             self,
