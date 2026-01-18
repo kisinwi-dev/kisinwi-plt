@@ -1,5 +1,9 @@
+import shutil
+import uuid
+from pathlib import Path
+from fastapi import UploadFile
 from logging_ import get_logger
-from .case import DatasetImporter
+from .case import Importer
 from .filesystem import FileSystemManager, ArchiveManager
 from .models import ClassInfo, VersionInfo, DatasetInfo
 
@@ -9,9 +13,11 @@ logger = get_logger(__name__)
 class Store:
     def __init__(
             self,
-            fsm: FileSystemManager | None = None
+            fsm: FileSystemManager | None = None,
+            archive_manager: ArchiveManager | None = None
     ):
         self._fsm = fsm if fsm else FileSystemManager()
+        self._archive_manager = archive_manager or ArchiveManager()
 
     # ------------------ Dataset info methods ------------------
 
@@ -88,26 +94,33 @@ class Store:
 
     # ------------------ Dataset management ------------------
 
-    def set_new_dataset(
+    def _save_in_temp(self, file: UploadFile) -> Path:
+        temp_dir = self._archive_manager._root
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        temp_path = temp_dir / f"{uuid.uuid4().hex}_{file.filename}"
+        with temp_path.open("wb") as f:
+            shutil.copyfileobj(file.file, f)
+        return temp_path
+
+    def import_dataset(
             self,
             dataset_name: str,
-            archive_name: str,
             dataset_type: str,
-            dataset_task: str
+            dataset_task: str,
+            file: UploadFile
     ):
-        logger.debug(
-            f'Start create new dataset(name={dataset_name}, archive_name={archive_name})'
-        )
-        importer = DatasetImporter(
-            datasets_fsm=self._fsm,
-            archive_manager=ArchiveManager()
-        )
-        importer.import_dataset(
-            dataset_name=dataset_name,
-            archive_name=archive_name,
-            dataset_type=dataset_type,
-            dataset_task=dataset_task
-        )
+        path_archive = self._save_in_temp(file)
+
+        try:
+            importer = Importer(self._fsm, self._archive_manager)
+            importer.import_dataset(
+                dataset_name=dataset_name,
+                dataset_type=dataset_type,
+                dataset_task=dataset_task,
+                path_archive=path_archive
+            )
+        finally:
+            path_archive.unlink(missing_ok=True)
 
     def drop_dataset(self, dataset_name: str):
         self._fsm.reset()

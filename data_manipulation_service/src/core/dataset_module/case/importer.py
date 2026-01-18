@@ -4,7 +4,7 @@ from .validation import DatasetImageValidator
 from core.dataset_module.filesystem import ArchiveManager, FileSystemManager
 
 
-class DatasetImporter:
+class Importer:
     def __init__(
         self,
         datasets_fsm: FileSystemManager,
@@ -16,25 +16,19 @@ class DatasetImporter:
     def import_dataset(
             self,
             dataset_name: str,
-            archive_name: str,
             dataset_type: str,
-            dataset_task: str
+            dataset_task: str,
+            path_archive: Path
     ):
-        # check
         self._datasets_fsm.reset()
         if dataset_name in self._datasets_fsm.get_all_dir():
             raise FileExistsError(f"Dataset '{dataset_name}' already exists")
 
-        # extract
-        temp_path = self._archive_manager.extract(archive_name)
+        temp_path = self._archive_manager.extract(path_archive)
 
         try:
-            # validate
-            self._validation(
-                dataset_type=dataset_type,
-                dataset_task=dataset_task,
-                temp_path=temp_path
-            )
+            # valid
+            self._validation(dataset_type, dataset_task, temp_path)
 
             # move
             target = self._datasets_fsm._root / dataset_name / "v_0"

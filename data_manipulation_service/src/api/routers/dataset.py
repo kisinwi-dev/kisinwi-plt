@@ -1,12 +1,15 @@
 from dataclasses import asdict
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import (
+    APIRouter, HTTPException, status,
+    Depends,
+    UploadFile, File, Form
+)
 
 from core.dataset_module import Store
 from api.deps import get_store
 from api.schemas import MessageResponse
 from api.schemas.dataset import (
     DATASET_NAME_PATH,
-    DatasetCreateRequest,
     DatasetRenameRequest,
     DatasetInfoResponse,
     DatasetListResponse
@@ -54,41 +57,41 @@ def info_dataset(
 @router.post(
     "/",
     summary="Create dataset from archive",
-    description="Creates a new dataset from the provided archive. Returns a success message or error details.",
+    description=(
+        "Uploads an archive and creates a new dataset. "
+        "The archive is validated, extracted, and stored in the datasets volume."
+    ),
     response_model=MessageResponse,
     status_code=status.HTTP_201_CREATED,
     responses={
         201: {"description": "Dataset successfully created"},
         400: {"description": "Invalid request data"},
-        404: {"description": "Archive not found"},
         409: {"description": "Dataset already exists"},
         500: {"description": "Internal server error"},
     },
 )
 def create_dataset(
-        body: DatasetCreateRequest,
+        dataset_name: str = Form(..., description="Unique name of the dataset"),
+        dataset_type: str = Form(..., description="Dataset type"),
+        dataset_task: str = Form(..., description="Dataset task"),
+        file: UploadFile = File(..., description="Dataset archive (.zip)"),
         store: Store = Depends(get_store),
 ):
     try:
-        store.set_new_dataset(
-            dataset_name=body.dataset_name,
-            archive_name=body.archive_name,
-            dataset_type=body.dataset_type,
-            dataset_task=body.dataset_task
+        store.import_dataset(
+            dataset_name=dataset_name,
+            dataset_type=dataset_type,
+            dataset_task=dataset_task,
+            file=file
         )
+
         return MessageResponse(
-            message=f"Dataset '{body.dataset_name}' successfully created"
+            message=f"Dataset '{dataset_name}' successfully created"
         )
 
     except FileExistsError as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=str(e),
-        )
-
-    except FileNotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         )
 

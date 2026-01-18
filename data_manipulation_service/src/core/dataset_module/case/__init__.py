@@ -1,3 +1,3 @@
-from .importer import DatasetImporter
+from .importer import Importer
 
-__all__ = ['DatasetImporter']
+__all__ = ['Importer']
