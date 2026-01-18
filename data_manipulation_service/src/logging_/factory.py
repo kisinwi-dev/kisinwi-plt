@@ -19,17 +19,18 @@ def get_logger(name: str) -> logging.Logger:
 
     logger.setLevel(LOG_LEVEL)
 
-    # Docker (stdout) 
+    # Docker (stdout)
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(LOG_LEVEL)
     console_handler.setFormatter(TextLogFormatter(datefmt=LOG_DATEFMT))
     logger.addHandler(console_handler)
 
-    # JSON file 
+    # JSON file
     json_path = Path(LOG_JSON_PATH)
     json_path.parent.mkdir(parents=True, exist_ok=True)
+    max_bytes = 10 * 1024 * 1024
     json_handler = RotatingFileHandler(
-        json_path, maxBytes=10*1024*1024, backupCount=5, encoding="utf-8"
+        json_path, maxBytes=max_bytes, backupCount=5, encoding="utf-8"
     )
     json_handler.setLevel(LOG_LEVEL)
     json_handler.setFormatter(JSONLogFormatter())
@@ -38,7 +39,9 @@ def get_logger(name: str) -> logging.Logger:
     logger.propagate = False
     return logger
 
+
 # ----------- FORMAT -----------
+
 
 class TextLogFormatter(logging.Formatter):
     LEVEL_STYLES = {

@@ -2,13 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.dataset_module import Store
 from api.deps import get_store
-from api.schemas import MessageResponse
-from api.schemas.files import *
+from api.schemas.files import FileListResponse
 from api.schemas.dataset import DATASET_NAME_PATH
 from api.schemas.version import VERSION_NAME_PATH
 from api.schemas.classes import CLASS_NAME_PATH
 
 router = APIRouter()
+
 
 @router.get(
     "/files",
@@ -26,7 +26,7 @@ def get_files(
         version_name: str = VERSION_NAME_PATH,
         class_name: str = CLASS_NAME_PATH,
         store: Store = Depends(get_store),
-    ):
+):
     try:
         files = store.get_dataset_vesion_class_files_name(
             dataset_name=dataset_name,

@@ -2,13 +2,14 @@ import shutil
 from pathlib import Path
 from core.dataset_module.models import FileSystemManagerStatus
 
-IMAGE_SUFFIXES  = ('.jpg', '.jpeg', '.png')
+IMAGE_SUFFIXES = ('.jpg', '.jpeg', '.png')
+
 
 class FileSystemManager:
     def __init__(
-            self, 
+            self,
             root: Path | None = None
-        ):
+    ):
         """
         Initialize FileSystemManager with a root datasets directory.
         """
@@ -20,19 +21,19 @@ class FileSystemManager:
         Change current working directory to a subdirectory.
         """
         new_path = (self.worker_path / dir_name).resolve()
-        
+
         if not new_path.is_dir():
             raise FileNotFoundError(f"Directory not found: {dir_name}")
-        
+
         if not new_path.is_relative_to(self._root):
             raise PermissionError("Cannot leave root directory")
-        
+
         self.worker_path = new_path
 
     def in_dirs(
-            self, 
+            self,
             dirs_list: list[str]
-        ):
+    ):
         """
         Move sequentially into a list of subdirectories.
         """
@@ -45,7 +46,7 @@ class FileSystemManager:
         """
         if self.worker_path == self._root:
             raise PermissionError("Cannot go above root directory")
-        
+
         self.worker_path = self.worker_path.parent
 
     def status(self) -> FileSystemManagerStatus:
@@ -82,13 +83,13 @@ class FileSystemManager:
         Return names of subdirectories in the current directory.
         """
         return [path.name for path in self.worker_path.iterdir() if path.is_dir()]
-    
+
     def get_all_file(self) -> list[str]:
         """
         Return names of files in the current directory.
         """
         return [path.name for path in self.worker_path.iterdir() if path.is_file()]
-    
+
     def reset(self):
         """
         Reset the current working directory to the root directory.
@@ -96,32 +97,32 @@ class FileSystemManager:
         self.worker_path = self._root
 
     def rename_dir(
-            self, 
-            old_name: str, 
+            self,
+            old_name: str,
             new_name: str
-        ):
+    ):
         """
         Rename a subdirectory in the current directory.
         """
         self._dir_exists(old_name)
         self._rename_obj(old_name, new_name)
-    
+
     def rename_file(
             self,
             old_name: str,
-            new_name: str, 
-        ):
+            new_name: str,
+    ):
         """
         Rename a file in the current directory.
         """
         self._file_exists(old_name)
         self._rename_obj(old_name, new_name)
-        
+
     def _rename_obj(
-            self, 
+            self,
             old_name: str,
-            new_name: str 
-        ): 
+            new_name: str
+    ):
         """
         Rename a file system object (file or directory).
         """
@@ -134,7 +135,7 @@ class FileSystemManager:
     def drop_dir(
             self,
             dir_name: str
-        ):
+    ):
         """
         Remove a directory and all its contents recursively.
         """
@@ -156,7 +157,7 @@ class FileSystemManager:
     def _dir_exists(
             self,
             dir_name,
-        )-> bool | None:
+    ) -> bool | None:
         """
         Check if a directory exists in the current directory.
         """
@@ -164,11 +165,11 @@ class FileSystemManager:
         if dir_name not in dirs:
             raise FileNotFoundError(f"Dir {dir_name} not found")
         return True
-    
+
     def _file_exists(
             self,
             file_name
-        )-> bool | None:
+    ) -> bool | None:
         """
         Check if a file exists in the current directory.
         """
@@ -176,7 +177,7 @@ class FileSystemManager:
         if file_name not in files:
             raise FileNotFoundError(f"File {file_name} not found")
         return True
-    
+
     def all_file_is_image(self) -> bool:
         for file_name in self.get_all_file():
             if Path(file_name).suffix.lower() not in IMAGE_SUFFIXES:
@@ -184,10 +185,10 @@ class FileSystemManager:
         return True
 
     def move_dir(
-            self, 
-            dir_name: str, 
+            self,
+            dir_name: str,
             target_path: Path
-        ):
+    ):
         """
         Move a subdirectory to another location inside the root.
         """
@@ -204,10 +205,10 @@ class FileSystemManager:
         shutil.move(str(source), str(target))
 
     def move_file(
-            self, 
-            file_name: str, 
+            self,
+            file_name: str,
             target_path: Path
-        ) -> None:
+    ) -> None:
         """
         Move a file to another location inside the root.
         """
@@ -219,6 +220,6 @@ class FileSystemManager:
             raise PermissionError("Cannot move file outside root")
 
         if (target / file_name).exists():
-            raise FileExistsError(f"File '{file_name}' already exists at target location")     
+            raise FileExistsError(f"File '{file_name}' already exists at target location")
 
         shutil.move(str(source), str(target))

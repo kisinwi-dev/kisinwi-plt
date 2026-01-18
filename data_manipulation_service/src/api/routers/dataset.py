@@ -1,12 +1,19 @@
 from dataclasses import asdict
-from fastapi import APIRouter, Depends, HTTPException, status, Path
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.dataset_module import Store
 from api.deps import get_store
 from api.schemas import MessageResponse
-from api.schemas.dataset import *
+from api.schemas.dataset import (
+    DATASET_NAME_PATH,
+    DatasetCreateRequest,
+    DatasetRenameRequest,
+    DatasetInfoResponse,
+    DatasetListResponse
+)
 
 router = APIRouter()
+
 
 @router.get(
     "/",
@@ -16,9 +23,10 @@ router = APIRouter()
 )
 def list_datasets(
         store: Store = Depends(get_store)
-    ):
+):
     datasets = store.get_dataset_name()
     return DatasetListResponse(datasets=datasets)
+
 
 @router.get(
     "/{dataset_name}",
@@ -32,7 +40,7 @@ def list_datasets(
 def info_dataset(
         dataset_name: str = DATASET_NAME_PATH,
         store: Store = Depends(get_store)
-    ):
+):
     try:
         dataset_info = store.get_dataset_info(dataset_name)
         return DatasetInfoResponse.model_validate(asdict(dataset_info))
@@ -41,7 +49,8 @@ def info_dataset(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         )
-    
+
+
 @router.post(
     "/",
     summary="Create dataset from archive",
@@ -59,7 +68,7 @@ def info_dataset(
 def create_dataset(
         body: DatasetCreateRequest,
         store: Store = Depends(get_store),
-    ):
+):
     try:
         store.set_new_dataset(
             dataset_name=body.dataset_name,
@@ -94,7 +103,8 @@ def create_dataset(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
-    
+
+
 @router.delete(
     "/{dataset_name}",
     summary="Delete dataset",
@@ -110,7 +120,7 @@ def create_dataset(
 def delete_dataset(
         dataset_name: str = DATASET_NAME_PATH,
         store: Store = Depends(get_store),
-    ):
+):
     try:
         store.drop_dataset(dataset_name)
         return MessageResponse(
@@ -127,7 +137,8 @@ def delete_dataset(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
-    
+
+
 @router.patch(
     "/{dataset_name}",
     summary="Rename dataset",
@@ -146,7 +157,7 @@ def rename_dataset(
         body: DatasetRenameRequest,
         dataset_name: str = DATASET_NAME_PATH,
         store: Store = Depends(get_store),
-    ):
+):
     try:
         store.rename_dataset(
             dataset_name=dataset_name,
@@ -178,6 +189,6 @@ def rename_dataset(
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )

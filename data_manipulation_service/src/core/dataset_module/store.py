@@ -5,11 +5,12 @@ from .models import ClassInfo, VersionInfo, DatasetInfo
 
 logger = get_logger(__name__)
 
+
 class Store:
     def __init__(
             self,
             fsm: FileSystemManager | None = None
-        ):
+    ):
         self._fsm = fsm if fsm else FileSystemManager()
 
     # ------------------ Dataset info methods ------------------
@@ -23,32 +24,32 @@ class Store:
         self._fsm.reset()
         self._fsm.in_dir(dataset_name)
         version_list = self._fsm.get_all_dir()
-        return version_list        
+        return version_list
 
     def get_dataset_version_classes_name(
-            self, 
+            self,
             dataset_name: str,
             version_name: str,
-        ) -> list[str]:
+    ) -> list[str]:
         self._fsm.reset()
         self._fsm.in_dirs([dataset_name, version_name])
         classes_list = self._fsm.get_all_dir()
         return classes_list
-    
+
     def get_dataset_vesion_class_files_name(
             self,
             dataset_name: str,
             version_name: str,
             class_name: str
-        ) -> list[str]:
+    ) -> list[str]:
         self._fsm.reset()
         self._fsm.in_dirs([dataset_name, version_name, class_name])
         return self._fsm.get_all_file()
-    
+
     def get_dataset_info(
             self,
             dataset_name: str
-        ):
+    ):
         self._fsm.reset()
         self._fsm.in_dir(dataset_name)
         versions = self._fsm.get_all_dir()
@@ -69,7 +70,7 @@ class Store:
                     )
                 )
                 self._fsm.out_dir()
-            
+
             info_versions.append(
                 VersionInfo(
                     name=version,
@@ -78,7 +79,7 @@ class Store:
                 )
             )
             self._fsm.out_dir()
-        
+
         return DatasetInfo(
             name=dataset_name,
             description=None,
@@ -88,12 +89,12 @@ class Store:
     # ------------------ Dataset management ------------------
 
     def set_new_dataset(
-            self, 
+            self,
             dataset_name: str,
             archive_name: str,
             dataset_type: str,
             dataset_task: str
-        ):
+    ):
         logger.debug(
             f'Start create new dataset(name={dataset_name}, archive_name={archive_name})'
         )
@@ -102,9 +103,9 @@ class Store:
             archive_manager=ArchiveManager()
         )
         importer.import_dataset(
-            dataset_name=dataset_name, 
+            dataset_name=dataset_name,
             archive_name=archive_name,
-            dataset_type=dataset_type, 
+            dataset_type=dataset_type,
             dataset_task=dataset_task
         )
 
@@ -123,7 +124,12 @@ class Store:
         self._fsm.in_dir(dataset_name)
         self._fsm.drop_dir(version_name)
 
-    def rename_version(self, dataset_name: str, version_name: str, new_version: str):
+    def rename_version(
+            self,
+            dataset_name: str,
+            version_name: str,
+            new_version: str
+    ):
         self._fsm.reset()
         self._fsm.in_dir(dataset_name)
         self._fsm.rename_dir(version_name, new_version)
@@ -136,32 +142,32 @@ class Store:
     # ------------------ Class management ------------------
 
     def set_new_class(
-            self, 
-            dataset_name: str, 
-            version_name: str, 
+            self,
+            dataset_name: str,
+            version_name: str,
             class_name: str
-        ):
+    ):
         self._fsm.reset()
         self._fsm.in_dirs([dataset_name, version_name])
         (self._fsm.worker_path / class_name).mkdir(exist_ok=False)
 
     def drop_class(
-            self, 
-            dataset_name: str, 
-            version_name: str, 
+            self,
+            dataset_name: str,
+            version_name: str,
             class_name: str
-        ):
+    ):
         self._fsm.reset()
         self._fsm.in_dirs([dataset_name, version_name])
         self._fsm.drop_dir(class_name)
 
     def rename_class(
-            self, 
-            dataset_name: str, 
-            version_name: str, 
-            class_name: str, 
+            self,
+            dataset_name: str,
+            version_name: str,
+            class_name: str,
             new_class: str
-        ):
+    ):
         self._fsm.reset()
         self._fsm.in_dirs([dataset_name, version_name])
         self._fsm.rename_dir(class_name, new_class)
