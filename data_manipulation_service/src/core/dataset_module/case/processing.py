@@ -5,9 +5,10 @@ from pathlib import Path
 
 logger = get_logger(__name__)
 
+
 class ProcessingFileDuplicate:
     def __init__(
-            self, 
+            self,
             file_system_manager: FileSystemManager,
             chunk_size: int = 8192
     ):
@@ -45,7 +46,7 @@ class ProcessingFileDuplicate:
         """
         Find duplicate files by content.
 
-        Return: 
+        Return:
             list of lists of duplicate file paths
         """
         logger.debug('[start] Find duplicate files')
@@ -76,12 +77,12 @@ class ProcessingFileDuplicate:
             for file_path in files_to_remove:
                 logger.debug(f'Delete: {file_path}')
                 file_path.unlink()
-        
+
         logger.debug('[finish] Remove duplicates')
 
     def _hash_file(
             self,
-            path: Path, 
+            path: Path,
     ) -> str:
         """
         Compute SHA256 hash of a file, reading in chunks.
