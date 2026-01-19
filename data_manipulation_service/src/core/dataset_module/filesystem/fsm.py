@@ -14,7 +14,8 @@ class FileSystemManager:
         Initialize FileSystemManager with a root datasets directory.
         """
         self._root = (root or Path.cwd() / "datasets").resolve()
-        self.worker_path = self._root
+        self.worker_path = None
+        self.reset()
 
     def in_dir(self, dir_name: str) -> None:
         """
@@ -131,6 +132,16 @@ class FileSystemManager:
         if new_path.exists():
             raise FileExistsError(f"Directory '{new_name}' already exists")
         old_path.rename(new_path)
+
+    def drop_obj(
+            self,
+            obj_name: str
+    ):
+        path = self._root / obj_name
+        if path.is_dir():
+            self.drop_dir(obj_name)
+        elif path.is_file():
+            self.drop_file(obj_name)
 
     def drop_dir(
             self,

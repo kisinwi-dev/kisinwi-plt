@@ -5,7 +5,7 @@ from typing import List, Optional
 CLASS_NAME_PATH = Path(
     ...,
     description="Unique name of the class",
-    example="class_1",
+    examples=["class_1", "class_2"],
     pattern=r"^[\w\-]+$"
 )
 

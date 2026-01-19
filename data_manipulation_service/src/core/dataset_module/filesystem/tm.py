@@ -1,17 +1,41 @@
 import zipfile
 import uuid
+import shutil
+from fastapi import UploadFile
+from .fsm import FileSystemManager
 from logging_ import get_logger
 from pathlib import Path
 
 logger = get_logger(__name__)
 
 
-class ArchiveManager:
+class TempManager(FileSystemManager):
     def __init__(
             self,
             root: Path | None = None
     ):
+        super().__init__()
         self._root = (root or Path.cwd() / "temp").resolve()
+        self.reset()
+
+    def save_upload(self, file: UploadFile) -> Path:
+        path = self._root / f"{uuid.uuid4().hex}_{file.filename}"
+        with path.open("wb") as f:
+            shutil.copyfileobj(file.file, f)
+        return path
+
+    def drop_all(self):
+        dirs = self.get_all_dir()
+        logger.debug(f"Dirs in temp: {dirs}")
+        for dir in dirs:
+            self.drop_dir(dir)
+        logger.debug("✅ Delete all dirs.")
+
+        files = self.get_all_file()
+        logger.debug(f"Files in temp: {files}")
+        for file in files:
+            self.drop_file(file)
+        logger.debug("✅ Delete all files.")
 
     def extract(
             self,
