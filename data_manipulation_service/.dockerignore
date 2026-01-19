@@ -1,0 +1,19 @@
+# Ignoring system files
+__pycache__/
+*.ipynb
+
+# Ignoring env
+venv/
+.env
+.env.*
+
+# Ignoring local data
+src/temp/
+src/datasets/
+
+# Ignoring logs
+*.log
+
+# Docker itself
+Dockerfile*
+.dockerignore
