@@ -91,6 +91,18 @@ class FileSystemManager:
         """
         return [path.name for path in self.worker_path.iterdir() if path.is_file()]
 
+    def get_all_files_path(self) -> list[Path]:
+        """
+        Recursively collect all files from a directory and its subdirectories.
+        """
+        if not self.worker_path.exists():
+            raise FileNotFoundError(f"Path does not exist: {self.worker_path}")
+
+        if not self.worker_path.is_dir():
+            raise NotADirectoryError(f"Not a directory: {self.worker_path}")
+
+        return [path for path in self.worker_path.rglob("*") if path.is_file()]
+
     def reset(self):
         """
         Reset the current working directory to the root directory.
