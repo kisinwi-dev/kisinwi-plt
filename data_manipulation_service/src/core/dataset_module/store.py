@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import UploadFile
 from logging_ import get_logger
 from .case import Importer
-from .filesystem import FileSystemManager, ArchiveManager
+from .filesystem import FileSystemManager, TempManager
 from .models import ClassInfo, VersionInfo, DatasetInfo
 
 logger = get_logger(__name__)
@@ -14,10 +14,10 @@ class Store:
     def __init__(
             self,
             fsm: FileSystemManager | None = None,
-            archive_manager: ArchiveManager | None = None
+            tm: TempManager | None = None
     ):
         self._fsm = fsm if fsm else FileSystemManager()
-        self._archive_manager = archive_manager or ArchiveManager()
+        self._tm = tm if tm else TempManager()
 
     # ------------------ Dataset info methods ------------------
 
@@ -95,7 +95,7 @@ class Store:
     # ------------------ Dataset management ------------------
 
     def _save_in_temp(self, file: UploadFile) -> Path:
-        temp_dir = self._archive_manager._root
+        temp_dir = self._tm._root
         temp_dir.mkdir(parents=True, exist_ok=True)
         temp_path = temp_dir / f"{uuid.uuid4().hex}_{file.filename}"
         with temp_path.open("wb") as f:
@@ -112,7 +112,7 @@ class Store:
         path_archive = self._save_in_temp(file)
 
         try:
-            importer = Importer(self._fsm, self._archive_manager)
+            importer = Importer(self._fsm, self._tm)
             importer.import_dataset(
                 dataset_name=dataset_name,
                 dataset_type=dataset_type,

@@ -6,7 +6,7 @@ from .classes import ClassInfoResponse
 VERSION_NAME_PATH = Path(
     ...,
     description="Unique name of the version",
-    example="v_1",
+    examples=["v_1", "v_2"],
     pattern=r"^[\w\-]+$"
 )
 

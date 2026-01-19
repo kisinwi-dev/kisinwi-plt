@@ -5,7 +5,7 @@ from typing import List
 FILE_NAME_PATH = Path(
     ...,
     description="Unique name of the file",
-    example="dog_1",
+    examples=["dog_1", "dog_2"],
     pattern=r"^[\w\-]+$"
 )
 

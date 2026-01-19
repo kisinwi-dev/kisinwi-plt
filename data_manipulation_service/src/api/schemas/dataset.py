@@ -6,7 +6,7 @@ from .version import VersionInfoResponse
 DATASET_NAME_PATH = Path(
     ...,
     description="Unique name of the dataset",
-    example="dataset_1",
+    examples=["dataset_1", "dataset_2"],
     pattern=r"^[\w\-]+$"
 )
 

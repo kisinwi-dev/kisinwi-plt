@@ -11,7 +11,7 @@ class Importer:
         temp_manager: TempManager,
     ):
         self._datasets_fsm = file_system_manager
-        self._archive_manager = temp_manager
+        self._temp_manager = temp_manager
 
     def import_dataset(
             self,
@@ -24,7 +24,7 @@ class Importer:
         if dataset_name in self._datasets_fsm.get_all_dir():
             raise FileExistsError(f"Dataset '{dataset_name}' already exists")
 
-        temp_path = self._archive_manager.extract(path_archive)
+        temp_path = self._temp_manager.extract(path_archive)
 
         try:
             # valid

@@ -18,7 +18,6 @@ class TempManager(FileSystemManager):
         self._root = (root or Path.cwd() / "temp").resolve()
         self.reset()
 
-
     def save_upload(self, file: UploadFile) -> Path:
         path = self._root / f"{uuid.uuid4().hex}_{file.filename}"
         with path.open("wb") as f:
@@ -30,13 +29,13 @@ class TempManager(FileSystemManager):
         logger.debug(f"Dirs in temp: {dirs}")
         for dir in dirs:
             self.drop_dir(dir)
-        logger.debug(f"✅ Delete all dirs.")
-        
+        logger.debug("✅ Delete all dirs.")
+
         files = self.get_all_file()
         logger.debug(f"Files in temp: {files}")
         for file in files:
             self.drop_file(file)
-        logger.debug(f"✅ Delete all files.")
+        logger.debug("✅ Delete all files.")
 
     def extract(
             self,
