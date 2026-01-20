@@ -185,6 +185,11 @@ class Trainer:
             prefix = 'val_',
         )
 
+        self.test_metrics = self.create_classification_metrics(
+            preset='test',
+            prefix='test_'
+        )
+
         # metrics
         self.history = {
             'train_loss': [], 
@@ -871,6 +876,39 @@ class Trainer:
             self.logger.error("Error set all params in mlflow:", e)
             raise
 
+
+    def _test_one(self, model=None) -> dict:
+        """
+        Evaluate the model on the test dataset using metric collection.
+        """
+        self.logger.debug(f"||⚪ Testing model")
+        try:
+            if model is None:
+                model = self.model
+
+            model.eval()
+            self.test_metrics.reset()
+            
+            self.logger.debug(f"||⚪ Info")
+
+            with torch.no_grad():
+                for batch in self.test_loader:
+                    inputs, labels = batch
+                    inputs = inputs.to(self.device)
+                    labels = labels.to(self.device)
+                    
+                    predicted = model(inputs)
+                    
+                    self.test_metrics.update(
+                        preds=predicted, 
+                        target=labels
+                    )
+
+            self.logger.debug(f"||🟢 Testing model")
+            return self.test_metrics.compute()
+        except Exception as e:
+            self.logger.error(f"||🔴 Testing model: {e}")
+
     def create_classification_metrics(
             self,
             preset: str = 'full',
@@ -996,6 +1034,31 @@ class Trainer:
                     sync_on_compute=sync_on_compute
                 ),
             },
+            'test': {
+                'accuracy': Accuracy(
+                    task='multiclass',
+                    num_classes=num_classes,
+                    sync_on_compute=sync_on_compute
+                ),
+                'precision_macro': Precision(
+                    task='multiclass',
+                    num_classes=num_classes,
+                    average='macro',
+                    sync_on_compute=sync_on_compute
+                ),
+                'recall_macro': Recall(
+                    task='multiclass',
+                    num_classes=num_classes,
+                    average='macro',
+                    sync_on_compute=sync_on_compute
+                ),
+                'f1_macro': F1Score(
+                    task='multiclass',
+                    num_classes=num_classes,
+                    average='macro',
+                    sync_on_compute=sync_on_compute
+                ),
+            }
         }
         
         if preset not in PRESETS:
@@ -1004,10 +1067,11 @@ class Trainer:
         
         metrics_dict = PRESETS[preset]
         
-        metrics_dict['loss'] = MeanMetric(
-            sync_on_compute=sync_on_compute,
-            nan_strategy='ignore'
-        )
+        if preset != 'test':
+            metrics_dict['loss'] = MeanMetric(
+                sync_on_compute=sync_on_compute,
+                nan_strategy='ignore'
+            )
         
         collection = MetricCollection(
             metrics_dict,
@@ -1020,7 +1084,8 @@ class Trainer:
             self, 
             epoch: int,
             train_metrics_value,
-            val_metrics_value
+            val_metrics_value,
+            test_metrics_value: dict | None = None
         ):
         """
         Logs epoch metrics to MLflow.
@@ -1064,10 +1129,17 @@ class Trainer:
         if not self.log_mlflow:
             return
         try:
-            metrics = {
-                **train_metrics_value,
-                **val_metrics_value
-            }
+            if test_metrics_value:
+                metrics = {
+                    **train_metrics_value,
+                    **val_metrics_value,
+                    **test_metrics_value
+                }
+            else: 
+                metrics = {
+                    **train_metrics_value,
+                    **val_metrics_value
+                }
 
             mlflow.log_metrics(metrics, step=epoch)
 
@@ -1111,6 +1183,11 @@ class Trainer:
             if self.log_checkpoint or (epoch == self.epochs and self.log_artifacts):
                 self.logger.debug(f"|🔘 Start save checkpoint(save_model)")
                 name = f"checkpoint_epoch_{epoch}"
+
+                # Calculate for test metrics
+                if self.test_loader is not None:
+                    test_metrics = self._test_one(model=self.model) 
+
                 import copy 
                 model_cpu = copy.deepcopy(self.model).to('cpu')
                 model_cpu.eval()
@@ -1122,9 +1199,10 @@ class Trainer:
                     signature=self._create_mlflow_signature(model_cpu),
                     await_registration_for=0
                 )
-                
+
                 del model_cpu
                 self.logger.debug(f"|🟢 Checkpoint(save_model)")
+                return test_metrics if self.test_loader is not None else None
             else:
                 self.logger.debug(f"|🟢 Checkpoint(skip)")
         except Exception as e:
@@ -1414,23 +1492,25 @@ class Trainer:
         with self.mlflow_run_manager():
             
             self._mlflow_log_parameters()
-            minimal_loss = float('inf')
 
             for epoch in range(self.epochs):
                 self.logger.info("="*20)
                 self.logger.info(f"🔄 Epoch[🔹{epoch+1}/{self.epochs}🔹] start")
                 train_metrics_value = self._train_one()
                 val_metrics_value = self._validate_one()
-                
+                test_metrics_value = None
+
+                if (epoch+1)%2 == 0:
+                    test_metrics_value = self._log_checkpoint(epoch+1) 
+
                 self._log_epoch_metric(
                     epoch+1,
                     train_metrics_value,
-                    val_metrics_value
+                    val_metrics_value, 
+                    test_metrics_value 
                 )
 
-                if minimal_loss > val_metrics_value['val_loss']:
-                    minimal_loss = val_metrics_value['val_loss']
-                    self._log_checkpoint(epoch+1)
+                
 
                 self.logger.info(f"🟢 Epoch[🔹{epoch+1}/{self.epochs}🔹] completed")
 
