@@ -30,7 +30,10 @@ def load_dataloader(
         batch_size: int = 32,
         train_ratio: float = 0.75,
         val_ratio: float = 0.15,
-        is_calculate_normalize_dataset: bool = False
+        is_calculate_normalize_dataset: bool = False,
+        train_dir: str = 'train',
+        val_dir: str = 'val',
+        test_dir: str = 'test',
     ) -> Tuple[DataLoader, DataLoader, DataLoader, List[str]]:
     """
     Creates train, validation, and test DataLoaders from an image directory.
@@ -59,6 +62,17 @@ def load_dataloader(
         is_calculate_normalize_dataset (bool, optional):
             If True, calculates mean and std for dataset normalization.
             If False, uses default normalization values. Default is False.
+
+    Directory structure example:
+        train/
+            class1/
+            class2/
+        val/
+            class1/
+            class2/
+        test/
+            class1/
+            class2/
 
     Returns:
         Tuple[DataLoader, DataLoader, DataLoader, List[str]]:
@@ -96,31 +110,39 @@ def load_dataloader(
         transforms.ToTensor()
     ])
 
-    # full dataset
-    full_dataset = datasets.ImageFolder(
-        root=path_data_dir,
+    path_train_dir = os.path.join(path_data_dir, train_dir)
+    path_val_dir = os.path.join(path_data_dir, val_dir)
+    path_test_dir = os.path.join(path_data_dir, test_dir)
+
+    train_dataset_raw = datasets.ImageFolder(
+        root=path_train_dir,
+        transform=base_transform
+    )
+    val_dataset_raw = datasets.ImageFolder(
+        root=path_val_dir,
+        transform=base_transform
+    )
+    test_dataset_raw = datasets.ImageFolder(
+        root=path_test_dir,
         transform=base_transform
     )
 
-    classes = _validate_dataset(
-        dataset=full_dataset,
-        path_data_dir=path_data_dir,
-    )
+    if (
+        train_dataset_raw.classes != val_dataset_raw.classes or
+        train_dataset_raw.classes != test_dataset_raw.classes
+    ):
+        raise ValueError("Classes in train/val/test directories do not match")
 
-    if total_img == 0:
-        total_img = len(full_dataset)
+    classes = train_dataset_raw.classes
 
-    # subset load
-    indxs = torch.randperm(len(full_dataset))[:total_img]
-    subset = Subset(full_dataset, indxs)
-
-    loader_for_norm = DataLoader(
-        dataset=subset,
-        batch_size=batch_size
-    )
 
     if is_calculate_normalize_dataset:
-        mean, std = calculate_normalize_datasets(loader_for_norm)
+        norm_loader = DataLoader(
+            train_dataset_raw,
+            batch_size=batch_size,
+            shuffle=False
+        )
+        mean, std = calculate_normalize_datasets(norm_loader)
     else:
         mean, std = None, None
 
@@ -128,59 +150,57 @@ def load_dataloader(
         transforms.RandomResizedCrop((img_h_size, img_w_size), scale=(0.7, 1.0)),
         transforms.RandomHorizontalFlip(),
         transforms.RandomRotation(10),
+        transforms.ToTensor(),
     ])
 
-    val_train_transform = transforms.Compose([
+    val_test_transform = transforms.Compose([
         transforms.Resize((img_h_size, img_w_size)),
+        transforms.ToTensor(),
     ])
 
     if mean is not None:
         train_transform.transforms.append(transforms.Normalize(mean, std))
-        val_train_transform.transforms.append(transforms.Normalize(mean, std))
-
-
-    # split subset train/val/test 
-    train_size = int(train_ratio * total_img)
-    val_size = int(val_ratio * total_img)
-    test_size = total_img - train_size - val_size
-
-    train_subset, val_subset, test_subset = torch.utils.data.random_split(
-        subset, [train_size, val_size, test_size]
+        val_test_transform.transforms.append(transforms.Normalize(mean, std))
+    
+    # --- Recreate datasets with final transforms
+    train_dataset = datasets.ImageFolder(
+        root=path_train_dir,
+        transform=train_transform
+    )
+    val_dataset = datasets.ImageFolder(
+        root=path_val_dir,
+        transform=val_test_transform
+    )
+    test_dataset = datasets.ImageFolder(
+        root=path_test_dir,
+        transform=val_test_transform
     )
 
-    train_dataset = TransformDataset(train_subset, transform=train_transform)
-    val_dataset = TransformDataset(val_subset, transform=val_train_transform)
-    test_dataset = TransformDataset(val_subset, transform=val_train_transform)
-
-    # dataloaders
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
         shuffle=True,
-        num_workers=0,
-        pin_memory=True,
+        pin_memory=True
     )
 
     val_loader = DataLoader(
         val_dataset,
         batch_size=batch_size,
         shuffle=False,
-        num_workers=0,
-        pin_memory=True,
+        pin_memory=True
     )
 
     test_loader = DataLoader(
         test_dataset,
         batch_size=batch_size,
         shuffle=False,
-        num_workers=0,
         pin_memory=True
     )
 
     logger.info("🟢[load_dataloader_classification] finish create dataloaders")
-    logger.info(f" ➖ Train samples: {train_size}")
-    logger.info(f" ➖ Val samples:   {val_size}")
-    logger.info(f" ➖ Test samples:  {test_size}")
+    logger.info(f" ➖ Train samples: {len(train_dataset)}")
+    logger.info(f" ➖ Val samples:   {len(val_dataset)}")
+    logger.info(f" ➖ Test samples:  {len(test_dataset)}")
     logger.info(f" ➖ Classes:       {classes}")
 
     return train_loader, val_loader, test_loader, classes
