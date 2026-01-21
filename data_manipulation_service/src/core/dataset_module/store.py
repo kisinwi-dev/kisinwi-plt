@@ -197,7 +197,7 @@ class Store:
             self._fsm.in_dirs([dataset_name, version_name, class_name])
         else:
             self._fsm.in_dirs([dataset_name, version_name])
-        
+
         pfd = ProcessingFileDuplicate(self._fsm)
         return pfd.has_duplicate_files()
 
@@ -215,7 +215,7 @@ class Store:
 
         pfd = ProcessingFileDuplicate(self._fsm)
         return pfd.find_duplicate_files()
-    
+
     def remove_duplicates(
             self,
             dataset_name: str,

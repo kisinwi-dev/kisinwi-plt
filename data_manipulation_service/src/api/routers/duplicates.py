@@ -1,5 +1,5 @@
 from fastapi import (
-    APIRouter, HTTPException, 
+    APIRouter, HTTPException,
     Depends, status, Query
 )
 
@@ -11,6 +11,7 @@ from api.schemas.version import VERSION_NAME_PATH
 from api.schemas.duplicates import DuplicateFilesGroupResponse
 
 router = APIRouter()
+
 
 @router.get(
     "/duplicates",
@@ -56,6 +57,7 @@ def has_duplicate_files(
             detail=str(e),
         )
 
+
 @router.get(
     "/duplicates/list",
     summary="List duplicate files in a dataset version",
@@ -87,11 +89,11 @@ def find_duplicate_files(
             version_name=version_name,
             class_name=class_name,
         )
-        
+
         return DuplicateFilesGroupResponse(
             duplicates=[[path.name for path in group] for group in duplicates]
         )
-    
+
     except FileNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -103,6 +105,7 @@ def find_duplicate_files(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e),
         )
+
 
 @router.post(
     "/duplicates/remove",
