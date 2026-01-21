@@ -4,6 +4,7 @@ from .dataset import router as dataset_router
 from .versions import router as versions_router
 from .classes import router as classes_router
 from .files import router as files_router
+from .duplicates import router as dublicate_router
 
 routers = APIRouter()
 
@@ -29,4 +30,10 @@ routers.include_router(
     files_router,
     prefix="/{dataset_name}/{version_name}/{class_name}",
     tags=["files"]
+)
+
+routers.include_router(
+    dublicate_router,
+    prefix="/{dataset_name}/{version_name}",
+    tags=["duplicates"]
 )

@@ -3,7 +3,7 @@ import uuid
 from pathlib import Path
 from fastapi import UploadFile
 from logging_ import get_logger
-from .case import Importer
+from .case import Importer, ProcessingFileDuplicate
 from .filesystem import FileSystemManager, TempManager
 from .models import ClassInfo, VersionInfo, DatasetInfo
 
@@ -185,5 +185,48 @@ class Store:
         self._fsm.in_dirs([dataset_name, version_name])
         self._fsm.rename_dir(class_name, new_class)
 
-    def validation_dataset(self):
-        pass
+    # ------------------ File processing ------------------
+    def has_duplicate_files(
+            self,
+            dataset_name: str,
+            version_name: str,
+            class_name: str | None = None
+    ):
+        self._fsm.reset()
+        if class_name:
+            self._fsm.in_dirs([dataset_name, version_name, class_name])
+        else:
+            self._fsm.in_dirs([dataset_name, version_name])
+
+        pfd = ProcessingFileDuplicate(self._fsm)
+        return pfd.has_duplicate_files()
+
+    def find_duplicate_files(
+            self,
+            dataset_name: str,
+            version_name: str,
+            class_name: str | None = None
+    ):
+        self._fsm.reset()
+        if class_name:
+            self._fsm.in_dirs([dataset_name, version_name, class_name])
+        else:
+            self._fsm.in_dirs([dataset_name, version_name])
+
+        pfd = ProcessingFileDuplicate(self._fsm)
+        return pfd.find_duplicate_files()
+
+    def remove_duplicates(
+            self,
+            dataset_name: str,
+            version_name: str,
+            class_name: str | None = None
+    ):
+        self._fsm.reset()
+        if class_name:
+            self._fsm.in_dirs([dataset_name, version_name, class_name])
+        else:
+            self._fsm.in_dirs([dataset_name, version_name])
+
+        pfd = ProcessingFileDuplicate(self._fsm)
+        return pfd.remove_duplicates()
