@@ -1,7 +1,14 @@
 import shutil
 from pathlib import Path
+
 from .validation import DatasetImageValidator
 from core.dataset_module.filesystem import FileSystemManager, TempManager
+from core.exception.dataset import (
+    DatasetAlreadyExistsException,
+    UnsupportedDatasetTypeException,
+    UnsupportedDatasetTaskException,
+    DatasetValidationException,
+)
 
 
 class Importer:
@@ -23,7 +30,7 @@ class Importer:
         self._datasets_fsm.reset()
 
         if dataset_name in self._datasets_fsm.get_all_dir():
-            raise FileExistsError(f"Dataset '{dataset_name}' already exists")
+            raise DatasetAlreadyExistsException(dataset_name)
 
         temp_path = self._temp_manager.extract(path_archive)
 
@@ -50,25 +57,13 @@ class Importer:
 
             if dataset_task == "classification":
                 validator = DatasetImageValidator(temp_path)
-                validator.validate_classification()
-                return            
+                try:
+                    validator.validate_classification()
+                    return
+                except DatasetValidationException as e:
+                    raise e           
             else:
-                raise UnsupportedDatasetTaskError(
-                    f"Unsupported image task: '{dataset_task}'"
-                )
+                raise UnsupportedDatasetTaskException(dataset_task)
         else:
-            raise UnsupportedDatasetTypeError(
-                f"Unsupported dataset type: '{dataset_type}'"
-            )
+            raise UnsupportedDatasetTypeException(dataset_type)
 
-
-class DatasetImportError(Exception):
-    pass
-
-
-class UnsupportedDatasetTypeError(DatasetImportError):
-    pass
-
-
-class UnsupportedDatasetTaskError(DatasetImportError):
-    pass

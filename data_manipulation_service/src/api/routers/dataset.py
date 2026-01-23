@@ -14,6 +14,7 @@ from api.schemas.dataset import (
     DatasetInfoResponse,
     DatasetListResponse
 )
+from core.exception.base import CoreException
 
 router = APIRouter()
 
@@ -89,15 +90,9 @@ def create_dataset(
             message=f"Dataset '{dataset_name}' successfully created"
         )
 
-    except FileExistsError as e:
+    except CoreException as e:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(e),
-        )
-
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=e.status_code,
             detail=str(e),
         )
 
