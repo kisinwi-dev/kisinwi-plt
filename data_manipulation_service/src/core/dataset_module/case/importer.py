@@ -6,9 +6,9 @@ from core.dataset_module.filesystem import FileSystemManager, TempManager
 
 class Importer:
     def __init__(
-        self,
-        file_system_manager: FileSystemManager,
-        temp_manager: TempManager,
+            self,
+            file_system_manager: FileSystemManager,
+            temp_manager: TempManager
     ):
         self._datasets_fsm = file_system_manager
         self._temp_manager = temp_manager
@@ -21,6 +21,7 @@ class Importer:
             path_archive: Path
     ):
         self._datasets_fsm.reset()
+
         if dataset_name in self._datasets_fsm.get_all_dir():
             raise FileExistsError(f"Dataset '{dataset_name}' already exists")
 
@@ -28,7 +29,7 @@ class Importer:
 
         try:
             # valid
-            self._validation(dataset_type, dataset_task, temp_path)
+            self._validate_dataset(dataset_type, dataset_task, temp_path)
 
             # move
             target = self._datasets_fsm._root / dataset_name / "v_0"
@@ -39,17 +40,35 @@ class Importer:
             shutil.rmtree(temp_path, ignore_errors=True)
             raise
 
-    def _validation(
+    def _validate_dataset(
             self,
             dataset_type: str,
             dataset_task: str,
             temp_path: Path
     ):
         if dataset_type == "image":
-            vc = DatasetImageValidator(temp_path)
+
             if dataset_task == "classification":
-                vc.new_dataset_classification()
+                validator = DatasetImageValidator(temp_path)
+                validator.validate_classification()
+                return            
             else:
-                raise
+                raise UnsupportedDatasetTaskError(
+                    f"Unsupported image task: '{dataset_task}'"
+                )
         else:
-            raise
+            raise UnsupportedDatasetTypeError(
+                f"Unsupported dataset type: '{dataset_type}'"
+            )
+
+
+class DatasetImportError(Exception):
+    pass
+
+
+class UnsupportedDatasetTypeError(DatasetImportError):
+    pass
+
+
+class UnsupportedDatasetTaskError(DatasetImportError):
+    pass
