@@ -10,7 +10,6 @@ __pycache__
 *temp/
 
 # data
-datasets
 
 # mlflow
 mlflow
@@ -22,10 +21,11 @@ mlflow.db
 # redice
 redice_data
 
-# trainer service
-trainer/src/datasets
-trainer/src/shared
+# trainer_service
+trainer_service/src/datasets
+trainer_service/src/shared
 utils_old/
 
 # data_manipulation_service
 data_manipulation_service/src/shared
+data_manipulation_service/src/datasets
