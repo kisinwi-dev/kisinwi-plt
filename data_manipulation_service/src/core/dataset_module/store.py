@@ -120,6 +120,7 @@ class Store:
                 path_archive=path_archive
             )
         finally:
+            logger.debug("Delete archive file")
             path_archive.unlink(missing_ok=True)
 
     def drop_dataset(self, dataset_name: str):

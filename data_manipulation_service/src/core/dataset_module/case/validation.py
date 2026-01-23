@@ -1,6 +1,8 @@
 from pathlib import Path
+
 from logging_ import get_logger
 from ..filesystem import FileSystemManager
+from core.exception.dataset import DatasetValidationException
 
 logger = get_logger(__name__)
 
@@ -30,7 +32,7 @@ class DatasetImageValidator:
         samples = set(self._fsm.get_all_dir())
 
         if samples != expected_samples:
-            raise DatasetValidationError(
+            raise DatasetValidationException(
                 f"Invalid dataset splits: {samples}, expected: {expected_samples}"
             )
 
@@ -41,14 +43,14 @@ class DatasetImageValidator:
 
             classes = set(self._fsm.get_all_dir())
             if not classes:
-                raise DatasetValidationError(
+                raise DatasetValidationException(
                     f"No classes found in split '{sample_name}'"
                 )
 
             if reference_classes is None:
                 reference_classes = classes
             elif classes != reference_classes:
-                raise DatasetValidationError(
+                raise DatasetValidationException(
                     f"Class mismatch in '{sample_name}': "
                     f"{classes} != {reference_classes}"
                 )
@@ -58,7 +60,7 @@ class DatasetImageValidator:
                 self._fsm.in_dir(class_name)
 
                 if not self._fsm.all_file_is_image():
-                    raise DatasetValidationError(
+                    raise DatasetValidationException(
                         f"Non-image files found in '{sample_name}/{class_name}'"
                     )
 
@@ -67,7 +69,3 @@ class DatasetImageValidator:
             self._fsm.out_dir()
 
         logger.info("🟢 Dataset passed classification validation")
-
-
-class DatasetValidationError(Exception):
-    pass
