@@ -4,8 +4,9 @@ from task.classification.models import get_model
 
 def training_model_clf(
         data_loader_params: Dict,
+        trainer_params: Dict,
         model_params: Dict,
-        trainer_params: Dict
+        model_user = None
     ):
     """
     Runs the full training pipeline for a classification model.
@@ -42,15 +43,18 @@ def training_model_clf(
     """
     train_loader, val_loader, test_loader, classes = data.load_dataloader(**data_loader_params)
 
-    model = get_model(
-        **model_params,
-        num_class = len(classes),
-    )
+    if model_user:
+        model = model_user
+    else:
+        model = get_model(
+            **model_params,
+            num_class = len(classes),
+        )
 
-    if model_params.get('weights', False):
-        img_w, img_h = model.get_input_size_for_weights()
-        data_loader_params['img_w_size'] = img_w
-        data_loader_params['img_h_size'] = img_h
+        if model_params.get('weights', False):
+            img_w, img_h = model.get_input_size_for_weights()
+            data_loader_params['img_w_size'] = img_w
+            data_loader_params['img_h_size'] = img_h
 
     trainer = train_model.Trainer(
         model,

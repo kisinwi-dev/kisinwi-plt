@@ -24,7 +24,7 @@ redice_data
 # trainer_service
 trainer_service/src/datasets
 trainer_service/src/shared
-utils_old/
+trainer_service/src/models/
 
 # data_manipulation_service
 data_manipulation_service/src/shared

@@ -135,32 +135,27 @@ def load_dataloader(
 
     classes = train_dataset_raw.classes
 
-
-    if is_calculate_normalize_dataset:
-        norm_loader = DataLoader(
-            train_dataset_raw,
-            batch_size=batch_size,
-            shuffle=False
-        )
-        mean, std = calculate_normalize_datasets(norm_loader)
-    else:
-        mean, std = None, None
-
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # BAG calculate normal value 
+    imagenet_normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
     train_transform = transforms.Compose([
         transforms.RandomResizedCrop((img_h_size, img_w_size), scale=(0.7, 1.0)),
         transforms.RandomHorizontalFlip(),
         transforms.RandomRotation(10),
         transforms.ToTensor(),
+        imagenet_normalize,
     ])
 
     val_test_transform = transforms.Compose([
         transforms.Resize((img_h_size, img_w_size)),
         transforms.ToTensor(),
+        imagenet_normalize,
     ])
-
-    if mean is not None:
-        train_transform.transforms.append(transforms.Normalize(mean, std))
-        val_test_transform.transforms.append(transforms.Normalize(mean, std))
     
     # --- Recreate datasets with final transforms
     train_dataset = datasets.ImageFolder(
