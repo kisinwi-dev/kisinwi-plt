@@ -5,16 +5,16 @@ from fastapi import (
     UploadFile, File, Form
 )
 
-from core.dataset_module import Store
-from api.deps import get_store
-from api.schemas import MessageResponse
-from api.schemas.dataset import (
+from app.core.dataset_module import Store
+from app.api.deps import get_store
+from app.api.schemas import MessageResponse
+from app.api.schemas.dataset import (
     DATASET_NAME_PATH,
     DatasetRenameRequest,
     DatasetInfoResponse,
     DatasetListResponse
 )
-from core.exception.base import CoreException
+from app.core.exception.base import CoreException
 
 router = APIRouter()
 

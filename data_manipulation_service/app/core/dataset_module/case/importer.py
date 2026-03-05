@@ -2,8 +2,8 @@ import shutil
 from pathlib import Path
 
 from .validation import DatasetImageValidator
-from core.dataset_module.filesystem import FileSystemManager, TempManager
-from core.exception.dataset import (
+from app.core.dataset_module.filesystem import FileSystemManager, TempManager
+from app.core.exception.dataset import (
     DatasetAlreadyExistsException,
     UnsupportedDatasetTypeException,
     UnsupportedDatasetTaskException,

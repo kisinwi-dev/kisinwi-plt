@@ -3,12 +3,12 @@ from fastapi import (
     Depends, status, Query
 )
 
-from core.dataset_module import Store
-from api.deps import get_store
-from api.schemas import MessageResponse
-from api.schemas.dataset import DATASET_NAME_PATH
-from api.schemas.version import VERSION_NAME_PATH
-from api.schemas.duplicates import DuplicateFilesGroupResponse
+from app.core.dataset_module import Store
+from app.api.deps import get_store
+from app.api.schemas import MessageResponse
+from app.api.schemas.dataset import DATASET_NAME_PATH
+from app.api.schemas.version import VERSION_NAME_PATH
+from app.api.schemas.duplicates import DuplicateFilesGroupResponse
 
 router = APIRouter()
 

@@ -3,7 +3,7 @@ import uuid
 import shutil
 from fastapi import UploadFile
 from .fsm import FileSystemManager
-from logging_ import get_logger
+from app.logging_ import get_logger
 from pathlib import Path
 
 logger = get_logger(__name__)

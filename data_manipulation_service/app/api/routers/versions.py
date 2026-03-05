@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from core.dataset_module import Store
-from api.deps import get_store
-from api.schemas import MessageResponse
-from api.schemas.version import (
+from app.core.dataset_module import Store
+from app.api.deps import get_store
+from app.api.schemas import MessageResponse
+from app.api.schemas.version import (
     VERSION_NAME_PATH,
     VersionCreateRequest,
     VersionRenameRequest,
     VersionListResponse
 )
-from api.schemas.dataset import DATASET_NAME_PATH
+from app.api.schemas.dataset import DATASET_NAME_PATH
 
 router = APIRouter()
 

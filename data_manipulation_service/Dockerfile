@@ -1,17 +1,15 @@
-FROM python:3.11-slim
+FROM python:3.14-slim AS builder
+
+RUN pip install --no-cache-dir uv
 
 WORKDIR /app
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+COPY pyproject.toml uv.lock* ./
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN uv sync --frozen --no-dev
 
-COPY src/ ./src
+COPY . /app
 
-ENV PYTHONPATH=/app/src
+# CMD ["sleep", "infinity"]
 
-EXPOSE 1907
-
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "1907"]
+CMD ["uv", "run", "-m", "main"]

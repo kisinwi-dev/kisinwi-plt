@@ -1,6 +1,6 @@
 import hashlib
-from logging_ import get_logger
-from core.dataset_module.filesystem import FileSystemManager
+from app.logging_ import get_logger
+from app.core.dataset_module.filesystem import FileSystemManager
 from pathlib import Path
 
 logger = get_logger(__name__)

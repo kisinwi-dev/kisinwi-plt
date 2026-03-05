@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from logging_ import get_logger
+from app.logging_ import get_logger
 from ..filesystem import FileSystemManager
-from core.exception.dataset import DatasetValidationException
+from app.core.exception.dataset import DatasetValidationException
 
 logger = get_logger(__name__)
 

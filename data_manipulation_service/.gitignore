@@ -1,0 +1,10 @@
+# cache for EN
+__pycache__
+.venv
+.vscode
+
+# logs
+logs*
+
+# datasets
+datasets/
