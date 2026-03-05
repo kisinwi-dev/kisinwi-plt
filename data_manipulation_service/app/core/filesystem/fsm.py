@@ -1,6 +1,5 @@
 import shutil
 from pathlib import Path
-from app.core.dataset_module.models import FileSystemManagerStatus
 
 IMAGE_SUFFIXES = ('.jpg', '.jpeg', '.png')
 
