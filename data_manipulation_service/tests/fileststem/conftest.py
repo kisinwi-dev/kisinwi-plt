@@ -5,9 +5,16 @@ from pathlib import Path
 from app.core.filesystem import FileSystemManager, ArchiveManager
 
 @pytest.fixture
-def fsm(tmp_path: Path) -> FileSystemManager:
+def temp_dir(tmp_path: Path):
+    """Временная папка для каждого теста"""
+    folder = tmp_path / "test_folder"
+    folder.mkdir(exist_ok=True)
+    return folder
+
+@pytest.fixture
+def fsm(temp_dir: Path) -> FileSystemManager:
     """Фикстура с чистым FileSystemManager, привязанным к временной папке"""
-    manager = FileSystemManager(root=tmp_path)
+    manager = FileSystemManager(root=temp_dir)
     return manager
 
 
@@ -16,25 +23,30 @@ def populated_fs(fsm: FileSystemManager):
     """Подготовленная структура для многих тестов"""
     root = fsm._root
 
-    (root / "photos").mkdir()
-    (root / "docs").mkdir()
-    (root / "empty").mkdir()
-
+    # файлы лежащие в корне
     (root / "photo1.jpg").write_text("img")
     (root / "photo2.png").write_text("img")
-    (root / "doc.pdf").write_text("pdf")
     (root / "text.txt").write_text("text")
 
+    # пустая папка
+    (root / "empty").mkdir()
+
+    # папка с 1 документом
+    (root / "docs").mkdir()
+    (root / "doc.pdf").write_text("pdf")
+
+    # папка с изображениями и .txt
+    (root / "photos").mkdir()
     (root / "photos" / "cat.jpg").write_text("cat")
     (root / "photos" / "dog.PNG").write_text("dog")
     (root / "photos" / "note.txt").write_text("note")
 
-    return fsm
+    # папка толко с изображениями
+    (root / "only_photos").mkdir()
+    (root / "only_photos" / "cat.jpg").write_text("cat")
+    (root / "only_photos" / "dog.jpg").write_text("dog")
 
-@pytest.fixture
-def temp_dir(tmp_path: Path):
-    """Временная папка для каждого теста"""
-    return tmp_path / "archive_tests"
+    return fsm
 
 
 @pytest.fixture

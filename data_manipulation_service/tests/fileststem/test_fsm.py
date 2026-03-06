@@ -128,7 +128,7 @@ def test_all_file_is_image_only_images(populated_fs):
 
 
 def test_all_file_is_image_recursive_true(populated_fs):
-    # в корне есть pdf и txt → False
+    # в корне есть pdf и txt -> False
     assert not populated_fs.all_file_is_image(recursive=True)
 
 
@@ -138,12 +138,7 @@ def test_all_file_is_image_empty_dir(tmp_path):
     assert fsm.all_file_is_image(recursive=True)
 
 
-def test_all_file_is_image_only_images_recursive(populated_fs):
-    # Создаём чистую папку только с картинками
-    clean = populated_fs._root / "clean"
-    clean.mkdir()
-    (clean / "a.jpg").write_text("")
-    (clean / "b.png").write_text("")
-
-    populated_fs.in_dir("clean")
+def test_all_file_is_image_only_images_recursive(populated_fs: FileSystemManager):
+    print(populated_fs.get_all_dirs())
+    populated_fs.in_dir("only_photos")
     assert populated_fs.all_file_is_image(recursive=True)
