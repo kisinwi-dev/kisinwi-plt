@@ -1,7 +1,7 @@
 import shutil
 from pathlib import Path
 
-IMAGE_SUFFIXES = ('.jpg', '.jpeg', '.png')
+IMAGE_SUFFIXES = {'.jpg', '.png'}
 
 
 class FileSystemManager:
@@ -10,238 +10,147 @@ class FileSystemManager:
             root: Path | None = None
     ):
         """
-        Initialize FileSystemManager with a root datasets directory.
+        Файловый менеджер отвечает за взаимодействие файловой системой:
+            * зайти в папку
+            * выйти на уровень выше
+            * удалить файл/папку 
+            * вывести все имеющиеся файлы/папки
         """
         self._root = (root or Path.cwd() / "datasets").resolve()
-        self.worker_path = None
-        self.reset()
+        if not self._root.is_dir():
+            raise NotADirectoryError(f"Корневая папка не найдена: {self._root}")
+        self.worker_path = self._root
+
+    # ================ Расположение в системе ======================
 
     def in_dir(self, dir_name: str) -> None:
         """
-        Change current working directory to a subdirectory.
+        Перейти в папку
         """
         new_path = (self.worker_path / dir_name).resolve()
 
         if not new_path.is_dir():
-            raise FileNotFoundError(f"Directory not found: {dir_name}")
+            raise FileNotFoundError(f"Папка не найдена: {dir_name}")
 
         if not new_path.is_relative_to(self._root):
-            raise PermissionError("Cannot leave root directory")
+            raise PermissionError("Нельзя выйти за пределы корневой директории")
 
         self.worker_path = new_path
 
     def in_dirs(
             self,
             dirs_list: list[str]
-    ):
+    ) -> None:
         """
-        Move sequentially into a list of subdirectories.
+        Перейти в папки где:
+            * каждый следующий элемент в списке является подпапкой предыдущего
         """
         for dir in dirs_list:
             self.in_dir(dir)
 
     def out_dir(self) -> None:
         """
-        Move one level up in the directory hierarchy.
+        Выйти на уровень выше
         """
         if self.worker_path == self._root:
-            raise PermissionError("Cannot go above root directory")
+            raise PermissionError("Нельзя выйти за пределы корневой директории")
 
         self.worker_path = self.worker_path.parent
 
-    def status(self) -> FileSystemManagerStatus:
-        """
-        Return information about the current position in the datasets directory.
-
-        Structure is inferred purely from the directory hierarchy:
-        datasets/{dataset_name}/v_{version}/{class_name}/
-        """
-        relative = self.worker_path.relative_to(self._root)
-        parts = relative.parts
-
-        dataset = None
-        version = None
-        dataset_class = None
-
-        if len(parts) >= 1:
-            dataset = parts[0]
-
-        if len(parts) >= 2 and parts[1].startswith("v_"):
-            version = parts[1]
-
-        if len(parts) >= 3 and parts[2]:
-            dataset_class = parts[2]
-
-        return FileSystemManagerStatus(
-            dataset=dataset,
-            version=version,
-            dataset_class=dataset_class
-        )
-
-    def get_all_dir(self) -> list[str]:
-        """
-        Return names of subdirectories in the current directory.
-        """
-        return [path.name for path in self.worker_path.iterdir() if path.is_dir()]
-
-    def get_all_file(self) -> list[str]:
-        """
-        Return names of files in the current directory.
-        """
-        return [path.name for path in self.worker_path.iterdir() if path.is_file()]
-
-    def get_all_files_path(self) -> list[Path]:
-        """
-        Recursively collect all files from a directory and its subdirectories.
-        """
-        if not self.worker_path.exists():
-            raise FileNotFoundError(f"Path does not exist: {self.worker_path}")
-
-        if not self.worker_path.is_dir():
-            raise NotADirectoryError(f"Not a directory: {self.worker_path}")
-
-        return [path for path in self.worker_path.rglob("*") if path.is_file()]
-
     def reset(self):
         """
-        Reset the current working directory to the root directory.
+        Вернуться в корень
         """
         self.worker_path = self._root
+    
+    # ================ Получение информации об окружении ======================
+
+    def status(self) -> str:
+        """Относительный путь от корня до текущей папки"""
+        try:
+            rel = self.worker_path.relative_to(self._root)
+            return str(rel) if rel != Path('.') else "."
+        except ValueError:
+            return "[ошибка пути]"
+
+    def get_all_dirs(self) -> list[str]:
+        return [path.name for path in self.worker_path.iterdir() if path.is_dir()]
+
+    def get_all_files(self) -> list[str]:
+        return [path.name for path in self.worker_path.iterdir() if path.is_file()]
+
+    # ================ Переименовывание файлов ======================
 
     def rename_dir(
             self,
-            old_name: str,
+            name: str,
             new_name: str
     ):
-        """
-        Rename a subdirectory in the current directory.
-        """
-        self._dir_exists(old_name)
-        self._rename_obj(old_name, new_name)
+        self._check_dir_exists(name)  
+        self._rename_obj(name, new_name)
 
     def rename_file(
             self,
-            old_name: str,
+            name: str,
             new_name: str,
     ):
-        """
-        Rename a file in the current directory.
-        """
-        self._file_exists(old_name)
-        self._rename_obj(old_name, new_name)
+        self._check_file_exists(name)
+        self._rename_obj(name, new_name)
 
     def _rename_obj(
             self,
-            old_name: str,
+            name: str,
             new_name: str
     ):
         """
-        Rename a file system object (file or directory).
+        Переименовать объект
         """
-        old_path = self.worker_path / old_name
+        if not new_name or new_name in {".", ".."} or "/" in new_name or "\\" in new_name:
+            raise ValueError(f"Недопустимое новое имя: {new_name!r}")
+        
+        old_path = self.worker_path / name
         new_path = self.worker_path / new_name
+
         if new_path.exists():
-            raise FileExistsError(f"Directory '{new_name}' already exists")
+            raise FileExistsError(f"Обьект '{new_name}' уже существует")
+        
         old_path.rename(new_path)
 
-    def drop_obj(
-            self,
-            obj_name: str
-    ):
-        path = self._root / obj_name
+    # ================ Наличие обьекта ======================
+
+    def _check_dir_exists(self, name: str) -> None:
+        if name not in self.get_all_dirs():
+            raise FileNotFoundError(f"Папка не найдена: {name}")
+
+    def _check_file_exists(self, name: str) -> None:
+        if name not in self.get_all_files():
+            raise FileNotFoundError(f"Файл не найден: {name}")
+
+    # ================ Переименовывание файлов ======================
+
+    def delete(self, name: str) -> None:
+        """
+        Удалить файл или папку по имени в текущей директории
+        """
+        path = self.worker_path / name
+        if not path.exists():
+            raise FileNotFoundError(f"Не найден: {name}")
         if path.is_dir():
-            self.drop_dir(obj_name)
-        elif path.is_file():
-            self.drop_file(obj_name)
+            shutil.rmtree(path)
+        else:
+            path.unlink()
 
-    def drop_dir(
-            self,
-            dir_name: str
-    ):
+    # ================ Работа с изображениями ================
+
+    def all_file_is_image(self, recursive: bool = False) -> bool:
         """
-        Remove a directory and all its contents recursively.
+        Проверяет, что все файлы в папке являются изображениями
+            recursive=True → проверяет и вложенные папки
         """
-        self._dir_exists(dir_name)
-        path = (self.worker_path / dir_name).resolve()
+        def is_image(p: Path) -> bool:
+            return p.is_file() and p.suffix.lower() in IMAGE_SUFFIXES
 
-        if not path.is_relative_to(self._root):
-            raise PermissionError("Cannot remove directory outside root")
-
-        shutil.rmtree(path)
-
-    def drop_file(self, file_name: str) -> None:
-        """
-        Remove a file from the current directory.
-        """
-        self._file_exists(file_name)
-        (self.worker_path / file_name).unlink()
-
-    def _dir_exists(
-            self,
-            dir_name,
-    ) -> bool | None:
-        """
-        Check if a directory exists in the current directory.
-        """
-        dirs = self.get_all_dir()
-        if dir_name not in dirs:
-            raise FileNotFoundError(f"Dir {dir_name} not found")
-        return True
-
-    def _file_exists(
-            self,
-            file_name
-    ) -> bool | None:
-        """
-        Check if a file exists in the current directory.
-        """
-        files = self.get_all_file()
-        if file_name not in files:
-            raise FileNotFoundError(f"File {file_name} not found")
-        return True
-
-    def all_file_is_image(self) -> bool:
-        for file_name in self.get_all_file():
-            if Path(file_name).suffix.lower() not in IMAGE_SUFFIXES:
-                return False
-        return True
-
-    def move_dir(
-            self,
-            dir_name: str,
-            target_path: Path
-    ):
-        """
-        Move a subdirectory to another location inside the root.
-        """
-        self._dir_exists(dir_name)
-        source = (self.worker_path / dir_name).resolve()
-        target = target_path.resolve()
-
-        if not target.is_relative_to(self._root):
-            raise PermissionError("Cannot move directory outside root")
-
-        if (target / dir_name).exists():
-            raise FileExistsError(f"Directory '{dir_name}' already exists at target location")
-
-        shutil.move(str(source), str(target))
-
-    def move_file(
-            self,
-            file_name: str,
-            target_path: Path
-    ) -> None:
-        """
-        Move a file to another location inside the root.
-        """
-        self._file_exists(file_name)
-        source = (self.worker_path / file_name).resolve()
-        target = target_path.resolve()
-
-        if not target.is_relative_to(self._root):
-            raise PermissionError("Cannot move file outside root")
-
-        if (target / file_name).exists():
-            raise FileExistsError(f"File '{file_name}' already exists at target location")
-
-        shutil.move(str(source), str(target))
+        if recursive:
+            return all(is_image(p) for p in self.worker_path.rglob("*") if p.is_file())
+        else:
+            return all(is_image(p) for p in self.worker_path.iterdir() if p.is_file())
