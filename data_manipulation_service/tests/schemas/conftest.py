@@ -3,7 +3,7 @@ import json
 from pydantic import ValidationError
 from typing import List
 from pathlib import Path
-from app.api.schemas.metadata import DatasetMetadata
+from app.api.schemas.dataset import DatasetMetadata
 
 
 @pytest.fixture()

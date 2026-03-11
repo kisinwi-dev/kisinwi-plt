@@ -4,7 +4,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from ..filesystem import FileSystemManager
-from ...api.schemas.metadata import DatasetMetadata
+from app.api.schemas.dataset import DatasetMetadata
 
 METADATA_DATASETS_NAME_FILE = 'metadata_ds.json'
 
