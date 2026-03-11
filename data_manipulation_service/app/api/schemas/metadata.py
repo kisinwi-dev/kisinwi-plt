@@ -28,6 +28,19 @@ class Version(BaseModel):
             )
         return self
 
+class NewDataset(BaseModel):
+    dataset_id: str = Field(..., min_length=1)
+    name: str
+    description: str
+    class_names: List[str] = Field(..., min_length=1)
+    source: Source
+    type: Literal["image", "text", "tabular", "other"] = "other"
+    task: Literal["classification", "regression", "detection", "segmentation", "other"]
+    version: Version
+
+    model_config = {
+        "validate_assignment": True
+    }
 
 class DatasetMetadata(BaseModel):
     dataset_id: str = Field(..., min_length=1)
