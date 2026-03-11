@@ -19,8 +19,6 @@ class Dataset:
 
     def __init__(self):
         self._fsm = FileSystemManager()
-        
-    # ------------------ DATASETS ------------------
 
     @property
     def get_datasets_id(self) -> List[str]:
@@ -29,7 +27,7 @@ class Dataset:
     def get_dataset_info(self, dataset_id) -> DatasetMetadata:
         """Загрузить метаданные из JSON-файла"""
         
-        path = self._generate_path(dataset_id)
+        path = self._generate_meatadata_path(dataset_id)
 
         try:
             with path.open("r", encoding="utf-8") as f:
@@ -49,7 +47,7 @@ class Dataset:
         """
         Сохранить метаданные в JSON-файл.
         """
-        path = self._generate_path(dataset_id)
+        path = self._generate_meatadata_path(dataset_id)
 
         try:
             json_content = dsm.model_dump_json(indent=2)
@@ -61,7 +59,7 @@ class Dataset:
         except Exception as e:
             raise MemoryError("")
 
-    def _generate_path(self, dataset_id: str, is_old_ds: bool = True) -> Path:
+    def _generate_meatadata_path(self, dataset_id: str, is_old_ds: bool = True) -> Path:
         path = (self._fsm.worker_path / dataset_id / METADATA_DATASETS_NAME_FILE).resolve()
         if is_old_ds:
             if not path.is_file():
@@ -73,11 +71,11 @@ class Dataset:
             with path.open('w', encoding="utf-8") as f:
                 f.write('')
             return path
-    
+
     def create_dataset_info(
             self, 
             dataset_id: str,
             dsm: DatasetMetadata
     ) -> bool:
-        self._generate_path(dataset_id, is_old_ds=False)
+        self._generate_meatadata_path(dataset_id, is_old_ds=False)
         return self.change_dataset_info(dataset_id, dsm)
