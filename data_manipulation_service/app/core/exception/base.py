@@ -1,11 +1,15 @@
+from typing import Any
+
 class CoreException(Exception):
     """
-        Base exception for all domain-level exceptions.
+    Базовый класс для всех ошибок.
     """
     def __init__(
             self, 
             message: str, 
-            status_code: int = 400
+            detail: str | dict[str, Any] | None = None,
+            status_code: int = 400,
     ):
         super().__init__(message)
         self.status_code = status_code
+        self.detail = detail

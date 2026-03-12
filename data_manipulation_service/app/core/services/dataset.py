@@ -5,7 +5,13 @@ from pydantic import ValidationError
 
 from ..filesystem import FileSystemManager
 from app.api.schemas.dataset import DatasetMetadata
+from app.api.schemas.dataset_new import NewDataset
+from app.core.exception.dataset import *
+from app.core.services.validation import new_dataset as validate_and_create_metadata
 
+from app.logs import get_logger
+
+logger = get_logger(__name__)
 METADATA_DATASETS_NAME_FILE = 'metadata_ds.json'
 
 class Dataset:
@@ -20,8 +26,9 @@ class Dataset:
     def __init__(self):
         self._fsm = FileSystemManager()
 
-    @property
     def get_datasets_id(self) -> List[str]:
+        # __WARNING__ НА ДАННЫЙ МОМЕНТ РАССМАТРИВАЕТСЯ ВАРИАНТ, КОГДА У НАС ОДИН ПОЛЬЗОВАТЕЛЬ
+        self._fsm.reset()
         return self._fsm.get_all_dirs()
     
     def get_dataset_info(self, dataset_id) -> DatasetMetadata:
@@ -63,7 +70,7 @@ class Dataset:
         path = (self._fsm.worker_path / dataset_id / METADATA_DATASETS_NAME_FILE).resolve()
         if is_old_ds:
             if not path.is_file():
-                raise FileNotFoundError(f"Файл не найден: {path}")
+                raise DatasetNotFoundError(dataset_id)
             return path
         else: 
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -72,10 +79,25 @@ class Dataset:
                 f.write('')
             return path
 
-    def create_dataset_info(
+    def _create_dataset_info(
             self, 
             dataset_id: str,
             dsm: DatasetMetadata
     ) -> bool:
         self._generate_meatadata_path(dataset_id, is_old_ds=False)
         return self.change_dataset_info(dataset_id, dsm)
+
+    def create_new_dataset(
+            self,
+            dsm_n: NewDataset
+    ) -> bool:
+        """Создание нового датасета"""
+        self._fsm.reset()
+        dsm = validate_and_create_metadata(dsm_n, self._fsm)
+
+        new_path_dataset = self._fsm.worker_path
+        self._fsm.in_dirs(['temp', dsm.dataset_id])
+        self._fsm.move_dir(new_path_dataset)
+
+        self._create_dataset_info(dsm.dataset_id, dsm)
+        return True
