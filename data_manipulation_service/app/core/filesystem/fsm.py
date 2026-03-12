@@ -63,6 +63,25 @@ class FileSystemManager:
         """
         self.worker_path = self._root
     
+    # ================ Перемещение папки ======================
+
+    def move_dir(self, new_path: Path) -> bool:
+        """Перемещение текущей папки в другую директорию"""
+
+        if not self.worker_path.exists():
+            raise FileNotFoundError(self.worker_path)
+
+        dst_parent = new_path.resolve()
+        if not dst_parent.is_relative_to(self._root):
+            raise PermissionError("Нельзя выйти за пределы корневой директории")
+
+        dst_parent.mkdir(parents=True, exist_ok=True)
+        old_path = self.worker_path
+        shutil.move(old_path, new_path)
+        
+        self.worker_path = new_path
+        return True
+
     # ================ Получение информации об окружении ======================
 
     def status(self) -> str:

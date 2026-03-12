@@ -8,15 +8,14 @@ logger = get_logger(__name__)
 
 def validation_and_create_metadata(
         dsn: NewDataset,
-        fsm: FileSystemManager | None = None 
+        fsm: FileSystemManager
     ) -> DatasetMetadata:
         "Валидация датасета"
         
-        if fsm is None:
-            fsm = FileSystemManager()
-            fsm.in_dir("temp")
+        fsm.in_dir("temp")
 
         if dsn.dataset_id not in fsm.get_all_dirs():
+            logger.debug(f'🩸Path: {fsm.worker_path}')
             raise FileNotFoundError(f"Не найден dataset с dataset_id = {dsn.dataset_id}")
         
         try:    

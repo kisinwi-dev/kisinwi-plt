@@ -6,8 +6,10 @@ from pydantic import ValidationError
 from ..filesystem import FileSystemManager
 from app.api.schemas.dataset import DatasetMetadata
 from app.api.schemas.dataset_new import NewDataset
+from app.core.exception.dataset import *
+from app.core.services.validation import new_dataset as validate_and_create_metadata
 
-from logs import get_logger
+from app.logs import get_logger
 
 logger = get_logger(__name__)
 METADATA_DATASETS_NAME_FILE = 'metadata_ds.json'
@@ -24,7 +26,6 @@ class Dataset:
     def __init__(self):
         self._fsm = FileSystemManager()
 
-    @property
     def get_datasets_id(self) -> List[str]:
         # __WARNING__ НА ДАННЫЙ МОМЕНТ РАССМАТРИВАЕТСЯ ВАРИАНТ, КОГДА У НАС ОДИН ПОЛЬЗОВАТЕЛЬ
         self._fsm.reset()
@@ -69,7 +70,7 @@ class Dataset:
         path = (self._fsm.worker_path / dataset_id / METADATA_DATASETS_NAME_FILE).resolve()
         if is_old_ds:
             if not path.is_file():
-                raise FileNotFoundError(f"Файл не найден: {path}")
+                raise DatasetNotFoundError(dataset_id)
             return path
         else: 
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -78,65 +79,25 @@ class Dataset:
                 f.write('')
             return path
 
-    def create_dataset_info(
+    def _create_dataset_info(
             self, 
             dataset_id: str,
             dsm: DatasetMetadata
     ) -> bool:
         self._generate_meatadata_path(dataset_id, is_old_ds=False)
         return self.change_dataset_info(dataset_id, dsm)
-    
+
     def create_new_dataset(
             self,
-            dsn: NewDataset
+            dsm_n: NewDataset
     ) -> bool:
-        # __WARNING__ рассматриваем только задачу с классификацией изображений
-        # в будующем добавим разные задачи(регрессия/классификаия/...) и типы(текст/изображние/...) 
-        if not (dsn.type == "image" and dsn.task == "classification"):
-            raise TypeError(f"Тип {dsn.type} с задачей {dsn.task} не поддерживается")
-        
-        logger.info('Валидации датасета')
-        self._validation_dataset_img_clf(dsn)
-
-        return True
-    
-    def _validation_dataset_img_clf(self, dsn: NewDataset) -> bool:
+        """Создание нового датасета"""
         self._fsm.reset()
-        self._fsm.in_dir('temp')
+        dsm = validate_and_create_metadata(dsm_n, self._fsm)
 
-        if dsn.dataset_id not in self._fsm.get_all_dirs():
-            raise FileNotFoundError(f"Не найден dataset с dataset_id = {dsn.dataset_id}")
-        
-        self._fsm.in_dir(dsn.dataset_id)
+        new_path_dataset = self._fsm.worker_path
+        self._fsm.in_dirs(['temp', dsm.dataset_id])
+        self._fsm.move_dir(new_path_dataset)
 
-        dir_selections = {'train', 'test', 'val'}
-        dir_actual_selections = set(self._fsm.get_all_dirs())
-
-        if dir_actual_selections != dir_selections:
-            raise ValueError(f"Ожидались ровно папки {dir_selections}, найдены: {dir_actual_selections}")
-
-        for dir_selection in dir_selections:
-            self._fsm.in_dir(dir_selection)
-            dir_classes = self._fsm.get_all_dirs()
-
-            if dir_classes != dsn.class_names:
-                raise ValueError(f"В папке {dir_selection} отсутствует один из классов {dsn.class_names}")
-
-            for dir_class in dir_classes:
-                self._fsm.in_dir(dir_class)
-
-                if not self._fsm.get_all_dirs():
-                    raise ValueError(f'В папке {dir_selection}/{dir_class} есть лишние папки')
-
-                if not self._fsm.all_file_is_image():
-                    raise ValueError(f'В папке {dir_selection}/{dir_class} не все файлы являются изображениями')
-                
-                if not self._fsm.get_all_files():
-                    raise ValueError(f'В папке {dir_selection}/{dir_class} нет файлов')
-
-                self._fsm.out_dir()    
-
-            self._fsm.out_dir()
-
+        self._create_dataset_info(dsm.dataset_id, dsm)
         return True
-        
