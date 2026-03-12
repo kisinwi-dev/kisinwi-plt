@@ -1,6 +1,9 @@
 from datetime import datetime
 from typing import Dict, List, Literal
-from pydantic import BaseModel, Field, HttpUrl, model_validator
+from pydantic import (
+    BaseModel, Field,
+    HttpUrl, model_validator
+)
 
 class SourceItem(BaseModel):
     url: HttpUrl
@@ -27,7 +30,6 @@ class Version(BaseModel):
                 "num_train + num_val + num_test != num_samples"
             )
         return self
-
 
 class DatasetMetadata(BaseModel):
     dataset_id: str = Field(..., min_length=1)

@@ -1,5 +1,5 @@
 import pytest
-from app.api.schemas.metadata import DatasetMetadata
+from app.api.schemas.dataset import DatasetMetadata
 from app.core.services.dataset import Dataset
 from app.logs import get_logger
 

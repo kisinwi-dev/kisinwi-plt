@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime
 from pydantic import ValidationError
 
-from app.api.schemas.metadata import DatasetMetadata, Version, Source
+from app.api.schemas.dataset import DatasetMetadata, Version
 
 
 def test_fixture_loads(dsm_a: DatasetMetadata):

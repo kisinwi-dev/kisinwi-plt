@@ -1,3 +1,3 @@
-from .metadata import DatasetMetadata
+from .dataset import DatasetMetadata
 
 __all__ = ['DatasetMetadata']
