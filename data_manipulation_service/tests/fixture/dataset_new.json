@@ -1,0 +1,21 @@
+{
+  "dataset_id": "apple",
+  "name": "apple",
+  "description": "Бинарная классификация красное/зелёное",
+  "class_names": [
+    "red",
+    "green"
+  ],
+  "source": {
+    "kaggle": {
+      "url": "https://www.kaggle.com/datasets/anthonytherrien/apple",
+      "description": "Яблочки"
+    }
+  },
+  "type": "image",
+  "task": "classification",
+  "version": {
+      "version_id": "v1",
+      "description": "Первая загрузка, сырые данные с Kaggle"
+  }
+}
