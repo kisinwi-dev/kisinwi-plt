@@ -1,36 +1,61 @@
+from typing import List, Tuple
+
 from .base import CoreException
 
-class DatasetAlreadyExistsException(CoreException):
-    def __init__(self, dataset_name: str):
+class DatasetAlreadyExistsError(CoreException):
+    """Датасет с таким идентификатором уже существует"""
+    
+    def __init__(self, dataset_id: str):
         super().__init__(
-            message=f"Dataset '{dataset_name}' already exists",
-            status_code=409
+            message=f"Датасет с идентификатором '{dataset_id}' уже существует",
+            status_code=409,
+            detail="Попробуйте использовать другой идентификатор."
         )
 
-class DatasetNotFoundException(CoreException):
-    def __init__(self, dataset_name: str):
+
+class DatasetNotFoundError(CoreException):
+    """Датасет не найден"""
+    
+    def __init__(self, dataset_id: str):
         super().__init__(
-            message=f"Dataset '{dataset_name}' not found",
-            status_code=404
+            message=f"Датасет с идентификатором '{dataset_id}' не найден",
+            status_code=404,
+            detail="Убедитесь, что идентификатор указан верно."
         )
 
-class DatasetValidationException(CoreException):
-    def __init__(self, reason: str):
+
+class DatasetValidationError(CoreException):
+    """Структура или содержимое датасета не соответствует требованиям"""
+    
+    def __init__(self, reason: str, dataset_id: str | None = None):
+        msg = f"Ошибка валидации датасета"
+        if dataset_id:
+            msg += f" '{dataset_id}'"
+        msg += f": {reason}"
+        
         super().__init__(
-            message=f"Dataset validation failed: {reason}",
-            status_code=400
+            message=msg,
+            status_code=400,
+            detail=reason
         )
 
-class UnsupportedDatasetTypeException(CoreException):
-    def __init__(self, dataset_type: str):
+class UnsupportedDatasetError(CoreException):
+    """Задача и тип датасета не поддерживаются"""
+    
+    def __init__(
+        self,
+        dataset_task: str,
+        dataset_type: str | None = None,
+        supported: List[Tuple[str, str]] | None = None
+    ):
+        msg = f"Задача '{dataset_task}' не поддерживается"
+        if dataset_type:
+            msg += f" для типа '{dataset_type}'"
+        if supported:
+            msg += f" (доступные вариации: {supported})"
+        
         super().__init__(
-            message=f"Unsupported dataset type: {dataset_type}",
-            status_code=400
-        )
-
-class UnsupportedDatasetTaskException(CoreException):
-    def __init__(self, dataset_task: str):
-        super().__init__(
-            message=f"Unsupported dataset task: {dataset_task}",
-            status_code=400
+            message=msg,
+            status_code=400,
+            detail=f"Поддерживаемые задачи для типа '{dataset_type}': {supported if supported else ' _ERROR_ '}"
         )
