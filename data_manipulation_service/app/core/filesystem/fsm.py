@@ -154,3 +154,22 @@ class FileSystemManager:
             return all(is_image(p) for p in self.worker_path.rglob("*") if p.is_file())
         else:
             return all(is_image(p) for p in self.worker_path.iterdir() if p.is_file())
+
+    # ================ Размер папки ======================
+
+    def get_dir_size(self, recursive: bool = True) -> int:
+        """
+        Возвращает размер текущей папки в байтах.
+        """
+        total = 0
+
+        if recursive:
+            for path in self.worker_path.rglob("*"):
+                if path.is_file():
+                    total += path.stat().st_size
+        else:
+            for path in self.worker_path.iterdir():
+                if path.is_file():
+                    total += path.stat().st_size
+
+        return total
