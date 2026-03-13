@@ -32,7 +32,6 @@ class DatasetManager:
 
     def get_datasets_id(self) -> List[str]:
         # __WARNING__ НА ДАННЫЙ МОМЕНТ РАССМАТРИВАЕТСЯ ВАРИАНТ, КОГДА У НАС ОДИН ПОЛЬЗОВАТЕЛЬ
-        self._fsm.reset()
         return [
             d for d in self._fsm.get_all_dirs()
             if (self._fsm.worker_path / d / METADATA_DATASETS_NAME_FILE).exists()
@@ -104,9 +103,9 @@ class DatasetManager:
 
         path_dataset, _, new_path_version = self._generate_new_dataset_path(dsm_n)
         
-        self._fsm.set_path_worker(path_dataset)
-        self._fsm.move_dir(new_path_version)
-        self._fsm.reset()
+        with self._fsm.use_path(path_dataset):
+            self._fsm.move_dir(new_path_version)
+            self._fsm.reset()
 
         self._create_new_dataset_info(dsm.dataset_id, dsm)
         logger.debug(f'🟩 Создан новый датасет: {dsm.dataset_id}')
@@ -126,9 +125,10 @@ class DatasetManager:
         
         path_version, new_path_version = self._generate_new_version_path(dsm.dataset_id, version.version_id)
         
-        self._fsm.set_path_worker(path_version)
-        self._fsm.move_dir(new_path_version)
-        self._fsm.reset()
+        with self._fsm.use_path(path_version):
+            self._fsm.move_dir(new_path_version)
+            self._fsm.reset()
+
         logger.debug(f'🟩 Создана новая версия {version.version_id} для датасета {dsm.dataset_id}')
         return True
     
@@ -150,14 +150,13 @@ class DatasetManager:
         new_list_versions = []
         dsm.versions = [v for v in dsm.versions if v.version_id != version_id]
 
-        try:
-            self._fsm.in_dir(dataset_id)
+        path_dataset = self._fsm.worker_path / dataset_id
+        with self._fsm.use_path(path_dataset):
+
             if version_id not in self._fsm.get_all_dirs():
                 raise VersionNotFoundError(version_id)
-            
+
             self._fsm.delete(version_id)
-        finally:
-            self._fsm.reset()
         
         self.change_dataset_info(dsm)
         logger.info(f'Версия {version_id} удалена из датасета {dataset_id}')
@@ -238,4 +237,3 @@ class DatasetManager:
         new_path_version.mkdir(parents=True, exist_ok=True)
         
         return path_version, new_path_version
-    
