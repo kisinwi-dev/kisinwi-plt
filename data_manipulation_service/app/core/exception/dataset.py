@@ -13,6 +13,27 @@ class DatasetAlreadyExistsError(CoreException):
         )
 
 
+class DatasetMetadataFileError(CoreException):
+    """Не найден файл с метаданными"""
+    
+    def __init__(self, dataset_id: str):
+        super().__init__(
+            message=f"В датасете с идентификатором '{dataset_id}' остуствует файл с метаданными",
+            status_code=409,
+        )
+
+class CannotDeleteDefaultVersion(CoreException):
+    """Удалени дефолтной версии"""
+    
+    def __init__(self, dataset_id: str, version_id: str):
+        super().__init__(
+            message=(
+                "Нельзя удалять стандартные версии"
+                f"В датасете '{dataset_id}' версия {version_id} является стандартной версией."
+            ),
+            status_code=409,
+        )
+
 class DatasetNotFoundError(CoreException):
     """Датасет не найден"""
     
