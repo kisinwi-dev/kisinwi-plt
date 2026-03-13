@@ -37,6 +37,10 @@ class FileSystemManager:
 
         self.worker_path = new_path
 
+    def set_path_worker(self, path: Path):
+        """Заменяем рабочую директорию"""
+        self.worker_path = path.resolve()
+
     def in_dirs(
             self,
             dirs_list: list[str]

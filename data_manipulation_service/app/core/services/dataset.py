@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import List, Tuple
 from pathlib import Path
 from pydantic import ValidationError
 
@@ -7,6 +7,7 @@ from ..filesystem import FileSystemManager
 from app.api.schemas.dataset import DatasetMetadata
 from app.api.schemas.dataset_new import NewDataset, NewVersion
 from app.core.exception.dataset import *
+from app.core.exception.version import VersionNotFoundError
 from app.core.services.validation import (
     new_dataset as dvc,
     new_version as vvc
@@ -32,7 +33,19 @@ class DatasetManager:
     def get_datasets_id(self) -> List[str]:
         # __WARNING__ НА ДАННЫЙ МОМЕНТ РАССМАТРИВАЕТСЯ ВАРИАНТ, КОГДА У НАС ОДИН ПОЛЬЗОВАТЕЛЬ
         self._fsm.reset()
-        return self._fsm.get_all_dirs()
+        return [
+            d for d in self._fsm.get_all_dirs()
+            if (self._fsm.worker_path / d / METADATA_DATASETS_NAME_FILE).exists()
+        ]
+    
+    # ================ проверки наличия данных ======================
+
+    def dataset_exists(self, dataset_id: str) -> bool:
+        return dataset_id in self.get_datasets_id()
+    
+    def version_exists(self, dataset_id: str, version_id: str) -> bool:
+        versions = self.get_dataset_info(dataset_id).versions
+        return any(v.version_id == version_id for v in versions)
     
     def get_dataset_info(self, dataset_id) -> DatasetMetadata:
         """Загрузить метаданные из JSON-файла"""
@@ -60,13 +73,16 @@ class DatasetManager:
 
         try:
             json_content = dsm.model_dump_json(indent=2)
+            tmp = path.with_suffix(".tmp")
 
-            with path.open('w', encoding="utf-8") as f:
+            with tmp.open("w", encoding="utf-8") as f:
                 f.write(json_content)
+
+            tmp.replace(path)
 
             return True
         except Exception as e:
-            raise MemoryError("")
+            raise DatasetValidationError("", dsm.dataset_id)
 
 
     def _create_new_dataset_info(
@@ -88,7 +104,7 @@ class DatasetManager:
 
         path_dataset, _, new_path_version = self._generate_new_dataset_path(dsm_n)
         
-        self._fsm.worker_path = path_dataset
+        self._fsm.set_path_worker(path_dataset)
         self._fsm.move_dir(new_path_version)
         self._fsm.reset()
 
@@ -110,12 +126,55 @@ class DatasetManager:
         
         path_version, new_path_version = self._generate_new_version_path(dsm.dataset_id, version.version_id)
         
-        self._fsm.worker_path = path_version
+        self._fsm.set_path_worker(path_version)
         self._fsm.move_dir(new_path_version)
         self._fsm.reset()
         logger.debug(f'🟩 Создана новая версия {version.version_id} для датасета {dsm.dataset_id}')
         return True
     
+    # ================ удаление данных ======================
+    
+    def drop_version(
+            self,
+            dataset_id: str,
+            version_id: str,
+    ) -> bool:
+        if dataset_id not in self.get_datasets_id():
+            raise DatasetNotFoundError(dataset_id)
+        
+        dsm = self.get_dataset_info(dataset_id)
+
+        if dsm.default_version_id == version_id:
+            raise CannotDeleteDefaultVersion(dataset_id, version_id)
+
+        new_list_versions = []
+        dsm.versions = [v for v in dsm.versions if v.version_id != version_id]
+
+        try:
+            self._fsm.in_dir(dataset_id)
+            if version_id not in self._fsm.get_all_dirs():
+                raise VersionNotFoundError(version_id)
+            
+            self._fsm.delete(version_id)
+        finally:
+            self._fsm.reset()
+        
+        self.change_dataset_info(dsm)
+        logger.info(f'Версия {version_id} удалена из датасета {dataset_id}')
+        return True
+
+    def drop_dataset(
+            self, 
+            dataset_id: str
+    ) -> bool:
+        if dataset_id not in self.get_datasets_id():
+            raise DatasetNotFoundError(dataset_id)
+        
+        self._fsm.delete(dataset_id)
+        logger.info(f'Датасета {dataset_id} удалён')
+        return True
+            
+
     # ================ генерация path до нужных папок/файлов ======================
 
     def _generate_metadata_path(self, dataset_id: str, is_old_ds: bool = True) -> Path:
@@ -173,7 +232,9 @@ class DatasetManager:
         path_version = (self._fsm.worker_path / 'temp' / version_id).resolve()
         new_path_version = (self._fsm.worker_path / datset_id / version_id ).resolve()
 
-        path_version.mkdir(parents=True, exist_ok=True)
+        if not path_version.exists():
+            raise FileNotFoundError(path_version)
+        
         new_path_version.mkdir(parents=True, exist_ok=True)
         
         return path_version, new_path_version

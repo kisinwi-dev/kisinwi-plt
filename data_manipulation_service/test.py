@@ -33,3 +33,7 @@ nv = NewVersion(
 )
 
 ds.add_new_version(nds.dataset_id, nv)
+
+ds.drop_version(nds.dataset_id ,nv.version_id)
+
+ds.drop_dataset(nds.dataset_id)  
