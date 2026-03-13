@@ -37,7 +37,7 @@ class DatasetManager:
     def get_dataset_info(self, dataset_id) -> DatasetMetadata:
         """Загрузить метаданные из JSON-файла"""
         
-        path = self._generate_meatadata_path(dataset_id)
+        path = self._generate_metadata_path(dataset_id)
 
         try:
             with path.open("r", encoding="utf-8") as f:
@@ -56,7 +56,7 @@ class DatasetManager:
         """
         Сохранить метаданные в JSON-файл.
         """
-        path = self._generate_meatadata_path(dsm.dataset_id)
+        path = self._generate_metadata_path(dsm.dataset_id)
 
         try:
             json_content = dsm.model_dump_json(indent=2)
@@ -68,26 +68,16 @@ class DatasetManager:
         except Exception as e:
             raise MemoryError("")
 
-    def _generate_meatadata_path(self, dataset_id: str, is_old_ds: bool = True) -> Path:
-        path = (self._fsm.worker_path / dataset_id / METADATA_DATASETS_NAME_FILE).resolve()
-        if is_old_ds:
-            if not path.is_file():
-                raise DatasetNotFoundError(dataset_id)
-            return path
-        else: 
-            path.parent.mkdir(parents=True, exist_ok=True)
-            
-            with path.open('w', encoding="utf-8") as f:
-                f.write('')
-            return path
 
-    def _create_dataset_info(
+    def _create_new_dataset_info(
             self, 
             dataset_id: str,
             dsm: DatasetMetadata
     ) -> bool:
-        self._generate_meatadata_path(dataset_id, is_old_ds=False)
+        self._generate_metadata_path(dataset_id, is_old_ds=False)
         return self.change_dataset_info(dsm)
+
+    # ================ добавление новых данных ======================
 
     def add_new_dataset(
             self,
@@ -96,12 +86,14 @@ class DatasetManager:
         """Создание нового датасета"""
         dsm = dvc(dsm_n)
 
-        new_path_dataset = self._fsm.worker_path
-        self._fsm.in_dirs(['temp', dsm.dataset_id])
-        self._fsm.move_dir(new_path_dataset)
-
-        self._create_dataset_info(dsm.dataset_id, dsm)
+        path_dataset, _, new_path_version = self._generate_new_dataset_path(dsm_n)
+        
+        self._fsm.worker_path = path_dataset
+        self._fsm.move_dir(new_path_version)
         self._fsm.reset()
+
+        self._create_new_dataset_info(dsm.dataset_id, dsm)
+        logger.debug(f'🟩 Создан новый датасет: {dsm.dataset_id}')
         return True
     
     def add_new_version(
@@ -116,11 +108,73 @@ class DatasetManager:
         dsm.versions.append(version)
         self.change_dataset_info(dsm)
         
-        self._fsm.in_dirs([dataset_id])
-        new_path_dataset = self._fsm.worker_path
+        path_version, new_path_version = self._generate_new_version_path(dsm.dataset_id, version.version_id)
+        
+        self._fsm.worker_path = path_version
+        self._fsm.move_dir(new_path_version)
         self._fsm.reset()
-        self._fsm.in_dirs(['temp', version.version_id])
-        self._fsm.move_dir(new_path_dataset)
-
+        logger.debug(f'🟩 Создана новая версия {version.version_id} для датасета {dsm.dataset_id}')
         return True
+    
+    # ================ генерация path до нужных папок/файлов ======================
+
+    def _generate_metadata_path(self, dataset_id: str, is_old_ds: bool = True) -> Path:
+        """
+        Генерируем путь до метаданных
+        
+        Args:
+            is_old_ds = True проверяет существование файла метаданных
+        """
+        path = (self._fsm.worker_path / dataset_id / METADATA_DATASETS_NAME_FILE).resolve()
+        if is_old_ds:
+            if not path.is_file():
+                raise DatasetNotFoundError(dataset_id)
+            return path
+        else: 
+            path.parent.mkdir(parents=True, exist_ok=True)
+            
+            with path.open('w', encoding="utf-8") as f:
+                f.write('')
+            return path
+        
+    def _generate_new_dataset_path(
+            self, 
+            dsm: NewDataset
+    ) -> Tuple[Path, Path, Path]:
+        """
+        paths для нового dataset
+
+        Returns:
+            * path_dataset - путь до данных из временной папки
+            * new_path_dataset - путь до датасета
+            * new_path_version - путь до версии
+        """
+        path_dataset = (self._fsm.worker_path / 'temp' / dsm.dataset_id).resolve()
+        new_path_dataset = (self._fsm.worker_path / dsm.dataset_id).resolve()
+        new_path_version = (new_path_dataset / dsm.version.version_id ).resolve()
+
+        new_path_dataset.mkdir(parents=True, exist_ok=True)
+        new_path_version.mkdir(parents=True, exist_ok=True)
+        
+        return path_dataset, new_path_dataset, new_path_version
+
+    def _generate_new_version_path(
+            self,
+            datset_id: str,
+            version_id: str
+    ) -> Tuple[Path, Path]:
+        """
+        paths для новой версии datasets
+
+        Returns:
+            * path_version - путь до данных из временной папки
+            * new_path_version - путь до версии
+        """
+        path_version = (self._fsm.worker_path / 'temp' / version_id).resolve()
+        new_path_version = (self._fsm.worker_path / datset_id / version_id ).resolve()
+
+        path_version.mkdir(parents=True, exist_ok=True)
+        new_path_version.mkdir(parents=True, exist_ok=True)
+        
+        return path_version, new_path_version
     
