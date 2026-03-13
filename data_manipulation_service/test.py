@@ -1,37 +1,35 @@
-import pytest
-from app.api.schemas.dataset import DatasetMetadata
-from app.core.services.dataset import Dataset
-from app.logs import get_logger
+from app.core.filesystem.fsm import FileSystemManager
+from pydantic import HttpUrl
+from app.api.schemas.dataset import Source, SourceItem
+from app.api.schemas.dataset_new import NewDataset, NewVersion
+from app.core.services.dataset import DatasetManager
 
-loagger = get_logger(__name__)
+nds = NewDataset(
+    dataset_id="apple_new",
+    name="apple",
+    description='',
+    class_names=['red', 'green'],
+    source=Source(
+        kaggle=SourceItem(
+            url=HttpUrl("https://github.com/kisinwi-dev/kisinwi-plt/blob/main"),
+            description="наверное"
+        )
+    ),
+    type="image",
+    task="classification",
+    version=NewVersion(
+        version_id="v_1",
+        description="описание версии"
+    ),
+)
 
+ds = DatasetManager()
+ds.add_new_dataset(nds)
+ds.get_dataset_info(nds.dataset_id)
 
-d = Dataset()
-print('\n')
-print(d.get_datasets_id)
-print('\n')
+nv = NewVersion(
+    version_id='v_2',
+    description='Типо описание'
+)
 
-dsm = d.get_dataset_info('apple')
-print('\n')
-print('JSON load:')
-print(dsm.model_dump_json(indent=2))
-print('\n')
-
-print('\n')
-print('Create: ', dsm.created_at)
-print('Update: ', dsm.updated_at)
-
-dsm.name = 'apple'
-print('🟩 change name 🟩')
-print('Create: ', dsm.created_at)
-print('Update: ', dsm.updated_at)
-
-print('\n')
-print(d.change_dataset_info('apple', dsm))
-print('\n')
-
-def test_update_time(dsm: DatasetMetadata):
-    old_updated_at = dsm.updated_at
-    dsm.name = 'new_name'
-    new_updated_at = dsm.updated_at
-    assert(old_updated_at != new_updated_at)
+ds.add_new_version(nds.dataset_id, nv)

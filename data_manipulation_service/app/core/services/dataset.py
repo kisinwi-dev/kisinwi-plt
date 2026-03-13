@@ -5,16 +5,19 @@ from pydantic import ValidationError
 
 from ..filesystem import FileSystemManager
 from app.api.schemas.dataset import DatasetMetadata
-from app.api.schemas.dataset_new import NewDataset
+from app.api.schemas.dataset_new import NewDataset, NewVersion
 from app.core.exception.dataset import *
-from app.core.services.validation import new_dataset as validate_and_create_metadata
+from app.core.services.validation import (
+    new_dataset as dvc,
+    new_version as vvc
+)
 
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 METADATA_DATASETS_NAME_FILE = 'metadata_ds.json'
 
-class Dataset:
+class DatasetManager:
     """
     Класс для работы с датасетом.
 
@@ -48,13 +51,12 @@ class Dataset:
 
     def change_dataset_info(
             self, 
-            dataset_id: str,
             dsm: DatasetMetadata
     ) -> bool:
         """
         Сохранить метаданные в JSON-файл.
         """
-        path = self._generate_meatadata_path(dataset_id)
+        path = self._generate_meatadata_path(dsm.dataset_id)
 
         try:
             json_content = dsm.model_dump_json(indent=2)
@@ -85,19 +87,40 @@ class Dataset:
             dsm: DatasetMetadata
     ) -> bool:
         self._generate_meatadata_path(dataset_id, is_old_ds=False)
-        return self.change_dataset_info(dataset_id, dsm)
+        return self.change_dataset_info(dsm)
 
-    def create_new_dataset(
+    def add_new_dataset(
             self,
             dsm_n: NewDataset
     ) -> bool:
         """Создание нового датасета"""
-        self._fsm.reset()
-        dsm = validate_and_create_metadata(dsm_n, self._fsm)
+        dsm = dvc(dsm_n)
 
         new_path_dataset = self._fsm.worker_path
         self._fsm.in_dirs(['temp', dsm.dataset_id])
         self._fsm.move_dir(new_path_dataset)
 
         self._create_dataset_info(dsm.dataset_id, dsm)
+        self._fsm.reset()
         return True
+    
+    def add_new_version(
+            self,
+            dataset_id: str,
+            new_version: NewVersion
+    ) -> bool:
+        """Создание новой версии для датасета"""
+        dsm = self.get_dataset_info(dataset_id)
+        
+        version = vvc(dsm, new_version)
+        dsm.versions.append(version)
+        self.change_dataset_info(dsm)
+        
+        self._fsm.in_dirs([dataset_id])
+        new_path_dataset = self._fsm.worker_path
+        self._fsm.reset()
+        self._fsm.in_dirs(['temp', version.version_id])
+        self._fsm.move_dir(new_path_dataset)
+
+        return True
+    
