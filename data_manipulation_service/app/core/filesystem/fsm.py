@@ -1,4 +1,5 @@
 import shutil
+from contextlib import contextmanager
 from pathlib import Path
 
 IMAGE_SUFFIXES = {'.jpg', '.png'}
@@ -22,6 +23,28 @@ class FileSystemManager:
         self.worker_path = self._root
 
     # ================ Расположение в системе ======================
+
+    @contextmanager
+    def use_path(self, path: Path):
+        """
+        Временно установить рабочую директорию.
+        После выхода из блока автоматически возвращается предыдущая.
+        """
+        new_path = path.resolve()
+
+        if not new_path.exists():
+            raise FileNotFoundError(new_path)
+
+        if not new_path.is_relative_to(self._root):
+            raise PermissionError("Нельзя выйти за пределы корневой директории")
+
+        old_path = self.worker_path
+        self.worker_path = new_path
+
+        try:
+            yield
+        finally:
+            self.worker_path = old_path
 
     def in_dir(self, dir_name: str) -> None:
         """

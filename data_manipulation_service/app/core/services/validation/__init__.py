@@ -14,7 +14,6 @@ logger = get_logger(__name__)
 
 def new_dataset(
             dsn: NewDataset, 
-            fsm: FileSystemManager | None = None
     ) -> DatasetMetadata:
         """Валидация при созданиии нового датасета данных"""
         # __WARNING__ 
@@ -23,9 +22,9 @@ def new_dataset(
 
         logger.info('⬜ Валидация...')
 
-        if fsm is None:
-            fsm = FileSystemManager()
-            fsm.in_dir('temp')
+        
+        fsm = FileSystemManager()
+        fsm.in_dir('temp')
         
         # проверка на существование датасета
         fsm_ds = FileSystemManager()
@@ -65,9 +64,9 @@ def new_version(
 
     logger.info('⬜ Валидация...')
 
-    if fsm is None:
-        fsm = FileSystemManager()
-        fsm.in_dir('temp')
+    
+    fsm = FileSystemManager()
+    fsm.in_dir('temp')
     
     # проверка на существование датасета
     fsm_ds = FileSystemManager()
