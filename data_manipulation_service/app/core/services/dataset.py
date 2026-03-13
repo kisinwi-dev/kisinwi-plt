@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import List, Tuple
 from pathlib import Path
 from pydantic import ValidationError
 
@@ -17,7 +17,6 @@ from app.logs import get_logger
 
 logger = get_logger(__name__)
 METADATA_DATASETS_NAME_FILE = 'metadata_ds.json'
-TEMP_OTHER_FILE = ['temp']
 
 class DatasetManager:
     """
@@ -38,6 +37,15 @@ class DatasetManager:
             d for d in self._fsm.get_all_dirs()
             if (self._fsm.worker_path / d / METADATA_DATASETS_NAME_FILE).exists()
         ]
+    
+    # ================ проверки наличия данных ======================
+
+    def dataset_exists(self, dataset_id: str) -> bool:
+        return dataset_id in self.get_datasets_id()
+    
+    def version_exists(self, dataset_id: str, version_id: str) -> bool:
+        versions = self.get_dataset_info(dataset_id).versions
+        return any(v.version_id == version_id for v in versions)
     
     def get_dataset_info(self, dataset_id) -> DatasetMetadata:
         """Загрузить метаданные из JSON-файла"""
@@ -65,9 +73,12 @@ class DatasetManager:
 
         try:
             json_content = dsm.model_dump_json(indent=2)
+            tmp = path.with_suffix(".tmp")
 
-            with path.open('w', encoding="utf-8") as f:
+            with tmp.open("w", encoding="utf-8") as f:
                 f.write(json_content)
+
+            tmp.replace(path)
 
             return True
         except Exception as e:
@@ -148,7 +159,6 @@ class DatasetManager:
         finally:
             self._fsm.reset()
         
-        dsm.versions = new_list_versions
         self.change_dataset_info(dsm)
         logger.info(f'Версия {version_id} удалена из датасета {dataset_id}')
         return True
