@@ -1,6 +1,10 @@
 import uvicorn
-from app.api.routers import routers
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
+from app.core.exception.base import CoreException
+from app.api.routers import api_routers
+
 
 app = FastAPI(
     title="Data Manipulation Service",
@@ -8,9 +12,19 @@ app = FastAPI(
 )
 
 app.include_router(
-    routers,
+    api_routers,
     prefix="/api"
 )
+
+@app.exception_handler(CoreException)
+async def core_exception_handler(request: Request, exc: CoreException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": exc.message,
+            "detail": exc.detail
+        }
+    )
 
 if __name__ == "__main__":
     uvicorn.run(
