@@ -20,7 +20,7 @@ class ArchiveManager:
     - очистить всю временную папку
     """
 
-    def __init__(self, temp_folder: Path):
+    def __init__(self, temp_folder: Path = Path("datasets/temp")):
         """
         temp_folder — папка, куда будут сохраняться загруженные файлы 
         и распакованные архивы
@@ -29,14 +29,12 @@ class ArchiveManager:
         if not self.temp_folder.is_dir():
             raise NotADirectoryError(f"Папка не существует: {self.temp_folder}")
 
-    def save_file(self, uploaded_file: UploadFile) -> Path:
+    def save_file(self, uploaded_file: UploadFile, name_file: str) -> Path:
         """Сохраняет загруженный файл с уникальным именем"""
         if not uploaded_file.filename:
             raise ValueError("У загруженного файла нет имени")
 
-        # уникальное имя: 12 символов uuid + оригинальное имя файла
-        unique_name = f"{uuid.uuid4().hex[:12]}_{Path(uploaded_file.filename).name}"
-        save_path = self.temp_folder / unique_name
+        save_path = self.temp_folder / name_file
 
         logger.debug(f"Сохраняем файл: {save_path}")
 
@@ -47,10 +45,10 @@ class ArchiveManager:
             logger.error(f"Не удалось сохранить файл {uploaded_file.filename}: {e}")
             raise
 
-        logger.info(f"Файл сохранён: {unique_name}")
+        logger.info(f"Файл сохранён: {name_file}")
         return save_path
 
-    def unpack(self, archive_path: Path) -> Path:
+    def unpack(self, archive_path: Path, new_folder_name: str) -> Path:
         """
         Универсальная функция распаковки архива.
         В будущем можно легко добавить поддержку других форматов.
@@ -67,7 +65,7 @@ class ArchiveManager:
                 f"Поддерживаемые форматы: {supported}"
             )
 
-        extract_folder = self._create_temp_subfolder()
+        extract_folder = self._create_temp_subfolder(new_folder_name)
 
         # вызываем соответствующий метод распаковки
         handler_name = UNPACK_HANDLERS[suffix]
@@ -93,9 +91,8 @@ class ArchiveManager:
         logger.info(f"ZIP успешно распакован в: {extract_folder.name}")
         return extract_folder
 
-    def _create_temp_subfolder(self) -> Path:
+    def _create_temp_subfolder(self, folder_name: str) -> Path:
         """Создаёт уникальную подпапку внутри temp_folder"""
-        folder_name = f"unpack_{uuid.uuid4().hex[:10]}"
         folder_path = self.temp_folder / folder_name
         folder_path.mkdir(exist_ok=False)
         return folder_path
