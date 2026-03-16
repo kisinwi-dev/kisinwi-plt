@@ -1,7 +1,7 @@
 from fastapi import APIRouter
-from . import datasets
+from . import datasets, versions
 
 api_routers = APIRouter()
 
 api_routers.include_router(datasets.router)
-# api_router.include_router(versions.router)
+api_routers.include_router(versions.router)
