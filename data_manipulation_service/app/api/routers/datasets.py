@@ -3,7 +3,7 @@ from typing import List, Annotated
 
 from app.logs import get_logger
 from app.core.filesystem import ArchiveManager
-from app.core.services.dataset import DatasetManager
+from app.core.services import DatasetManager
 from app.api.deps import get_dataset_manager
 from app.api.schemas.dataset import DatasetMetadata
 from app.api.schemas.dataset_new import NewDataset

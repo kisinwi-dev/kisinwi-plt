@@ -2,7 +2,7 @@ from app.core.filesystem.fsm import FileSystemManager
 from pydantic import HttpUrl
 from app.api.schemas.dataset import Source, SourceItem
 from app.api.schemas.dataset_new import NewDataset, NewVersion
-from app.core.services.dataset import DatasetManager
+from app.core.services import DatasetManager
 
 nds = NewDataset(
     dataset_id="apple_new",
