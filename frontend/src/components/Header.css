@@ -1,0 +1,118 @@
+:root {
+  /* Тёмная тема */
+  --color-bg-dark: #1a1e24;
+  --color-bg-soft: #2a2f38;
+  --color-text-primary: #f0f4fa;
+  --color-text-secondary: #b0b8c5;
+  --color-accent: #b15e6b; /* более светлый винный для контраста */
+  --color-accent-light: #d08c96;
+  --color-accent-soft: rgba(177, 94, 107, 0.15);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
+  --transition: all 0.25s ease;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 2.5rem;
+  background: rgba(26, 30, 36, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.header:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Логотип */
+.logo a {
+  font-family: 'Clash Display', 'Inter', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  text-decoration: none !important;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: var(--transition);
+}
+
+.logo a:hover {
+  opacity: 0.9;
+}
+
+/* Навигация */
+.nav {
+  display: flex;
+  gap: 2.5rem;
+}
+
+.nav a {
+  color: var(--color-text-secondary);
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  text-decoration: none !important;
+  font-size: 1rem;
+  padding: 0.5rem 0;
+  position: relative;
+  transition: var(--transition);
+  border: none; /* убедимся, что нет подчёркивания */
+}
+
+.nav a:hover {
+  color: var(--color-accent);
+}
+
+/* Активная ссылка */
+.nav a.active {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+/* Лёгкий фон при наведении (опционально) */
+.nav a::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  background: var(--color-accent-soft);
+  border-radius: 30px;
+  transform: translate(-50%, -50%) scale(0.8);
+  opacity: 0;
+  transition: var(--transition);
+  z-index: -1;
+}
+
+.nav a:hover::after {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    padding: 0.8rem 1.5rem;
+    gap: 0.8rem;
+  }
+  .nav {
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .logo a {
+    font-size: 1.6rem;
+  }
+}
