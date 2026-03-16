@@ -31,6 +31,24 @@ def list_datasets(dm: DatasetManager = Depends(get_dataset_manager)):
 def get_dataset(dataset_id: str, dm: DatasetManager = Depends(get_dataset_manager)):
     return dm.get_dataset_info(dataset_id)
 
+
+@router.post(
+    "/{dataset_id}/default_version",
+    response_model=bool,
+    summary="Изменение стандартной версии датасета",
+    response_description="True, если изменения успешно внесены",
+)
+def new_default_version(
+    dataset_id: str,
+    default_version: str,
+    dm: DatasetManager = Depends(get_dataset_manager)
+):
+    ds = dm.get_dataset_info(dataset_id)
+    ds.default_version_id = default_version
+    dm.change_dataset_info(ds)
+    
+    return True
+
 @router.delete(
     "/{dataset_id}", 
     response_model=bool,
