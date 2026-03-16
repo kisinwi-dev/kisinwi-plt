@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, UploadFile, File
-from typing import List
+from fastapi import APIRouter, Depends, UploadFile, File, Form
+from typing import List, Annotated
 
 from app.logs import get_logger
 from app.core.filesystem import ArchiveManager
@@ -42,7 +42,7 @@ def delete_dataset(dataset_id: str, dm: DatasetManager = Depends(get_dataset_man
     return dm.drop_dataset(dataset_id)
 
 @router.post(
-    "/new/", 
+    "/new", 
     response_model=bool,
     summary="Создать датасет",
     description="Создаёт новый датасет из загружает файл данных.",
@@ -69,4 +69,3 @@ def uploads_data(
 
     _ = af.unpack(save_path, str(file.filename).split('.')[0])
     return True
-

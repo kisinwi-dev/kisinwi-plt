@@ -105,7 +105,9 @@ class DatasetManager:
         
         with self._fsm.use_path(path_dataset):
             self._fsm.move_dir(new_path_version)
-            self._fsm.reset()
+
+        with self._fsm.use_path(path_dataset.parent):
+            self._fsm.delete(dsm_n.dataset_id)
 
         self._create_new_dataset_info(dsm.dataset_id, dsm)
         logger.debug(f'🟩 Создан новый датасет: {dsm.dataset_id}')
@@ -127,7 +129,9 @@ class DatasetManager:
         
         with self._fsm.use_path(path_version):
             self._fsm.move_dir(new_path_version)
-            self._fsm.reset()
+
+        with self._fsm.use_path(path_version.parent):
+            self._fsm.delete(new_version.version_id)
 
         logger.debug(f'🟩 Создана новая версия {version.version_id} для датасета {dsm.dataset_id}')
         return True
