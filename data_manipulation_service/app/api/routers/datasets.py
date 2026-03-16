@@ -3,7 +3,7 @@ from typing import List, Annotated
 
 from app.logs import get_logger
 from app.core.filesystem import ArchiveManager
-from app.core.services.dataset import DatasetManager
+from app.core.services import DatasetManager
 from app.api.deps import get_dataset_manager
 from app.api.schemas.dataset import DatasetMetadata
 from app.api.schemas.dataset_new import NewDataset
@@ -30,6 +30,24 @@ def list_datasets(dm: DatasetManager = Depends(get_dataset_manager)):
 )
 def get_dataset(dataset_id: str, dm: DatasetManager = Depends(get_dataset_manager)):
     return dm.get_dataset_info(dataset_id)
+
+
+@router.post(
+    "/{dataset_id}/default_version",
+    response_model=bool,
+    summary="Изменение стандартной версии датасета",
+    response_description="True, если изменения успешно внесены",
+)
+def new_default_version(
+    dataset_id: str,
+    default_version: str,
+    dm: DatasetManager = Depends(get_dataset_manager)
+):
+    ds = dm.get_dataset_info(dataset_id)
+    ds.default_version_id = default_version
+    dm.change_dataset_info(ds)
+    
+    return True
 
 @router.delete(
     "/{dataset_id}", 

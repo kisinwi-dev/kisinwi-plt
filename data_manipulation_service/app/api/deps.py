@@ -1,4 +1,4 @@
-from app.core.services.dataset import DatasetManager
+from app.core.services import DatasetManager
 
 def get_dataset_manager() -> DatasetManager:
     """
