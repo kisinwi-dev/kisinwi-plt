@@ -70,8 +70,11 @@ class ArchiveManager:
         # вызываем соответствующий метод распаковки
         handler_name = UNPACK_HANDLERS[suffix]
         handler = getattr(self, handler_name)
+        result = handler(archive_path, extract_folder)
 
-        return handler(archive_path, extract_folder)
+        Path.unlink(archive_path)
+
+        return result 
 
     def _unpack_zip(self, zip_path: Path, extract_folder: Path) -> Path:
         """Распаковка ZIP-архива"""
