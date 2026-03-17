@@ -1,80 +1,29 @@
-# version: '3.8'
 
 services:
-
-  redis:
-    image: redis:7-alpine
-    container_name: cv_redis
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
-    restart: unless-stopped
-
-  mlflow:
-    image: ghcr.io/mlflow/mlflow:v3.7.0
-    container_name: cv_mlflow
-    ports:
-      - "5000:5000"
+      - "80:80"
     environment:
-      - MLFLOW_TRACKING_URI=http://localhost:5000
-    volumes:
-      - ./mlflow_data:/mlflow
-    command: >
-      mlflow server
-      --host 0.0.0.0
-      --backend-store-uri file:///mlflow
-      --default-artifact-root file:///mlflow/artifacts
-      --allowed-hosts "*"
-    restart: unless-stopped
+      - VITE_API_URL=http://dms:8000
+    networks:
+      - app-network
 
-  backend:
-    build: ./backend
-    container_name: cv_backend
+  dms:
+    build:
+      context: ./data_manipulation_service
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - ENVIRONMENT=production
     volumes:
-      - ./datasets:/app/datasets
-      - ./shared:/app/src/shared
-    depends_on:
-      - redis
-      - mlflow
-    restart: unless-stopped
+      - /datasets_storage:/app/datasets
+    networks:
+      - app-network
 
-  trainer:
-    build: ./trainer
-    container_name: cv_trainer
-    shm_size: '4gb'
-    ports:
-      - "311:311"
-    volumes:
-      - ./datasets:/app/datasets
-      - ./shared:/app/src/shared
-    depends_on:
-      - redis
-      - mlflow
-    restart: unless-stopped
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-        mode: "non-blocking"
-    
-  frontend:
-    build: ./frontend
-    container_name: cv_frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
-    restart: unless-stopped
-    
-
-volumes:
-  redis_data:
+networks:
+  app-network:
+    driver: bridge
