@@ -13,13 +13,17 @@ router = APIRouter(prefix="/datasets", tags=["Datasets"])
 
 @router.get(
     "/", 
-    response_model=List[str],
+    response_model=List[DatasetMetadata],
     summary="Получение списка датасетов",
     description="Возвращает список идентифакторов всех доступных датасето",
     response_description="Список идентификатор",
 )
 def list_datasets(dm: DatasetManager = Depends(get_dataset_manager)):
-    return dm.get_datasets_id()
+    ids = dm.get_datasets_id()
+    dsms = []
+    for id in ids:
+        dsms.append(dm.get_dataset_info(id))
+    return dsms
 
 @router.get(
     "/{dataset_id}", 
@@ -73,17 +77,3 @@ def create_dataset(
     dm.add_new_dataset(new_dataset)
     return True
 
-@router.post(
-    "/upload",
-    response_model=bool,
-    summary="Загрузка данных датасета",
-    response_description="True, если датасет успешно загружен",
-)
-def uploads_data(
-    file: UploadFile = File(..., description="Файл датасета"),
-):
-    af = ArchiveManager()
-    save_path = af.save_file(file, str(file.filename))
-
-    _ = af.unpack(save_path, str(file.filename).split('.')[0])
-    return True

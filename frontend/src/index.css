@@ -1,0 +1,14 @@
+:root {
+  --color-leopard-bg: #e6d2b5;   /* цвет фона */
+  --color-leopard-spot: #b76e2e; /* цвет пятен */
+}
+
+.leopard-pattern {
+  background-color: var(--color-leopard-bg);
+  background-image: 
+    radial-gradient(circle at 20% 30%, var(--color-leopard-spot) 8px, transparent 8px),
+    radial-gradient(circle at 80% 70%, var(--color-leopard-spot) 12px, transparent 12px),
+    radial-gradient(circle at 40% 80%, var(--color-leopard-spot) 6px, transparent 6px),
+    radial-gradient(circle at 90% 20%, var(--color-leopard-spot) 10px, transparent 10px);
+  background-size: 100px 100px;
+}
