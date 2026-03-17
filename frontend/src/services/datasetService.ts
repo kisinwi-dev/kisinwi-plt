@@ -1,4 +1,3 @@
-// src/services/datasetService.ts
 import type { Dataset, NewDataset, NewVersion, Version } from '../types/dataset';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
@@ -82,7 +81,7 @@ export const datasetService = {
    * Получить список версий для конкретного датасета
    */
   async getVersions(datasetId: string): Promise<Version[]> {
-    const response = await fetch(`${API_BASE_URL}/datasets/${datasetId}/version/`);
+    const response = await fetch(`${API_BASE_URL}/datasets/${datasetId}/versions/`);
     return handleResponse<Version[]>(response);
   },
 
@@ -90,7 +89,7 @@ export const datasetService = {
    * Создать новую версию (только метаданные)
    */
   async createVersion(datasetId: string, versionData: NewVersion): Promise<boolean> {
-    const response = await fetch(`${API_BASE_URL}/datasets/${datasetId}/version/new`, {
+    const response = await fetch(`${API_BASE_URL}/datasets/${datasetId}/versions/new`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(versionData),
@@ -102,7 +101,7 @@ export const datasetService = {
    * Удалить версию
    */
   async deleteVersion(datasetId: string, versionId: string): Promise<boolean> {
-    const response = await fetch(`${API_BASE_URL}/datasets/${datasetId}/version/${versionId}`, {
+    const response = await fetch(`${API_BASE_URL}/datasets/${datasetId}/versions/${versionId}`, {
       method: 'DELETE',
     });
     return handleResponse<boolean>(response);
