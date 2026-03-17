@@ -1,0 +1,141 @@
+.notification-container {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none; /* чтобы клики проходили сквозь контейнер, но не сквозь уведомления */
+}
+
+.notification {
+  pointer-events: auto; /* возвращаем события для уведомлений */
+  background: var(--color-bg-primary);
+  border-left: 4px solid;
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: var(--shadow-md), 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 320px;
+  max-width: 420px;
+  animation: slideIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.notification:hover {
+  transform: translateX(-2px);
+  box-shadow: var(--shadow-md), 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.notification-icon {
+  font-size: 1.3rem;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-message {
+  font-size: 0.95rem;
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.notification-close {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 4px;
+  margin-left: 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-primary);
+}
+
+/* Типы уведомлений */
+.notification-error {
+  border-left-color: #ff6b6b;
+  background: linear-gradient(145deg, rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.05));
+}
+
+.notification-error .notification-icon {
+  color: #ff6b6b;
+}
+
+.notification-success {
+  border-left-color: #51cf66;
+  background: linear-gradient(145deg, rgba(81, 207, 102, 0.1), rgba(81, 207, 102, 0.05));
+}
+
+.notification-success .notification-icon {
+  color: #51cf66;
+}
+
+.notification-warning {
+  border-left-color: #fcc419;
+  background: linear-gradient(145deg, rgba(252, 196, 25, 0.1), rgba(252, 196, 25, 0.05));
+}
+
+.notification-warning .notification-icon {
+  color: #fcc419;
+}
+
+.notification-info {
+  border-left-color: #4dabf7;
+  background: linear-gradient(145deg, rgba(77, 171, 247, 0.1), rgba(77, 171, 247, 0.05));
+}
+
+.notification-info .notification-icon {
+  color: #4dabf7;
+}
+
+/* Анимация */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .notification-container {
+    top: 70px;
+    right: 10px;
+    left: 10px;
+  }
+  .notification {
+    min-width: auto;
+    max-width: none;
+    width: 100%;
+  }
+}

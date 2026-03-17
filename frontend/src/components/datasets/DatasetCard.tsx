@@ -8,7 +8,8 @@ interface DatasetCardProps {
   showVersionForm: boolean;
   onAddVersion: () => void;
   onDelete: () => void;
-  versionForm?: React.ReactNode; // для вставки формы добавления версии
+  onDeleteVersion: (versionId: string) => void;
+  versionForm?: React.ReactNode;
 }
 
 const DatasetCard: React.FC<DatasetCardProps> = ({
@@ -17,6 +18,7 @@ const DatasetCard: React.FC<DatasetCardProps> = ({
   showVersionForm,
   onAddVersion,
   onDelete,
+  onDeleteVersion,
   versionForm,
 }) => {
   return (
@@ -98,7 +100,18 @@ const DatasetCard: React.FC<DatasetCardProps> = ({
                       <span className="default-badge-inline"> (по умолчанию)</span>
                     )}
                   </span>
-                  <span className="version-size">{formatBytes(ver.size_bytes)}</span>
+                  <div className="version-actions">
+                    <span className="version-size">{formatBytes(ver.size_bytes)}</span>
+                    <button
+                      className="icon-button small"
+                      onClick={() => onDeleteVersion(ver.version_id)}
+                      title="Удалить версию"
+                      disabled={loading}
+                    >
+                      <i className="fas fa-trash"></i>
+                    </button>
+                    
+                  </div>
                 </div>
                 <span className="version-date">{'Дата загрузки: ' + new Date(ver.created_at).toLocaleDateString()}</span>
                 <p className="version-description">{'Описание: ' + ver.description}</p>
