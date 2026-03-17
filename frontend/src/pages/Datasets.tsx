@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { datasetService } from '../services/datasetService';
-import type { Dataset, NewDataset, NewVersion, SourceItem, Version } from '../types/dataset';
+import type { Dataset, NewDataset, NewVersion, SourceItem } from '../types/dataset';
 import FileUploader from '../components/FileUploader';
 import './Datasets.css';
 import { useNotification } from '../contexts/NotificationContext';

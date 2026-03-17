@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import FileUploader from '../FileUploader';
 import type { NewDataset, NewVersion, SourceItem } from '../../types/dataset';
 
