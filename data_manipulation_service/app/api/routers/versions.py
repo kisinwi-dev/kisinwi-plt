@@ -18,7 +18,7 @@ router = APIRouter(prefix="/datasets/{dataset_id}", tags=["Version"])
     description="Возвращает список всех доступных версий датасета",
     response_description="Список версий",
 )
-def list_datasets(
+def list_versions(
         dataset_id: str,
         dm: DatasetManager = Depends(get_dataset_manager)
 ):
@@ -31,7 +31,7 @@ def list_datasets(
     description="Удаляет указанную версию датасета из системы",
     response_description="True, если версия была успешно удалёна",
 )
-def delete_dataset(
+def delete_version(
         dataset_id: str,
         version_id: str,
         dm: DatasetManager = Depends(get_dataset_manager)
@@ -45,24 +45,9 @@ def delete_dataset(
     description="Создаёт новую версию датасета из загруженных данных",
     response_description="True, если датасет успешно создан",
 )
-def create_dataset(
+def create_version(
     dataset_id: str,
     new_dataset: NewVersion, 
     dm: DatasetManager = Depends(get_dataset_manager),
 ):
     return dm.add_new_version(dataset_id, new_dataset)
-
-@router.post(
-    "/upload",
-    response_model=bool,
-    summary="Загрузка данных",
-    response_description="True, если версия успешно загружена",
-)
-def uploads_data(
-    file: UploadFile = File(..., description="Файл"),
-):
-    af = ArchiveManager()
-    save_path = af.save_file(file, str(file.filename))
-
-    _ = af.unpack(save_path, str(file.filename).split('.')[0])
-    return True

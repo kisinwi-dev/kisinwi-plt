@@ -73,17 +73,3 @@ def create_dataset(
     dm.add_new_dataset(new_dataset)
     return True
 
-@router.post(
-    "/upload",
-    response_model=bool,
-    summary="Загрузка данных датасета",
-    response_description="True, если датасет успешно загружен",
-)
-def uploads_data(
-    file: UploadFile = File(..., description="Файл датасета"),
-):
-    af = ArchiveManager()
-    save_path = af.save_file(file, str(file.filename))
-
-    _ = af.unpack(save_path, str(file.filename).split('.')[0])
-    return True
