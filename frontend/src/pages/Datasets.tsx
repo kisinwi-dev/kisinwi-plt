@@ -3,20 +3,14 @@ import { datasetService } from '../services/datasetService';
 import type { Dataset, NewDataset, NewVersion, SourceItem, Version } from '../types/dataset';
 import FileUploader from '../components/FileUploader';
 import './Datasets.css';
-
-const formatBytes = (bytes: number, decimals = 2): string => {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-};
+import { useNotification } from '../contexts/NotificationContext';
+import { formatBytes } from '../utils/format'
 
 const Datasets: React.FC = () => {
+  const { showNotification } = useNotification();
+
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showVersionForm, setShowVersionForm] = useState<string | null>(null);
 
@@ -51,15 +45,14 @@ const Datasets: React.FC = () => {
         setLoading(true);
         const data = await datasetService.getDatasets();
         setDatasets(data);
-        setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Ошибка загрузки датасетов');
+        showNotification(err instanceof Error ? err.message : 'Ошибка загрузки датасетов', 'error');
       } finally {
         setLoading(false);
       }
     };
     fetchDatasets();
-  }, []);
+  }, [showNotification]);
 
   // Функции для управления источниками
   const handleAddSource = () => {
@@ -89,11 +82,11 @@ const Datasets: React.FC = () => {
   const handleAddClass = () => {
     const trimmed = newClassName.trim();
     if (!trimmed) {
-      alert('Введите название класса');
+      showNotification('Введите название класса', 'warning');
       return;
     }
     if (newDataset.class_names.includes(trimmed)) {
-      alert('Класс с таким названием уже существует');
+      showNotification('Класс с таким названием уже существует', 'warning');
       return;
     }
     setNewDataset(prev => ({
@@ -132,13 +125,12 @@ const Datasets: React.FC = () => {
   // Создание датасета (сначала файл, потом метаданные)
   const handleCreateDataset = async () => {
     if (!newDataset.dataset_id || !newDataset.name || newDataset.class_names.length === 0 || !newDataset.version.version_id) {
-      alert('Заполните обязательные поля: ID, название, классы, ID версии');
+      showNotification('Заполните обязательные поля: ID, название, классы, ID версии', 'warning');
       return;
     }
 
     try {
       setLoading(true);
-      setError(null);
 
       // 1. Загружаем файл (если есть)
       if (newDataset.file) {
@@ -177,8 +169,9 @@ const Datasets: React.FC = () => {
         file: null,
       });
       setShowAddForm(false);
+      showNotification('Датасет успешно создан', 'success');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка создания датасета');
+      showNotification(err instanceof Error ? err.message : 'Ошибка создания датасета', 'error');
     } finally {
       setLoading(false);
     }
@@ -193,13 +186,12 @@ const Datasets: React.FC = () => {
   // Добавление новой версии (сначала файл, потом метаданные)
   const handleAddVersion = async (datasetId: string) => {
     if (!newVersion.version_id) {
-      alert('Введите ID версии');
+      showNotification('Введите ID версии', 'warning');
       return;
     }
 
     try {
       setLoading(true);
-      setError(null);
 
       // 1. Загружаем файл (если есть)
       if (newVersion.file) {
@@ -215,13 +207,14 @@ const Datasets: React.FC = () => {
 
       if (!created) throw new Error('Не удалось создать версию');
 
-      // 3. Обновляем список датасетов (или конкретный датасет)
+      // 3. Обновляем список датасетов
       const updated = await datasetService.getDatasets();
       setDatasets(updated);
 
       setShowVersionForm(null);
+      showNotification('Версия успешно добавлена', 'success');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка добавления версии');
+      showNotification(err instanceof Error ? err.message : 'Ошибка добавления версии', 'error');
     } finally {
       setLoading(false);
     }
@@ -233,12 +226,31 @@ const Datasets: React.FC = () => {
 
     try {
       setLoading(true);
-      setError(null);
       const deleted = await datasetService.deleteDataset(id);
       if (!deleted) throw new Error('Не удалось удалить датасет');
       setDatasets(prev => prev.filter(ds => ds.dataset_id !== id));
+      showNotification('Датасет удалён', 'success');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка удаления датасета');
+      showNotification(err instanceof Error ? err.message : 'Ошибка удаления датасета', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Удаление версии
+  const handleDeleteVersion = async (datasetId: string, versionId: string) => {
+    if (!window.confirm('Вы уверены, что хотите удалить эту версию?')) return;
+
+    try {
+      setLoading(true);
+      const deleted = await datasetService.deleteVersion(datasetId, versionId);
+      if (!deleted) throw new Error('Не удалось удалить версию');
+
+      const updated = await datasetService.getDatasets();
+      setDatasets(updated);
+      showNotification('Версия удалена', 'success');
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : 'Ошибка удаления версии', 'error');
     } finally {
       setLoading(false);
     }
@@ -255,7 +267,6 @@ const Datasets: React.FC = () => {
         <p className="datasets-description">
           Загружайте, удаляйте и управляйте версиями датасетов для классификации изображений.
         </p>
-        {error && <div className="error-message">{error}</div>}
         {!showAddForm && (
           <button className="button" onClick={() => setShowAddForm(true)} disabled={loading}>
             <i className="fas fa-plus"></i> Новый датасет
@@ -618,7 +629,17 @@ const Datasets: React.FC = () => {
                               <span className="default-badge-inline"> (по умолчанию)</span>
                             )}
                           </span>
-                          <span className="version-size">{formatBytes(ver.size_bytes)}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span className="version-size">{formatBytes(ver.size_bytes)}</span>
+                            <button
+                              className="icon-button small"
+                              onClick={() => handleDeleteVersion(dataset.dataset_id, ver.version_id)}
+                              title="Удалить версию"
+                              disabled={loading}
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          </div>
                         </div>
                         <span className="version-date">{'Дата загрузки: ' + new Date(ver.created_at).toLocaleDateString()}</span>
                         <p className="version-description">{'Описание: ' + ver.description}</p>

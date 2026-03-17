@@ -745,3 +745,15 @@
     gap: 1rem;
   }
 }
+
+
+.version-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.icon-button.small {
+  font-size: 0.9rem;
+  padding: 0.3rem;
+}
