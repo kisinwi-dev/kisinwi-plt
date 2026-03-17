@@ -9,7 +9,7 @@ from app.api.schemas.dataset import Version
 from app.api.schemas.dataset_new import NewVersion
 
 logger = get_logger(__name__)
-router = APIRouter(prefix="/datasets/{dataset_id}", tags=["Version"])
+router = APIRouter(prefix="/datasets/{dataset_id}/versions", tags=["Version"])
 
 @router.get(
     "/", 
