@@ -119,6 +119,7 @@ class DatasetManager:
             new_version: NewVersion
     ) -> bool:
         """Создание новой версии для датасета"""
+        logger.debug(f"Добавление версии в {dataset_id}")
         dsm = self.get_dataset_info(dataset_id)
         
         version = vvc(dsm, new_version)

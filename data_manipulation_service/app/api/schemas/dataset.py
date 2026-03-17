@@ -5,12 +5,10 @@ from pydantic import (
     HttpUrl, model_validator
 )
 
-class SourceItem(BaseModel):
+class Source(BaseModel):
+    type: Literal['kaggle', 'url', 'huggingface', 'other']
     url: HttpUrl
     description: str
-
-class Source(BaseModel):
-    kaggle: SourceItem
 
 class Version(BaseModel):
     version_id: str
@@ -38,7 +36,7 @@ class DatasetMetadata(BaseModel):
     num_classes: int = Field(..., ge=1)
     class_names: List[str] = Field(..., min_length=1)
     class_to_idx: Dict[str, int]
-    source: Source
+    sources: List[Source]
     type: Literal["image", "text", "tabular", "other"] = "other"
     task: Literal["classification", "regression", "detection", "segmentation", "other"]
     default_version_id: str

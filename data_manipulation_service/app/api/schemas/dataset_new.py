@@ -12,7 +12,7 @@ class NewDataset(BaseModel):
     name: str
     description: str
     class_names: List[str] = Field(..., min_length=1)
-    source: Source
+    sources: List[Source]
     type: Literal["image", "text", "tabular", "other"] = "other"
     task: Literal["classification", "regression", "detection", "segmentation", "other"]
     version: NewVersion
