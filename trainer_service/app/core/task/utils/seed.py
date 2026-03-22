@@ -2,7 +2,7 @@ import os
 import random
 import numpy as np
 import torch
-from shared.logging import get_logger
+from app.logs import get_logger
 
 logger = get_logger(__name__)
 

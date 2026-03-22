@@ -12,7 +12,7 @@ import numpy as np
 
 import time
 from collections import defaultdict
-from typing import Optional, Dict, List, Tuple
+from typing import Optional, Tuple
 
 import os
 os.environ['MLFLOW_SUPPRESS_RUN_LOGS'] = 'true'
