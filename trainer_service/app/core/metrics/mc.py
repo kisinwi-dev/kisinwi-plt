@@ -1,7 +1,6 @@
-import httpx
 import requests
+from typing import Dict, Any, Optional, Union, List
 from app.logs import get_logger
-from typing import Any, Union, List
 
 logger = get_logger(__name__)
 
@@ -9,25 +8,8 @@ class MetricsClient:
     def __init__(self, base_url: str):
         self.base_url = base_url.rstrip('/')
 
-    async def log_metric(self, task_id: str, metric_name: str, value: Union[float, List[float]], step: int):
-        """Отправляет одну метрику в сервис метрик"""
-        url = f"{self.base_url}/metrics/update"
-        payload = {
-            "task_id": task_id,
-            "metric_name": metric_name,
-            "value": value,
-            "step": step
-        }
-        try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                response = await client.post(url, json=payload)
-                response.raise_for_status()
-                logger.debug(f"Metric {metric_name} (step={step}) logged for task {task_id}")
-        except Exception as e:
-            # Не прерываем обучение из-за ошибки логирования
-            logger.error(f"Failed to log metric {metric_name} for task {task_id}: {e}")
-
-    def log_metric_sync(self, task_id: str, metric_name: str, value: Union[float, List[float]], step: int):
+    def log_metric(self, task_id: str, metric_name: str, value: Union[float, List[float]], step: int):
+        """Отправка одной метрики"""
         url = f"{self.base_url}/metrics/update"
         payload = {
             "task_id": task_id,
@@ -38,5 +20,38 @@ class MetricsClient:
         try:
             resp = requests.post(url, json=payload, timeout=5)
             resp.raise_for_status()
+            logger.debug(f"(шаг={step}) Метрика {metric_name} занесена в историю")
         except Exception as e:
-            logger.error(f"Failed to log metric {metric_name}: {e}")
+            logger.error(f"Ошибка сохранения метрики {metric_name}: {e}")
+
+
+    def log_epoch_metrics(
+        self,
+        task_id: str,
+        epoch: int,
+        train_metrics: Dict[str, Any],
+        val_metrics: Dict[str, Any],
+        test_metrics: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """
+        Отправляет все метрики эпохи
+        Имена метрик получают префиксы: train_, val_, test_.
+        """
+        # Train метрики
+        for name, value in train_metrics.items():
+            if value is not None:
+                self.log_metric(task_id, f"train_{name}", value, epoch)
+
+        # Validation метрики
+        for name, value in val_metrics.items():
+            if value is not None:
+                self.log_metric(task_id, f"val_{name}", value, epoch)
+
+        # Test метрики (если есть)
+        if test_metrics:
+            for name, value in test_metrics.items():
+                if value is not None:
+                    self.log_metric(task_id, f"test_{name}", value, epoch)
+
+
+met_cl = MetricsClient('http://127.0.0.1:3000/api/')
