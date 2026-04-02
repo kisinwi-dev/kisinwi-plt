@@ -24,16 +24,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# @app.exception_handler(CoreException)
-# async def core_exception_handler(request: Request, exc: CoreException):
-#     return JSONResponse(
-#         status_code=exc.status_code,
-#         content={
-#             "error": exc.message,
-#             "detail": exc.detail
-#         }
-#     )
-
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
