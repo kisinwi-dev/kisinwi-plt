@@ -12,6 +12,7 @@ from torchmetrics.classification import (
 from torchmetrics import MeanMetric
 from typing import Optional, Dict, List, Any, Union
 
+from app.core.metrics import met_cl
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -620,8 +621,13 @@ class Trainer:
                                f"F1 Macro: {test_metrics.get('test_f1_macro', 'N/A'):.4f}")
             logger.info(f"{'='*50}\n")
             
-            # Here you can add MLflow, WandB, or other logging
-            # Example: mlflow.log_metrics({...}, step=epoch)
+            met_cl.log_epoch_metrics(
+                "id_test", 
+                epoch,
+                train_metrics,
+                val_metrics,
+                test_metrics
+            )
             
         except Exception as e:
             logger.error(f"🔴 Error logging metrics: {e}")
