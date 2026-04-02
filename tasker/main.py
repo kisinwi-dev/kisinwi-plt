@@ -46,7 +46,7 @@ async def get_task_status(task_id: str):
     }
 
 # --- API для воркера (pull задачи и обновление статуса) ---
-@app.get("/tasks/next", response_model=Optional[dict])
+@app.post("/tasks/next", response_model=Optional[dict])
 async def next_task():
     """Воркер вызывает этот endpoint, чтобы получить следующую задачу."""
     try:
