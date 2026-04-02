@@ -7,7 +7,7 @@ import threading
 from fastapi import FastAPI, HTTPException, status
 from pydantic import ValidationError
 
-from .models import MetricUpdate, MetricData, TaskMetrics, MetricsResponse
+from .schemas import MetricUpdate, MetricData, TaskMetrics, MetricsResponse
 
 
 class MetricsStorage:
