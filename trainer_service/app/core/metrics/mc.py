@@ -37,21 +37,24 @@ class MetricsClient:
         Отправляет все метрики эпохи
         Имена метрик получают префиксы: train_, val_, test_.
         """
+
+        # __WARNING__ НУЖНО УЧЕСТЬ ЧТО VALUE МОЖЕТ БЫТЬ В ФОРМАТЕ  tensor(0.9873, device='cuda:0')
+
         # Train метрики
         for name, value in train_metrics.items():
             if value is not None:
-                self.log_metric(task_id, f"train_{name}", value, epoch)
+                self.log_metric(task_id, f"train_{name}", value.item(), epoch)
 
         # Validation метрики
         for name, value in val_metrics.items():
             if value is not None:
-                self.log_metric(task_id, f"val_{name}", value, epoch)
+                self.log_metric(task_id, f"val_{name}", value.item(), epoch)
 
         # Test метрики (если есть)
         if test_metrics:
             for name, value in test_metrics.items():
                 if value is not None:
-                    self.log_metric(task_id, f"test_{name}", value, epoch)
+                    self.log_metric(task_id, f"test_{name}", value.item(), epoch)
 
 
 met_cl = MetricsClient('http://127.0.0.1:3000/api/')
