@@ -8,26 +8,26 @@ from app.logs import get_logger
 logger = get_logger(__name__)
 
 def training_model(
-        config: TaskConfig
+        task_id: str,
+        config: dict
     ):
-    task_id = config.task_id
     try:
         logger.info(f"💾 Задача[{task_id}]: Старт")
 
         train_loader, val_loader, test_loader, classes = data.load_dataloaders(
-            **config.data_loader_params.model_dump()
+            **config["data_loader_params"]
         )
 
 
         model = get_model(
-            **config.model_params.model_dump(),
+            **config["model_params"],
             num_class = len(classes),
         )
 
-        if config.model_params.weights == False:
+        if config["model_params"]["weights"] == False:
             img_w, img_h = model.get_input_size_for_weights()
-            config.data_loader_params.img_w_size = img_w
-            config.data_loader_params.img_h_size = img_h
+            config["data_loader_params"]["img_w_size"] = img_w
+            config["data_loader_params"]["img_h_size"] = img_h
 
         trainer = train_model.Trainer(
             model,
@@ -35,9 +35,10 @@ def training_model(
             val_loader,
             test_loader,
             classes,
-            **config.trainer_params.model_dump()
+            **config["trainer_params"]
         )
 
         trainer.train()
     except Exception as e:
         logger.error(e)
+        raise
