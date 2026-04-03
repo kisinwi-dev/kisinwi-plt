@@ -3,7 +3,7 @@ import asyncio
 from app.core import training_model
 from app.logs import get_logger
 
-TASKER_URL = "http://localhost:1000"  # адрес таскера
+TASKER_URL = "http://127.0.0.1:1000"  # адрес таскера
 
 logger = get_logger(__name__)
 

@@ -1,13 +1,43 @@
 services:
-
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
     ports:
-      - "3000:80"                   
-    # volumes:                       # При разработке production!
-    #   - ./frontend:/app            # только для разработки (но тогда лучше vite dev server)
-    restart: unless-stopped
-    networks:
-      - app-network
+      - "80:80"
+  
+  data_manipulation_service:
+    build: 
+      context: ./data_manipulation_service
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./datasets_storage:/app/datasets
+  
+  # experiment_orchestrator:
+    # Todo
+
+  tasker_service:
+    build: 
+      context: ./tasker_service
+    ports:
+      - "1000:1000"
+
+  trainer_service:
+    build: 
+      context: ./trainer_service
+    network_mode: "host"
+
+  metrics_service:
+    build: 
+      context: ./metrics_service
+    ports:
+      - "3000:3000"
+
+  # agent_monitoring:
+    # Todo
+
+  # agent_office:
+    # Todo
+
+  # deployment_service:
+    # Todo
