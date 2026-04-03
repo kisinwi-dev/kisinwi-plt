@@ -1,16 +1,20 @@
-FROM continuumio/miniconda3:latest
+FROM pytorch/pytorch:2.11.0-cuda12.8-cudnn9-runtime
 
 WORKDIR /app
 
-COPY environment.yml .
-RUN conda env create -f environment.yml && \
-    conda clean -afy
-ENV PATH /opt/conda/envs/cv-trainer/bin:$PATH
+# Копируем requirements
+COPY requirements.txt .
 
-COPY src/ ./src/
+# Главное исправление: добавляем --break-system-packages
+RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
 
-ENV PYTHONPATH=/app/src:$PYTHONPATH
+# Устанавливаем torchvision под CUDA 12.8
+RUN pip install --no-cache-dir --break-system-packages torchvision \
+    --index-url https://download.pytorch.org/whl/cu128
 
-EXPOSE 311
+# Копируем код проекта
+COPY . /app
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "311"]
+EXPOSE 1000
+
+CMD ["python", "main.py"]

@@ -12,7 +12,12 @@ async def worker_loop():
         logger.info("Сервис тренировки начал работу.")  
         while True:
             # 1. Запрашиваем следующую задачу
-            resp = await client.post(f"{TASKER_URL}/tasks/next")
+            try:
+                resp = await client.post(f"{TASKER_URL}/tasks/next")
+            except Exception as e:
+                logger.error("Ошибка подключения к сервису задач")
+                continue
+            
             if resp.status_code == 204 or resp.status_code == 404 or resp.text == "null" or not resp.content:
                 logger.info("Задач нет. Отдыхаем.")
                 await asyncio.sleep(1)
