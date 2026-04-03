@@ -1,29 +1,13 @@
-
 services:
+
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "80:80"
-    environment:
-      - VITE_API_URL=http://dms:8000
+      - "3000:80"                   
+    # volumes:                       # При разработке production!
+    #   - ./frontend:/app            # только для разработки (но тогда лучше vite dev server)
+    restart: unless-stopped
     networks:
       - app-network
-
-  dms:
-    build:
-      context: ./data_manipulation_service
-      dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
-    environment:
-      - ENVIRONMENT=production
-    volumes:
-      - /datasets_storage:/app/datasets
-    networks:
-      - app-network
-
-networks:
-  app-network:
-    driver: bridge
