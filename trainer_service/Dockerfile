@@ -15,6 +15,6 @@ RUN pip install --no-cache-dir --break-system-packages torchvision \
 # Копируем код проекта
 COPY . /app
 
-EXPOSE 1000
+EXPOSE 6200
 
 CMD ["python", "main.py"]

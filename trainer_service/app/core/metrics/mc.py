@@ -56,5 +56,8 @@ class MetricsClient:
                 if value is not None:
                     self.log_metric(task_id, f"test_{name}", value.item(), epoch)
 
+import os
 
-met_cl = MetricsClient('http://127.0.0.1:3000/api/')
+METRIC_API = "http://" + os.getenv("METRICS_SERVICE", "localhost:6310")+"/api/"
+
+met_cl = MetricsClient(METRIC_API)
