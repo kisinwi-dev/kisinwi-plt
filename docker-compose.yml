@@ -1,29 +1,96 @@
-
 services:
   frontend:
+    container_name: 
+      frontend
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - DMS=localhost:${DATA_MANIPULATION_SERVICE_PORT}
     ports:
-      - "80:80"
-    environment:
-      - VITE_API_URL=http://dms:8000
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     networks:
-      - app-network
-
-  dms:
-    build:
+      - network
+    depends_on:
+      - data_manipulation_service
+    
+  
+  data_manipulation_service:
+    container_name: 
+      data_manipulation_service
+    build: 
       context: ./data_manipulation_service
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
-    environment:
-      - ENVIRONMENT=production
     volumes:
-      - /datasets_storage:/app/datasets
+      - ./datasets_storage:/app/datasets
+    ports:
+      - "${DATA_MANIPULATION_SERVICE_PORT}:${DATA_MANIPULATION_SERVICE_PORT}"
     networks:
-      - app-network
+      - network
+  
+  # experiment_orchestrator:
+    # Todo
+
+  tasker_service:
+    container_name: 
+      tasker_service
+    build: 
+      context: ./tasker_service
+      dockerfile: Dockerfile
+    ports:
+      - "${TASKER_PORT}:${TASKER_PORT}"
+    networks:
+      - network
+
+    
+  trainer_service:
+    container_name: 
+      trainer_service
+    build: 
+      context: ./trainer_service
+      dockerfile: Dockerfile
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - ./datasets_storage:/app/datasets
+    ports:
+      - "${TRAINER_SERVICE_PORT}:${TRAINER_SERVICE_PORT}"
+    environment:
+      - TASKER=tasker_service:${TASKER_PORT}
+      - METRICS_SERVICE=metrics_service:${METRICS_SERVICE_PORT}
+    depends_on:
+      - metrics_service
+      - tasker_service
+    networks:
+      - network
+    shm_size: 2gb
+
+  metrics_service:
+    container_name: 
+      metrics_service
+    build:
+      context: ./metrics_service
+      dockerfile: Dockerfile
+    ports: 
+      - "${METRICS_SERVICE_PORT}:${METRICS_SERVICE_PORT}"
+    networks:
+      - network
+
+  # agent_monitoring:
+    # Todo
+
+  # agent_office:
+    # Todo
+
+  # deployment_service:
+    # Todo
 
 networks:
-  app-network:
+  network:
     driver: bridge
+    name: network

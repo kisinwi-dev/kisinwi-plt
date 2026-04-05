@@ -1,9 +1,10 @@
+import os
 import httpx
 import asyncio
 from app.core import training_model
 from app.logs import get_logger
 
-TASKER_URL = "http://localhost:1000"  # адрес таскера
+TASKER_URL = "http://" + os.getenv("TASKER", "localhost:6110")
 
 logger = get_logger(__name__)
 

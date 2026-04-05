@@ -2,7 +2,8 @@
 import type { Dataset, NewDataset, NewVersion, Version } from '../types/dataset';
 
 // Базовый URL API берётся из переменной окружения VITE_API_URL, если её нет – localhost:8000/api.
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const DMS_URL = `http://${import.meta.env.VITE_DMS}`;
+console.log('🚀 DMS_URL:', DMS_URL);
 
 /**
  * Универсальная функция обработки HTTP-ответа.
@@ -44,7 +45,7 @@ export const datasetService = {
    * GET /api/datasets/
    */
   async getDatasets(): Promise<Dataset[]> {
-    const response = await fetch(`${API_BASE_URL}/datasets/`);
+    const response = await fetch(`${DMS_URL}/api/datasets/`);
     return handleResponse<Dataset[]>(response);
   },
 
@@ -54,7 +55,7 @@ export const datasetService = {
    * GET /api/datasets/{datasetId}
    */
   async getDataset(datasetId: string): Promise<Dataset> {
-    const response = await fetch(`${API_BASE_URL}/datasets/${datasetId}`);
+    const response = await fetch(`${DMS_URL}/api/datasets/${datasetId}`);
     return handleResponse<Dataset>(response);
   },
 
@@ -64,7 +65,7 @@ export const datasetService = {
    * POST /api/datasets/new
    */
   async createDataset(data: NewDataset): Promise<boolean> {
-    const response = await fetch(`${API_BASE_URL}/datasets/new`, {
+    const response = await fetch(`${DMS_URL}/api/datasets/new`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -78,7 +79,7 @@ export const datasetService = {
    * DELETE /api/datasets/{datasetId}
    */
   async deleteDataset(datasetId: string): Promise<boolean> {
-    const response = await fetch(`${API_BASE_URL}/datasets/${datasetId}`, {
+    const response = await fetch(`${DMS_URL}/api/datasets/${datasetId}`, {
       method: 'DELETE',
     });
     return handleResponse<boolean>(response);
@@ -91,7 +92,7 @@ export const datasetService = {
    * POST /api/datasets/{datasetId}/default_version?default_version={versionId}
    */
   async setDefaultVersion(datasetId: string, versionId: string): Promise<boolean> {
-    const url = new URL(`${API_BASE_URL}/datasets/${datasetId}/default_version`);
+    const url = new URL(`${DMS_URL}/api/datasets/${datasetId}/default_version`);
     url.searchParams.append('default_version', versionId);
     const response = await fetch(url.toString(), { method: 'POST' });
     return handleResponse<boolean>(response);
@@ -105,7 +106,7 @@ export const datasetService = {
    * GET /api/datasets/{datasetId}/versions/
    */
   async getVersions(datasetId: string): Promise<Version[]> {
-    const response = await fetch(`${API_BASE_URL}/datasets/${datasetId}/versions/`);
+    const response = await fetch(`${DMS_URL}/api/datasets/${datasetId}/versions/`);
     return handleResponse<Version[]>(response);
   },
 
@@ -116,7 +117,7 @@ export const datasetService = {
    * POST /api/datasets/{datasetId}/versions/new
    */
   async createVersion(datasetId: string, versionData: NewVersion): Promise<boolean> {
-    const response = await fetch(`${API_BASE_URL}/datasets/${datasetId}/versions/new`, {
+    const response = await fetch(`${DMS_URL}/api/datasets/${datasetId}/versions/new`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(versionData),
@@ -131,7 +132,7 @@ export const datasetService = {
    * DELETE /api/datasets/{datasetId}/versions/{versionId}
    */
   async deleteVersion(datasetId: string, versionId: string): Promise<boolean> {
-    const response = await fetch(`${API_BASE_URL}/datasets/${datasetId}/versions/${versionId}`, {
+    const response = await fetch(`${DMS_URL}/api/datasets/${datasetId}/versions/${versionId}`, {
       method: 'DELETE',
     });
     return handleResponse<boolean>(response);
@@ -149,7 +150,7 @@ export const datasetService = {
     const formData = new FormData();
     formData.append('id_data', idData);
     formData.append('file', file);
-    const response = await fetch(`${API_BASE_URL}/upload`, {
+    const response = await fetch(`${DMS_URL}/api/upload`, {
       method: 'POST',
       body: formData,
     });
