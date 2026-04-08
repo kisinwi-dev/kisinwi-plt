@@ -1,5 +1,4 @@
 from typing import Dict
-from app.api.schemas import TaskConfig
 from .task.classification import data, train_model
 from .task.classification.models import get_model
 
