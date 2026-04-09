@@ -21,5 +21,5 @@ def health_status(
     return {
         "dataset_id": dataset_id,
         "version_id": version_id,
-        "analysis": result
+        "analysis": result.raw
     }

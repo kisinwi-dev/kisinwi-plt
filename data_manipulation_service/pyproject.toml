@@ -1,26 +1,12 @@
 [project]
 name = "data-manipulation-service"
 version = "0.1.0"
-description = "Microservice for working with datasets"
+description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.14, <3.15"
+requires-python = ">=3.13"
 dependencies = [
-    "fastapi==0.128.0",
-    "python-multipart>=0.0.22",
-    "uvicorn==0.40.0",
+    "crewai-tools[mcp]>=1.14.1",
+    "fastapi>=0.135.3",
+    "httpx>=0.28.1",
+    "mcp>=1.26.0",
 ]
-
-[dependency-groups]
-dev = [
-    "ruff>=0.6",
-    "pytest>=8.0",
-]
-
-[tool.ruff]
-line-length = 100
-target-version = "py314"
-exclude = [".venv", "__pycache__"]
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "UP", "PL", "RUF", "RET", "SIM"]
-ignore = []
