@@ -492,33 +492,28 @@ class Trainer:
             return labels.long()
         
         elif loss_type in ['BCEWithLogitsLoss', 'BCELoss']:
+            
             # BCEWithLogitsLoss ожидает ту же размерность что и outputs
             if outputs.dim() == 2 and outputs.size(1) == 2:
-                # Бинарная классификация с 2 классами
-                # Для BCEWithLogitsLoss можно использовать outputs[:, 1] (один выход)
-                # Или оставить outputs как есть (2 выхода) и адаптировать labels
                 
-                # ВАРИАНТ 1: Использовать один выход (для бинарной классификации)
-                # Изменяем outputs, чтобы он был [32, 1]
-                # Но лучше изменить outputs до вызова loss функции
-                
-                # ВАРИАНТ 2: Адаптируем labels под outputs [32, 2]
+                # Адаптируем labels под outputs [32, 2]
                 if labels.dim() == 2:
                     if labels.size(1) == 2:
-                        # Labels уже one-hot [32, 2] - оставляем как есть
+                        # Labels уже one-hot [32, 2]
                         return labels.float()
                     elif labels.size(1) == 1:
-                        # Labels [32, 1] - расширяем до [32, 2]
+                        # Labels [n, 1] - расширяем до [n, 2]
                         labels_2d = torch.zeros(labels.size(0), 2, device=labels.device)
                         labels_2d.scatter_(1, labels.long(), 1)
                         return labels_2d.float()
                 elif labels.dim() == 1:
-                    # Labels [32] - конвертируем в one-hot [32, 2]
+                    # Labels [n] - конвертируем в one-hot [n, 2]
                     labels_2d = torch.zeros(labels.size(0), 2, device=labels.device)
                     labels_2d.scatter_(1, labels.unsqueeze(1).long(), 1)
                     return labels_2d.float()
                 
             elif outputs.dim() == 2 and outputs.size(1) == 1:
+                
                 # Бинарная классификация с одним выходом
                 if labels.dim() == 2 and labels.size(1) > 1:
                     labels = labels.argmax(dim=1).float().unsqueeze(1)
