@@ -4,7 +4,7 @@ from fastapi_app import app
 from worker import worker_loop
 
 async def main():
-    server = uvicorn.Server(uvicorn.Config(app, host="0.0.0.0", port=6200))
+    server = uvicorn.Server(uvicorn.Config(app, host="0.0.0.0", port=6200, reload=True))
     
     await asyncio.gather(
         server.serve(),

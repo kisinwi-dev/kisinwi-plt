@@ -13,13 +13,23 @@ def training_model(
     try:
         logger.info(f"💾 Задача[{task_id}]: Старт")
 
+        data_loader_params = config["data_loader_params"]
+
         train_loader, val_loader, test_loader, classes = data.load_dataloaders(
-            **config["data_loader_params"]
+            dataset_id=data_loader_params['dataset_id'],
+            version_id=data_loader_params['version_id'],
+            img_w_size=data_loader_params['img_w_size'],
+            img_h_size=data_loader_params['img_h_size'],
+            batch_size=data_loader_params['batch_size']
         )
 
 
+        model_params = config["model_params"]
+
         model = get_model(
-            **config["model_params"],
+            type=model_params["type"],
+            name=model_params["name"],
+            weights=model_params["weights"],
             num_class = len(classes),
         )
 
@@ -28,13 +38,18 @@ def training_model(
             config["data_loader_params"]["img_w_size"] = img_w
             config["data_loader_params"]["img_h_size"] = img_h
 
+        trainer_params = config["trainer_params"]
         trainer = train_model.Trainer(
             model,
             train_loader,
             val_loader,
             test_loader,
             classes,
-            **config["trainer_params"]
+            loss_fn_config=trainer_params["loss_fn_config"],
+            optimizer_config=trainer_params["optimizer_config"],
+            # scheduler_config=trainer_params["scheduler_config"],
+            device=trainer_params["device"],
+            epochs=2 # trainer_params["epochs"],
         )
 
         trainer.train()

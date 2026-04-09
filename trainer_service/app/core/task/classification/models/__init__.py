@@ -1,3 +1,4 @@
+from collections import defaultdict
 from torch import nn
 from . import vgg, resnet, efficientnet, convnext, vision_transformer, swin_transformer
 from .registry import REGISTRY
@@ -20,3 +21,15 @@ def get_model(
     model = cls(*args, **kwargs)
     logger.info("🍋‍🟩 Модель успешно загружена")
     return model
+
+def get_models_type_name()-> dict:
+    dtn = defaultdict(list)
+
+    list_models_module = list([vgg, resnet, efficientnet, convnext, vision_transformer, swin_transformer])
+
+    for module in list_models_module:
+        model_type = module.__name__.split('.')[-1]
+        model_name = list(module.model_mapping.keys())
+        dtn[model_type].append(model_name)
+    
+    return dtn

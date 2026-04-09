@@ -1,9 +1,11 @@
+from collections import defaultdict
 from typing import Dict, Any
 from fastapi import APIRouter
+from app.core.task.classification.models import get_models_type_name
 
 routers = APIRouter()
 
-@routers.get("/example_config")
+@routers.get("/get_example_config")
 async def get_example_config() -> Dict[str, Any]:
     """
     Возвращает пример JSON конфигурации для обучения модели
@@ -54,3 +56,11 @@ async def get_example_config() -> Dict[str, Any]:
     }
     
     return task_config_dict
+
+
+@routers.get("/get_available_models")
+async def get_available_models():
+    """
+    Возвращает пример JSON конфигурации для обучения модели
+    """
+    return get_models_type_name()

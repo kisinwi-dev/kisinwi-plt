@@ -27,8 +27,10 @@ async def worker_loop():
 
             task = resp.json()
             
+            logger.debug("Полученный json:\n", task)
+
             task_id = task["task_id"]
-            payload = task["payload"]
+            config = task["payload"]
             logger.info(f"Worker взял задачу: {task_id}")
             
             # 2. Обновляем статус: запущено
@@ -37,10 +39,10 @@ async def worker_loop():
             try:
                 
                 # Процесс обучения
-                training_model(task_id, payload["params_train"])
+                training_model(task_id, config)
 
                 # Завершение
-                result = {"processed": payload, "message": "success"}
+                result = {"processed": config, "message": "success"}
                 await client.put(f"{TASKER_URL}/tasks/{task_id}/status", 
                                     json={"status": "completed", "progress": 100, "result": result})
                 logger.info(f"Задача {task_id} завершена")

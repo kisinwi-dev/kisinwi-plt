@@ -421,11 +421,8 @@ class Trainer:
                 outputs = self.model(inputs)
                 
                 # Calculate loss
-                if labels is not None:
-                    loss = self.loss_fn(outputs, labels)
-                else:
-                    # For unsupervised or self-supervised learning
-                    loss = outputs if isinstance(outputs, torch.Tensor) else outputs[0]
+                labels = self._prepare_labels_for_loss(outputs, labels)
+                loss = self.loss_fn(outputs, labels)
                 
                 # Backward pass
                 loss.backward()
@@ -482,6 +479,55 @@ class Trainer:
         
         logger.debug("🏁 Finish epoch training")
         return train_metrics_value
+
+    def _prepare_labels_for_loss(self, outputs, labels):
+        """Подготавливает labels в зависимости от типа loss функции"""
+        
+        loss_type = self.loss_fn.__class__.__name__
+        
+        if loss_type in ['CrossEntropyLoss', 'CrossEntropyLoss2d']:
+            # Ожидаются индексы классов
+            if labels.dim() == 2:
+                labels = labels.argmax(dim=1)
+            return labels.long()
+        
+        elif loss_type in ['BCEWithLogitsLoss', 'BCELoss']:
+            
+            # BCEWithLogitsLoss ожидает ту же размерность что и outputs
+            if outputs.dim() == 2 and outputs.size(1) == 2:
+                
+                # Адаптируем labels под outputs [32, 2]
+                if labels.dim() == 2:
+                    if labels.size(1) == 2:
+                        # Labels уже one-hot [32, 2]
+                        return labels.float()
+                    elif labels.size(1) == 1:
+                        # Labels [n, 1] - расширяем до [n, 2]
+                        labels_2d = torch.zeros(labels.size(0), 2, device=labels.device)
+                        labels_2d.scatter_(1, labels.long(), 1)
+                        return labels_2d.float()
+                elif labels.dim() == 1:
+                    # Labels [n] - конвертируем в one-hot [n, 2]
+                    labels_2d = torch.zeros(labels.size(0), 2, device=labels.device)
+                    labels_2d.scatter_(1, labels.unsqueeze(1).long(), 1)
+                    return labels_2d.float()
+                
+            elif outputs.dim() == 2 and outputs.size(1) == 1:
+                
+                # Бинарная классификация с одним выходом
+                if labels.dim() == 2 and labels.size(1) > 1:
+                    labels = labels.argmax(dim=1).float().unsqueeze(1)
+                elif labels.dim() == 1:
+                    labels = labels.float().unsqueeze(1)
+                return labels.float()
+            
+            else:
+                # Мульти-лейбл классификация (много выходов)
+                return labels.float()
+        
+        else:
+            # Для других функций возвращаем как есть
+            return labels
 
     def _validate_one_epoch(self) -> Dict[str, Any]:
         """Validate for one epoch"""
