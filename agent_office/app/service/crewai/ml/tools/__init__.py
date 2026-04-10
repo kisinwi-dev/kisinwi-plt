@@ -2,7 +2,7 @@ import os
 import requests
 from crewai.tools import tool
 
-TRAINER_URL = "http://" + os.getenv("TRAINER_DOMEN", "localhost:6500")
+TRAINER_URL = "http://" + os.getenv("TRAINER_DOMEN", "localhost:6200")
 
 @tool("GetExampleJSONTrainer")
 def get_example_run_config_trainer_json() -> str:

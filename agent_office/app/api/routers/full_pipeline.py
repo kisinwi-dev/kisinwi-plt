@@ -3,10 +3,11 @@ from app.service.crewai.ml.crews import run_search_params_json
 from app.service.crewai.analytic.crews import run_analysis
 import requests
 import json
+import os
 
 routers = APIRouter()
 
-API_TASKER = "http://localhost:6110"
+TASKER_URL = "http://" + os.getenv("TASKER_DOMEN", "localhost:6110")
 
 def post_in_task(json_data):
     """Отправить JSON для запуска тренировки модели"""
@@ -25,7 +26,7 @@ def post_in_task(json_data):
 
         # Отправляем POST запрос
         response = requests.post(
-            f"{API_TASKER}/tasks",
+            f"{TASKER_URL}/tasks",
             json=payload,
             headers={"Content-Type": "application/json"},
             timeout=30
@@ -41,7 +42,7 @@ def post_in_task(json_data):
         }
         
     except requests.exceptions.ConnectionError:
-        return {"error": f"Не удалось подключиться к {API_TASKER}. Сервис задач не запущен?"}
+        return {"error": f"Не удалось подключиться к {TASKER_URL}. Сервис задач не запущен?"}
     except requests.exceptions.Timeout:
         return {"error": "Таймаут при отправке запроса"}
     except requests.exceptions.HTTPError as e:
