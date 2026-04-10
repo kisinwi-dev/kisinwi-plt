@@ -84,8 +84,21 @@ services:
   # agent_monitoring:
     # Todo
 
-  # agent_office:
-    # Todo
+  agent_office:
+    container_name: 
+      agent_office
+    build: 
+      context: ./agent_office
+      dockerfile: Dockerfile
+    ports:
+      - "${AGENT_OFFICE_PORT}:${AGENT_OFFICE_PORT}"
+    environment:
+      - DMS_DOMEN=data_manipulation_service:${DATA_MANIPULATION_SERVICE_PORT}
+      - TASKER_DOMEN=tasker_service:${TASKER_PORT}
+      - TRAINER_DOMEN=trainer_service:${TRAINER_SERVICE_PORT}
+    networks:
+      - network
+  
 
   # deployment_service:
     # Todo
