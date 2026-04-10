@@ -1,12 +1,12 @@
 [project]
 name = "data-manipulation-service"
 version = "0.1.0"
-description = "Add your description here"
+description = "Data manipulation service"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "crewai-tools[mcp]>=1.14.1",
     "fastapi>=0.135.3",
+    "uvicorn>=0.34.0",
     "httpx>=0.28.1",
-    "mcp>=1.26.0",
+    "python-multipart>=0.0.24",
 ]
