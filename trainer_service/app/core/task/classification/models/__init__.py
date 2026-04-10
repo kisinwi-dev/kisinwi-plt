@@ -29,7 +29,8 @@ def get_models_type_name()-> dict:
 
     for module in list_models_module:
         model_type = module.__name__.split('.')[-1]
-        model_name = list(module.model_mapping.keys())
-        dtn[model_type].append(model_name)
+        model_names = list(module.model_mapping.keys())
+        for model_name in model_names:
+            dtn[model_type].append(model_name)
     
     return dtn
