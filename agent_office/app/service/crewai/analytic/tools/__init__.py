@@ -2,7 +2,7 @@ import os
 import requests
 from crewai.tools import tool
 
-DMS_URL = "http://" + os.getenv("TASKER", "localhost:6500")
+DMS_URL = "http://" + os.getenv("TASKER_DOMEN", "localhost:6500")
 
 @tool("GetDatasetInfo")
 def get_dataset_info(dataset_id: str) -> str:
