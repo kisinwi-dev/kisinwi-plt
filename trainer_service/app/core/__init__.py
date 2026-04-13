@@ -1,4 +1,5 @@
-from typing import Dict
+from app.service.tasker import Tasker_Service
+from app.service.tasker.shemas import TaskParams
 from .task.classification import data, train_model
 from .task.classification.models import get_model
 
@@ -6,15 +7,16 @@ from app.logs import get_logger
 
 logger = get_logger(__name__)
 
-def training_model(
-        task_id: str,
-        config: dict
-    ):
+def training_model(config: TaskParams):
+    """
+    Обучение модели.
+
+    Args:
+        config: параметры обучения
+    """
     try:
-        logger.info(f"💾 Задача[{task_id}]: Старт")
-
-        data_loader_params = config["data_loader_params"]
-
+        # Загружаем требуемые данные
+        data_loader_params = config.data_loader_params
         train_loader, val_loader, test_loader, classes = data.load_dataloaders(
             dataset_id=data_loader_params['dataset_id'],
             version_id=data_loader_params['version_id'],
@@ -23,9 +25,8 @@ def training_model(
             batch_size=data_loader_params['batch_size']
         )
 
-
-        model_params = config["model_params"]
-
+        # Настраиваем модель
+        model_params = config.model_params
         model = get_model(
             type=model_params["type"],
             name=model_params["name"],
@@ -33,12 +34,13 @@ def training_model(
             num_class = len(classes),
         )
 
-        if config["model_params"]["weights"] == False:
+        if config.model_params["weights"] == False:
             img_w, img_h = model.get_input_size_for_weights()
-            config["data_loader_params"]["img_w_size"] = img_w
-            config["data_loader_params"]["img_h_size"] = img_h
+            data_loader_params["img_w_size"] = img_w
+            data_loader_params["img_h_size"] = img_h
 
-        trainer_params = config["trainer_params"]
+        # Запуск обучения
+        trainer_params = config.trainer_params
         trainer = train_model.Trainer(
             model,
             train_loader,
@@ -47,9 +49,9 @@ def training_model(
             classes,
             loss_fn_config=trainer_params["loss_fn_config"],
             optimizer_config=trainer_params["optimizer_config"],
-            # scheduler_config=trainer_params["scheduler_config"],
+            scheduler_config=trainer_params["scheduler_config"],
             device=trainer_params["device"],
-            epochs=2 # trainer_params["epochs"],
+            epochs=1 # trainer_params["epochs"],
         )
 
         trainer.train()
