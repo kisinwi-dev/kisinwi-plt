@@ -3,7 +3,7 @@ from typing import Optional
 
 from app.logs import get_logger
 from app.config import config_domain
-from .tasker_shemas import Task
+from .tasker_shemas import Task, TaskStatus
 
 logger = get_logger(__name__)
 
@@ -36,3 +36,23 @@ class Tasker_Service():
         except httpx.ConnectError:
             logger.error("Сервис задач недоступен")
             return None
+        
+    async def update_status_task(
+            self,
+            task_id: str,
+            status: TaskStatus,
+            progress: int,
+            description: str
+    ) -> bool:
+        """Обновляет статус задачи"""
+
+        url = f"{self._domen}/tasks/{task_id}/status"
+        json = {"status": status, "progress": progress, "description": description}
+        
+        try:
+            await self._client.patch(url, json=json)
+            return True
+        except Exception as e:
+            logger.error("Не удалось обновить статус задачи")
+            logger.error(f"Ошибка: {e}")
+            return False

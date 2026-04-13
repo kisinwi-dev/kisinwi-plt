@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from .api.routers import api_routers
 from .core import training_model
 from .logs import get_logger
-from .service.tasker.tasker import Tasker_Service
+from .service.tasker.tasker import Tasker_Service, TaskStatus
 from .config import config_domain
 
 logger = get_logger(__name__)
@@ -56,29 +56,22 @@ async def to_work():
                 await asyncio.sleep(time_sleep)
                 continue
 
-            logger.debug("Полученный json:\n", task)
-
             task_id = task.task_id
             config = task.payload
 
-
-            logger.debug(config)
             logger.info(f"Worker начинает работу над задачей: {task_id}")
             
             # Обновение статуса задачи (выполняется)
-            await client.put(f"{tasker_domen}/tasks/{task_id}/status", json={"status": "running", "progress": 0})
+            await ts.update_status_task(task_id, TaskStatus.IN_PROGRESS, 0, "Задача принята воркером")
             
             try:
                 # Процесс обучения
                 training_model(task_id, config)
 
                 # Завершение
-                result = {"processed": config, "message": "success"}
-                await client.put(f"{tasker_domen}/tasks/{task_id}/status", 
-                                    json={"status": "completed", "progress": 100, "result": result})
+                await ts.update_status_task(task_id, TaskStatus.COMPLETED, 100, "Задача выполнена")
                 logger.info(f"Задача {task_id} завершена")
                 
             except Exception as e:
-                await client.put(f"{tasker_domen}/tasks/{task_id}/status",
-                                 json={"status": "failed", "progress": 0, "result": {"error": str(e)}})
+                await ts.update_status_task(task_id, TaskStatus.FAILED, 0, "Задача завершена с ошибкой")
                 logger.error(f"Ошибка {task_id}: {e}")
