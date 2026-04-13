@@ -16,9 +16,10 @@ class TaskCreate(BaseModel):
     payload: dict
 
 class TaskUpdate(BaseModel):
-    status: Optional[str] = None
+    status: Optional[str] = None  # или TaskStatus enum
     progress: Optional[int] = None
     result: Optional[dict] = None
+    description: Optional[str] = None
 
 # --- API для клиента (UI) ---
 @app.post("/tasks")
@@ -60,21 +61,40 @@ async def next_task():
     task["status"] = "running"
     return {"task_id": task_id, "payload": task["payload"]}
 
-@app.put("/tasks/{task_id}/status")
+@app.patch("/tasks/{task_id}/status")
 async def update_task_status(task_id: str, update: TaskUpdate):
-    task = tasks_db.get(task_id)
-    if not task:
-        raise HTTPException(404, "Task not found")
-    if update.status:
-        task["status"] = update.status
-    if update.progress is not None:
-        task["progress"] = update.progress
-    if update.result is not None:
-        task["result"] = update.result
+    """
+    Обновление статуса задачи.
     
-    # Оповещаем всех подписанных WebSocket клиентов
-    await notify_websocket(task_id, task)
-    return {"ok": True}
+    - PATCH метод для частичного обновления
+    - Все поля опциональные
+    """
+    try:
+        task = tasks_db.get(task_id)
+        if not task:
+            raise HTTPException(404, "Task not found")
+        
+        if update.status is not None:
+            task["status"] = update.status
+        
+        if update.progress is not None:
+            if not 0 <= update.progress <= 100:
+                raise HTTPException(422, "Progress must be between 0 and 100")
+            task["progress"] = update.progress
+        
+        if update.result is not None:
+            task["result"] = update.result
+        
+        if update.description is not None: 
+            task["description"] = update.description
+        
+        print(task)
+    except Exception as e:
+        print("Error", e) 
+        
+    return {
+        "status": "ok",
+    }
 
 # --- WebSocket для live-обновлений (без Redis, используем простой брокер) ---
 # Храним активные WebSocket соединения по task_id
