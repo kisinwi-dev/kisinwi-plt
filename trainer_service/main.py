@@ -1,12 +1,11 @@
 import asyncio
-from server import server
-from worker import worker_loop
+from app import server, to_work
 
 async def main():
     # Запуск сервера uvicorn и асинхронной функции опроса
     await asyncio.gather(
         server.serve(),
-        worker_loop()
+        to_work()
     )
 
 if __name__ == "__main__":
