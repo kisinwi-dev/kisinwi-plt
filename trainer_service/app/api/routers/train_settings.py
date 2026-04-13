@@ -1,6 +1,8 @@
 from typing import Dict, Any
 from fastapi import APIRouter, Query, HTTPException
+
 from app.core.task.models.factory import get_models_type_name
+from app.core.task.models.shemas import ModelParams
 
 routers = APIRouter()
 
@@ -13,10 +15,7 @@ EXAMLE_TASK_CONFIG ={
         "img_h_size": 224,
         "batch_size": 32
     },
-    "model_params": {
-        "type": "Resnet",
-        "pretrained": True
-    },
+    "model_params": ModelParams.model_json_schema(),
     "trainer_params": {
         "loss_fn_config": {
             "type": "CrossEntropyLoss",

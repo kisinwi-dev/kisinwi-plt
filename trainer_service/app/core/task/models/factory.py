@@ -2,21 +2,21 @@ import timm
 import torch.nn as nn
 from typing import List
 
+from .shemas import ModelParams
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 
 
 def get_model(
-    type: str,
+    params: ModelParams,
     num_classes: int,
-    pretrained: bool = True,
 ) -> nn.Module:
     """
     Загрузка модели через timm
     
     Args:
-        type: Имя модели (например, 'resnet50', 'efficientnet_b3')
+        type: Имя модели (например: 'resnet50')
         num_classes: Количество классов
         pretrained: Использовать предобученные веса
     """
@@ -24,8 +24,8 @@ def get_model(
     
     try:
         model = timm.create_model(
-            type,
-            pretrained=pretrained,
+            params.type,
+            pretrained=params.pretrained,
             num_classes=num_classes,
         )
         logger.info(f"✅ Модель {type} загружена")

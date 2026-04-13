@@ -30,11 +30,10 @@ async def training_model(config: TaskParams):
         await tasker_service.update_status_task(6, description="Загрузка модели...")
         model_params = config.model_params
         model = get_model(
-            type=model_params["type"],
-            num_classes = len(classes),
-            pretrained=model_params["pretrained"]
+            config.model_params,
+            num_classes = len(classes)
         )
-        await tasker_service.update_status_task(10, description=f"Модель {model_params["type"]} загружена.")
+        await tasker_service.update_status_task(10, description=f"Модель {model_params.type} загружена.")
 
         # Запуск обучения
         await tasker_service.update_status_task(11, description=f"Формирование процесса обучения...")
