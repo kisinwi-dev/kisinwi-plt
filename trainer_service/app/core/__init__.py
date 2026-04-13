@@ -1,8 +1,8 @@
 from app.service.tasker import tasker_service, TaskParams
 from app.logs import get_logger
 
-from .data_pipeline import load_dataloaders
-from .models.factory import get_model
+from .datas import create_dataloaders
+from .models import get_model
 from .train_model import Trainer
 
 logger = get_logger(__name__)
@@ -18,13 +18,7 @@ async def training_model(config: TaskParams):
         # Загружаем данные
         await tasker_service.update_status_task(1, description="Загрузка данных...")
         data_loader_params = config.data_loader_params
-        train_loader, val_loader, test_loader, classes = load_dataloaders(
-            dataset_id=data_loader_params['dataset_id'],
-            version_id=data_loader_params['version_id'],
-            img_w_size=data_loader_params['img_w_size'],
-            img_h_size=data_loader_params['img_h_size'],
-            batch_size=data_loader_params['batch_size']
-        )
+        train_loader, val_loader, test_loader, classes = create_dataloaders(data_loader_params)
         await tasker_service.update_status_task(5, description="Данные загружены.")
 
         # Загружаем модель

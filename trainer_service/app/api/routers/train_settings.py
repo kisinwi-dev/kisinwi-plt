@@ -1,20 +1,14 @@
 from typing import Dict, Any
 from fastapi import APIRouter, Query, HTTPException
 
-from app.core.task.models.factory import get_models_type_name
-from app.core.task.models.shemas import ModelParams
+from app.core.datas import DataLoaderParams
+from app.core.models import get_models_type_name, ModelParams
 
 routers = APIRouter()
 
 EXAMLE_TASK_CONFIG ={
     "task_id": "cat_dog",
-    "data_loader_params": {
-        "dataset_id": "pet_img",
-        "version_id": "v_1",
-        "img_w_size": 224,
-        "img_h_size": 224,
-        "batch_size": 32
-    },
+    "data_loader_params": DataLoaderParams.model_json_schema(),
     "model_params": ModelParams.model_json_schema(),
     "trainer_params": {
         "loss_fn_config": {

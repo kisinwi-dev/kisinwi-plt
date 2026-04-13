@@ -1,7 +1,8 @@
 from enum import Enum
 from pydantic import BaseModel, Field
 
-from app.core.task.models.shemas import ModelParams
+from app.core.models import ModelParams
+from app.core.datas import DataLoaderParams
 
 class TaskStatus(str, Enum):
     PENDING = "pending"
@@ -10,7 +11,7 @@ class TaskStatus(str, Enum):
     FAILED = "failed"
 
 class TaskParams(BaseModel):
-    data_loader_params: dict = Field(..., description="Параметры данных")
+    data_loader_params: DataLoaderParams = Field(..., description="Параметры данных")
     model_params: ModelParams = Field(..., description="Параметры используемой модели")
     trainer_params: dict = Field(..., description="Параметры обучения моделии")
 

@@ -1,9 +1,11 @@
-from typing import Tuple, List, Optional
+from typing import Tuple, List
 import os
 import torch
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from tqdm import tqdm
+
+from .shemas import DataLoaderParams
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -40,17 +42,12 @@ def calculate_normalize_dataset(
     return mean, std
 
 
-def load_dataloaders(
-    dataset_id: str,
-    version_id: str,
-    img_w_size: int,
-    img_h_size: int,
-    batch_size: int,
-    is_calculate_normalize_dataset: bool = False,
+def create_dataloaders(
+    params: DataLoaderParams,
     base_data_dir: str = "datasets",
 ) -> Tuple[DataLoader, DataLoader, DataLoader, List[str]]:
     """
-    Загружает train/val/test DataLoader'ы для задачи классификации.
+    Создаём train/val/test DataLoader'ы для задачи классификации.
 
     Ожидаемая структура директорий:
         {base_data_dir}/{dataset_id}/{version_id}/
@@ -65,19 +62,14 @@ def load_dataloaders(
                 class2/...
 
     Args:
-        dataset_id: идентификатор датасета.
-        version_id: идентификатор версии.
-        img_w_size: ширина изображения после ресайза.
-        img_h_size: высота изображения после ресайза.
-        batch_size: размер батча.
-        is_calculate_normalize_dataset: если True, вычислить нормализацию на train датасете.
+        params: параметры загр
         base_data_dir: корневая папка с датасетами.
 
     Returns:
         Кортеж (train_loader, val_loader, test_loader, classes).
     """
     try:
-        data_root = os.path.join(base_data_dir, dataset_id, version_id)
+        data_root = os.path.join(base_data_dir, params.dataset_id, params.version_id)
         train_dir = os.path.join(data_root, "train")
         val_dir = os.path.join(data_root, "val")
         test_dir = os.path.join(data_root, "test")
@@ -85,30 +77,33 @@ def load_dataloaders(
         # Проверяем существование обязательных папок
         for d in [train_dir, val_dir, test_dir]:
             if not os.path.isdir(d):
-                raise FileNotFoundError("Датасет не найден.")
+                raise FileNotFoundError("Не верная структура датасета.")
 
-        # Базовые трансформации без нормализации (только ресайз и ToTensor)
+        # Трансформация без усложнений к определённому размеру
         base_transform = transforms.Compose([
-            transforms.Resize((img_h_size, img_w_size)),
+            transforms.Resize(
+                (params.img_h_size, params.img_w_size)
+            ),
             transforms.ToTensor(),
         ])
 
-        # Временный датасет для вычисления нормализации (если нужно)
-        if is_calculate_normalize_dataset:
+        # Временный датасет для вычисления нормализации 
+        if params.is_calculate_normalize_dataset:
             logger.info("Вычисление нормализации конкретного набора данных...")
             temp_train_dataset = datasets.ImageFolder(root=train_dir, transform=base_transform)
-            temp_loader = DataLoader(temp_train_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
+            temp_loader = DataLoader(temp_train_dataset, batch_size=params.batch_size, shuffle=False, num_workers=2)
             mean, std = calculate_normalize_dataset(temp_loader)
             logger.info(f"Нормализация имеет значения mean={mean.tolist()}, std={std.tolist()}")
         else:
             mean, std = IMAGENET_MEAN, IMAGENET_STD
             logger.info("Использовании нормализации из ImageNet")
 
-        # Итоговые трансформации с нормализацией
+        # Создание "трансформаторов"
         normalize = transforms.Normalize(mean=mean, std=std)
-
         train_transform = transforms.Compose([
-            transforms.RandomResizedCrop((img_h_size, img_w_size), scale=(0.7, 1.0)),
+            transforms.RandomResizedCrop(
+                (params.img_h_size, params.img_w_size), scale=(0.7, 1.0)
+            ),
             transforms.RandomHorizontalFlip(),
             transforms.RandomRotation(10),
             transforms.ToTensor(),
@@ -116,12 +111,14 @@ def load_dataloaders(
         ])
 
         val_test_transform = transforms.Compose([
-            transforms.Resize((img_h_size, img_w_size)),
+            transforms.Resize(
+                (params.img_h_size, params.img_w_size)
+            ),
             transforms.ToTensor(),
             normalize,
         ])
 
-        # Загружаем датасеты с финальными трансформациями
+        # Создание загрузчиков
         train_dataset = datasets.ImageFolder(root=train_dir, transform=train_transform)
         val_dataset = datasets.ImageFolder(root=val_dir, transform=val_test_transform)
         test_dataset = datasets.ImageFolder(root=test_dir, transform=val_test_transform)
@@ -129,27 +126,26 @@ def load_dataloaders(
         # Проверяем согласованность классов
         if not (train_dataset.classes == val_dataset.classes == test_dataset.classes):
             raise ValueError("Имена классов в каталогах не совпадают")
-
         classes = train_dataset.classes
 
         # Создаём DataLoader'ы
         train_loader = DataLoader(
             train_dataset,
-            batch_size=batch_size,
+            batch_size=params.batch_size,
             shuffle=True,
             pin_memory=True,
             num_workers=2
         )
         val_loader = DataLoader(
             val_dataset,
-            batch_size=batch_size,
+            batch_size=params.batch_size,
             shuffle=False,
             pin_memory=True,
             num_workers=2
         )
         test_loader = DataLoader(
             test_dataset,
-            batch_size=batch_size,
+            batch_size=params.batch_size,
             shuffle=False,
             pin_memory=True,
             num_workers=2
