@@ -1,7 +1,7 @@
 from app.service.tasker import Tasker_Service
 from app.service.tasker.shemas import TaskParams
 from .task.classification import data, train_model
-from .task.classification.models import get_model
+from .task.classification.models.factory import get_model
 
 from app.logs import get_logger
 
@@ -15,7 +15,7 @@ def training_model(config: TaskParams):
         config: параметры обучения
     """
     try:
-        # Загружаем требуемые данные
+        # Загружаем данные
         data_loader_params = config.data_loader_params
         train_loader, val_loader, test_loader, classes = data.load_dataloaders(
             dataset_id=data_loader_params['dataset_id'],
@@ -25,19 +25,13 @@ def training_model(config: TaskParams):
             batch_size=data_loader_params['batch_size']
         )
 
-        # Настраиваем модель
+        # Загружаем модель
         model_params = config.model_params
         model = get_model(
             type=model_params["type"],
-            name=model_params["name"],
-            weights=model_params["weights"],
-            num_class = len(classes),
+            num_classes = len(classes),
+            pretrained=model_params["pretrained"]
         )
-
-        if config.model_params["weights"] == False:
-            img_w, img_h = model.get_input_size_for_weights()
-            data_loader_params["img_w_size"] = img_w
-            data_loader_params["img_h_size"] = img_h
 
         # Запуск обучения
         trainer_params = config.trainer_params

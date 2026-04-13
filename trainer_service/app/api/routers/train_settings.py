@@ -1,7 +1,6 @@
-from collections import defaultdict
 from typing import Dict, Any
-from fastapi import APIRouter
-from app.core.task.classification.models import get_models_type_name
+from fastapi import APIRouter, Query, HTTPException
+from app.core.task.classification.models.factory import get_models_type_name
 
 routers = APIRouter()
 
@@ -16,8 +15,7 @@ EXAMLE_TASK_CONFIG ={
     },
     "model_params": {
         "type": "Resnet",
-        "name": "resnet50",
-        "weights": True
+        "pretrained": True
     },
     "trainer_params": {
         "loss_fn_config": {
@@ -60,8 +58,13 @@ async def get_example_config() -> Dict[str, Any]:
 
 
 @routers.get("/get_available_models")
-async def get_available_models():
+async def get_available_models(
+    filter: str | None = Query(None, description="Фильтр для поиска моделей (например: '*resnet*')")
+):
     """
-    Возвращает пример JSON доступных типов и имён моделей
+    Возвращает список доступных моделей
     """
-    return get_models_type_name()
+    try:
+        return get_models_type_name(filter)
+    except Exception as e:
+        return HTTPException(status_code=500, detail=str(e))
