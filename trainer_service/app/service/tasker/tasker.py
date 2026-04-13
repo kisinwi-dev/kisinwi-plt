@@ -44,10 +44,10 @@ class Tasker_Service():
         
     async def update_status_task(
             self,
-            status: TaskStatus,
-            progress: int,
-            task_id: str | None = None,
-            description: str | None = None
+            progress: int | None = None,
+            status: TaskStatus | None = None,
+            description: str | None = None,
+            task_id: str | None = None
     ) -> bool:
         """Обновляет статус задачи"""
 

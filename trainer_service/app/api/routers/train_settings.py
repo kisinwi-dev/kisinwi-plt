@@ -1,6 +1,6 @@
 from typing import Dict, Any
 from fastapi import APIRouter, Query, HTTPException
-from app.core.task.classification.models.factory import get_models_type_name
+from app.core.task.models.factory import get_models_type_name
 
 routers = APIRouter()
 

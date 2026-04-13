@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from .api.routers import api_routers
 from .core import training_model
 from .logs import get_logger
-from .service.tasker.tasker import tasker_service, TaskStatus
+from .service.tasker import tasker_service, TaskStatus
 
 logger = get_logger(__name__)
 
@@ -58,16 +58,16 @@ async def to_work():
             logger.info(f"Worker начинает работу над задачей: {task_id}")
             
             # Обновение статуса задачи (выполняется)
-            await tasker_service.update_status_task(TaskStatus.IN_PROGRESS, 0, "Задача принята воркером")
+            await tasker_service.update_status_task(0, status=TaskStatus.IN_PROGRESS, description="Задача принята воркером")
             
             try:
                 # Процесс обучения
-                training_model(params)
+                await training_model(params)
 
                 # Завершение
-                await tasker_service.update_status_task(TaskStatus.COMPLETED, 100, "Задача выполнена")
-                logger.info(f"Задача {task_id} завершена")
+                await tasker_service.update_status_task(100, TaskStatus.COMPLETED, description="Задача выполнена")
+                logger.info(f"Задача {task_id} выполнена")
                 
             except Exception as e:
-                await tasker_service.update_status_task(TaskStatus.FAILED, 0, "Задача завершена с ошибкой")
+                await tasker_service.update_status_task(status=TaskStatus.FAILED, description="Задача завершена с ошибкой")
                 logger.error(f"Ошибка {task_id}: {e}")
