@@ -11,7 +11,6 @@ class Tasker_Service():
     def __init__(self) -> None:
         """Класс для общения с сервисом задач"""
         self._domen = config_domain.TASKER
-        self._task_id = None
     
     def set_client(
             self,
