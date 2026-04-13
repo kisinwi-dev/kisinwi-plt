@@ -7,8 +7,14 @@ class TaskStatus(str, Enum):
     COMPLETED = "completed"
     FAILED = "failed"
 
+class TaskParams(BaseModel):
+    data_loader_params: dict = Field(..., description="Параметры данных")
+    model_params: dict = Field(..., description="Параметры используемой модели")
+    trainer_params: dict = Field(..., description="Параметры обучения моделии")
+
+
 class Task(BaseModel):
     """Схема задачи"""
     task_id: str = Field(..., description="ID задачи")
     status: TaskStatus = Field(default=TaskStatus.PENDING, description="Статус задачи")
-    payload: dict = Field(..., description="Параметры задачи")
+    params: TaskParams = Field(..., description="Параметры задачи")

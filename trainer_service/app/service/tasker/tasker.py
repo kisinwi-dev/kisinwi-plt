@@ -3,19 +3,23 @@ from typing import Optional
 
 from app.logs import get_logger
 from app.config import config_domain
-from .tasker_shemas import Task, TaskStatus
+from .shemas import Task, TaskStatus
 
 logger = get_logger(__name__)
 
 class Tasker_Service():
-    def __init__(
+    def __init__(self) -> None:
+        """Класс для общения с сервисом задач"""
+        self._domen = config_domain.TASKER
+        self._task_id = None
+    
+    def set_client(
             self,
             client: httpx.AsyncClient
-    ) -> None:
-        """Класс для общения с сервисом задач"""
+        ) -> bool:
         self._client = client
-        self._domen = config_domain.TASKER
-    
+        return True
+
     async def get_next_task(self) -> Optional[Task]:
         """Возвращает задачу или None при ошибке"""
         try:
@@ -28,6 +32,7 @@ class Tasker_Service():
                 return None
 
             task = Task(**resp.json())
+            self.task_id = task.task_id
 
             return task
         except httpx.HTTPStatusError as e:
@@ -39,12 +44,15 @@ class Tasker_Service():
         
     async def update_status_task(
             self,
-            task_id: str,
             status: TaskStatus,
             progress: int,
-            description: str
+            task_id: str | None = None,
+            description: str | None = None
     ) -> bool:
         """Обновляет статус задачи"""
+
+        if task_id is None:
+            task_id = self.task_id
 
         url = f"{self._domen}/tasks/{task_id}/status"
         json = {"status": status, "progress": progress, "description": description}
@@ -56,3 +64,6 @@ class Tasker_Service():
             logger.error("Не удалось обновить статус задачи")
             logger.error(f"Ошибка: {e}")
             return False
+        
+
+tasker_service = Tasker_Service()
