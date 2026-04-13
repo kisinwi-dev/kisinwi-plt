@@ -1,7 +1,7 @@
 import uuid
 import asyncio
 import uvicorn
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, BackgroundTasks
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Response
 from pydantic import BaseModel
 from typing import Dict, Optional, List
 
@@ -53,7 +53,7 @@ async def next_task():
         # Неблокирующее получение (если очереди нет, вернём 204)
         task_id = await asyncio.wait_for(task_queue.get(), timeout=0.5)
     except asyncio.TimeoutError:
-        return None  # или вернуть 204 No Content
+        return Response(status_code=204)
     
     task = tasks_db[task_id]
     # Помечаем как running (опционально, можно позже)
