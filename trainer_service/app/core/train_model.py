@@ -12,7 +12,8 @@ from torchmetrics.classification import (
 from torchmetrics import MeanMetric
 from typing import Optional, Dict, List, Any, Union
 
-from app.core.metrics import met_cl
+from app.service.metrics import MetricsClient
+from app.service.tasker.tasker import Tasker_Service
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -20,6 +21,7 @@ logger = get_logger(__name__)
 class Trainer:
     def __init__(
             self,
+            tasker_service: Tasker_Service,
             model: nn.Module,
             
             # данные
@@ -70,6 +72,7 @@ class Trainer:
         self._setup_scheduler()
 
         # настройка метрик
+        self._mc = MetricsClient(tasker_service.task_id)
         self.train_metrics = self._create_classification_metrics(
             preset='minimal',
             prefix='train_',
@@ -667,8 +670,7 @@ class Trainer:
                                f"F1 Macro: {test_metrics.get('test_f1_macro', 'N/A'):.4f}")
             logger.info(f"{'='*50}\n")
             
-            met_cl.log_epoch_metrics(
-                "id_test", 
+            self._mc.log_epoch_metrics(
                 epoch,
                 train_metrics,
                 val_metrics,

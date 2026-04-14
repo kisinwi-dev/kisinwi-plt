@@ -34,6 +34,7 @@ async def training_model(config: TaskParams):
         await tasker_service.update_status_task(11, description=f"Формирование процесса обучения...")
         trainer_params = config.trainer_params
         trainer = Trainer(
+            tasker_service,
             model,
             train_loader,
             val_loader,
