@@ -1,6 +1,6 @@
 import requests
 from typing import Dict, Any, Optional
-from torch import device
+from torch import device, Tensor
 
 from .shemas import MetricesParamCollections
 from .collection import create_classification_collections
@@ -20,12 +20,35 @@ class MetricesClient:
     ):
         self._task_id = task_id
         self._domain = config_domain.METRIC
-        self.train_metrics, self.val_metrics, self.test_metrics = create_classification_collections(
+        self._collections = create_classification_collections(
             metrices_params,
             num_class,
             device
         )
         
+    def update(
+            self,
+            type: str,
+            preds: Tensor,
+            targets: Tensor,
+            loss: Tensor|None = None,
+    ):
+        """Добавление значений для расчёта метрик"""
+        self._collections[type].update(
+            preds=preds,
+            target=targets,
+            value=loss
+        )
+
+    def compute(
+            self,
+            type: str,
+    ):
+        """Рассчёт метрик и их очистка"""
+        metrics = self._collections[type].compute()
+        
+        logger.info(f"{type} loss: {metrics.get(f'{type}_loss', 'N/A')}")
+        self._collections[type].reset()
 
     def log_metric(
             self, 

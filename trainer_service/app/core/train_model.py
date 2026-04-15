@@ -1,7 +1,7 @@
 import sys
 from tqdm import tqdm
 import torch
-from torch import nn, optim, device
+from torch import nn, optim, device, Tensor
 from torch.optim import Optimizer, lr_scheduler
 from torch.utils.data import DataLoader
 from typing import Optional, Dict, List, Any, Union
@@ -223,80 +223,103 @@ class Trainer:
             
             # Обновление метрик
             _, predicted = torch.max(outputs, dim=1)
-            self._metric_service.train_metrics.update(
+            self._metric_service.update(
+                type='train',
                 preds=predicted,
-                target=labels,
-                value=loss
+                targets=labels,
+                loss=loss
             )
         
         # Обновление scheduler
         if self.scheduler is not None:
             logger.debug("Обновление scheduler")
             self.scheduler.step()
+        
+        # Расчёт метрик
+        self._metric_service.compute('train')
 
-        # Расчёт metrics и добавление loss
-        train_metrics_value = self._metric_service.train_metrics.compute()
-        
-        # Логирование успехов обучения
-        current_lr = self.optimizer.param_groups[0]['lr']
-        logger.info(f"Loss train: {train_metrics_value.get('train_loss', 'N/A')}")
-        logger.info(f"Learning rate: {current_lr:.6f}")
-        
-        # Reset metrics
-        self._metric_service.train_metrics.reset()
-        
         # Очистка кэша
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
-    def _prepare_labels_for_loss(self, outputs, labels):
-        """Подготавливает labels в зависимости от типа loss функции"""
+    def _prepare_labels_for_loss(
+            self, 
+            outputs: Tensor, 
+            labels: Tensor
+        ) -> Tensor:
+        """
+        Подготавливает labels в зависимости от типа loss функции
+        
+        Args:
+            outputs: Выход модели [batch_size, num_classes] или [batch_size, 1]
+            labels: Исходные метки (могут быть в разных форматах)
+        
+        Returns:
+            Tensor: Подготовленные метки для loss функции
+        """
         
         loss_type = self.loss_fn.__class__.__name__
         
+        # Для CrossEntropyLoss - нужны индексы классов
         if loss_type in ['CrossEntropyLoss', 'CrossEntropyLoss2d']:
-            # Ожидаются индексы классов
-            if labels.dim() == 2:
+            if labels.dim() == 2 and labels.size(1) > 1:
                 labels = labels.argmax(dim=1)
             return labels.long()
         
+        # Для BCEWithLogitsLoss и BCELoss
         elif loss_type in ['BCEWithLogitsLoss', 'BCELoss']:
+            if outputs.size(1) == 1:
+                if labels.dim() == 1:
+                    return labels.float().unsqueeze(1)
+                elif labels.dim() == 2 and labels.size(1) > 1:
+                    return labels.argmax(dim=1).float().unsqueeze(1)
+                else:
+                    return labels.float()
             
-            # BCEWithLogitsLoss ожидает ту же размерность что и outputs
-            if outputs.dim() == 2 and outputs.size(1) == 2:
-                
-                # Адаптируем labels под outputs [32, 2]
-                if labels.dim() == 2:
-                    if labels.size(1) == 2:
-                        # Labels уже one-hot [32, 2]
-                        return labels.float()
-                    elif labels.size(1) == 1:
-                        # Labels [n, 1] - расширяем до [n, 2]
-                        labels_2d = torch.zeros(labels.size(0), 2, device=labels.device)
-                        labels_2d.scatter_(1, labels.long(), 1)
-                        return labels_2d.float()
-                elif labels.dim() == 1:
-                    # Labels [n] - конвертируем в one-hot [n, 2]
-                    labels_2d = torch.zeros(labels.size(0), 2, device=labels.device)
-                    labels_2d.scatter_(1, labels.unsqueeze(1).long(), 1)
-                    return labels_2d.float()
-                
-            elif outputs.dim() == 2 and outputs.size(1) == 1:
-                
-                # Бинарная классификация с одним выходом
-                if labels.dim() == 2 and labels.size(1) > 1:
-                    labels = labels.argmax(dim=1).float().unsqueeze(1)
-                elif labels.dim() == 1:
-                    labels = labels.float().unsqueeze(1)
-                return labels.float()
+            # Бинарная классификация с двумя выходами [batch, 2]
+            elif outputs.size(1) == 2:
+                if labels.dim() == 1:
+                    labels_one_hot = torch.zeros(
+                        labels.size(0), outputs.size(1), 
+                        device=labels.device
+                    )
+                    labels_one_hot.scatter_(1, labels.unsqueeze(1).long(), 1)
+                    return labels_one_hot.float()
+                elif labels.dim() == 2 and labels.size(1) == 2:
+                    return labels.float()
+                elif labels.dim() == 2 and labels.size(1) == 1:
+                    labels_one_hot = torch.zeros(
+                        labels.size(0), outputs.size(1), 
+                        device=labels.device
+                    )
+                    labels_one_hot.scatter_(1, labels.long(), 1)
+                    return labels_one_hot.float()
             
+            # Мульти классификация [batch, num_classes]
             else:
-                # Мульти-лейбл классификация (много выходов)
-                return labels.float()
+                if labels.dim() == 1:
+                    labels_one_hot = torch.zeros(
+                        labels.size(0), outputs.size(1), 
+                        device=labels.device
+                    )
+                    labels_one_hot.scatter_(1, labels.unsqueeze(1).long(), 1)
+                    return labels_one_hot.float()
+                elif labels.dim() == 2 and labels.size(1) == outputs.size(1):
+                    return labels.float()
         
+        # Для MSE Loss (регрессия)
+        elif loss_type in ['MSELoss', 'L1Loss']:
+            if labels.dim() != outputs.dim():
+                if labels.dim() == 1 and outputs.dim() == 2:
+                    return labels.float().unsqueeze(1)
+            return labels.float()
+        
+        # Не обработанная функция потерь
         else:
-            # Для других функций возвращаем как есть
+            logger.warning(f"Неизвестная loss функция: {loss_type}")
             return labels
+        
+        return labels
 
     def _validate_one_epoch(self):
         """Валидация(одна эпоха)"""
@@ -315,18 +338,15 @@ class Trainer:
                 _, predicted = torch.max(outputs.data, 1)
 
                 # Обновление метрик
-                self._metric_service.val_metrics.update(
+                self._metric_service.update(
+                    type='val',
                     preds=predicted,
-                    target=labels,
-                    value=loss
+                    targets=labels,
+                    loss=loss
                 )
         
-        # Логирование успехов обучения
-        val_metrics_value = self._metric_service.val_metrics.compute()
-        logger.info(f"Validation loss: {val_metrics_value.get('val_loss', 'N/A')}")
-        
-        # Reset metrics
-        self._metric_service.val_metrics.reset()
+        # Расчёт метрик
+        self._metric_service.compute('val')
         
         # Очистка кэша
         if torch.cuda.is_available():

@@ -105,7 +105,7 @@ def create_classification_collections(
         metric_param_collections: MetricesParamCollections,
         num_classes: int,
         device: device,
-    ):
+    ) -> Dict[str, MetricCollection]:
     """
     Создание колекций метрик для всех выборок
 
@@ -115,28 +115,26 @@ def create_classification_collections(
         device: cpu/cuda
     
     Returns:
-        {MetricCollection, MetricCollection, MetricCollection}: Коллекции метрик(train, val, test)
-
+        Словарь с коллекциями
     """
-    
-    train_collection = create_classification_metrics(
-        metric_params=metric_param_collections.train,
-        num_classes=num_classes,
-        device=device,
-        prefix='train_'
-    )
-    val_collection = create_classification_metrics(
-        metric_params=metric_param_collections.val,
-        num_classes=num_classes,
-        device=device,
-        prefix='val_'
-    )
-    test_collection = create_classification_metrics(
-        metric_params=metric_param_collections.test,
-        num_classes=num_classes,
-        device=device,
-        prefix='test_',
-        include_loss=False
-    )
-
-    return train_collection, val_collection, test_collection
+    return {
+        'train': create_classification_metrics(
+            metric_params=metric_param_collections.train,
+            num_classes=num_classes,
+            device=device,
+            prefix='train_'
+        ),
+        'val': create_classification_metrics(
+            metric_params=metric_param_collections.val,
+            num_classes=num_classes,
+            device=device,
+            prefix='val_'
+        ),
+        'test': create_classification_metrics(
+            metric_params=metric_param_collections.test,
+            num_classes=num_classes,
+            device=device,
+            prefix='test_',
+            include_loss=False
+        )      
+    }
