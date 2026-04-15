@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from tqdm import tqdm
 
-from .shemas import DataLoaderParams
+from app.api.schemes import DataLoaderParams
 from app.logs import get_logger
 
 logger = get_logger(__name__)

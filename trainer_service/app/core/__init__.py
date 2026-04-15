@@ -1,4 +1,5 @@
-from app.service.tasker import tasker_service, TaskParams
+from app.api.schemes import TaskParams
+from app.service.tasker import tasker_service
 from app.service.metrices import MetricesClient
 from app.logs import get_logger
 

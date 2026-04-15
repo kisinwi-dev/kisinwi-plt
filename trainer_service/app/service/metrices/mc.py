@@ -2,9 +2,9 @@ import requests
 from typing import Dict, Any, Optional
 from torch import device, Tensor
 
-from .shemas import MetricesParamCollections
 from .collection import create_classification_collections
 
+from app.api.schemes import MetricesParamCollections
 from app.config import config_domain
 from app.logs import get_logger
 

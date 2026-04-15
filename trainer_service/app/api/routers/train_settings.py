@@ -2,7 +2,7 @@ from typing import Dict, Any
 from fastapi import APIRouter, Query, HTTPException
 
 from app.core.models import get_models_type_name
-from app.service.tasker import TaskParams
+from app.api.schemes import TaskParams
 
 routers = APIRouter()
 
