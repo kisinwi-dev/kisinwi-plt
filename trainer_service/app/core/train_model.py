@@ -197,39 +197,43 @@ class Trainer:
         
         self.model.train()
         
-        for batch in self._tqdm_loader(self.train_loader, "Тренировка"):
+        try:
+            for batch in self._tqdm_loader(self.train_loader, "Тренировка"):
+                
+                inputs, labels = batch
+                
+                inputs = inputs.to(self.device)
+                labels = labels.to(self.device)
+                
+                self.optimizer.zero_grad()
+                
+                # Forward pass
+                outputs = self.model(inputs)
+                
+                # Расчёт loss
+                labels = self._prepare_labels_for_loss(outputs, labels)
+                loss = self.loss_fn(outputs, labels)
+                
+                # Backward pass
+                loss.backward()
+                self.optimizer.step()
+                
+                # Обновление метрик
+                _, predicted = torch.max(outputs, dim=1)
+                self._metric_service.update(
+                    type='train',
+                    preds=predicted,
+                    targets=labels,
+                    loss=loss
+                )
             
-            inputs, labels = batch
-            
-            inputs = inputs.to(self.device)
-            labels = labels.to(self.device)
-            
-            self.optimizer.zero_grad()
-            
-            # Forward pass
-            outputs = self.model(inputs)
-            
-            # Расчёт loss
-            labels = self._prepare_labels_for_loss(outputs, labels)
-            loss = self.loss_fn(outputs, labels)
-            
-            # Backward pass
-            loss.backward()
-            self.optimizer.step()
-            
-            # Обновление метрик
-            _, predicted = torch.max(outputs, dim=1)
-            self._metric_service.update(
-                type='train',
-                preds=predicted,
-                targets=labels,
-                loss=loss
-            )
-        
-        # Обновление scheduler
-        if self.scheduler is not None:
-            logger.debug("Обновление scheduler")
-            self.scheduler.step()
+            # Обновление scheduler
+            if self.scheduler is not None:
+                logger.debug("Обновление scheduler")
+                self.scheduler.step()
+        except Exception as e:
+            logger.error(f"Ошибка на стадии тренировки модели: {e}")
+            raise
         
         # Расчёт метрик
         self._metric_service.compute('train')
@@ -322,24 +326,28 @@ class Trainer:
         self.model.eval()
         
         with torch.no_grad():
-            for batch in self._tqdm_loader(self.val_loader, "Валидация"):
-                inputs, labels = batch
-                
-                inputs = inputs.to(self.device)
-                labels = labels.to(self.device)
-                outputs = self.model(inputs)
-                
-                # Рассчёт loss
-                loss = self.loss_fn(outputs, labels)
-                _, predicted = torch.max(outputs.data, 1)
+            try:
+                for batch in self._tqdm_loader(self.val_loader, "Валидация"):
+                    inputs, labels = batch
+                    
+                    inputs = inputs.to(self.device)
+                    labels = labels.to(self.device)
+                    outputs = self.model(inputs)
+                    
+                    # Рассчёт loss
+                    loss = self.loss_fn(outputs, labels)
+                    _, predicted = torch.max(outputs.data, 1)
 
-                # Обновление метрик
-                self._metric_service.update(
-                    type='val',
-                    preds=predicted,
-                    targets=labels,
-                    loss=loss
-                )
+                    # Обновление метрик
+                    self._metric_service.update(
+                        type='val',
+                        preds=predicted,
+                        targets=labels,
+                        loss=loss
+                    )
+            except Exception as e:
+                logger.error(f"Ошибка на этапе валидации модели: {e}")
+                raise e
         
         # Расчёт метрик
         self._metric_service.compute('val')
@@ -400,7 +408,7 @@ class Trainer:
         #     logger.error(f"🔴 Failed to save checkpoint: {e}")
 
     def _tqdm_loader(self, data_loader: DataLoader, desc: str = "process") -> tqdm:
-        """Return tqdm-wrapped dataloader for progress display"""
+        """Получение обьекта tqdm"""
         return tqdm(
             data_loader,
             desc=desc,
@@ -427,6 +435,7 @@ class Trainer:
 
             logger.info("🥳🥳 Тестирование модели... 🥳🥳")
             self._test_model()
+            logger.info("🟢 Тестирование завершено")
 
         except Exception as e:
             logger.error(f"Ошибка при обучении: {e}")
