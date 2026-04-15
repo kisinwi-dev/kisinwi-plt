@@ -11,6 +11,15 @@ class MetricesParams(BaseModel):
         description='Тип усреднения precision/recall/f1'
     )
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "metrics_list": ['accuracy', 'precision', 'recall', 'f1'],
+                "average": 'macro'
+            }
+        }
+    }
+
 class MetricesParamCollections(BaseModel):
     train: MetricesParams = Field(
         ...,
@@ -25,3 +34,21 @@ class MetricesParamCollections(BaseModel):
         description="Метрики для тестирования"
     )
     
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "train": {
+                    "metrics_list": ['accuracy', 'loss'],
+                    "average": 'macro'
+                },
+                "val": {
+                    "metrics_list": ['accuracy', 'precision', 'recall', 'f1'],
+                    "average": 'macro'
+                },
+                "test": {
+                    "metrics_list": ['accuracy', 'precision', 'recall', 'f1', 'specificity'],
+                    "average": 'macro'
+                }
+            }
+        }
+    }
