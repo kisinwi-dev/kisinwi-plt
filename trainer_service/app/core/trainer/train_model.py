@@ -2,41 +2,40 @@ import sys
 from tqdm import tqdm
 import torch
 from torch import nn, optim, device, Tensor
-from torch.optim import Optimizer, lr_scheduler
+from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
-from typing import Optional, Dict, List, Any, Union
+from typing import Optional, Dict, List, Any
 
 from app.service.metrices import MetricesClient
 from app.service.tasker import TaskerClient
+from app.service.tasker.shemas import TrainerParams, LossConfig, OptimizerConfig, ShedulerConfig
 from app.logs import get_logger
+
 
 logger = get_logger(__name__)
 
 class Trainer:
     def __init__(
             self,
-            # модель
+            # Модель
             model: nn.Module,
             
-            # данные
+            # Данные
             train_loader: DataLoader,
             val_loader: DataLoader,
             test_loader: DataLoader,
-            classes: Optional[List[str]],
+            classes: List[str],
             
-            # настройки тренировки
-            loss_fn_config: Optional[Dict],
-            optimizer_config: Optional[Dict],
-            scheduler_config: Optional[Dict],
-            epochs: int,
+            # Настройки тренировки
+            train_params: TrainerParams,
+            
+            # Устройство
             device: device,
 
             # Вспомогательные сервисы
             tasker_service: TaskerClient,
             metric_service: MetricesClient,
     ):
-        logger.debug("⚪ Инициализация класса")
-
         # Модель
         self.model = model
         # Устройство
@@ -48,19 +47,14 @@ class Trainer:
         self.val_loader = val_loader
         self.test_loader = test_loader
 
-        # Параметры обучения
-        self.loss_fn_config = loss_fn_config
-        self.optimizer_config = optimizer_config
-        self.scheduler_config = scheduler_config
-        self.epochs = epochs
-
         # Валидация полученных данных
         self._validate_input()
 
-        # Настройка вспомогательных функция
-        self._setup_loss_fn()
-        self._setup_optimizer()
-        self._setup_scheduler()
+        # Параметры обучения
+        self.epochs = train_params.epochs
+        self._setup_loss_fn(train_params.loss_fn)
+        self._setup_optimizer(train_params.optimizer)
+        self._setup_scheduler(train_params.scheduler)
 
         # Сервисы
         self._metric_service = metric_service
@@ -70,10 +64,8 @@ class Trainer:
 
     # __WARNING__ В БУДУЮЩЕМ НУЖНО ОБЯЗАТЕЛЬНО ВЫНЕСТИ ВСЮ ВАЛИДАЦИЮ ИЗ КЛАССА И СДЕЛАТЬ ОТДЕЛЬНЫМИ ФУНКЦИЯМИ ВАЛИДАЦИИ
     def _validate_input(self) -> None:
-        """Validate all input parameters"""
-        logger.debug("├🔘 Start input value validation")
+        """Валидация полученных параметров"""
 
-        # Required parameters with strict validation
         required_checks = [
             (self.model, nn.Module, "model"),
             (self.train_loader, DataLoader, "train_loader"),
@@ -83,114 +75,64 @@ class Trainer:
 
         for obj, expected_type, name in required_checks:
             if not isinstance(obj, expected_type):
-                logger.error(f"└🔴 {name} is not {expected_type}. Got {type(obj)}")
-                raise TypeError(f"{name} must be {expected_type}")
+                logger.error(f"{name} должен быть `{expected_type}`")
+                raise TypeError(f"{name} должен быть `{expected_type}`")
 
             if isinstance(obj, DataLoader) and len(obj) == 0:
-                logger.error(f"└🔴 {name} is empty")
-                raise ValueError(f"{name} cannot be empty")
+                logger.error(f"{name} не должен быть пустым")
+                raise ValueError(f"{name} не должен быть пустым")
 
-            logger.debug(f"├🟢 {name}: OK")
+            logger.debug(f"✅ {name}: OK")
 
-        logger.debug("└🏁 finish validating params")
-
-    def _setup_loss_fn(self) -> None:
-        """Setup loss function from config or use default"""
-        if self.loss_fn_config is None or not isinstance(self.loss_fn_config, Dict):
-            logger.warning("🟠 loss_fn_config not provided. Using default CrossEntropyLoss")
-            self.loss_fn = nn.CrossEntropyLoss()
-            logger.debug("├🟢 loss_fn: CrossEntropyLoss (default)")
-        else:
-            self.loss_fn = self._create_loss_fn_from_config(self.loss_fn_config)
-            logger.debug("├🟢 loss_fn: created from config")
-
-    def _setup_optimizer(self) -> None:
-        """Setup optimizer from config or use default"""
-        if self.optimizer_config is None or not isinstance(self.optimizer_config, Dict):
-            logger.warning("🟠 optimizer_config not provided. Using default Adam (lr=0.001)")
-            self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
-            logger.debug("├🟢 optimizer: Adam (default)")
-        else:
-            self.optimizer = self._create_optimizer_from_config(self.optimizer_config)
-            logger.debug("├🟢 optimizer: created from config")
-
-    def _setup_scheduler(self) -> None:
-        """Setup scheduler from config or use default"""
-        if self.scheduler_config is None or not isinstance(self.scheduler_config, Dict):
-            logger.warning("🟠 scheduler_config not provided. Using CosineAnnealingLR (T_max=50)")
-            self.scheduler = lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=50)
-            logger.debug("├🟢 scheduler: CosineAnnealingLR (default)")
-        else:
-            self.scheduler = self._create_scheduler_from_config(self.scheduler_config)
-            logger.debug("├🟢 scheduler: created from config")
-
-    def _create_loss_fn_from_config(self, loss_fn_config: Dict) -> nn.Module:
-        """Create loss function from configuration dictionary"""
-        loss_fn_type = loss_fn_config.get('type', 'CrossEntropyLoss')
+    def _setup_loss_fn(
+            self,
+            loss_config: LossConfig
+        ) -> None:
+        """Настройка функции потерь"""
         
+        loss_fn_type = loss_config.name
         if not hasattr(nn, loss_fn_type):
-            raise ValueError(f"Loss function {loss_fn_type} not found in torch.nn")
+            raise ValueError(f"Функция потерь '{loss_fn_type}' не найдена в torch.nn")
         
-        if 'params' not in loss_fn_config:
-            raise ValueError("Loss function config must contain 'params' key")
-        
-        loss_fn_params = loss_fn_config['params']
-        
-        if not isinstance(loss_fn_params, dict):
-            raise ValueError("'params' must be a dictionary")
-        
+        loss_fn_params = loss_config.params
         loss_fn_class = getattr(nn, loss_fn_type)
-        loss_fn = loss_fn_class(**loss_fn_params)
+        self.loss_fn = loss_fn_class(**loss_fn_params)
         
-        logger.debug(f"├ Loss function {loss_fn_type} created with params: {loss_fn_params}")
-        return loss_fn
+        logger.debug(f"Функция потерь `{loss_fn_type}` создана с параметрами: {loss_fn_params}")
 
-    def _create_optimizer_from_config(self, optimizer_config: Dict) -> Optimizer:
-        """Create optimizer from configuration dictionary"""
-        optimizer_type = optimizer_config.get('type', 'Adam')
+    def _setup_optimizer(
+            self,
+            optimizer_config: OptimizerConfig
+        ) -> None:
+        """Настройка оптимизатора"""
+        optimizer_type = optimizer_config.name
         
         if not hasattr(optim, optimizer_type):
-            raise ValueError(f"Optimizer {optimizer_type} not found in torch.optim")
+            raise ValueError(f"Оптимизатор {optimizer_type} не найден в torch.optim")
         
-        if 'params' not in optimizer_config:
-            raise ValueError("Optimizer config must contain 'params' key")
-        
-        optimizer_params = optimizer_config['params']
-        
-        if not isinstance(optimizer_params, dict):
-            raise ValueError("'params' must be a dictionary")
-        
+        optimizer_params = optimizer_config.params
         optimizer_class = getattr(optim, optimizer_type)
-        optimizer = optimizer_class(self.model.parameters(), **optimizer_params)
+        self.optimizer = optimizer_class(self.model.parameters(), **optimizer_params)
         
-        logger.debug(f"├ Optimizer {optimizer_type} created with params: {optimizer_params}")
-        return optimizer
+        logger.debug(f"Оптимизатор `{optimizer_type}` создан с параметрами: {optimizer_params}")
 
-    def _create_scheduler_from_config(self, scheduler_config: Dict) -> Optional[lr_scheduler._LRScheduler]:
-        """Create learning rate scheduler from configuration dictionary"""
-        if scheduler_config is None:
-            return None
+    def _setup_scheduler(
+            self,
+            scheduler_config: ShedulerConfig
+        ) -> None:
+        """Настройка планировщика"""
         
-        scheduler_type = scheduler_config.get('type')
-        if not scheduler_type:
-            raise ValueError("Scheduler config must contain 'type' key")
+        scheduler_type = scheduler_config.name
         
         if not hasattr(lr_scheduler, scheduler_type):
-            raise ValueError(f"Scheduler {scheduler_type} not found in torch.optim.lr_scheduler")
+            raise ValueError(f"Планировщик {scheduler_type} не найден в torch.optim.lr_scheduler")
         
-        if 'params' not in scheduler_config:
-            raise ValueError("Scheduler config must contain 'params' key")
-        
-        scheduler_params = scheduler_config['params']
-        
-        if not isinstance(scheduler_params, dict):
-            raise ValueError("Scheduler 'params' must be a dictionary")
+        scheduler_params = scheduler_config.params
         
         scheduler_class = getattr(lr_scheduler, scheduler_type)
-        scheduler = scheduler_class(self.optimizer, **scheduler_params)
+        self.scheduler = scheduler_class(self.optimizer, **scheduler_params)
         
-        logger.debug(f"├ Scheduler {scheduler_type} created with params: {scheduler_params}")
-        return scheduler    
+        logger.debug(f"Планировщик `{scheduler_type}` создан с параметрами: {scheduler_params}")
 
     def _train_one_epoch(self):
         """Тренировка(одна эпоха)"""
@@ -431,11 +373,11 @@ class Trainer:
                 logger.debug("Валидация...")
                 self._validate_one_epoch()
                 
-                logger.info(f"🟢 Эпоха [{epoch}/{self.epochs}] завершена")
+                logger.info(f"☑️ Эпоха [{epoch}/{self.epochs}] завершена")
 
-            logger.info("🥳🥳 Тестирование модели... 🥳🥳")
+            logger.info("🦾 Тестирование модели...")
             self._test_model()
-            logger.info("🟢 Тестирование завершено")
+            logger.info("✅ Тестирование завершено")
 
         except Exception as e:
             logger.error(f"Ошибка при обучении: {e}")

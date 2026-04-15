@@ -92,7 +92,7 @@ def create_classification_metrics(
     )
     
     for metric in collection.keys():
-        logger.debug(f'🟩 Создана метрика: {metric}')
+        logger.debug(f'✅ Создана метрика: {metric}')
 
 
     # Переносим на устройство
