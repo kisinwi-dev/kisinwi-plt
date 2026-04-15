@@ -5,6 +5,7 @@ from torch import nn, optim, device, Tensor
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
 from typing import Optional, Dict, List, Any
+import asyncio
 
 from app.service.metrices import MetricesClient
 from app.service.tasker import TaskerClient
@@ -298,7 +299,7 @@ class Trainer:
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
-    def _test_model(self) -> Optional[Dict[str, Any]]:
+    async def _test_model(self) -> Optional[Dict[str, Any]]:
         """Тестирование модели на тестовых данных"""
         try:
             self.model.eval()
@@ -360,23 +361,45 @@ class Trainer:
             file=sys.stdout
         )
 
-    def train(self) -> nn.Module:
+    def _train_one_full_epoch(self):
+        """Полное синхронное обучение"""
+        logger.debug("Тренировка...")
+        self._train_one_epoch()
+        logger.debug("Валидация...")
+        self._validate_one_epoch()
+
+    async def train(
+            self,
+            value_procces_start: int,
+            value_procces_end: int
+        ) -> nn.Module:
         "Полный процесс тренировки"
+        
+        # Переменные для изсенения значений прогрессса
+        value_procces = value_procces_start
+        one_epoch_procces_value = (value_procces_end - value_procces_start) // self.epochs
+        
         try:
             for epoch in range(1, self.epochs + 1):
+                # Логгирование начала эпохи
                 logger.info("=" * 40)
-                logger.info(f"🔄 Эпоха [{epoch}/{self.epochs}]")
+                text_info_start = f"🔄 Начало тренировки [{epoch}/{self.epochs}] эпохи"
+                logger.info(text_info_start)
                 
-                # Train and validate
-                logger.debug("Тренировка...")
-                self._train_one_epoch()
-                logger.debug("Валидация...")
-                self._validate_one_epoch()
+                # Обновление статуса задачи
+                await self._tasker_service.update_status_task(value_procces + 1, description=text_info_start)
                 
-                logger.info(f"☑️ Эпоха [{epoch}/{self.epochs}] завершена")
+                # Тренировка и валидация
+                await asyncio.to_thread(self._train_one_full_epoch)
+
+                # Логгирование конца эпохи
+                text_info_end = f"☑️ Эпоха [{epoch}/{self.epochs}] завершена"
+                value_procces += one_epoch_procces_value
+                logger.info(text_info_end)
+                await self._tasker_service.update_status_task(value_procces - 1, description=text_info_end)
 
             logger.info("🦾 Тестирование модели...")
-            self._test_model()
+            await self._test_model()
             logger.info("✅ Тестирование завершено")
 
         except Exception as e:

@@ -65,7 +65,9 @@ async def training_model(config: TaskParams):
         )
         await tasker_service.update_status_task(19, description=f"Процесса обучения сформирован")
         await tasker_service.update_status_task(20, description=f"Обучения...")
-        trainer.train()
+        model = await trainer.train(20, 80)
+        await tasker_service.update_status_task(80, description=f"Модель обучена.")
+
 
     except Exception as e:
         logger.error(e)
