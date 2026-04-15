@@ -7,7 +7,7 @@ from .shemas import Task, TaskStatus
 
 logger = get_logger(__name__)
 
-class Tasker_Service():
+class TaskerClient():
     def __init__(self) -> None:
         """Класс для общения с сервисом задач"""
         self._domen = config_domain.TASKER
@@ -65,4 +65,4 @@ class Tasker_Service():
             return False
         
 
-tasker_service = Tasker_Service()
+tasker_service = TaskerClient()

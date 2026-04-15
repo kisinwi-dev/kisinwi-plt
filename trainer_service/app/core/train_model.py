@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from typing import Optional, Dict, List, Any, Union
 
 from app.service.metrices import MetricesClient
-from app.service.tasker.tasker import Tasker_Service
+from app.service.tasker import TaskerClient
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -32,7 +32,7 @@ class Trainer:
             device: device,
 
             # Вспомогательные сервисы
-            tasker_service: Tasker_Service,
+            tasker_service: TaskerClient,
             metric_service: MetricesClient,
     ):
         logger.debug("⚪ Инициализация класса")
