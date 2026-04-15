@@ -13,7 +13,7 @@ tasks_db: Dict[str, dict] = {}
 task_queue: asyncio.Queue = asyncio.Queue()
 
 class TaskCreate(BaseModel):
-    payload: dict
+    params: dict
 
 class TaskUpdate(BaseModel):
     status: Optional[str] = None  # или TaskStatus enum
@@ -29,7 +29,7 @@ async def create_task(task: TaskCreate):
         "status": "pending",
         "progress": 0,
         "result": None,
-        "payload": task.payload
+        "params": task.params
     }
     await task_queue.put(task_id)
     return {"task_id": task_id, "status": "pending"}
@@ -59,7 +59,7 @@ async def next_task():
     task = tasks_db[task_id]
     # Помечаем как running (опционально, можно позже)
     task["status"] = "running"
-    return {"task_id": task_id, "payload": task["payload"]}
+    return {"task_id": task_id, "params": task["params"]}
 
 @app.patch("/tasks/{task_id}/status")
 async def update_task_status(task_id: str, update: TaskUpdate):
