@@ -1,19 +1,31 @@
 import requests
 from typing import Dict, Any, Optional
+from torch import device
+
+from .shemas import MetricesParamCollections
+from .collection import create_classification_collections
 
 from app.config import config_domain
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 
-class MetricsClient:
+class MetricesClient:
     def __init__(
             self, 
-            task_id: str
+            task_id: str,
+            metrices_params: MetricesParamCollections,
+            num_class: int,
+            device: device
     ):
         self._task_id = task_id
         self._domain = config_domain.METRIC
-
+        self.train_metrics, self.val_metrics, self.test_metrics = create_classification_collections(
+            metrices_params,
+            num_class,
+            device
+        )
+        
 
     def log_metric(
             self, 
@@ -57,8 +69,6 @@ class MetricsClient:
         Отправляет все метрики эпохи
         Имена метрик получают префиксы: train_, val_, test_.
         """
-
-        # __WARNING__ НУЖНО УЧЕСТЬ ЧТО VALUE МОЖЕТ БЫТЬ В ФОРМАТЕ  tensor
 
         # Train метрики
         for name, value in train_metrics.items():
