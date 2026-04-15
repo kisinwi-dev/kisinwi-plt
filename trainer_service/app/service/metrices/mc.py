@@ -42,13 +42,20 @@ class MetricesClient:
 
     def compute(
             self,
-            type: str,
+            type_: str,
     ):
         """Рассчёт метрик и их очистка"""
-        metrics = self._collections[type].compute()
+        metrics = self._collections[type_].compute()
         
-        logger.info(f"{type} loss: {metrics.get(f'{type}_loss', 'N/A')}")
-        self._collections[type].reset()
+        if type_ != 'test':
+            logger.info(f"{type_} loss: {metrics.get(f'{type_}_loss', 'N/A')}")
+        else: 
+            logger.debug('Метрики на тестовых даннных')
+            for key, value in metrics.items():
+                name_metric = "".join(key.split('_')[1:])
+                logger.info(f"{name_metric:^20}: {value:.5}")
+
+        self._collections[type_].reset()
 
     def log_metric(
             self, 

@@ -21,7 +21,7 @@ class Trainer:
             # данные
             train_loader: DataLoader,
             val_loader: DataLoader,
-            test_loader: Optional[DataLoader],
+            test_loader: DataLoader,
             classes: Optional[List[str]],
             
             # настройки тренировки
@@ -78,6 +78,7 @@ class Trainer:
             (self.model, nn.Module, "model"),
             (self.train_loader, DataLoader, "train_loader"),
             (self.val_loader, DataLoader, "val_loader"),
+            (self.test_loader, DataLoader, "test_loader")
         ]
 
         for obj, expected_type, name in required_checks:
@@ -90,11 +91,6 @@ class Trainer:
                 raise ValueError(f"{name} cannot be empty")
 
             logger.debug(f"├🟢 {name}: OK")
-
-        # Optional parameters
-        if self.test_loader is not None and not isinstance(self.test_loader, DataLoader):
-            logger.warning(f"🟠 test_loader is not DataLoader. Setting to None")
-            self.test_loader = None
 
         logger.debug("└🏁 finish validating params")
 
@@ -353,46 +349,30 @@ class Trainer:
             torch.cuda.empty_cache()
 
     def _test_model(self) -> Optional[Dict[str, Any]]:
-        pass
-        # """Test the model on test dataset"""
-        # if self.test_loader is None or self.test_metrics is None:
-        #     logger.warning("Test not performed: test_loader or test_metrics is None")
-        #     return None
-        
-        # logger.debug("⚪ Starting model testing")
-        
-        # try:
-        #     self.model.eval()
-        #     self.test_metrics.reset()
+        """Тестирование модели на тестовых данных"""
+        try:
+            self.model.eval()
             
-        #     with torch.no_grad():
-        #         for batch in self._tqdm_loader(self.test_loader, "Testing"):
-        #             # Unpack batch
-        #             if isinstance(batch, (list, tuple)):
-        #                 inputs, labels = batch
-        #             else:
-        #                 inputs, labels = batch, None
+            with torch.no_grad():
+                for batch in self._tqdm_loader(self.test_loader, "Testing"):
                     
-        #             inputs = inputs.to(self.device)
-        #             if labels is not None:
-        #                 labels = labels.to(self.device)
+                    inputs, labels = batch
                     
-        #             outputs = self.model(inputs)
+                    inputs = inputs.to(self.device)
+                    labels = labels.to(self.device)
+                    outputs = self.model(inputs)
                     
-        #             if labels is not None:
-        #                 self.test_metrics.update(
-        #                     preds=outputs,
-        #                     target=labels
-        #                 )
+                    self._metric_service.update(
+                        'test',
+                        preds=outputs,
+                        targets=labels
+                    )
             
-        #     test_metrics_value = self.test_metrics.compute()
-        #     logger.info(f"Test results: {test_metrics_value}")
-        #     logger.debug("🟢 Testing completed successfully")
-        #     return test_metrics_value
+            self._metric_service.compute('test')
             
-        # except Exception as e:
-        #     logger.error(f"🔴 Testing failed: {e}")
-        #     return None
+        except Exception as e:
+            logger.error(f"Ошибка на стадии тестирования: {e}")
+            return None
 
     def _save_checkpoint(self, epoch: int, metrics: Dict[str, Any]) -> None:
         """Save model checkpoint"""
@@ -444,6 +424,9 @@ class Trainer:
                 self._validate_one_epoch()
                 
                 logger.info(f"🟢 Эпоха [{epoch}/{self.epochs}] завершена")
+
+            logger.info("🥳🥳 Тестирование модели... 🥳🥳")
+            self._test_model()
 
         except Exception as e:
             logger.error(f"Ошибка при обучении: {e}")
