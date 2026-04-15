@@ -61,8 +61,8 @@ services:
     ports:
       - "${TRAINER_SERVICE_PORT}:${TRAINER_SERVICE_PORT}"
     environment:
-      - TASKER=tasker_service:${TASKER_PORT}
-      - METRICS_SERVICE=metrics_service:${METRICS_SERVICE_PORT}
+      - TASKER_DOMAIN=tasker_service:${TASKER_PORT}
+      - METRICS_DOMAIN=metrics_service:${METRICS_SERVICE_PORT}
     depends_on:
       - metrics_service
       - tasker_service

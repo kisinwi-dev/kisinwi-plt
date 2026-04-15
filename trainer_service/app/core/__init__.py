@@ -1,58 +1,76 @@
-from typing import Dict
-from .task.classification import data, train_model
-from .task.classification.models import get_model
-
+from app.service.tasker import tasker_service, TaskParams
+from app.service.metrices import MetricesClient
 from app.logs import get_logger
+
+from .datas import create_dataloaders
+from .models import get_model
+from .train_model import Trainer
+from .utils import setup_device
 
 logger = get_logger(__name__)
 
-def training_model(
-        task_id: str,
-        config: dict
-    ):
+async def training_model(config: TaskParams):
+    """
+    Обучение модели.
+
+    Args:
+        config: параметры обучения
+    """
     try:
-        logger.info(f"💾 Задача[{task_id}]: Старт")
 
-        data_loader_params = config["data_loader_params"]
+        # Проверка технических возможностей
+        await tasker_service.update_status_task(1, description="Проверка устройства...")
+        device = setup_device(config.device)
+        await tasker_service.update_status_task(2, description="Устройство проверено на вычислительные возможности.")
 
-        train_loader, val_loader, test_loader, classes = data.load_dataloaders(
-            dataset_id=data_loader_params['dataset_id'],
-            version_id=data_loader_params['version_id'],
-            img_w_size=data_loader_params['img_w_size'],
-            img_h_size=data_loader_params['img_h_size'],
-            batch_size=data_loader_params['batch_size']
-        )
+        # Загружаем данные
+        await tasker_service.update_status_task(3, description="Загрузка данных...")
+        train_loader, val_loader, test_loader, classes = create_dataloaders(config.data_loader_params)
+        await tasker_service.update_status_task(5, description="Данные загружены.")
 
-
-        model_params = config["model_params"]
-
+        # Загружаем модель
+        await tasker_service.update_status_task(6, description="Загрузка модели...")
         model = get_model(
-            type=model_params["type"],
-            name=model_params["name"],
-            weights=model_params["weights"],
-            num_class = len(classes),
+            config.model_params,
+            num_classes = len(classes)
+        ).to(device)
+        await tasker_service.update_status_task(10, description=f"Модель {config.model_params.type} загружена.")
+
+        await tasker_service.update_status_task(11, description="Настройка метрик...")
+        metric_client = MetricesClient(
+            task_id=tasker_service.task_id,
+            metrices_params=config.metrices_params,
+            num_class=len(classes),
+            device=device
         )
+        await tasker_service.update_status_task(12, description="Метрики настроены.")
 
-        if config["model_params"]["weights"] == False:
-            img_w, img_h = model.get_input_size_for_weights()
-            config["data_loader_params"]["img_w_size"] = img_w
-            config["data_loader_params"]["img_h_size"] = img_h
-
-        trainer_params = config["trainer_params"]
-        trainer = train_model.Trainer(
-            model,
-            train_loader,
-            val_loader,
-            test_loader,
-            classes,
+        # Запуск обучения
+        await tasker_service.update_status_task(13, description=f"Формирование процесса обучения...")
+        trainer_params = config.trainer_params
+        trainer = Trainer(
+            # Вспомогательные сервисы
+            tasker_service=tasker_service,
+            metric_service=metric_client,
+            # Модель
+            model=model,
+            # Данные
+            train_loader=train_loader,
+            val_loader=val_loader,
+            test_loader=test_loader,
+            classes=classes,
+            # Устройство
+            device=device,
+            # Конфигурация
             loss_fn_config=trainer_params["loss_fn_config"],
             optimizer_config=trainer_params["optimizer_config"],
-            # scheduler_config=trainer_params["scheduler_config"],
-            device=trainer_params["device"],
-            epochs=2 # trainer_params["epochs"],
+            scheduler_config=trainer_params["scheduler_config"],
+            epochs=trainer_params["epochs"],
         )
-
+        await tasker_service.update_status_task(19, description=f"Процесса обучения сформирован")
+        await tasker_service.update_status_task(20, description=f"Обучения...")
         trainer.train()
+
     except Exception as e:
         logger.error(e)
         raise

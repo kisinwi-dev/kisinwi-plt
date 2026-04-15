@@ -1,14 +1,11 @@
-import uvicorn
 import asyncio
-from fastapi_app import app
-from worker import worker_loop
+from app import server, to_work
 
 async def main():
-    server = uvicorn.Server(uvicorn.Config(app, host="0.0.0.0", port=6200, reload=True))
-    
+    # Запуск сервера uvicorn и асинхронной функции опроса
     await asyncio.gather(
         server.serve(),
-        worker_loop()
+        to_work()
     )
 
 if __name__ == "__main__":

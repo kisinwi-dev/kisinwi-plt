@@ -1,7 +1,7 @@
 import uuid
 import asyncio
 import uvicorn
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, BackgroundTasks
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Response
 from pydantic import BaseModel
 from typing import Dict, Optional, List
 
@@ -13,12 +13,13 @@ tasks_db: Dict[str, dict] = {}
 task_queue: asyncio.Queue = asyncio.Queue()
 
 class TaskCreate(BaseModel):
-    payload: dict
+    params: dict
 
 class TaskUpdate(BaseModel):
-    status: Optional[str] = None
+    status: Optional[str] = None  # или TaskStatus enum
     progress: Optional[int] = None
     result: Optional[dict] = None
+    description: Optional[str] = None
 
 # --- API для клиента (UI) ---
 @app.post("/tasks")
@@ -28,7 +29,7 @@ async def create_task(task: TaskCreate):
         "status": "pending",
         "progress": 0,
         "result": None,
-        "payload": task.payload
+        "params": task.params
     }
     await task_queue.put(task_id)
     return {"task_id": task_id, "status": "pending"}
@@ -53,28 +54,47 @@ async def next_task():
         # Неблокирующее получение (если очереди нет, вернём 204)
         task_id = await asyncio.wait_for(task_queue.get(), timeout=0.5)
     except asyncio.TimeoutError:
-        return None  # или вернуть 204 No Content
+        return Response(status_code=204)
     
     task = tasks_db[task_id]
     # Помечаем как running (опционально, можно позже)
     task["status"] = "running"
-    return {"task_id": task_id, "payload": task["payload"]}
+    return {"task_id": task_id, "params": task["params"]}
 
-@app.put("/tasks/{task_id}/status")
+@app.patch("/tasks/{task_id}/status")
 async def update_task_status(task_id: str, update: TaskUpdate):
-    task = tasks_db.get(task_id)
-    if not task:
-        raise HTTPException(404, "Task not found")
-    if update.status:
-        task["status"] = update.status
-    if update.progress is not None:
-        task["progress"] = update.progress
-    if update.result is not None:
-        task["result"] = update.result
+    """
+    Обновление статуса задачи.
     
-    # Оповещаем всех подписанных WebSocket клиентов
-    await notify_websocket(task_id, task)
-    return {"ok": True}
+    - PATCH метод для частичного обновления
+    - Все поля опциональные
+    """
+    try:
+        task = tasks_db.get(task_id)
+        if not task:
+            raise HTTPException(404, "Task not found")
+        
+        if update.status is not None:
+            task["status"] = update.status
+        
+        if update.progress is not None:
+            if not 0 <= update.progress <= 100:
+                raise HTTPException(422, "Progress must be between 0 and 100")
+            task["progress"] = update.progress
+        
+        if update.result is not None:
+            task["result"] = update.result
+        
+        if update.description is not None: 
+            task["description"] = update.description
+        
+        print(task)
+    except Exception as e:
+        print("Error", e) 
+        
+    return {
+        "status": "ok",
+    }
 
 # --- WebSocket для live-обновлений (без Redis, используем простой брокер) ---
 # Храним активные WebSocket соединения по task_id

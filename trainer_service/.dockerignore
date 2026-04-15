@@ -1,5 +1,20 @@
-__pycache__
-.venv
+# Кэш
+__pycache__/
 
-*.log
-datasets
+# git
+.git
+.gitignore
+
+# Виртуальная среда
+.venv/
+
+# Docker
+Dockerfile
+.dockerignore
+
+# IDE
+.vscode/
+
+# Логи и data
+*.log*
+datasets/
