@@ -2,7 +2,7 @@ import timm
 import torch.nn as nn
 from typing import List
 
-from .shemas import ModelParams
+from app.api.schemes import ModelParams
 from app.logs import get_logger
 
 logger = get_logger(__name__)

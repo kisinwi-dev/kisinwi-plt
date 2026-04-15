@@ -6,7 +6,7 @@ from torchmetrics.classification import (
 )
 from torch import device
 
-from .shemas import MetricesParams, MetricesParamCollections
+from app.api.schemes import MetricesParams, MetricesParamCollections
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -92,7 +92,7 @@ def create_classification_metrics(
     )
     
     for metric in collection.keys():
-        logger.debug(f'🟩 Создана метрика: {metric}')
+        logger.debug(f'✅ Создана метрика: {metric}')
 
 
     # Переносим на устройство

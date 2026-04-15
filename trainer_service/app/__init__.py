@@ -4,9 +4,10 @@ import uvicorn
 from fastapi import FastAPI
 
 from .api.routers import api_routers
+from .api.schemes import TaskStatus
 from .core import training_model
 from .logs import get_logger
-from .service.tasker import tasker_service, TaskStatus
+from .service.tasker import tasker_service
 
 logger = get_logger(__name__)
 

@@ -3,7 +3,7 @@ from typing import Optional
 
 from app.logs import get_logger
 from app.config import config_domain
-from .shemas import Task, TaskStatus
+from app.api.schemes import Task, TaskStatus
 
 logger = get_logger(__name__)
 

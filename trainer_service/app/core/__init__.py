@@ -1,10 +1,11 @@
-from app.service.tasker import tasker_service, TaskParams
+from app.api.schemes import TaskParams
+from app.service.tasker import tasker_service
 from app.service.metrices import MetricesClient
 from app.logs import get_logger
 
 from .datas import create_dataloaders
 from .models import get_model
-from .train_model import Trainer
+from .trainer import Trainer
 from .utils import setup_device
 
 logger = get_logger(__name__)
@@ -47,7 +48,6 @@ async def training_model(config: TaskParams):
 
         # Запуск обучения
         await tasker_service.update_status_task(13, description=f"Формирование процесса обучения...")
-        trainer_params = config.trainer_params
         trainer = Trainer(
             # Вспомогательные сервисы
             tasker_service=tasker_service,
@@ -62,14 +62,13 @@ async def training_model(config: TaskParams):
             # Устройство
             device=device,
             # Конфигурация
-            loss_fn_config=trainer_params["loss_fn_config"],
-            optimizer_config=trainer_params["optimizer_config"],
-            scheduler_config=trainer_params["scheduler_config"],
-            epochs=trainer_params["epochs"],
+            train_params=config.trainer_params
         )
         await tasker_service.update_status_task(19, description=f"Процесса обучения сформирован")
         await tasker_service.update_status_task(20, description=f"Обучения...")
-        trainer.train()
+        model = await trainer.train(20, 80)
+        await tasker_service.update_status_task(80, description=f"Модель обучена.")
+
 
     except Exception as e:
         logger.error(e)

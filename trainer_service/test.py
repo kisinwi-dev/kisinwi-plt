@@ -1,4 +1,4 @@
-from app.api.schemas import *
+from app.api.schemes import *
 from app.core import training_model
 
 task_config_dict = {
