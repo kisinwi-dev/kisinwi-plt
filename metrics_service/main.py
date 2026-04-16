@@ -1,9 +1,8 @@
 import uvicorn
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
 
 # from app.core.exception.base import CoreException
-from app.api import api_routers
+from app.api.routers import routers
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
@@ -11,10 +10,7 @@ app = FastAPI(
     version="0.1.0"
 )
 
-app.include_router(
-    api_routers,
-    prefix="/api"
-)
+app.include_router(routers)
 
 app.add_middleware(
     CORSMiddleware,

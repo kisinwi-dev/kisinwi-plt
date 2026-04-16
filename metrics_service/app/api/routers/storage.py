@@ -1,8 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Query
-from typing import List, Optional
 
-from .storage import MetricsStorage
-from .schemas import *
+from app.core.storage import MetricsStorage
+from app.api.schemas import *
 
 api_routers = APIRouter()
 
