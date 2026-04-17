@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Union
+from typing import List
 
 class MetricAdd(BaseModel):
     """Схема на добавление метрики"""
