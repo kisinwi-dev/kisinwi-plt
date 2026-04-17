@@ -1,51 +1,44 @@
-from fastapi import APIRouter, HTTPException, status, Query
+from fastapi import APIRouter, HTTPException, Depends
+from app.api.schemes import MetricAdd, TaskMetrics
+from app.api.deps import get_metrics_manager, CVMetricManager
+from app.logs import get_logger
 
-from app.core.storage import MetricsStorage
-from app.api.schemas import *
+logger = get_logger(__name__)
+router = APIRouter(prefix="/metrics", tags=["metrics"])
 
-api_routers = APIRouter()
+@router.post("/add")
+async def add_metric(
+    metric: MetricAdd,
+    manager: CVMetricManager = Depends(get_metrics_manager)
+):
+    success = manager.add_metric(metric)
+    if not success:
+        raise HTTPException(status_code=500, detail="Ошибка добавления метрик")
+    return {"status": "ok"}
 
-# Инициализируем хранилище
-metrics_storage = MetricsStorage(storage_path="ml_metrics_storage")
+@router.get("/task/{task_id}", response_model=TaskMetrics)
+async def get_task_metrics(
+    task_id: str,
+    manager: CVMetricManager = Depends(get_metrics_manager)
+):
+    metrics = manager.get_task_metrics(task_id)
+    if metrics is None:
+        raise HTTPException(status_code=404, detail=f"Задача {task_id} не найдена")
+    return metrics
+
+@router.get("/task/{task_id}/exists")
+async def task_exists(
+    task_id: str,
+    manager: CVMetricManager = Depends(get_metrics_manager)
+):
+    exists = manager.task_exists(task_id)
+    return {"task_id": task_id, "exists": exists}
 
 
-@api_routers.post("/metrics/update", response_model=bool, status_code=status.HTTP_201_CREATED)
-async def update_metric(metric_update: MetricUpdate):
-    """
-    Обновить или добавить метрику для задачи
-    
-    - **task_id**: ID задачи обучения
-    - **metric_name**: Имя метрики (например, loss, accuracy)
-    - **value**: Значение метрики (число или список чисел)
-    - **step**: Номер шага/эпохи
-    """
-    try:
-        metrics_storage.update_metric(metric_update)
-        return True
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update metric: {str(e)}"
-        )
-
-
-@api_routers.get("/metrics/task/{task_id}", response_model=MetricsResponse)
-async def get_task_metrics(task_id: str):
-    """
-    Получить все метрики для конкретной задачи
-    
-    - **task_id**: ID задачи обучения
-    """
-    task_metrics = metrics_storage.get_task_metrics(task_id)
-    
-    if not task_metrics:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Task {task_id} not found"
-        )
-    
-    return MetricsResponse(
-        task_id=task_metrics.task_id,
-        metrics=task_metrics.metrics
-    )
-
+@router.delete("/task/{task_id}")
+async def task_delete(
+    task_id: str,
+    manager: CVMetricManager = Depends(get_metrics_manager)
+):
+    res = manager.delete_task(task_id)
+    return {"is_delet": res}

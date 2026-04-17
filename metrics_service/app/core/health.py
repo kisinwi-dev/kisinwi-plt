@@ -19,5 +19,5 @@ def check_connection_status(
 def check_bd_all():
     """Проверка подключения к базам данных"""
     logger.info("Проверяем состояние подключения к базам данных...")
-    check_connection_status(mongodb_config.URL_CV_METRIC, mongodb_config.DATABASE_CV_METRIC)
+    check_connection_status(mongodb_config.URL_METRIC, mongodb_config.DATABASE_METRIC)
     logger.info("Проверка завершена")
