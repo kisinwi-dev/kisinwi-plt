@@ -1,20 +1,23 @@
-from pydantic import BaseModel
-from typing import Dict, List, Union
+from pydantic import BaseModel, Field
+from typing import List, Union
 
-class MetricUpdate(BaseModel):
-    task_id: str 
-    metric_name: str
-    value: Union[float, int, List[float]]
-    step: int
+class MetricAdd(BaseModel):
+    """Схема на добавление метрики"""
+    task_id: str = Field(..., description='ID задачи')
+    metric_name: str = Field(..., description='Название метрики')
+    value: float = Field(..., description='Значения метрики')
 
 class MetricData(BaseModel):
-    steps: List[int] = []
-    values: List[Union[float, int, List[float]]] = [] 
+    """Схема метрик"""
+    metric_name: str = Field(..., description='Название метрики')
+    values: List[float] = Field(default_factory=list, description='Значения метрик')
 
 class TaskMetrics(BaseModel):
-    task_id: str
-    metrics: Dict[str, MetricData] = {} 
+    """Задача и все её метрики"""
+    task_id: str = Field(...,description='Id задачи')
+    metrics: List[MetricData] = Field(default_factory=list, description='Метрики')
 
-class MetricsResponse(BaseModel):
-    task_id: str
-    metrics: Dict[str, MetricData]
+class SearchMetric(BaseModel):
+    """Запрос на поиск требуемой метрики"""
+    task_id: str = Field(..., description='Id задачи')
+    metric_name: str = Field(..., description='Название метрики')
