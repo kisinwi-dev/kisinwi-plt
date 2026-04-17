@@ -70,16 +70,48 @@ services:
       - network
     shm_size: 2gb
 
+  mongodb:
+    image: mongo:8.2.7
+    container_name: data_mongodb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
+      - MONGO_APP_USERNAME=${MONGO_APP_USERNAME}
+      - MONGO_APP_PASSWORD=${MONGO_APP_PASSWORD}
+    ports:
+      - "${MONGO_PORT}:27017"
+    volumes:
+      - ./mongodb/data:/data/db
+      - ./mongodb/config:/data/configdb
+      - ./mongodb/init:/docker-entrypoint-initdb.d
+    networks:
+      - network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   metrics_service:
     container_name: 
       metrics_service
     build:
       context: ./metrics_service
       dockerfile: Dockerfile
+    environment:
+      - MONGO_HOST=data_mongodb
+      - MONGO_PORT=${MONGO_PORT}
+      - MONGO_TRAIN_METRIC_DATABASE=${MONGO_INITDB_DATABASE}
+      - MONGO_APP_USERNAME=${MONGO_APP_USERNAME}
+      - MONGO_APP_PASSWORD=${MONGO_APP_PASSWORD}
     ports: 
       - "${METRICS_SERVICE_PORT}:${METRICS_SERVICE_PORT}"
     networks:
       - network
+    depends_on:
+      mongodb:
+        condition: service_healthy
 
   # agent_monitoring:
     # Todo
