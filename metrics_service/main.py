@@ -1,10 +1,14 @@
 import uvicorn
 from fastapi import FastAPI
-
-# from app.core.exception.base import CoreException
-from app.api.routers import routers
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routers import routers
+from app.core.health import check_bd_all
+
+# Проверка состояния требуемых БД для правильной работы сервиса
+check_bd_all()
+
+# Создание `сервера`
 app = FastAPI(
     title="Data Manipulation Service",
     version="0.1.0"
