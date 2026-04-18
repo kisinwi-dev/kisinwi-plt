@@ -1,10 +1,10 @@
 import requests
-from typing import Dict, Any, Optional
+from typing import Dict
 from torch import device, Tensor
 
 from .collection import create_classification_collections
 
-from app.api.schemes import MetricesParamCollections, MetricsAdd, MetricData
+from app.api.schemes import MetricesParamCollections
 from app.config import config_domain
 from app.logs import get_logger
 
@@ -56,25 +56,35 @@ class MetricesClient:
                 name_metric = "".join(key.split('_')[1:])
                 logger.info(f"{name_metric:^20}: {value:.5}")
 
-        try:
-            metrics_add_data = MetricsAdd(
-                task_id=self._task_id,
-                metrics=[
-                    MetricData(name=name, values=[value.item()])
-                    for name, value in metrics.items()
-                ]
-            )
-
-            response = requests.post(
-                f"{self._url}/metrics/adds",
-                json=metrics_add_data.model_dump(),
-                timeout=30
-            )
-            response.raise_for_status()
-            logger.info(f"✅ Метрики для задачи {metrics_add_data.task_id} успешно оттправлены в сервис метрик")
-
-        except requests.RequestException as e:
-            logger.error(f"😡 Не удалось передать метрики в сервис метрик: {e}")
+        self._send_in_service(metrics)
 
         self._collections[type_].reset()
         logger.debug('✅ Коллекция метрик очищена')
+
+    def _send_in_service(
+            self,
+            metrics: Dict[str, Tensor]
+    ):
+        """Отправка метрик в сервис метрик"""
+        try:
+            metrics_data = {
+                "task_id": self._task_id,
+                "metrics": [
+                    {
+                        "name": name,
+                        "values": [value.item()] if value.numel() == 1 else value.tolist()
+                    }
+                    for name, value in metrics.items()
+                ]
+            }
+
+            response = requests.post(
+                f"{self._url}/metrics/adds",
+                json=metrics_data,
+                timeout=30
+            )
+            response.raise_for_status()
+            logger.debug(f"✅ Метрики для задачи {self._task_id} отправлены в сервис метрик")
+
+        except requests.RequestException as e:
+            logger.error(f"😡 Не удалось передать метрики в сервис метрик: {e}")
