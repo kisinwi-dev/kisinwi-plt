@@ -1,20 +1,21 @@
 import uvicorn
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-
-# from app.core.exception.base import CoreException
-from app.api import api_routers
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core.health import check_bd_all
+
+# Проверка состояния требуемых БД для правильной работы сервиса
+check_bd_all()
+
+from app.api.routers import routers
+
+# Создание `сервера`
 app = FastAPI(
     title="Data Manipulation Service",
     version="0.1.0"
 )
 
-app.include_router(
-    api_routers,
-    prefix="/api"
-)
+app.include_router(routers)
 
 app.add_middleware(
     CORSMiddleware,
