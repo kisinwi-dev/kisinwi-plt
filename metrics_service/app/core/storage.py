@@ -118,6 +118,63 @@ class CVMetricManager:
         except PyMongoError as e:
             logger.error(f"😡 Ошибка добавления метрики: {e}")
             return False
+        
+    def add_metrics(
+            self, 
+            metrics: MetricsAdd
+    ) -> bool:
+        """Добавление нескольких метрик для задачи"""
+        try:
+            # Поиск задачи
+            task_doc = self.task_exists(metrics.task_id)
+            
+            if task_doc:
+                # Задача существует
+                for metric in metrics.metrics:
+                    result = self.collection.update_one(
+                        {
+                            'task_id': metrics.task_id,
+                            'metrics.metric': metric.name
+                        },
+                        {
+                            '$push': {
+                                f'metrics.$.values': {'$each': metric.values}
+                            }
+                        }
+                    )
+                    
+                    # Если метрика не найдена, добавляем новую
+                    if result.matched_count == 0:
+                        new_metric = {
+                            'metric': metric.name,
+                            'values': metric.values,
+                        }
+                        self.collection.update_one(
+                            {'task_id': metrics.task_id},
+                            {'$push': {'metrics': new_metric}}
+                        )
+            else:
+                # Новая задача - создаем документ
+                new_task = {
+                    'task_id': metrics.task_id,
+                    'metrics': [
+                        {
+                            'metric': metric.name,
+                            'values': metric.values,
+                        }
+                        for metric in metrics.metrics
+                    ]
+                }
+                self.collection.insert_one(new_task)
+            
+            metric_name = ",".join(metric.name for metric in metrics.metrics)
+
+            logger.debug(f"➕ Добавлены метрики ({metric_name}) для задачи {metrics.task_id}")
+            return True
+            
+        except PyMongoError as e:
+            logger.error(f"😡 Ошибка добавления метрик: {e}")
+            return False
 
     def get_task_metrics(
         self, 

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from app.api.schemes import MetricAdd, TaskMetrics
+from app.api.schemes import MetricAdd, MetricsAdd, TaskMetrics
 from app.api.deps import get_metrics_manager, CVMetricManager
 from app.logs import get_logger
 
@@ -12,6 +12,16 @@ async def add_metric(
     manager: CVMetricManager = Depends(get_metrics_manager)
 ):
     success = manager.add_metric(metric)
+    if not success:
+        raise HTTPException(status_code=500, detail="Ошибка добавления метрики")
+    return {"status": "ok"}
+
+@router.post("/adds")
+async def add_metrics(
+    metric: MetricsAdd,
+    manager: CVMetricManager = Depends(get_metrics_manager)
+):
+    success = manager.add_metrics(metric)
     if not success:
         raise HTTPException(status_code=500, detail="Ошибка добавления метрик")
     return {"status": "ok"}

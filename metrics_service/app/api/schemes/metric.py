@@ -7,6 +7,11 @@ class MetricAdd(BaseModel):
     name: str = Field(..., description='Название метрики')
     value: float = Field(..., description='Значения метрики')
 
+class MetricsAdd(BaseModel):
+    """Схема на добавление нескольких метрик"""
+    task_id: str = Field(..., description='ID задачи')
+    metrics: List[MetricData] = Field(..., description='Список метрик')
+
 class MetricData(BaseModel):
     """Схема метрик"""
     name: str = Field(..., description='Название метрики')

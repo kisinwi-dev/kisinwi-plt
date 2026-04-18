@@ -2,7 +2,7 @@ from app.core.storage import CVMetricManager
 
 manager = CVMetricManager()
 
-def get_metrics_manager():
+async def get_metrics_manager():
     try:
         manager.connect()
         yield manager
