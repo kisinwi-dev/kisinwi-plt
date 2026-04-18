@@ -52,3 +52,15 @@ class MetricesParamCollections(BaseModel):
             }
         }
     }
+
+## Классы скопированы из сервиса метрик 19.04.26
+
+class MetricData(BaseModel):
+    """Схема метрик"""
+    name: str = Field(..., description='Название метрики')
+    values: List[float] = Field(default_factory=list, description='Значения метрик')
+
+class MetricsAdd(BaseModel):
+    """Схема на добавление нескольких метрик"""
+    task_id: str = Field(..., description='ID задачи')
+    metrics: List[MetricData] = Field(..., description='Список метрик')
