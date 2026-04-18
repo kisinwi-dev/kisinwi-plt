@@ -18,6 +18,25 @@ class CVMetricManager:
         self.collection_cv = mongodb_config.COLLECTION_CV
         self.client: MongoClient
         self.collection: Collection
+        self.create_index()
+
+    def create_index(self):
+        """Создание индексов"""
+
+        # __WARNING__ постоянно создаёт индексы после перезагрузки контейнера
+        # ТРЕБУЕТСЯ ИСПРАВИТЬ ЭТО В БУДУЩЕМ
+
+        try:
+            # Коллекция метрик CV
+            self.client = MongoClient(self.url)
+            self.db = self.client[self.database_name]
+            self.collection = self.db[self.collection_cv]
+
+            self.collection.create_index('task_id', unique=True)
+            self.collection.create_index([('task_id', 1), ('metrics.metric', 1)])
+            logger.debug("✅ Индексы созданы")
+        except PyMongoError as e:
+            logger.error(f"Ошибка создания индексов: {e}")
 
     def connect(self):
         """Подключение к MongoDB"""
@@ -26,11 +45,7 @@ class CVMetricManager:
             self.client = MongoClient(self.url)
             self.db = self.client[self.database_name]
             self.collection = self.db[self.collection_cv]
-            
-            # Создание индексов
-            self.collection.create_index('task_id', unique=True)
-            self.collection.create_index([('task_id', 1), ('metrics.metric', 1)])
-            
+
             logger.debug(f"🟩 {self.database_name} подключена")
         except PyMongoError as e:
             logger.error(f"😡 Не удалось подключиться к {self.database_name} : {e}")
@@ -45,21 +60,20 @@ class CVMetricManager:
     def __enter__(self):
         self.connect()
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.disconnect()
         return False
-    
+
     def add_metric(
             self, 
             metric: MetricAdd
-        ) -> bool:
+    ) -> bool:
         """Добавление новой метрики для задачи"""
         try:
-            
             # Поиск задачи
             task_doc = self.task_exists(metric.task_id)
-            
+
             if task_doc:
                 # Задача существует
                 result = self.collection.update_one(
@@ -97,14 +111,13 @@ class CVMetricManager:
                     }]
                 }
                 self.collection.insert_one(new_task)
-            
+
             logger.debug(f"➕ Добавлена метрика {metric.name}={metric.value} для задачи {metric.task_id}")
             return True
-            
+
         except PyMongoError as e:
             logger.error(f"😡 Ошибка добавления метрики: {e}")
             return False
-        
 
     def get_task_metrics(
         self, 
@@ -126,20 +139,19 @@ class CVMetricManager:
                     ],
                 )
             return None
-            
+
         except PyMongoError as e:
             logger.error(f"😡 Ошибка получения метрик задачи: {e}")
             return None
-    
 
     def task_exists(
             self,
             task_id: str
-        ) -> bool:
+    ) -> bool:
         """Проверка существования задачи"""
         task = self.collection.find_one({'task_id': task_id}, {'_id': 1})
         return task is not None
-    
+
     def delete_task(
             self,
             task_id: str
