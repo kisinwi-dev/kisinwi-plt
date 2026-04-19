@@ -20,7 +20,7 @@ def get_model(
         num_classes: Количество классов
         pretrained: Использовать предобученные веса
     """
-    logger.info(f"Загрузка модели: {type}, classes={num_classes}")
+    logger.info(f"Загрузка модели: {params.type}, classes={num_classes}")
     
     try:
         model = timm.create_model(
@@ -28,11 +28,11 @@ def get_model(
             pretrained=params.pretrained,
             num_classes=num_classes,
         )
-        logger.info(f"✅ Модель {type} загружена")
+        logger.info(f"✅ Модель {params.type} загружена")
         return model
         
     except Exception as e:
-        logger.error(f"Ошибка загрузки модели {type}: {e}")
+        logger.error(f"Ошибка загрузки модели {params.type}: {e}")
         raise
 
 
