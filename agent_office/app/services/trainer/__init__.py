@@ -25,14 +25,15 @@ def get_type_and_name_models(filter: str) -> List[str]:
     Получить все имеющиеся модели в распоряжении.
 
     Args:
-        filter - фильтр моделей
+        filter - фильтр моделей(Пример: "*resnet*" - поиск всех моделей, 
+    в которых есть слово resnet)
     """
     try:
         params={}
         params["filter"] = filter
 
         resp = requests.get(
-            f"{config_url.TRAINER_URL}/info/available_models",
+            f"{config_url.TRAINER_URL}/info/ml_models",
             params=params
         )
         data = resp.json()
