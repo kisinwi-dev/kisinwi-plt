@@ -5,7 +5,6 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "crewai-tools[mcp]>=1.14.1",
     "crewai[tools]>=1.14.1",
     "fastapi>=0.135.3",
 ]
