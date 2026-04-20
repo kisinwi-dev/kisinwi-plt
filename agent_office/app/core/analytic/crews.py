@@ -1,5 +1,5 @@
 from crewai import Crew
-from app.service.crewai.llm import llm
+from app.core.llm import llm
 
 from .agents import new_analytic_reporter
 from .tasks import new_task_analytic

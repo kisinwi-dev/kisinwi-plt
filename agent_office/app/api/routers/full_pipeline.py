@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, HTTPException
-from app.service.crewai.ml.crews import run_search_params_json
-from app.service.crewai.analytic.crews import run_analysis
+from app.core.ml.crews import run_search_params_json
+from app.core.analytic.crews import run_analysis
 import requests
 import json
 import os

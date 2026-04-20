@@ -1,5 +1,5 @@
 from crewai import Crew
-from app.service.crewai.llm import llm
+from app.core.llm import llm
 
 from .agents import new_agent_ml_engineer, new_agent_task_preparer
 from .tasks import new_task_search_best_model, new_task_summary

@@ -1,6 +1,6 @@
 from crewai import Agent
-from .tools import get_dataset_info
-from app.service.crewai.llm import llm
+from ...services.data import get_dataset_info
+from app.core.llm import llm
 
 def new_analytic_reporter(dataset_id: str, version_id: str|None = None): 
     """

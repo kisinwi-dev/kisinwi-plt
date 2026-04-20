@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query
-from app.service.crewai.ml.crews import run_search_params_json
+from app.core.ml.crews import run_search_params_json
 
 routers = APIRouter()
 

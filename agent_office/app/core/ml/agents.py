@@ -1,6 +1,6 @@
 from crewai import Agent
-from .tools import get_example_run_config_trainer_json, get_type_and_name_models
-from app.service.crewai.llm import llm
+from ...services.trainer import get_example_run_config_trainer_json, get_type_and_name_models
+from app.core.llm import llm
 
 
 def new_agent_ml_engineer(role_specific: str):
