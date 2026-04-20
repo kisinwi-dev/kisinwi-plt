@@ -1,10 +1,11 @@
 from crewai import Task
-from .agents import new_agent_ml_engineer, new_agent_task_preparer
+from .agents import new_agent_ml_engineer
 
 def new_task_search_best_model(
         role_specific: str,
+        number_engineer: int|None = None,
         previous_output: str = ""
-    ):
+) -> Task:
     return Task(
             description=f"""Проанализируй следующие данные о датасете и предложи архитектуру модели:
 
@@ -12,14 +13,5 @@ def new_task_search_best_model(
 
 На основе этих данных дай рекомендации по архитектуре.""",
         expected_output="Рекомендации по архитектуре и обучению модели",
-        agent=new_agent_ml_engineer(role_specific)
-    )
-
-def new_task_summary(
-        previous_output: list = []
-    ):
-    return Task(
-        description=f"Подготовка JSON",
-        expected_output="ТОЛЬКО JSON НА ВЫХОДЕ, БЕЗ ТЕКСТА, ТОЛЬКО JSON",
-        agent=new_agent_task_preparer(previous_output)
+        agent=new_agent_ml_engineer(role_specific, number_engineer)
     )

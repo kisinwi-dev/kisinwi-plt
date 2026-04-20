@@ -13,9 +13,10 @@ def create_crew(dataset_id: str, version_id: str|None = None):
     return Crew(
         agents=[analyst],
         tasks=[task],
-        verbose=False
+        verbose=True
     )
 
 def run_analysis(dataset_id: str, version_id: str|None = None):
+    """Запуск анализа данных"""
     crew = create_crew(dataset_id, version_id)
     return crew.kickoff()

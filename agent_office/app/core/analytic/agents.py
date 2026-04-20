@@ -1,8 +1,11 @@
 from crewai import Agent
-from ...services.data import get_dataset_info
+from app.services.data import data_service
 from app.core.llm import llm
 
-def new_analytic_reporter(dataset_id: str, version_id: str|None = None): 
+def new_analytic_reporter(
+        dataset_id: str, 
+        version_id: str|None = None
+    ): 
     """
     Создает агента для анализа конкретного датасета
     
@@ -11,12 +14,35 @@ def new_analytic_reporter(dataset_id: str, version_id: str|None = None):
         version_id: ID версии (если None - анализирует все версии)
     """
     
+    goal = create_goal_analytic(dataset_id, version_id)
+    backstory = create_backstory_analytic(dataset_id, version_id) 
+
+    return Agent(
+        role="CV Data Analyst",
+        goal=goal,
+        backstory=backstory,
+        llm=llm,
+        tools=[
+            data_service.get_dataset_info, 
+            data_service.list_datasets
+        ],
+        verbose=True,
+        allow_delegation=False,
+        max_iter=8,
+    )
+
+def create_goal_analytic(dataset_id: str, version_id: str|None = None):
+    """Создание задачи агенту аналитику"""
     goal = f"Провести полный анализ датасета {dataset_id}"
     if version_id:
         goal += f" (версия {version_id})"
     goal += " и подготовить детальный отчёт для ML-инженеров"
+
+    return goal
     
-    backstory = f"""Ты — аналитик данных в команде Deep Learning.
+def create_backstory_analytic(dataset_id: str, version_id: str|None = None):
+    """Создание бэкграунда агенту аналитику"""
+    return f"""Ты — аналитик данных в команде Deep Learning.
 
 ТЕКУЩАЯ ЗАДАЧА:
 Анализ датасета: {dataset_id}
@@ -45,14 +71,3 @@ def new_analytic_reporter(dataset_id: str, version_id: str|None = None):
 4. Выводы и рекомендации
 
 ВАЖНО: Работай ТОЛЬКО с датасетом {dataset_id}. Не трогай другие датасеты."""
-
-    return Agent(
-        role="CV Data Analyst",
-        goal=goal,
-        backstory=backstory,
-        llm=llm,
-        tools=[get_dataset_info],
-        verbose=True,
-        allow_delegation=False,
-        max_iter=8,
-    )
