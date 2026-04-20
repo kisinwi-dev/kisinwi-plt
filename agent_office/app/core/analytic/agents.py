@@ -1,5 +1,5 @@
 from crewai import Agent
-from app.services.data import data_service
+from app.services.data import *
 from app.core.llm import llm
 
 def new_analytic_reporter(
@@ -23,8 +23,8 @@ def new_analytic_reporter(
         backstory=backstory,
         llm=llm,
         tools=[
-            data_service.get_dataset_info, 
-            data_service.list_datasets
+            get_dataset_info, 
+            list_datasets
         ],
         verbose=True,
         allow_delegation=False,

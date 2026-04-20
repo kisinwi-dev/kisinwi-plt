@@ -13,7 +13,7 @@ class Tasker():
 
     def post_task(
             self,
-            json_data: Dict
+            json_data: Dict | str
     ):
         """Отправить JSON для запуска тренировки модели"""
         try:
