@@ -1,7 +1,7 @@
 from crewai import Agent
 
 from app.core.llm import llm
-from app.services.trainer import get_example_run_config_trainer_json, get_type_and_name_models
+from app.services.trainer import get_example_run_config_trainer_json, get_type_and_name_models, get_info_device
 
 
 def new_agent_task_preparer(previous_outputs: list):
@@ -15,7 +15,11 @@ def new_agent_task_preparer(previous_outputs: list):
         goal="На основе всех предыдущих анализов подготовить итоговый JSON для сервиса задач обучения",
         backstory=create_backstory_preparer(thoughts_str),
         llm=llm,
-        tools=[get_example_run_config_trainer_json, get_type_and_name_models],
+        tools=[
+            get_example_run_config_trainer_json, 
+            get_type_and_name_models, 
+            get_info_device
+        ],
         verbose=True,
         allow_delegation=False,
     )
