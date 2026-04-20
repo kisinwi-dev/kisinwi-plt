@@ -6,7 +6,7 @@ load_dotenv()
 
 @dataclass
 class ConfigURL:
-    DMS_URL = f"http://{os.getenv('TASKER_DOMAIN', 'localhost:6500')}"
+    DMS_URL = f"http://{os.getenv('DMS_DOMEN', 'localhost:6500')}"
     TASKER_URL = f"http://{os.getenv('TASKER_DOMEN', 'localhost:6110')}"
     TRAINER_URL = f"http://{os.getenv('TRAINER_DOMEN', 'localhost:6200')}"
 
