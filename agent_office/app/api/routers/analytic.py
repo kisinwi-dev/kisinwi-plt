@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query
-from app.service.crewai.analytic.crews import run_analysis
+from app.core.analytic.crews import run_analysis
 
 routers = APIRouter()
 
