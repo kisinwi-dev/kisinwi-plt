@@ -37,10 +37,19 @@ services:
     build: 
       context: ./tasker_service
       dockerfile: Dockerfile
+    environment:
+      - POSTGRES_HOST=data_postgres
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_APP_USERNAME=${APP_TASKER_USER}
+      - POSTGRES_APP_PASSWORD=${APP_TASKER_PASSWORD}
     ports:
       - "${TASKER_PORT}:${TASKER_PORT}"
     networks:
       - network
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   postgres:
     image: postgres:17-alpine
