@@ -1,0 +1,6 @@
+from fastapi import APIRouter
+from .task import routers as routers_task
+
+routers = APIRouter()
+
+routers.include_router(routers_task)
