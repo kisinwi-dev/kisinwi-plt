@@ -37,11 +37,43 @@ services:
     build: 
       context: ./tasker_service
       dockerfile: Dockerfile
+    environment:
+      - POSTGRES_HOST=data_postgres
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_APP_USERNAME=${APP_TASKER_USER}
+      - POSTGRES_APP_PASSWORD=${APP_TASKER_PASSWORD}
     ports:
       - "${TASKER_PORT}:${TASKER_PORT}"
     networks:
       - network
+    depends_on:
+      postgres:
+        condition: service_healthy
 
+  postgres:
+    image: postgres:17-alpine
+    container_name: 
+      data_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_ROOT_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      APP_TASKER_USER: ${APP_TASKER_USER}
+      APP_TASKER_PASSWORD: ${APP_TASKER_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - ./db/postgres/data:/var/lib/postgresql/data
+      - ./db/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_ROOT_USERNAME} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - network
     
   trainer_service:
     container_name: 
@@ -82,9 +114,9 @@ services:
     ports:
       - "${MONGO_PORT}:27017"
     volumes:
-      - ./mongodb/data:/data/db
-      - ./mongodb/config:/data/configdb
-      - ./mongodb/init:/docker-entrypoint-initdb.d
+      - ./db/mongodb/data:/data/db
+      - ./db/mongodb/config:/data/configdb
+      - ./db/mongodb/init:/docker-entrypoint-initdb.d
     networks:
       - network
     healthcheck:
