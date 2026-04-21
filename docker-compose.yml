@@ -82,9 +82,9 @@ services:
     ports:
       - "${MONGO_PORT}:27017"
     volumes:
-      - ./mongodb/data:/data/db
-      - ./mongodb/config:/data/configdb
-      - ./mongodb/init:/docker-entrypoint-initdb.d
+      - ./db/mongodb/data:/data/db
+      - ./db/mongodb/config:/data/configdb
+      - ./db/mongodb/init:/docker-entrypoint-initdb.d
     networks:
       - network
     healthcheck:
