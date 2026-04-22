@@ -6,25 +6,25 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - DMS=localhost:${DATA_MANIPULATION_SERVICE_PORT}
+        - DMS=localhost:${DATASETS_SERVICE_PORT}
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     networks:
       - network
     depends_on:
-      - data_manipulation_service
+      - datasets
     
   
-  data_manipulation_service:
+  datasets:
     container_name: 
-      data_manipulation_service
+      datasets
     build: 
-      context: ./data_manipulation_service
+      context: ./datasets
       dockerfile: Dockerfile
     volumes:
       - ./datasets_storage:/app/datasets
     ports:
-      - "${DATA_MANIPULATION_SERVICE_PORT}:${DATA_MANIPULATION_SERVICE_PORT}"
+      - "${DATASETS_SERVICE_PORT}:${DATASETS_SERVICE_PORT}"
     networks:
       - network
   
@@ -157,7 +157,7 @@ services:
     ports:
       - "${AGENT_OFFICE_PORT}:${AGENT_OFFICE_PORT}"
     environment:
-      - DMS_DOMEN=data_manipulation_service:${DATA_MANIPULATION_SERVICE_PORT}
+      - DMS_DOMEN=datasets:${DATASETS_SERVICE_PORT}
       - TASKER_DOMEN=tasker_service:${TASKER_PORT}
       - TRAINER_DOMEN=trainer_service:${TRAINER_SERVICE_PORT}
     networks:
