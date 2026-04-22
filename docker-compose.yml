@@ -12,14 +12,14 @@ services:
     networks:
       - network
     depends_on:
-      - datasets
+      - datasets_service
     
   
-  datasets:
+  datasets_service:
     container_name: 
-      datasets
+      datasets_service
     build: 
-      context: ./datasets
+      context: ./datasets_service
       dockerfile: Dockerfile
     volumes:
       - ./datasets_storage:/app/datasets
@@ -157,7 +157,7 @@ services:
     ports:
       - "${AGENT_OFFICE_PORT}:${AGENT_OFFICE_PORT}"
     environment:
-      - DMS_DOMEN=datasets:${DATASETS_SERVICE_PORT}
+      - DMS_DOMEN=datasets_service:${DATASETS_SERVICE_PORT}
       - TASKER_DOMEN=tasker_service:${TASKER_PORT}
       - TRAINER_DOMEN=trainer_service:${TRAINER_SERVICE_PORT}
     networks:
