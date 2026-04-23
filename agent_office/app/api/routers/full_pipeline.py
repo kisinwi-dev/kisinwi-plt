@@ -22,7 +22,6 @@ def full_pipeline(
         full_pipeline_agent(
             dataset_id,
             version_id,
-            task,
             count_engine
         )
         

@@ -3,32 +3,30 @@ from app.core.llm import llm
 
 
 def new_agent_ml_engineer(
-        role_specific: str, 
         number_engineer: int|None = None
 ) -> Agent:
     """ML-инженер"""
     
     return Agent(
-        role=f"Senior ML Engineer - {role_specific}",
+        role=f"Senior ML Engineer",
         goal=f"На основе анализа данных подготовить технические рекомендации",
-        backstory=create_backstory_enginer(role_specific, number_engineer),
+        backstory=create_backstory_enginer(number_engineer),
         llm=llm,
         verbose=True,
         allow_delegation=False,
     )
     
 def create_backstory_enginer(
-        role_specific: str, 
         number_engineer: int|None = None
 ) -> str:
     """Создание бэкграунда агенту ML-инженеру"""
 
-    name_enginer = f"ML_ENGINEER_{role_specific.upper().replace(' ', '_')}"
+    name_enginer = f"ML_ENGINEER"
 
     if number_engineer is not None:
         name_enginer += f"_{number_engineer}"
 
-    return f"""Ты ML-инженер, специализирующийся на {role_specific}.
+    return f"""Ты ML-инженер.
 
 ТВОЯ ЗАДАЧА:
 Проанализируй эти данные и дай рекомендации.

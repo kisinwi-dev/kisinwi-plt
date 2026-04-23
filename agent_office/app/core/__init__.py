@@ -6,7 +6,6 @@ from app.services.tasker import tasker
 def full_pipeline_agent(
     dataset_id: str,
     version_id: str,
-    task: str,
     count_engine: int,
 ):
     """
@@ -25,7 +24,7 @@ def full_pipeline_agent(
 
     for index_engine in range(count_engine):
         plans.append(
-            run_engine_training_pipeline(task, index_engine, analysis_result).raw
+            run_engine_training_pipeline(index_engine, analysis_result).raw
         )
 
     task_str = run_create_task_params_json(plans).raw

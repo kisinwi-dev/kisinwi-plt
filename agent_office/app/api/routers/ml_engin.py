@@ -23,7 +23,10 @@ def run_etp(
     - version_id: ID версии
     """
     
-    result = run_engine_training_pipeline(role, number_engineer, previous_output)
+    result = run_engine_training_pipeline(
+        number_engineer, 
+        previous_output
+    )
     
     return {
         "number_engineer": number_engineer,
