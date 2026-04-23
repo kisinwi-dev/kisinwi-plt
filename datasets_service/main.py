@@ -7,7 +7,7 @@ from app.api.routers import api_routers
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
-    title="Data Manipulation Service",
+    title="Datasets Service",
     version="0.1.0"
 )
 
@@ -23,16 +23,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-@app.exception_handler(CoreException)
-async def core_exception_handler(request: Request, exc: CoreException):
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={
-            "error": exc.message,
-            "detail": exc.detail
-        }
-    )
 
 if __name__ == "__main__":
     uvicorn.run(
