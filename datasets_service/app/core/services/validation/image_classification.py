@@ -86,11 +86,7 @@ def version_validation_and_create_metadata(
                         nv.version_id
                     )
 
-                if not fsm.all_file_is_image():
-                    raise VersionValidationError(
-                        f"В папке {dir_selection}/{dir_class} не все файлы являются изображениями.",
-                        nv.version_id
-                    )
+                fsm.all_file_is_image()    
                 
                 count_files_in_class = len(fsm.get_all_files())
                 if count_files_in_class == 0:

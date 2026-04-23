@@ -41,11 +41,9 @@ def new_dataset(
                 type_task_supported()
             )
 
-        logger.debug(
-            f'| Поддержка тип и задачи'
-            f'| 🟩 Тип:    {dsn.type}'
-            f'| 🟩 Задача: {dsn.task}'
-        )
+        logger.debug('| Поддержка тип и задачи')
+        logger.debug(f'| 🟩 Тип:    {dsn.type}')
+        logger.debug(f'| 🟩 Задача: {dsn.task}')
 
         dsm = processor(dsn, fsm)
 
