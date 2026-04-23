@@ -9,4 +9,5 @@ dependencies = [
     "uvicorn>=0.34.0",
     "httpx>=0.28.1",
     "python-multipart>=0.0.24",
+    "pillow>=12.2.0",
 ]

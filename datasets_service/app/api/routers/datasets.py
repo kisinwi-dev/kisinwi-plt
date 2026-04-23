@@ -78,6 +78,7 @@ def create_dataset(
         return True
     except CoreException as e:
         logger.error(f"\nОшибка: {e.message}\nДетали: {e.detail}")
+        dm.drop_cache()
         return HTTPException(
             status_code=e.status_code, 
             detail=e.message
