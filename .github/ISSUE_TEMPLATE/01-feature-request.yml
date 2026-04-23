@@ -1,0 +1,141 @@
+name: "✨ Запрос новой функциональности"
+description: "Предложите изменения или улучшения в сервисе обучения и анализа данных"
+title: "[FEAT]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🚀 Спасибо, что помогаете улучшить проект!
+        
+        Чем детальнее вы опишете предложение, тем быстрее мы его реализуем.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: "🎯 Компонент"
+      description: "Какой компонент затронут?"
+      options:
+        - "📊 Датасеты"
+        - "🏋️ Обучение модели"
+        - "💾 Задачник"
+        - "📈 Метрики"
+        - "🐳 Docker/Инфраструктура"
+        - "🤖 Агенты"
+        - "🦎 Не известно"
+        - "❓ Другое"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: "🎯 Приоритет"
+      description: "Насколько это важно?"
+      options:
+        - "🚨 Критично (блокирует другие задачи)"
+        - "🔴 Высокий"
+        - "🟡 Средний"
+        - "🟢 Низкий"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: "❓ Какая проблема решается?"
+      description: "Что сейчас не так? Что нужно улучшить?"
+      placeholder: |
+        Сейчас агент анализирует датасет за 5-10 шагов, тратя много токенов.
+        Хочется ускорить анализ и снизить стоимость.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: "💡 Предлагаемое решение"
+      description: "Как вы видите идеальную реализацию?"
+      placeholder: |
+        Добавить пагинацию в вывод анализа:
+        1. Сначала общая статистика
+        2. Затем детали по запросу
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "🔄 Альтернативные решения"
+      description: "Какие ещё варианты рассматривали?"
+      placeholder: |
+        - Вариант 1: Кэширование
+        - Вариант 2: Асинхронная обработка
+    validations:
+      required: false
+
+  # === ПЛАН РЕАЛИЗАЦИИ ===
+  - type: textarea
+    id: changes
+    attributes:
+      label: "✅ Чеклист реализации"
+      description: "Что конкретно нужно сделать?"
+      placeholder: |
+        - [ ] Добавить новый метод в DatasetManager
+        - [ ] Обновить API эндпоинт
+        - [ ] Добавить тесты
+        - [ ] Обновить документацию
+      value: |
+        - [ ] Исследование и проектирование
+        - [ ] Реализация
+        - [ ] Тестирование
+        - [ ] Документация
+        - [ ] Code review
+    validations:
+      required: true
+
+  # === СРОКИ И ЗАВИСИМОСТИ ===
+  - type: input
+    id: deadline
+    attributes:
+      label: "📅 Желаемый срок"
+      description: "Когда нужно завершить?"
+      placeholder: "YYYY-MM-DD, 'до релиза v2.0' или 'не срочно'"
+    validations:
+      required: false
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: "🔗 Связанные задачи"
+      description: "Какие issue блокируют или связаны с этой задачей?"
+      placeholder: "#123, #456, зависит от реализации компонента 'Агенты'"
+    validations:
+      required: false
+
+  # === ДОПОЛНИТЕЛЬНО ===
+  - type: textarea
+    id: additional
+    attributes:
+      label: "💬 Дополнительный контекст"
+      description: "Скриншоты, примеры кода, ссылки, метрики текущей производительности"
+      placeholder: |
+        Текущие метрики:
+        - Время анализа: 30 сек
+        - Токенов за анализ: 6000
+        
+        Ожидаемые метрики после улучшения:
+        - Время: 10 сек
+        - Токенов: 2000
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: "✅ Подтверждения"
+      options:
+        - label: "Я проверил, что нет похожего issue (открытого или закрытого)"
+          required: true
+        - label: "Я описал проблему и решение достаточно детально"
+          required: true

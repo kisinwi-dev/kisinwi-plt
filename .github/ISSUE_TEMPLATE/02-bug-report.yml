@@ -1,0 +1,139 @@
+name: "🐛 Сообщение об ошибке"
+description: "Сообщите об ошибке в сервисе тренировки или анализе данных"
+title: "[BUG]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🚨 Спасибо за сообщение об ошибке!
+        
+        > ⚠️ **ВАЖНО**: Чем подробнее вы опишете проблему, тем быстрее мы сможем ее исправить.
+        > Если это срочная проблема с продакшеном, укажите 🔴 **КРИТИЧНО** в заголовке.
+
+  - type: input
+    id: version
+    attributes:
+      label: "📦 Версия"
+      description: "В какой версии обнаружена ошибка?"
+      placeholder: "v1.2.3 или commit hash (git rev-parse HEAD)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: "🚨 Серьезность"
+      description: "Насколько критична проблема?"
+      options:
+        - "🔴 Критичная (блокирует работу, нет обходного пути)"
+        - "🟠 Высокая (сильно влияет на работу, есть обходной путь)"
+        - "🟡 Средняя (частично влияет, не блокирует)"
+        - "🟢 Низкая (косметическая, не влияет на функционал)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: "🎯 Компонент"
+      description: "Какой компонент затронут? (Если не понимаете какой компонент указывайте '🦎 Не известно')"
+      options:
+        - "📊 Датасеты"
+        - "🏋️ Обучение модели"
+        - "💾 Задачник"
+        - "📈 Метрики"
+        - "🐳 Docker/Инфраструктура"
+        - "🤖 Агенты"
+        - "🦎 Не известно"
+        - "❓ Другое"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "📝 Описание ошибки"
+      description: "Четкое и краткое описание проблемы."
+      placeholder: |
+        При нормализации датасета 'cats_vs_dogs' происходит ошибка деления на ноль.
+        Модель перестает обучаться после 100 итераций.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: "🔁 Шаги для воспроизведения"
+      description: "Максимально подробно опишите, как воспроизвести ошибку."
+      placeholder: |
+        1. Использую датасет 'cats_vs_dogs' версии v2
+        2. Запускаю обучение командой: `python train.py --dataset cats_vs_dogs --epochs 10`
+        3. На 5-й эпохе падает с ошибкой `ZeroDivisionError`
+        4. Лог ошибки прилагаю ниже
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: "✅ Ожидаемое поведение"
+      description: "Что должно было произойти?"
+      placeholder: |
+        Модель должна успешно завершить 10 эпох и сохранить веса.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: "📋 Логи ошибки"
+      description: "Скопируйте логи из Docker-контейнера."
+      placeholder: |
+        # Получить логи можно командой:
+        docker-compose logs --tail=100 api
+        
+        # Вставьте вывод сюда:
+        ERROR:app.core.services.validation:Ошибка валидации датасета...
+        Traceback (most recent call last):
+          ...
+      render: python
+    validations:
+      required: false
+
+  - type: input
+    id: endpoint
+    attributes:
+      label: "🔗 API эндпоинт (если применимо)"
+      description: "Какой эндпоинт вызвал ошибку?"
+      placeholder: "POST /api/datasets/new, GET /api/analysis/{id}"
+
+  - type: input
+    id: dataset
+    attributes:
+      label: "📊 Датасет (если считаете важным указать)"
+      description: "Какой датасет вызвал проблему? Укажите особенности датасета!"
+      placeholder: "cats_vs_dogs, версия v2"
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: "✅ Подтверждения"
+      description: "Пожалуйста, подтвердите следующее"
+      options:
+        - label: "Я использую последнюю версию образа (docker-compose pull)"
+          required: true
+        - label: "Я проверил, что нет похожего issue (открытого или закрытого)"
+          required: true
+        - label: "Я приложил логи и шаги воспроизведения"
+          required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: "💬 Дополнительный контекст"
+      description: "Скриншоты, видео, примеры кода, ссылки на документацию"
+      placeholder: |
+        - [Скриншот ошибки]
+        - [Пример минимального кода для воспроизведения]
