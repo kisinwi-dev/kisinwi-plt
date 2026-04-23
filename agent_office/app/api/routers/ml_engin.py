@@ -1,12 +1,18 @@
 from fastapi import APIRouter, Query
+
 from app.core.ml_engin.crews import run_engine_training_pipeline
 from app.core.summarizer.crews import run_create_task_params_json
-routers = APIRouter()
 
-@routers.get("/run_engine_training_pipeline")
+routers = APIRouter(
+    tags=['engineering']
+)
+
+@routers.get(
+        "/engine_reasoning",
+        description="Рассуждения ML инженеров"
+)
 def run_etp(
-    role: str = Query(..., description="Роль агента (Пример:'CV инженер')"),
-    number_engineer: int = Query(1, description="Номер инженера (инженеров может быть больше 1-ного)"),
+    number_engineer: int = Query(1, description="Количество инженеров"),
     previous_output: str = Query("", description="Дополнительная информация по имеющимся данным и задаче")
 ):
     """
@@ -20,12 +26,14 @@ def run_etp(
     result = run_engine_training_pipeline(role, number_engineer, previous_output)
     
     return {
-        "role": role,
         "number_engineer": number_engineer,
         "analysis": result.raw
     }
 
-@routers.get("/run_create_task_params_json")
+@routers.get(
+        "/create_task",
+        description="Создание json для таск сервиса"
+)
 def run_ctpj(
     previous_outputs: list = Query(..., description="Итоги размышлений инженеров"),
 ):
