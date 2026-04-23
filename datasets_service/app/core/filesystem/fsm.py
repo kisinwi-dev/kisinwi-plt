@@ -1,4 +1,5 @@
 import shutil
+from typing import List
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -195,36 +196,28 @@ class FileSystemManager:
 
     # ================ Работа с изображениями ================
 
-
-    # __WARNING__ ПЕРЕСМОТРЕТЬ ИСПОЛЬЗОВАНИЕ ЭТОГО МЕТОДА И ПЕРЕДЕЛАТЬ !!!!
-
     def all_file_is_image(
-            self, 
-            recursive: bool = False,
-            info: str | None = None
-        ) -> bool:
+            self
+        ) -> List[Path]:
         """
         Проверяет, что все файлы в папке являются изображениями
         
         Args:
-            recursive=True → проверяет и вложенные папки
             info - в какой директории проверяются файлы
         """
         def is_image(p: Path) -> bool:
             return p.is_file() and p.suffix.lower() in IMAGE_SUFFIXES
 
-        if recursive:
-            for p in self.worker_path.rglob("*"):
-                if p.is_file(): 
-                    if is_image(p) == True:
-                        continue
-                    else:
-                        raise VersionValidationError(
-                            f"В папке {self.worker_path} файл {p.name} являются изображениями.",
-                        )
-            return True
-        else:
-            return all(is_image(p) for p in self.worker_path.iterdir() if p.is_file())
+        ps = []
+        for p in self.worker_path.rglob("*"):
+            if p.is_file(): 
+                if is_image(p):
+                    ps.append(p)
+                else:
+                    raise VersionValidationError(
+                        f"В директории {self.worker_path} файл {p.name} не является изображениям.",
+                    )
+        return ps
 
     # ================ Размер папки ======================
 
