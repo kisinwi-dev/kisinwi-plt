@@ -2,15 +2,119 @@ from crewai import Task
 from .agents import new_analytic_reporter
 
 def new_task_analytic(
-        dataset_id: str,   
-        version_id: str|None = None
+        dataset_id: str,
+        version_id: str | None = None
     ):
-    task_description = f"Проанализируй датасет {dataset_id}"
-    if version_id:
-        task_description += f", версию {version_id}"
+    task_description = create_task_desc(dataset_id, version_id)
 
     return Task(
         description=task_description,
         expected_output="Детальный анализ датасета с рекомендациями",
-        agent=new_analytic_reporter(dataset_id, version_id)
+        agent=new_analytic_reporter()
     )
+
+def create_task_desc(
+    dataset_id: str,
+    version_id: str | None = None
+) -> str:
+    """Создает детальное описание задачи для агента-аналитика"""
+
+    if version_id:
+        focus_text = f"версию {version_id} датасета {dataset_id}"
+        version_instruction = f"Сфокусируйся ТОЛЬКО на версии {version_id}"
+    else:
+        focus_text = f"все версии датасета {dataset_id}"
+        version_instruction = f"Проанализируй ВСЕ версии и рекомендую лучшую для обучения"
+
+    description = f"""
+ЗАДАЧА: Провести анализ {focus_text}
+
+ЧТО НУЖНО СДЕЛАТЬ:
+
+ШАГ 1: Получить данные через get_dataset_info('{dataset_id}')
+   - В нем будут: num_classes, class_names, splits (train/val/test)
+   - Для каждой версии: num_samples, size_bytes, image_format_stats
+
+ШАГ 2: Проанализируй структуру
+
+    2.1 ОСНОВНЫЕ ХАРАКТЕРИСТИКИ:
+        - Сколько всего классов? (num_classes)
+        - Какие имена классов? (class_names)
+        - Какая задача? (task: classification)
+        - Какой тип данных? (type: image)
+
+    2.2 АНАЛИЗ ВЕРСИЙ:
+        {'- Сфокусируйся на версии ' + version_id if version_id else '- Сравни ВСЕ версии между собой'}
+       - Количество изображений (num_samples)
+       - Размер в байтах (size_bytes)
+       - Форматы изображений (image_format_stats)
+       - Распределение по сплитам (splits: train/val/test)
+
+   2.3 АНАЛИЗ БАЛАНСА КЛАССОВ (через splits):
+       - Для train: посчитай количество изображений по классам
+       - Есть ли дисбаланс?
+       - Какое соотношение между самым большим и маленьким классом?
+
+   2.4 АНАЛИЗ КАЧЕСТВА:
+       - Есть ли пустые сплиты?
+       - Все ли классы присутствуют во всех сплитах?
+       - Какие форматы изображений преобладают?
+       - Есть ли аномалии в размерах? (image_size_count)
+
+ШАГ 3: Выяви проблемы (на основе анализа)
+
+   🔴 КРИТИЧНЫЕ (обучение невозможно):
+   - Нет изображений в каком-то классе/сплите
+   - Сильный дисбаланс (соотношение > 10:1)
+   - Отсутствуют обязательные сплиты (train/val/test)
+
+   🟡 ВАЖНЫЕ (ухудшат качество):
+   - Умеренный дисбаланс (соотношение 3:1 до 10:1)
+   - Большой разброс размеров изображений
+
+   🟢 НЕТ ПРОБЛЕМ:
+   - Все хорошо, можно обучать
+
+ШАГ 4: Сформулируй ответ по шаблону
+
+📊 СТАТУС: [ГОТОВ / НЕ ГОТОВ / ТРЕБУЕТ ДОРАБОТКИ]
+
+📈 ОСНОВНЫЕ ХАРАКТЕРИСТИКИ:
+- Датасет: {dataset_id}
+- Классов: X
+- Версий: X
+- {'Анализируемая версия: ' + version_id if version_id else 'Рекомендуемая версия: X'}
+
+🔍 ДЕТАЛЬНЫЙ АНАЛИЗ {'ВЕРСИИ' if version_id else 'ВЕРСИЙ'}:
+
+{'* ДЛЯ ВЕРСИИ ' + version_id + ':' if version_id else ''}
+- Изображений: X
+- Размер: X MB
+- Train/Val/Test: X / X / X
+- Баланс классов: [СБАЛАНСИРОВАН / УМЕРЕННЫЙ ДИСБАЛАНС / СИЛЬНЫЙ ДИСБАЛАНС]
+- Основные форматы: JPEG (X%), PNG (X%)
+- Проблемы: [список, если есть]
+
+{'* СРАВНЕНИЕ ВЕРСИЙ:' if not version_id else ''}
+{'  - Версия X: 1000 изображений, баланс хороший' if not version_id else ''}
+{'  - Версия Y: 5000 изображений, есть дисбаланс' if not version_id else ''}
+
+🎯 РЕКОМЕНДАЦИИ:
+
+🔴 КРИТИЧНО (до начала обучения):
+   - [проблема] → [решение]
+
+🟡 ВАЖНО (для качества):
+   - [рекомендация]
+
+✅ ГОТОВНОСТЬ К ОБУЧЕНИЮ:
+[ДА / НЕТ] потому что [причина]
+
+ВАЖНЫЕ ОГРАНИЧЕНИЯ:
+- Не выдумывай цифры — только из get_dataset_info
+- Если данных нет в инструменте — скажи "нет информации"
+- Не предлагай аугментацию, этим занимается агент после тебя
+
+{version_instruction}
+"""
+    return description

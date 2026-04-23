@@ -2,10 +2,7 @@ from crewai import Agent
 from app.services.data import *
 from app.core.llm import llm
 
-def new_analytic_reporter(
-        dataset_id: str, 
-        version_id: str|None = None
-    ): 
+def new_analytic_reporter(): 
     """
     Создает агента для анализа конкретного датасета
     
@@ -14,8 +11,8 @@ def new_analytic_reporter(
         version_id: ID версии (если None - анализирует все версии)
     """
     
-    goal = create_goal_analytic(dataset_id, version_id)
-    backstory = create_backstory_analytic(dataset_id, version_id) 
+    goal = create_goal_analytic()
+    backstory = create_backstory_analytic() 
 
     return Agent(
         role="CV Data Analyst",
@@ -31,43 +28,29 @@ def new_analytic_reporter(
         max_iter=8,
     )
 
-def create_goal_analytic(dataset_id: str, version_id: str|None = None):
+def create_goal_analytic() -> str:
     """Создание задачи агенту аналитику"""
-    goal = f"Провести полный анализ датасета {dataset_id}"
-    if version_id:
-        goal += f" (версия {version_id})"
-    goal += " и подготовить детальный отчёт для ML-инженеров"
-
+    goal = "Помогать ML инженерам оценивать готовность датасетов к обучению"
     return goal
     
-def create_backstory_analytic(dataset_id: str, version_id: str|None = None):
+def create_backstory_analytic() -> str:
     """Создание бэкграунда агенту аналитику"""
-    return f"""Ты — аналитик данных в команде Deep Learning.
+    
+    return """
+Ты - Senior Data Analyst с 10-летним опытом.
 
-ТЕКУЩАЯ ЗАДАЧА:
-Анализ датасета: {dataset_id}
-{f'Целевая версия: {version_id}' if version_id else 'Анализ всех версий'}
+ТВОИ КОМПЕТЕНЦИИ:
+- Анализ датасетов
+- Оценка качества данных и выявление проблем
+- Формулирование рекомендаций для ML инженеров
 
-ТВОЙ ИНСТРУМЕНТ:
-- get_dataset_info(dataset_id) - получить всю информацию
+ТВОЙ СТИЛЬ РАБОТЫ:
+- Ты используешь доступные инструменты, а не гадаешь
+- Твой ответ всегда структурирован и основан на данных
+- Если данных не хватает ты говоришь об этом прямо
 
-ТВОЙ АЛГОРИТМ:
-1. Вызови get_dataset_info('{dataset_id}')
-2. Проанализируй полученные данные
-3. {'Сфокусируйся на версии ' + version_id if version_id else 'Проанализируй все версии'}
-4. Подготовь отчёт
-
-ЧТО ПРОАНАЛИЗИРОВАТЬ:
-- Основные характеристики датасета
-- {'Только указанную версию' if version_id else 'Все доступные версии и их сравнение'}
-- Классы и их распределение
-- Количество сэмплов
-- Качество и пригодность
-
-СТРУКТУРА ОТЧЁТА:
-1. Краткая сводка
-2. Детальная информация
-3. Анализ {'версии' if version_id else 'версий'}
-4. Выводы и рекомендации
-
-ВАЖНО: Работай ТОЛЬКО с датасетом {dataset_id}. Не трогай другие датасеты."""
+ТЫ НЕ:
+- Не проводишь аугментацию (только анализируешь)
+- Не модифицируешь данные (только читаешь)
+- Не обучаешь модели (только оцениваешь готовность данных)
+"""

@@ -7,7 +7,7 @@ from .tasks import new_task_analytic
 def create_crew(dataset_id: str, version_id: str|None = None):
     """Создает Crew для анализа датасета"""
     
-    analyst = new_analytic_reporter(dataset_id, version_id)
+    analyst = new_analytic_reporter()
     task = new_task_analytic(dataset_id, version_id)
 
     return Crew(
