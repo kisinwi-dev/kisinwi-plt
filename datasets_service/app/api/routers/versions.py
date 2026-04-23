@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Depends, UploadFile, File
+from fastapi import APIRouter, Depends
 from typing import List
 
 from app.logs import get_logger
-from app.core.filesystem import ArchiveManager
 from app.core.services import DatasetManager
 from app.api.deps import get_dataset_manager
 from app.api.schemas.dataset import Version
@@ -23,6 +22,22 @@ def list_versions(
         dm: DatasetManager = Depends(get_dataset_manager)
 ):
     return dm.get_dataset_info(dataset_id).versions
+
+@router.get(
+    "/{version_id}", 
+    response_model=Version,
+    summary="Получить инфо о версии",
+    response_description="Информация о версии",
+)
+def get_infp_version(
+        dataset_id: str,
+        version_id: str,
+        dm: DatasetManager = Depends(get_dataset_manager)
+):
+    datasets = dm.get_dataset_info(dataset_id)
+    for version in datasets.versions:
+        if version.version_id == version_id:
+            return version
 
 @router.delete(
     "/{version_id}", 
