@@ -1,10 +1,16 @@
 from fastapi import APIRouter, Query
+
 from app.core.analytic.crews import run_analysis
 
-routers = APIRouter()
+routers = APIRouter(
+    tags=['analytics']
+)
 
-@routers.get("/analytic")
-def health_status(
+@routers.get(
+        "/analytic",
+        description="Анализ имеющихся данных и вывод по ним"
+)
+def analytic_data_for_datasets_service(
     dataset_id: str = Query(..., description="ID датасета для анализа"),
     version_id: str = Query(None, description="ID версии датасета")
 ):
