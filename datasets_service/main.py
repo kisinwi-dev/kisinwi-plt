@@ -1,8 +1,6 @@
 import uvicorn
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
 
-from app.core.exception.base import CoreException
 from app.api.routers import api_routers
 from fastapi.middleware.cors import CORSMiddleware
 
