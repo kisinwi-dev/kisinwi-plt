@@ -127,6 +127,10 @@ class FileSystemManager:
         except ValueError:
             return "[ошибка пути]"
 
+    def get_all(self) -> list[str]:
+        "Возвращает всё что есть в текущем path"
+        return [path.name for path in self.worker_path.iterdir()]
+
     def get_all_dirs(self) -> list[str]:
         return [path.name for path in self.worker_path.iterdir() if path.is_dir()]
 

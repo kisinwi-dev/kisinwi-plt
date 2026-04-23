@@ -29,6 +29,7 @@ class DatasetManager:
 
     def __init__(self):
         self._fsm = FileSystemManager()
+        self._temp_path = (self._fsm.worker_path / 'temp').resolve()
 
     def get_datasets_id(self) -> List[str]:
         # __WARNING__ НА ДАННЫЙ МОМЕНТ РАССМАТРИВАЕТСЯ ВАРИАНТ, КОГДА У НАС ОДИН ПОЛЬЗОВАТЕЛЬ
@@ -177,7 +178,14 @@ class DatasetManager:
         self._fsm.delete(dataset_id)
         logger.info(f'Датасета {dataset_id} удалён')
         return True
-            
+
+    def drop_cache(
+        self
+    ):
+        with self._fsm.use_path(self._temp_path):
+            for dir in self._fsm.get_all_dirs():
+                self._fsm.delete(dir)
+        logger.warning('Кэш очищен')
 
     # ================ генерация path до нужных папок/файлов ======================
 
