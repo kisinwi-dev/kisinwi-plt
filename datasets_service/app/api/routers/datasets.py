@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, UploadFile, File, Form
-from typing import List, Annotated
+from fastapi import APIRouter, Depends, HTTPException
+from typing import List
 
 from app.logs import get_logger
-from app.core.filesystem import ArchiveManager
 from app.core.services import DatasetManager
+from app.core.exception.base import CoreException
 from app.api.deps import get_dataset_manager
 from app.api.schemas.dataset import DatasetMetadata
 from app.api.schemas.dataset_new import NewDataset
@@ -65,7 +65,6 @@ def delete_dataset(dataset_id: str, dm: DatasetManager = Depends(get_dataset_man
 
 @router.post(
     "/new", 
-    response_model=bool,
     summary="Создать датасет",
     description="Создаёт новый датасет из загружает файл данных.",
     response_description="True, если датасет успешно создан",
@@ -74,6 +73,12 @@ def create_dataset(
     new_dataset: NewDataset, 
     dm: DatasetManager = Depends(get_dataset_manager),
 ):
-    dm.add_new_dataset(new_dataset)
-    return True
-
+    try:
+        dm.add_new_dataset(new_dataset)
+        return True
+    except CoreException as e:
+        logger.error(f"\nОшибка: {e.message}\nДетали: {e.detail}")
+        return HTTPException(
+            status_code=e.status_code, 
+            detail=e.message
+        )

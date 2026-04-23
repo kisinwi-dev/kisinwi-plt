@@ -2,8 +2,12 @@ import shutil
 from contextlib import contextmanager
 from pathlib import Path
 
-IMAGE_SUFFIXES = {'.jpg', '.png'}
+from app.core.exception.version import VersionValidationError
+from app.logs import get_logger
 
+logger = get_logger(__name__)
+
+IMAGE_SUFFIXES = {'.jpg', '.png', '.jpeg'}
 
 class FileSystemManager:
     def __init__(
@@ -191,16 +195,34 @@ class FileSystemManager:
 
     # ================ Работа с изображениями ================
 
-    def all_file_is_image(self, recursive: bool = False) -> bool:
+
+    # __WARNING__ ПЕРЕСМОТРЕТЬ ИСПОЛЬЗОВАНИЕ ЭТОГО МЕТОДА И ПЕРЕДЕЛАТЬ !!!!
+
+    def all_file_is_image(
+            self, 
+            recursive: bool = False,
+            info: str | None = None
+        ) -> bool:
         """
         Проверяет, что все файлы в папке являются изображениями
+        
+        Args:
             recursive=True → проверяет и вложенные папки
+            info - в какой директории проверяются файлы
         """
         def is_image(p: Path) -> bool:
             return p.is_file() and p.suffix.lower() in IMAGE_SUFFIXES
 
         if recursive:
-            return all(is_image(p) for p in self.worker_path.rglob("*") if p.is_file())
+            for p in self.worker_path.rglob("*"):
+                if p.is_file(): 
+                    if is_image(p) == True:
+                        continue
+                    else:
+                        raise VersionValidationError(
+                            f"В папке {self.worker_path} файл {p.name} являются изображениями.",
+                        )
+            return True
         else:
             return all(is_image(p) for p in self.worker_path.iterdir() if p.is_file())
 

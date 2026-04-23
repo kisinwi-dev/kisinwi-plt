@@ -18,11 +18,10 @@ class VersionValidationError(CoreException):
             reason: str, 
             version_id: str | None = None
     ):
-        msg = f"Ошибка валидации датасета"
+        msg = f"Ошибка валидации датасета: "
         
         if version_id:
-            msg += f" '{version_id}'"    
-        msg += f": {reason}"
+            msg += f" '{version_id}'."    
         
         super().__init__(
             message=msg,
