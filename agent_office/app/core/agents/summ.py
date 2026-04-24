@@ -4,16 +4,13 @@ from app.core.llm import llm
 from app.services.trainer import get_example_run_config_trainer_json, get_type_and_name_models, get_info_device
 
 
-def new_agent_task_preparer(previous_outputs: list):
+def new_agent_task_preparer():
     """Агент для подготовки итогового JSON на основе всех предыдущих анализов"""
-    
-    # Объединяем все предыдущие выводы
-    thoughts_str = "\n\n".join(previous_outputs)
     
     return Agent(
         role="ML Task Configuration Engineer",
         goal="На основе всех предыдущих анализов подготовить итоговый JSON для сервиса задач обучения",
-        backstory=create_backstory_preparer(thoughts_str),
+        backstory=create_backstory_preparer(),
         llm=llm,
         tools=[
             get_example_run_config_trainer_json, 
@@ -25,15 +22,11 @@ def new_agent_task_preparer(previous_outputs: list):
     )
 
     
-def create_backstory_preparer(
-        thoughts: str
-    ):
+def create_backstory_preparer():
     """Создание бэкграунда агенту создающему задачи"""
 
     return f"""Ты финальный агент в цепочке анализа.
 
-ПОЛУЧЕННЫЕ ДАННЫЕ ОТ ВСЕХ АГЕНТОВ:
-{thoughts}
 
 ТВОЯ ЗАДАЧА:
 На основе всех предыдущих анализов (от ML-инженеров) создать единый JSON объект.

@@ -16,7 +16,12 @@ def create_crew(dataset_id: str, version_id: str|None = None):
         verbose=True
     )
 
-def run_analysis(dataset_id: str, version_id: str|None = None):
+def run_analysis(
+        dataset_id: str, 
+        version_id: str|None = None
+):
     """Запуск анализа данных"""
     crew = create_crew(dataset_id, version_id)
-    return crew.kickoff()
+    сrew_out = crew.kickoff()
+    metrics = crew.usage_metrics
+    return сrew_out, metrics

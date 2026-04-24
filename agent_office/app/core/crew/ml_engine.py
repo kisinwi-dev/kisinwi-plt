@@ -24,4 +24,7 @@ def run_engine_training_pipeline(
         number_engineer: int|None = None,
         previous_output: str = ""
 ):
-    return create_crew_ml_eng(number_engineer, previous_output).kickoff()
+    crew = create_crew_ml_eng(number_engineer, previous_output)
+    result = crew.kickoff()
+    metrics = crew.usage_metrics
+    return result, metrics

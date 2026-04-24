@@ -3,7 +3,8 @@ from .agents import new_agent_ml_engineer
 
 def new_task_search_best_model(
         number_engineer: int|None = None,
-        previous_output: str = ""
+        previous_output: str = "",
+        agent = None
 ) -> Task:
     return Task(
             description=f"""Проанализируй следующие данные о датасете и предложи архитектуру модели:

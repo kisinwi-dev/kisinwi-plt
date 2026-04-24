@@ -10,7 +10,7 @@ def create_crew_summary(
     ):
     """Создает Crew для анализа датасета"""
     
-    agent = new_agent_task_preparer(previous_outputs)
+    agent = new_agent_task_preparer()
     task = new_task_summary(previous_outputs)
 
     return Crew(
@@ -22,4 +22,7 @@ def create_crew_summary(
 def run_create_task_params_json(
         previous_outputs: list = []
 ):
-    return create_crew_summary(previous_outputs).kickoff()
+    crew = create_crew_summary(previous_outputs)
+    result = crew.kickoff()
+    metrics = crew.usage_metrics
+    return result, metrics

@@ -1,16 +1,19 @@
-from crewai import Task
+from typing import Optional
+from crewai import Task, Agent
+
 from .agents import new_analytic_reporter
 
 def new_task_analytic(
         dataset_id: str,
-        version_id: str | None = None
+        version_id: Optional[str] = None, 
+        agent: Optional[Agent] = None
     ):
     task_description = create_task_desc(dataset_id, version_id)
 
     return Task(
         description=task_description,
         expected_output="Детальный анализ датасета с рекомендациями",
-        agent=new_analytic_reporter()
+        agent=agent if agent else new_analytic_reporter()
     )
 
 def create_task_desc(

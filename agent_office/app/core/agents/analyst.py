@@ -30,8 +30,7 @@ def new_analytic_reporter():
 
 def create_goal_analytic() -> str:
     """Создание задачи агенту аналитику"""
-    goal = "Помогать ML инженерам оценивать готовность датасетов к обучению"
-    return goal
+    return  "Помогать ML инженерам оценивать готовность датасетов к обучению"
     
 def create_backstory_analytic() -> str:
     """Создание бэкграунда агенту аналитику"""

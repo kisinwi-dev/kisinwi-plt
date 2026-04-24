@@ -22,10 +22,11 @@ def analytic_data_for_datasets_service(
     - version_id: ID версии
     """
     
-    result = run_analysis(dataset_id, version_id)
+    result, metrics = run_analysis(dataset_id, version_id)
     
     return {
         "dataset_id": dataset_id,
         "version_id": version_id,
-        "analysis": result.raw
+        "analysis": result.raw,
+        "metrics": metrics
     }
