@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query
 
-from app.core.ml_engin.crews import run_engine_training_pipeline
-from app.core.summarizer.crews import run_create_task_params_json
+from app.core.crews.ml_engine import run_ml_engineering
+from app.core.crews.task_preparer import run_create_task_params_json
 
 routers = APIRouter(
     tags=['engineering']
@@ -13,24 +13,19 @@ routers = APIRouter(
 )
 def run_etp(
     number_engineer: int = Query(1, description="Количество инженеров"),
-    previous_output: str = Query("", description="Дополнительная информация по имеющимся данным и задаче")
+    analysis_result: str = Query("", description="Дополнительная информация по имеющимся данным и задаче")
 ):
-    """
-    Анализ датасета.
+    """Агенты ML-инженеры рассуждают над лучшей моделью"""
     
-    Параметры:
-    - dataset_id: ID датасета
-    - version_id: ID версии
-    """
-    
-    result = run_engine_training_pipeline(
+    result, metrics = run_ml_engineering(
         number_engineer, 
-        previous_output
+        analysis_result
     )
     
     return {
         "number_engineer": number_engineer,
-        "analysis": result.raw
+        "analysis": result,
+        "metrics": metrics
     }
 
 @routers.get(
@@ -40,17 +35,12 @@ def run_etp(
 def run_ctpj(
     previous_outputs: list = Query(..., description="Итоги размышлений инженеров"),
 ):
-    """
-    Анализ датасета.
+    """Агент составляет результирующий json для отправки в сервис задач"""
     
-    Параметры:
-    - dataset_id: ID датасета
-    - version_id: ID версии
-    """
-    
-    result = run_create_task_params_json(previous_outputs)
+    result, metrics = run_create_task_params_json(previous_outputs)
     
     return {
-        "result": result.raw
+        "result": result,
+        "metrics": metrics
     }
 

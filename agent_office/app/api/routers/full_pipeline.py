@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query, HTTPException
 
-from app.core import full_pipeline_agent
+from app.core import full_pipeline
 
 routers = APIRouter(
     tags=['pipeline']
@@ -10,7 +10,7 @@ routers = APIRouter(
         "/full_pipeline",
         description="Одна полная итерация анализ, рассуждение и запуск тренировки."
 )
-def full_pipeline(
+def fp(
     dataset_id: str = Query(..., description="ID датасета для анализа"),
     version_id: str = Query(None, description="ID версии датасета"),
     count_engine: int = Query("", description="Количество используемых агентов-инженеров")
@@ -19,7 +19,7 @@ def full_pipeline(
     Анализ датасета и отправка задачи в сервис обучения.
     """
     try:
-        full_pipeline_agent(
+        out = full_pipeline(
             dataset_id,
             version_id,
             count_engine
@@ -27,7 +27,10 @@ def full_pipeline(
         
         # Возвращаем результат
         return {
-            "status": "completed"
+            "status": "completed",
+            "result_pipeline": out['result'],
+            "task_response": out['task_result'],
+            "metric": out['pipeline_metrics'],
         }
         
     except Exception as e:
