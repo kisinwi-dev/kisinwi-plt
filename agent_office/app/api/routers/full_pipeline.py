@@ -8,23 +8,20 @@ routers = APIRouter(
 
 @routers.get(
         "/full_pipeline",
-        description="Одна полная итерация анализ, рассуждение и запуск тренировки."
+        description="Одна полная итерация. Анализ, рассуждение и запуск тренировки"
 )
 def fp(
     dataset_id: str = Query(..., description="ID датасета для анализа"),
     version_id: str = Query(None, description="ID версии датасета"),
-    count_engine: int = Query("", description="Количество используемых агентов-инженеров")
+    count_engine: int = Query("", description="Количество используемых агентов ML-инженеров")
 ):
-    """
-    Анализ датасета и отправка задачи в сервис обучения.
-    """
     try:
         out = full_pipeline(
             dataset_id,
             version_id,
             count_engine
         )
-        
+
         # Возвращаем результат
         return {
             "status": "completed",
