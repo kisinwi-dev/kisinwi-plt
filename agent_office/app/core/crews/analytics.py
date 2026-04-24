@@ -40,7 +40,7 @@ def run_analysis(
     dataset_id: str, 
     version_id: Optional[str] = None,
     verbose: bool = True
-) -> Tuple[CrewOutput, UsageMetrics]:
+) -> Tuple[str, UsageMetrics]:
     """
     Запуск анализа данных
     
@@ -50,7 +50,7 @@ def run_analysis(
         verbose: Подробный вывод
     
     Returns:
-        Tuple[CrewOutput, UsageMetrics]: 
+        Tuple[str, UsageMetrics]: 
             - результат анализа
             - метрики использования токенов
     """
@@ -62,7 +62,7 @@ def run_analysis(
         metrics = crew.usage_metrics
         
         if isinstance(crew_output, CrewOutput) and isinstance(metrics, UsageMetrics):
-            return crew_output, metrics
+            return crew_output.raw, metrics
         else: 
             raise TypeError(f"Неверный тип данных: CrewOutput={type(crew_output)}, UsageMetrics={type(metrics)}")    
     except Exception as e:

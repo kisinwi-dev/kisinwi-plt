@@ -39,7 +39,7 @@ def create_summary_crew(
 def run_create_task_params_json(
     previous_outputs: Optional[List[str]] = None,
     verbose: bool = True
-) -> Tuple[CrewOutput, UsageMetrics]:
+) -> Tuple[str, UsageMetrics]:
     """
     Запуск агента для подготовки итогового JSON
     
@@ -48,7 +48,7 @@ def run_create_task_params_json(
         verbose: Подробный вывод
     
     Returns:
-        Tuple[CrewOutput], UsageMetrics]:
+        Tuple[str], UsageMetrics]:
             - результат (JSON конфиг)
             - метрики использования токенов
     """
@@ -63,7 +63,7 @@ def run_create_task_params_json(
         metrics = crew.usage_metrics
         
         if isinstance(crew_output, CrewOutput) and isinstance(metrics, UsageMetrics):
-            return crew_output, metrics
+            return crew_output.raw, metrics
         else: 
             raise TypeError(f"Неверный тип данных: CrewOutput={type(crew_output)}, UsageMetrics={type(metrics)}")  
     except Exception as e:
