@@ -3,16 +3,10 @@ from app.services.data import *
 from app.core.llm import llm
 
 def new_analytic_reporter(): 
-    """
-    Создает агента для анализа конкретного датасета
+    """Создает агента для анализа конкретного датасета"""
     
-    Args:
-        dataset_id: ID датасета для анализа
-        version_id: ID версии (если None - анализирует все версии)
-    """
-    
-    goal = create_goal_analytic()
-    backstory = create_backstory_analytic() 
+    goal = _create_goal_analytic()
+    backstory = _create_backstory_analytic() 
 
     return Agent(
         role="CV Data Analyst",
@@ -25,15 +19,15 @@ def new_analytic_reporter():
         ],
         verbose=True,
         allow_delegation=False,
-        max_iter=8,
+        max_iter=8
     )
 
-def create_goal_analytic() -> str:
-    """Создание задачи агенту аналитику"""
+def _create_goal_analytic() -> str:
+    """Создание цели агента аналитика"""
     return  "Помогать ML инженерам оценивать готовность датасетов к обучению"
     
-def create_backstory_analytic() -> str:
-    """Создание бэкграунда агенту аналитику"""
+def _create_backstory_analytic() -> str:
+    """Создание бэкграунда агента аналитика"""
     
     return """
 Ты - Senior Data Analyst с 10-летним опытом.
