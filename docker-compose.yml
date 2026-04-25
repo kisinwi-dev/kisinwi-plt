@@ -12,30 +12,28 @@ services:
     networks:
       - network
     depends_on:
-      - datasets_service
+      - datasets
     
   
-  datasets_service:
+  datasets:
     container_name: 
-      datasets_service
+      datasets
     build: 
-      context: ./datasets_service
+      context: ./services/datasets
       dockerfile: Dockerfile
     volumes:
-      - ./datasets_storage:/app/datasets
+      - ./db/datasets_storage:/app/datasets
     ports:
       - "${DATASETS_SERVICE_PORT}:${DATASETS_SERVICE_PORT}"
     networks:
       - network
-  
-  # experiment_orchestrator:
-    # Todo
 
-  tasker_service:
+
+  tasker:
     container_name: 
-      tasker_service
+      tasker
     build: 
-      context: ./tasker_service
+      context: ./services/tasker
       dockerfile: Dockerfile
     environment:
       - POSTGRES_HOST=data_postgres
@@ -75,11 +73,11 @@ services:
     networks:
       - network
     
-  trainer_service:
+  trainer:
     container_name: 
-      trainer_service
+      trainer
     build: 
-      context: ./trainer_service
+      context: ./services/trainer
       dockerfile: Dockerfile
     deploy:
       resources:
@@ -89,15 +87,15 @@ services:
               count: all
               capabilities: [gpu]
     volumes:
-      - ./datasets_storage:/app/datasets
+      - ./db/datasets_storage:/app/datasets
     ports:
       - "${TRAINER_SERVICE_PORT}:${TRAINER_SERVICE_PORT}"
     environment:
-      - TASKER_DOMAIN=tasker_service:${TASKER_PORT}
-      - METRICS_DOMAIN=metrics_service:${METRICS_SERVICE_PORT}
+      - TASKER_DOMAIN=tasker:${TASKER_PORT}
+      - METRICS_DOMAIN=metrics:${METRICS_SERVICE_PORT}
     depends_on:
-      - metrics_service
-      - tasker_service
+      - metrics
+      - tasker
     networks:
       - network
     shm_size: 2gb
@@ -125,11 +123,11 @@ services:
       timeout: 5s
       retries: 10
 
-  metrics_service:
+  metrics:
     container_name: 
-      metrics_service
+      metrics
     build:
-      context: ./metrics_service
+      context: ./services/metrics
       dockerfile: Dockerfile
     environment:
       - MONGO_HOST=data_mongodb
@@ -145,27 +143,22 @@ services:
       mongodb:
         condition: service_healthy
 
-  # agent_monitoring:
-    # Todo
 
-  agent_office:
+  agents:
     container_name: 
-      agent_office
+      agents
     build: 
-      context: ./agent_office
+      context: ./services/agents
       dockerfile: Dockerfile
     ports:
       - "${AGENT_OFFICE_PORT}:${AGENT_OFFICE_PORT}"
     environment:
-      - DMS_DOMEN=datasets_service:${DATASETS_SERVICE_PORT}
-      - TASKER_DOMEN=tasker_service:${TASKER_PORT}
-      - TRAINER_DOMEN=trainer_service:${TRAINER_SERVICE_PORT}
+      - DMS_DOMEN=datasets:${DATASETS_SERVICE_PORT}
+      - TASKER_DOMEN=tasker:${TASKER_PORT}
+      - TRAINER_DOMEN=trainer:${TRAINER_SERVICE_PORT}
     networks:
       - network
-  
 
-  # deployment_service:
-    # Todo
 
 networks:
   network:
