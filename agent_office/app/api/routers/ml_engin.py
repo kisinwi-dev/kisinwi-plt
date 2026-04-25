@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 
-from app.core.ml_engin.crews import run_engine_training_pipeline
-from app.core.summarizer.crews import run_create_task_params_json
+from app.core.crews.ml_engine import run_ml_engineering
+from app.core.crews.task_preparer import run_create_task_params_json
 
 routers = APIRouter(
     tags=['engineering']
@@ -9,48 +9,48 @@ routers = APIRouter(
 
 @routers.get(
         "/engine_reasoning",
-        description="Рассуждения ML инженеров"
+        description="Рассуждения агентов ML-инженеров"
 )
 def run_etp(
     number_engineer: int = Query(1, description="Количество инженеров"),
-    previous_output: str = Query("", description="Дополнительная информация по имеющимся данным и задаче")
+    analysis_result: str = Query("", description="Дополнительная информация по имеющимся данным и задаче")
 ):
-    """
-    Анализ датасета.
-    
-    Параметры:
-    - dataset_id: ID датасета
-    - version_id: ID версии
-    """
-    
-    result = run_engine_training_pipeline(
-        number_engineer, 
-        previous_output
-    )
-    
-    return {
-        "number_engineer": number_engineer,
-        "analysis": result.raw
-    }
+    try:  
+        result, metrics = run_ml_engineering(
+            number_engineer, 
+            analysis_result
+        )
+
+        return {
+            "number_engineer": number_engineer,
+            "analysis": result,
+            "metrics": metrics
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при выполнении: {str(e)}"
+        )
 
 @routers.get(
         "/create_task",
-        description="Создание json для таск сервиса"
+        description="Получение json для задачи тренировки. Json формирует агент."
 )
 def run_ctpj(
-    previous_outputs: list = Query(..., description="Итоги размышлений инженеров"),
+    previous_outputs: list = Query(..., description="Описание действий для достижения требуемого результата"),
 ):
-    """
-    Анализ датасета.
-    
-    Параметры:
-    - dataset_id: ID датасета
-    - version_id: ID версии
-    """
-    
-    result = run_create_task_params_json(previous_outputs)
-    
-    return {
-        "result": result.raw
-    }
+    try:
+        from app.services.tasker import tasker
 
+        result, metrics = run_create_task_params_json(previous_outputs)
+        result = tasker.post_task(result)
+
+        return {
+            "result": result,
+            "metrics": metrics
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при выполнении: {str(e)}"
+        )

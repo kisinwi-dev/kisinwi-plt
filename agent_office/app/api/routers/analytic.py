@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 
-from app.core.analytic.crews import run_analysis
+from app.core.crews.analytics import run_analysis
 
 routers = APIRouter(
     tags=['analytics']
@@ -8,24 +8,23 @@ routers = APIRouter(
 
 @routers.get(
         "/analytic",
-        description="Анализ имеющихся данных и вывод по ним"
+        description="Анализ датасета"
 )
-def analytic_data_for_datasets_service(
-    dataset_id: str = Query(..., description="ID датасета для анализа"),
-    version_id: str = Query(None, description="ID версии датасета")
+def analyze_dataset(
+    dataset_id: str = Query(..., description="ID датасета"),
+    version_id: str | None = Query(None, description="ID версии")
 ):
-    """
-    Анализ датасета.
-    
-    Параметры:
-    - dataset_id: ID датасета
-    - version_id: ID версии
-    """
-    
-    result = run_analysis(dataset_id, version_id)
-    
-    return {
-        "dataset_id": dataset_id,
-        "version_id": version_id,
-        "analysis": result.raw
-    }
+    try:
+        result, metrics = run_analysis(dataset_id, version_id)
+        
+        return {
+            "dataset_id": dataset_id,
+            "version_id": version_id,
+            "analysis": result,
+            "metrics": metrics
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при выполнении: {str(e)}"
+        )
