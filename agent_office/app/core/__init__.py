@@ -75,10 +75,13 @@ def full_pipeline(
         # Суммаризация и превращение в задачу для тренировки
 
         logger.info(f"Этап 3: Формирование итогового JSON...")
-        
+
+        extra = f"Идентификаторы данных: \n dataset_id='{dataset_id}' \nversion_id='{version_id}'\n"
+
         final_json, summary_metrics = run_create_task_params_json(
             previous_outputs=engineers_results,
-            verbose=verbose
+            verbose=verbose,
+            extra=extra
         )
         
         pipeline_metrics["stages"]["task_preparer"] = {

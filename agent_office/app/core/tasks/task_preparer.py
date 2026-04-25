@@ -5,11 +5,17 @@ from app.core.agents.task_preparer import new_agent_task_preparer
 
 def new_task_task_preparer(
     previous_output: Optional[List[str]] = None,
-    agent: Optional[Agent] = None
+    agent: Optional[Agent] = None,
+    extra: str | None = None
 ) -> Task:
-    """Создать задачу для подготовки итогового JSON"""
+    """
+    Создать задачу для подготовки итогового JSON
     
-    task_description = _get_task_desc(previous_output)
+    Args:
+        extra: дополнительная информация для агента
+    """
+    
+    task_description = _get_task_desc(previous_output, extra=extra)
     expected_output = _get_expected_output_template()
 
     return Task(
@@ -18,8 +24,16 @@ def new_task_task_preparer(
         agent=agent if agent else new_agent_task_preparer()
     )
 
-def _get_task_desc(previous_output: Optional[List[str]] = None) -> str:
-    """Получить описание задачи для preparer'а"""
+def _get_task_desc(
+    previous_output: Optional[List[str]] = None, 
+    extra: str | None = None
+) -> str:
+    """
+    Получить описание задачи для подготовки json
+    
+    Args:
+        extra: Дополнительная информация (К примеру версия dataset, про которую не шла речь у инженеров)
+    """
     
     context = ""
     if previous_output:
@@ -32,6 +46,8 @@ def _get_task_desc(previous_output: Optional[List[str]] = None) -> str:
 На основе анализов ML-инженеров сформируй итоговый JSON конфиг для сервиса обучения.
 
 {context}
+
+{'Дополнительная информация: '+ extra if extra else ''}
 
 ПРАВИЛА:
 1. Не выдумывай — бери значения из анализов ML-инженеров
