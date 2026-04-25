@@ -6,7 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title="Datasets Service",
-    version="0.1.0"
+    version="0.1.0",
+    description="""
+Сервис отвечает за управление датасетами и получение информации о них.
+"""
 )
 
 app.include_router(

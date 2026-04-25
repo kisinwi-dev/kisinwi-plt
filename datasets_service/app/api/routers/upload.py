@@ -12,11 +12,18 @@ router = APIRouter(tags=["Upload"])
     "/upload",
     response_model=bool,
     summary="Загрузка данных",
+    description="""
+Загружает архив с данными и распаковывает во временную директорию. 
+Идентификатор id_data связывает загруженные файлы с будущим датасетом.
+
+- Данные временно хранятся до вызова */new
+- Если id_data уже существует, будет вызвана ошибка
+""",
     response_description="True, если данные успешно загружены",
 )
 def uploads_data(
-    id_data: str = Form(...),
-    file: UploadFile = File(..., description="Файл датасета"),
+    id_data: str = Form(default='my_data', description="Уникальный идентификатор данных"),
+    file: UploadFile = File(..., description="Архив датасета"),
 ):
     af = ArchiveManager()
     save_path = None

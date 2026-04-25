@@ -13,9 +13,9 @@ router = APIRouter(prefix="/datasets/{dataset_id}/versions", tags=["Version"])
 @router.get(
     "/", 
     response_model=List[Version],
-    summary="Получение списка версий",
-    description="Возвращает список всех доступных версий датасета",
-    response_description="Список версий",
+    summary="Получение списка метаданных версий",
+    description="Возвращает список метаданных всех доступных версий датасета",
+    response_description="Список метаданных версий",
 )
 def list_versions(
         dataset_id: str,
@@ -26,8 +26,9 @@ def list_versions(
 @router.get(
     "/{version_id}", 
     response_model=Version,
-    summary="Получить инфо о версии",
-    response_description="Информация о версии",
+    summary="Получить метаданные версии",
+    description="Возвращает метаданные указанной версии по её идентификатору",
+    response_description="Метаданные версии",
 )
 def get_infp_version(
         dataset_id: str,
@@ -56,9 +57,21 @@ def delete_version(
 @router.post(
     "/new", 
     response_model=bool,
-    summary="Добавить новую версию данных",
-    description="Создаёт новую версию датасета из загруженных данных",
-    response_description="True, если датасет успешно создан",
+    summary="Создать новую версию данных",
+    description="""
+Добавляет новую версию данных к существующему датасету. Данные должны быть предварительно загружены через эндпоинт `/upload`.
+
+**Пример использования:**
+
+1. Загружаем данные через `/upload` с параметром `id_data = 'v2.0'`
+2. Создаём новую версию через `/datasets/my_dataset/versions/new` с телом:
+```json
+{
+  "version_id": "v2.0",
+  "description": "Версия с очищенными данными"
+}
+""",
+    response_description="True, если версия успешно создана",
 )
 def create_version(
     dataset_id: str,

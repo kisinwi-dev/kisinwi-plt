@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Form
 from typing import List
 
 from app.logs import get_logger
@@ -14,9 +14,9 @@ router = APIRouter(prefix="/datasets", tags=["Datasets"])
 @router.get(
     "/", 
     response_model=List[DatasetMetadata],
-    summary="Получение списка датасетов",
-    description="Возвращает список идентифакторов всех доступных датасето",
-    response_description="Список идентификатор",
+    summary="Получение списка метаданных датасетов",
+    description="Возвращает информацию в виде списка о всех доступных датасетах",
+    response_description="Список метаданных датасетов",
 )
 def list_datasets(dm: DatasetManager = Depends(get_dataset_manager)):
     ids = dm.get_datasets_id()
@@ -32,7 +32,10 @@ def list_datasets(dm: DatasetManager = Depends(get_dataset_manager)):
     description="Возвращает метаданные указанного датасета по его идентификатору",
     response_description="Метаданные датасета",
 )
-def get_dataset(dataset_id: str, dm: DatasetManager = Depends(get_dataset_manager)):
+def get_dataset(
+    dataset_id: str,
+    dm: DatasetManager = Depends(get_dataset_manager)
+):
     return dm.get_dataset_info(dataset_id)
 
 
@@ -40,6 +43,7 @@ def get_dataset(dataset_id: str, dm: DatasetManager = Depends(get_dataset_manage
     "/{dataset_id}/default_version",
     response_model=bool,
     summary="Изменение стандартной версии датасета",
+    description="Устанавливает указанную версию как стандартную для датасета",
     response_description="True, если изменения успешно внесены",
 )
 def new_default_version(
@@ -60,13 +64,31 @@ def new_default_version(
     description="Удаляет указанный датасет из системы",
     response_description="True, если датасет был успешно удалён",
 )
-def delete_dataset(dataset_id: str, dm: DatasetManager = Depends(get_dataset_manager)):
+def delete_dataset(
+    dataset_id: str, 
+    dm: DatasetManager = Depends(get_dataset_manager)
+):
     return dm.drop_dataset(dataset_id)
 
 @router.post(
     "/new", 
     summary="Создать датасет",
-    description="Создаёт новый датасет из загружает файл данных.",
+    description="""
+Создаёт новый датасет из ранее загруженных данных из /upload.
+
+**Пример использования:**
+
+1. Загружаем данные через `/upload` с параметром `id_data = 'my_dataset'`
+2. Создаём датасет через `/datasets/new` с телом:
+```json
+{
+  "id": "my_dataset",
+  "title": "Мой датасет",
+  "description": "Тестовые данные"
+  ...
+}
+```
+""",
     response_description="True, если датасет успешно создан",
 )
 def create_dataset(
@@ -79,7 +101,7 @@ def create_dataset(
     except CoreException as e:
         logger.error(f"\nОшибка: {e.message}\nДетали: {e.detail}")
         dm.drop_cache()
-        return HTTPException(
+        raise HTTPException(
             status_code=e.status_code, 
             detail=e.message
         )
