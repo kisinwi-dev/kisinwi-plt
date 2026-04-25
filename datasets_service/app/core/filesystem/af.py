@@ -1,11 +1,11 @@
-import uuid
+import os
 import shutil
 import zipfile
-import logging
+from app.logs import get_logger
 from pathlib import Path
 from fastapi import UploadFile
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Предволагается, что мы расширим список принимаемых расширений архивов
 UNPACK_HANDLERS = {
@@ -27,7 +27,8 @@ class ArchiveManager:
         """
         self.temp_folder = temp_folder.resolve()
         if not self.temp_folder.is_dir():
-            raise NotADirectoryError(f"Папка не существует: {self.temp_folder}")
+            logger.warning(f"Папка временных файлов создана автоматически.")
+            os.makedirs(temp_folder, exist_ok=True)
 
     def save_file(self, uploaded_file: UploadFile, name_file: str) -> Path:
         """Сохраняет загруженный файл с уникальным именем"""
@@ -36,7 +37,7 @@ class ArchiveManager:
 
         save_path = self.temp_folder / name_file
 
-        logger.debug(f"Сохраняем файл: {save_path}")
+        logger.info(f"Сохраняем файл: {name_file}")
 
         try:
             with save_path.open("wb") as f:
