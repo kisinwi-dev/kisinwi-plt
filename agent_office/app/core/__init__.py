@@ -81,7 +81,7 @@ def full_pipeline(
             verbose=verbose
         )
         
-        pipeline_metrics["stages"]["summary"] = {
+        pipeline_metrics["stages"]["task_preparer"] = {
             "status": "success",
             "metrics": _metrics_to_dict(summary_metrics)
         }
@@ -94,8 +94,7 @@ def full_pipeline(
         task_result = tasker.post_task(final_json)
         
         pipeline_metrics["stages"]["tasker"] = {
-            "status": "success",
-            "task_id": task_result.get("task_id") if isinstance(task_result, dict) else None
+            **task_result
         }
         
         logger.info(f"✅ Задача отправлена")

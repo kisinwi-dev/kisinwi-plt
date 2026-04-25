@@ -24,10 +24,8 @@ def fp(
 
         # Возвращаем результат
         return {
-            "status": "completed",
-            "result_pipeline": out['result'],
-            "task_response": out['task_result'],
-            "metric": out['pipeline_metrics'],
+            "status": "completed", 
+            **out
         }
         
     except Exception as e:
