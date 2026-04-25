@@ -23,7 +23,11 @@ class Tasker():
             
             # Парсим JSON если это строка
             if isinstance(json_data, str):
-                params = json.loads(json_data)
+                try:
+                    params = json.loads(json_data)
+                except json.JSONDecodeError as e:
+                    logger.error(f"Ошибка перевода str -> json. Детали: {e}")
+                    raise
             else:
                 params = json_data
 

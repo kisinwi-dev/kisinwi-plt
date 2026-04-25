@@ -21,7 +21,7 @@ def new_agent_task_preparer():
         ],
         verbose=True,
         allow_delegation=False,
-        max_iter=3
+        max_iter=10
     )
 
 def _create_goal_task_preparer() -> str:

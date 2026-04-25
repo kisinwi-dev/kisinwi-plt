@@ -40,8 +40,11 @@ def run_ctpj(
     previous_outputs: list = Query(..., description="Описание действий для достижения требуемого результата"),
 ):
     try:
+        from app.services.tasker import tasker
+
         result, metrics = run_create_task_params_json(previous_outputs)
-        
+        result = tasker.post_task(result)
+
         return {
             "result": result,
             "metrics": metrics
