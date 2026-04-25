@@ -11,7 +11,8 @@ def create_summary_crew(
     previous_outputs: Optional[List[str]] = None,
     verbose: bool = True,
     agent: Optional[BaseAgent] = None,
-    task: Optional[Task] = None
+    task: Optional[Task] = None,
+    extra: str | None = None
 ) -> Crew:
     """
     Создает Crew для подготовки итогового JSON
@@ -21,13 +22,14 @@ def create_summary_crew(
         verbose: Подробный вывод
         agent: Агент-подготовщик (если None - создается новый)
         task: Задача (если None - создается новая)
+        extra: Дополнительная информация для агента
     
     Returns:
         Crew: Сконфигурированная команда для подготовки JSON
     """
     
     preparer = agent if agent else new_agent_task_preparer()
-    summary_task = task if task else new_task_task_preparer(previous_outputs or [])
+    summary_task = task if task else new_task_task_preparer(previous_outputs or [], extra=extra)
     
     return Crew(
         agents=[preparer],
@@ -38,7 +40,8 @@ def create_summary_crew(
 
 def run_create_task_params_json(
     previous_outputs: Optional[List[str]] = None,
-    verbose: bool = True
+    verbose: bool = True,
+    extra: str | None = None
 ) -> Tuple[str, UsageMetrics]:
     """
     Запуск агента для подготовки итогового JSON
@@ -46,6 +49,7 @@ def run_create_task_params_json(
     Args:
         previous_outputs: Список результатов от ML инженеров
         verbose: Подробный вывод
+        extra: дополнительная информация для агента
     
     Returns:
         Tuple[str], UsageMetrics]:
@@ -55,7 +59,8 @@ def run_create_task_params_json(
     
     crew = create_summary_crew(
         previous_outputs=previous_outputs,
-        verbose=verbose
+        verbose=verbose,
+        extra=extra
     )
     
     try:
