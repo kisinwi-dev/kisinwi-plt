@@ -1,5 +1,6 @@
 import json
 import requests
+import re
 from typing import Dict
 
 from app.logs import get_logger
@@ -24,9 +25,10 @@ class Tasker():
             # Парсим JSON если это строка
             if isinstance(json_data, str):
                 try:
-                    params = json.loads(json_data)
+                    clening_json = self._clean_str(json_data)
+                    params = json.loads(clening_json)
                 except json.JSONDecodeError as e:
-                    logger.error(f"Ошибка перевода str -> json. Детали: {e}")
+                    logger.error(f"Ошибка перевода str -> json. Полученные текст: {clening_json}\n Детали: {e}")
                     raise
             else:
                 params = json_data
@@ -53,5 +55,13 @@ class Tasker():
         except Exception as e:
             logger.error(f"Ошибка при отправке задачи в сервис задач: {e}")
             raise
-        
+    
+    def _clean_str(
+        self, 
+        text: str
+    )-> str:
+        text = re.sub(r'```json\s*\n?', '', text)
+        text = re.sub(r'```\s*\n?', '', text)
+        return text
+
 tasker = Tasker()
