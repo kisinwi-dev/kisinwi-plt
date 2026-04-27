@@ -49,13 +49,25 @@ class Tasker():
             return {
                 "status": "success",
                 "status_code": response.status_code,
-                "response": response.json() if response.text else {"message": "Task created"}
+                "task_id": response.json()["task_id"]
             }
         
         except Exception as e:
             logger.error(f"Ошибка при отправке задачи в сервис задач: {e}")
             raise
     
+    def task_is_finish(
+        self,
+        task_id: str
+    ) -> bool:
+        logger.debug(f"Проверка окончания задачи {task_id}")
+        
+        response = requests.get(f"{self.URL}/tasks/{task_id}")
+        response.raise_for_status()
+        logger.debug(f"✅ Задача {task_id} имеeт статус {response.json()["status"]}")
+
+        return response.json()["status"] == "completed"
+
     def _clean_str(
         self, 
         text: str
