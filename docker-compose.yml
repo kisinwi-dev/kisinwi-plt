@@ -156,6 +156,7 @@ services:
       - DMS_DOMEN=datasets:${DATASETS_SERVICE_PORT}
       - TASKER_DOMEN=tasker:${TASKER_PORT}
       - TRAINER_DOMEN=trainer:${TRAINER_SERVICE_PORT}
+      - METRICS_DOMEN=metrics:${METRICS_SERVICE_PORT}
     networks:
       - network
 
