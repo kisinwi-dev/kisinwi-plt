@@ -1,23 +1,25 @@
-from typing import Optional, Tuple
+from typing import Tuple
 from crewai import Crew, Agent, Task, CrewOutput
 from crewai.types.usage_metrics import UsageMetrics
 
-from app.core.agents.analyst import new_analytic_reporter
-from app.core.tasks.analytics import new_task_data_analytic
+from app.core.agents.analysts.metrics import new_analytic as new_agent_metrics_analytic
+from app.core.tasks.analytics.metrics import new_analysis as new_task_metrics_analysis
 
-def create_analytics_crew(
+def create_data_analysis(
+    task_id: str,
     dataset_id: str, 
-    version_id: Optional[str] = None,
-    agent: Optional[Agent] = None,
-    task: Optional[Task] = None,
+    version_id: str,
+    bus_req: str | None = None,
+    agent: Agent | None = None,
+    task: Task | None = None,
     verbose: bool = True
 ) -> Crew:
     """
     Создает Crew для анализа датасета
     
     Args:
-        dataset_id: ID датасета
-        version_id: ID версии (опционально)
+        task_id: ID задачи
+        bus_req: Бизнес требования к модели
         agent: Агент-аналитик (если None - создается новый)
         task: Задача для анализа (если None - создается новая)
         verbose: Подробный вывод
@@ -26,8 +28,13 @@ def create_analytics_crew(
         Crew: Сконфигурированная команда для анализа
     """
     
-    analyst = agent if agent else new_analytic_reporter()
-    analysis_task = task if task else new_task_data_analytic(dataset_id, version_id)
+    analyst = agent if agent else new_agent_metrics_analytic()
+    analysis_task = task if task else new_task_metrics_analysis(
+        task_id, 
+        dataset_id, 
+        version_id,
+        bus_req
+    )
 
     return Crew(
         agents=[analyst],
@@ -35,18 +42,19 @@ def create_analytics_crew(
         verbose=verbose,
     )
 
-
 def run_analysis(
+    task_id: str, 
     dataset_id: str, 
-    version_id: Optional[str] = None,
+    version_id: str,
+    bus_req: str | None,
     verbose: bool = True
 ) -> Tuple[str, UsageMetrics]:
     """
     Запуск анализа данных
     
     Args:
-        dataset_id: ID датасета
-        version_id: ID версии (опционально)
+        task_id: ID задачи
+        bus_req: Бизнес требования к модели
         verbose: Подробный вывод
     
     Returns:
@@ -55,7 +63,13 @@ def run_analysis(
             - метрики использования токенов
     """
     
-    crew = create_analytics_crew(dataset_id, version_id, verbose=verbose)
+    crew = create_data_analysis(
+        task_id, 
+        dataset_id=dataset_id,
+        version_id=version_id,
+        bus_req=bus_req,
+        verbose=verbose
+    )
     
     try:
         crew_output = crew.kickoff()
@@ -66,4 +80,4 @@ def run_analysis(
         else: 
             raise TypeError(f"Неверный тип данных: CrewOutput={type(crew_output)}, UsageMetrics={type(metrics)}")    
     except Exception as e:
-        raise Exception(f"Ошибка при анализе датасета {dataset_id}: {str(e)}")
+        raise Exception(f"Ошибка при анализе метрик задачи {task_id}: {str(e)}")
