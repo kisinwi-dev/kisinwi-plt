@@ -1,7 +1,8 @@
+import time
 from crewai.types.usage_metrics import UsageMetrics
 
 from app.logs import get_logger
-from app.core.crews.analytics import run_analysis
+from app.core.crews.analytics import run_data_analysis, run_metrics_analysis
 from app.core.crews.ml_engine import run_ml_engineering
 from app.core.crews.task_preparer import run_create_task_params_json
 from app.services.tasker import tasker
@@ -10,7 +11,8 @@ logger = get_logger(__name__)
 
 def full_pipeline(
     dataset_id: str,
-    version_id: str | None = None,
+    version_id: str,
+    bus_req: str,
     count_engine: int = 3,
     verbose: bool = True
 ) -> dict:
@@ -41,13 +43,13 @@ def full_pipeline(
         info_data = f"{dataset_id} {' версия:'+version_id if version_id else ''}..."
         logger.info(f"Этап 1: Анализ датасета {info_data}")
         
-        analysis_result, analysis_metrics = run_analysis(
+        analysis_result, analysis_metrics = run_data_analysis(
             dataset_id=dataset_id,
             version_id=version_id,
             verbose=verbose
         )
         
-        pipeline_metrics["stages"]["analysis"] = {
+        pipeline_metrics["stages"]["data_analysis"] = {
             "status": "success",
             "metrics": _metrics_to_dict(analysis_metrics)
         }
@@ -101,12 +103,35 @@ def full_pipeline(
         }
         
         logger.info(f"✅ Задача отправлена")
-        
-        # Общая сводка
+
+        logger.info(f"Этап 5: Ожидание выполнения задачи...")
+
+        is_complete = False
+        while is_complete is False:
+            is_complete = tasker.task_is_finish(task_result["task_id"])
+            time.sleep(1)
+
+        logger.info(f"Этап 6: Анализ итогов выполнения задачи")
+
+        _, metric_analysis_metrics = run_metrics_analysis(
+            task_id=task_result["task_id"],
+            dataset_id=dataset_id,
+            version_id=version_id,
+            bus_req=bus_req,
+            verbose=verbose
+        )
+
+        pipeline_metrics["stages"]["metric_analysis"] = {
+            "status": "success",
+            "metrics": _metrics_to_dict(metric_analysis_metrics)
+        }
+
+                # Общая сводка
         total_tokens = sum([
             analysis_metrics.total_tokens if analysis_metrics else 0,
             engineers_metrics.total_tokens if engineers_metrics else 0,
-            summary_metrics.total_tokens if summary_metrics else 0
+            summary_metrics.total_tokens if summary_metrics else 0,
+            metric_analysis_metrics.total_tokens if metric_analysis_metrics else 0
         ])
         
         pipeline_metrics["summary"] = {
@@ -115,12 +140,13 @@ def full_pipeline(
             "total_requests": (
                 (analysis_metrics.successful_requests if analysis_metrics else 0) +
                 (engineers_metrics.successful_requests if engineers_metrics else 0) +
-                (summary_metrics.successful_requests if summary_metrics else 0)
+                (summary_metrics.successful_requests if summary_metrics else 0) +
+                (metric_analysis_metrics.successful_requests if metric_analysis_metrics else 0)
             )
         }
         
         logger.info('✨ Пайплайн завершён успешно')
-        
+
         return {
             "success": True,
             "result": final_json,
