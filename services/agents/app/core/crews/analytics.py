@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 from crewai import Crew, Agent, Task, CrewOutput
 from crewai.types.usage_metrics import UsageMetrics
 
-from app.core.agents.analyst import new_analytic_reporter
+from app.core.agents.analyst_data import new_analytic_reporter
 from app.core.tasks.analytics import new_task_data_analytic
 
 def create_analytics_crew(

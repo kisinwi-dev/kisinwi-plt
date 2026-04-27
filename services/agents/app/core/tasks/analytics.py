@@ -1,7 +1,7 @@
 from typing import Optional
 from crewai import Task, Agent
 
-from app.core.agents.analyst import new_analytic_reporter
+from app.core.agents.analyst_data import new_analytic_reporter
 
 def new_task_data_analytic(
     dataset_id: str,
