@@ -1,12 +1,11 @@
-from typing import Optional
 from crewai import Task, Agent
 
-from app.core.agents.analyst_data import new_analytic_reporter
+from app.core.agents.analysts.datasets import new_analytic as new_agent_data_analytic
 
-def new_task_data_analytic(
+def new_analysis(
     dataset_id: str,
-    version_id: Optional[str] = None, 
-    agent: Optional[Agent] = None
+    version_id: str | None = None, 
+    agent: Agent | None = None
 ) -> Task:
     """Создать задачу для аналитики данных"""
 
@@ -16,7 +15,7 @@ def new_task_data_analytic(
     return Task(
         description=task_description,
         expected_output=expected_output,
-        agent=agent if agent else new_analytic_reporter()
+        agent=agent if agent else new_agent_data_analytic()
     )
 
 def _get_task_desc(dataset_id: str, version_id: str | None = None) -> str:

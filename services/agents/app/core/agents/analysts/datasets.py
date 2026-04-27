@@ -2,7 +2,7 @@ from crewai import Agent
 from app.services.data import *
 from app.core.llm import llm
 
-def new_analytic_reporter(): 
+def new_analytic(): 
     """Создает агента для анализа конкретного датасета"""
     
     goal = _create_goal_analytic()
@@ -15,6 +15,7 @@ def new_analytic_reporter():
         llm=llm,
         tools=[
             get_dataset_info, 
+            get_version_info,
             list_datasets
         ],
         verbose=True,
@@ -24,7 +25,7 @@ def new_analytic_reporter():
 
 def _create_goal_analytic() -> str:
     """Создание цели агента аналитика"""
-    return  "Помогать ML инженерам оценивать готовность датасетов к обучению"
+    return  "Оценивать готовность датасетов к обучению"
     
 def _create_backstory_analytic() -> str:
     """Создание бэкграунда агента аналитика"""
