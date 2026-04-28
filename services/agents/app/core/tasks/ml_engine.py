@@ -3,14 +3,26 @@ from crewai import Task, Agent
 
 from app.core.agents.ml_engineer import new_agent_ml_engineer
 
+# __WARNING__ ПЕРЕДЕЛАТЬ ЭТОТ ФАЙЛ, ЧТО ТО НЕ ТАК С ОТСУПАМИ
+
 def new_task_search_best_model(
     number_engineer: int | None = None,
-    previous_output: str = "",
+    info_data: str = "",
     agent: Optional[Agent] = None
 ) -> Task:
-    """Создать задачу для МL-инженера"""
+    """
+    Создать задачу для МL-инженера
 
-    description = _get_task_desc(number_engineer, previous_output)
+    Args: 
+      number_engineer: Количество инжеров
+      info_data: Описание имеющихся данных
+      agent: Агент
+
+    Returns:
+      Task
+    """
+
+    description = _get_task_desc(number_engineer, info_data)
     output = _get_expected_output_template(number_engineer)
 
     return Task(
@@ -21,7 +33,7 @@ def new_task_search_best_model(
 
 def _get_task_desc(
     number_engineer: Optional[int] = None,
-    analysis_result: str = ""
+    info_data: str = ""
 ) -> str:
     """Получить детальное описание задачи для ML инженера"""
     
@@ -32,7 +44,7 @@ def _get_task_desc(
 
 ДАННЫЕ О ДАТАСЕТЕ:
 
-{analysis_result}
+{info_data}
 
 ЧТО НУЖНО ОПРЕДЕЛИТЬ:
 
