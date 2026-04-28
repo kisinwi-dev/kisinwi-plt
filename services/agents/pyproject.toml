@@ -5,6 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "crewai[tools]>=1.14.1",
+    # __WARNING__ 
+    # Обязательно прочитать эту информации для улучшения поддерживаемости всех моделей
+    # через openrouter
+    # https://docs.crewai.com/en/learn/litellm-removal-guide
+    "crewai[tools, litellm]>=1.14.1",
     "fastapi>=0.135.3",
 ]
