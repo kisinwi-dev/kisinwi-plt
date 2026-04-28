@@ -54,11 +54,11 @@ def _get_task_desc(
 
     if dataset_id is not None and version_id is not None:
         context += "Информация об используемом датасете:\n"
-        context += f"dataset_id: {dataset_id}"
-        context += f"version_id: {version_id}"
+        context += f"dataset_id: {dataset_id}\n"
+        context += f"version_id: {version_id}\n"
 
     if previous_output:
-        context = "ИСХОДНЫЕ ДАННЫЕ (от ML-инженеров):\n"
+        context += "ИСХОДНЫЕ ДАННЫЕ (от ML-инженеров):\n"
         for output in previous_output:
             context += "\n"+output
 
