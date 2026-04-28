@@ -37,6 +37,7 @@ class Tasker():
             # Проверяем статус ответа
             response.raise_for_status()
             task_id = response.json()["task_id"]
+            logger.debug(f" Задач отправлена и имеет id={task_id}")
             
             return {
                 "status": "success",

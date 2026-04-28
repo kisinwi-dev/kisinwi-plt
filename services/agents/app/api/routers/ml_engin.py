@@ -37,12 +37,18 @@ def run_etp(
         description="Получение json для задачи тренировки. Json формирует агент."
 )
 def run_ctpj(
+    dataset_id: str = Query(..., description="Датасет используемый при обучении"),
+    version_id: str = Query(..., description="Версия датасета используемая при обучении"),
     previous_outputs: list = Query(..., description="Описание действий для достижения требуемого результата"),
 ):
     try:
         from app.services.tasker import tasker
 
-        result, metrics = run_create_task_params_json(previous_outputs)
+        result, metrics = run_create_task_params_json(
+            previous_outputs,
+            dataset_id=dataset_id,
+            version_id=version_id
+        )
         result = tasker.post_task(result)
 
         return {

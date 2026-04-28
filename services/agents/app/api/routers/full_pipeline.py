@@ -17,19 +17,13 @@ def fp(
     count_engine: int = Query("", description="Количество используемых агентов ML-инженеров"),
 ):
     try:
-        out = full_pipeline(
+        return full_pipeline(
             dataset_id,
             version_id,
             bus_req=bus_req,
             count_engine=count_engine,
         )
 
-        # Возвращаем результат
-        return {
-            "status": "completed", 
-            **out
-        }
-        
     except Exception as e:
         raise HTTPException(
             status_code=500,
