@@ -11,6 +11,7 @@ logger = get_logger(__name__)
 class Tasker():
     def __init__(self) -> None:
         self.URL = config_url.TASKER_URL
+        self.session = requests.Session()
 
     def post_task(
             self,
@@ -20,60 +21,76 @@ class Tasker():
         try:
             # Проверяем, что json_data не пустой
             if not json_data:
-                return {"error": "JSON data is empty"}
+                raise ValueError("JSON data cannot be empty")
             
             # Парсим JSON если это строка
-            if isinstance(json_data, str):
-                try:
-                    clening_json = self._clean_str(json_data)
-                    params = json.loads(clening_json)
-                except json.JSONDecodeError as e:
-                    logger.error(f"Ошибка перевода str -> json. Полученные текст: {clening_json}\n Детали: {e}")
-                    raise
-            else:
-                params = json_data
-
-            params = {"params": params}
+            params = self._parse_in_json(json_data)
 
             # Отправляем POST запрос
-            response = requests.post(
+            response = self.session.post(
                 f"{self.URL}/tasks",
-                json=params,
+                json={"params": params},
                 headers={"Content-Type": "application/json"},
                 timeout=30
             )
             
             # Проверяем статус ответа
             response.raise_for_status()
+            task_id = response.json()["task_id"]
+            logger.debug(f" Задач отправлена и имеет id={task_id}")
             
             return {
                 "status": "success",
                 "status_code": response.status_code,
-                "task_id": response.json()["task_id"]
+                "task_id": task_id
             }
         
+        except requests.RequestException as e:
+            logger.error(f"Ошибка HTTP при отправке задачи: {e}")
+            raise
         except Exception as e:
             logger.error(f"Ошибка при отправке задачи в сервис задач: {e}")
             raise
     
-    def task_is_finish(
-        self,
-        task_id: str
-    ) -> bool:
-        logger.debug(f"Проверка окончания задачи {task_id}")
-        
-        response = requests.get(f"{self.URL}/tasks/{task_id}")
-        response.raise_for_status()
-        logger.debug(f"✅ Задача {task_id} имеeт статус {response.json()["status"]}")
-
-        return response.json()["status"] == "completed"
-
-    def _clean_str(
+    def _parse_in_json(
         self, 
-        text: str
-    )-> str:
-        text = re.sub(r'```json\s*\n?', '', text)
-        text = re.sub(r'```\s*\n?', '', text)
-        return text
+        data: Dict | str
+    ) -> Dict:
+        """Парсинг в JSON из строки или возврат словаря"""
+        if isinstance(data, dict):
+            return data
+        
+        # Очищаем строку от маркеров markdown
+        data = re.sub(r'```json\s*\n?', '', data)
+        cleaned = re.sub(r'```\s*\n?', '', data)
+
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError as e:
+            logger.error(f"Ошибка парсинга JSON. Полученный текст:\n{cleaned}\nОшибка: {e}")
+            raise ValueError(f"Invalid JSON format: {e}")
+
+    def task_is_finish(self, task_id: str) -> bool:
+        """Проверить, завершена ли задача"""
+        try:
+            response = self.session.get(
+                f"{self.URL}/tasks/{task_id}",
+            )
+            response.raise_for_status()
+            
+            status = response.json().get("status")
+            logger.debug(f"Задача {task_id} имеет статус: {status}")
+            
+            return status == "completed"
+        
+        except requests.RequestException as e:
+            logger.error(f"Ошибка при проверке задачи {task_id}: {e}")
+            return False
+
+    def close(self):
+        self.session.close()
+
+    def __exit__(self):
+        self.close()
 
 tasker = Tasker()

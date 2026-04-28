@@ -1,14 +1,13 @@
-import requests
 from typing import List, Dict, Any
 from crewai.tools import tool
-from requests.exceptions import RequestException
 
+from .utils import get_json, handle_errors
 from app.logs import get_logger
-from app.config import config_url
 
 logger = get_logger(__name__)
 
 @tool("GetMetricsForTask")
+@handle_errors
 def get_metrics(   
     task_id: str
 ) -> List[Dict[str, Any]]:
@@ -17,32 +16,32 @@ def get_metrics(
     
     Args:
         task_id: Id задачи
+    
+    Returns:
+        Dict с метриками или ошибкой
     """
-    try:
-        if not task_metrics_exists(task_id):
-            return [{"Error": "Задачи в сервисе метрик не существует"}]
-        
-        logger.debug("Поиск метрик...")
-        response = requests.get(f"{config_url.METRICS_URL}/metrics/task/{task_id}")
-        response.raise_for_status()
-        logger.debug(f"✅ Метрики для задачи ({task_id}) найдены")
+    json = get_json(f"/metrics/task/{task_id}")
+    return json["metrics"]
+    
 
-        return response.json()["metrics"]
-    except RequestException as e:
-        logger.error(f"Ошибка при выполнении поиска метрик: {e}")
-        raise
-
+@handle_errors
 def task_metrics_exists(
     task_id: str
 ) -> bool:
-    try:
-        response = requests.get(f"{config_url.METRICS_URL}/metrics/task/{task_id}/exists")
-        response.raise_for_status()
-        logger.debug(f"✅ Искомая задача ({task_id}) найдена в сервисе метрик")
-        if response.json()["exists"]:
-            return True
-        else:
-            return False
-    except RequestException as e:
-        logger.error(f"Ошибка при выполнении поиска метрик: {e}")
+    """
+    Проверка существования метрик для задачи task_id
+    
+    Args:
+        task_id: Id задачи
+    
+    Returns:
+        bool или ошибка
+    
+    *True - метрики для task_id существуют, в противном случае отсутвуют
+    """
+    json = get_json(f"/metrics/task/{task_id}/exists")
+    if json["exists"] is True:
+        return True
+    else:
         return False
+    
