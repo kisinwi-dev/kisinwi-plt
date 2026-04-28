@@ -22,6 +22,7 @@ def full_pipeline(
     Args:
         dataset_id: ID датасета
         version_id: ID версии датасета
+        bus_req: Описание бизнес требований
         count_engine: Количество ML инженеров
         verbose: Подробный вывод в консоли 
     
@@ -29,91 +30,87 @@ def full_pipeline(
         Результат выполнения пайплайна с метриками
     """
     
-    # Собираем метрики по всем этапам
-    pipeline_metrics = {
+    # Информация по процессам в пайплайне
+    pipeline = {
         "dataset_id": dataset_id,
         "version_id": version_id,
+        "bus_req": bus_req,
+        "count_engine": count_engine,
         "stages": {}
     }
+    stages = pipeline["stages"]
     
     try:
 
         # Анализ датасета 
+        info_start_analysis_data = f"{dataset_id} {' версия:' + version_id if version_id else ''}..."
+        logger.info(f"Этап 1: Анализ датасета {info_start_analysis_data}")
         
-        info_data = f"{dataset_id} {' версия:'+version_id if version_id else ''}..."
-        logger.info(f"Этап 1: Анализ датасета {info_data}")
-        
-        analysis_result, analysis_metrics = run_data_analysis(
+        out_agent_analytic, analysis_metrics = run_data_analysis(
             dataset_id=dataset_id,
             version_id=version_id,
             verbose=verbose
         )
         
-        pipeline_metrics["stages"]["data_analysis"] = {
-            "status": "success",
+        # Фиксируем результат
+        stages["data_analysis"] = {
+            "out": out_agent_analytic,
             "metrics": _metrics_to_dict(analysis_metrics)
         }
         
         logger.info(f"✅ Анализ завершён")
         
         # ML инженеры
-        
         logger.info(f"Этап 2: Запуск {count_engine} ML инженеров...")
         
-        engineers_results, engineers_metrics = run_ml_engineering(
+        out_engineers, engineers_metrics = run_ml_engineering(
             num_engineers=count_engine,
-            analysis_result=analysis_result,
+            info_data=out_agent_analytic,
             verbose=verbose
         )
         
-        pipeline_metrics["stages"]["ml_engineers"] = {
-            "status": "success",
-            "count": count_engine,
+        stages["ml_engineers"] = {
+            "out": out_engineers,
             "metrics": _metrics_to_dict(engineers_metrics)
         }
         
-        logger.info(f"✅ Получено {len(engineers_results)} предложений от инженеров")
+        logger.info(f"✅ Получено {len(out_engineers)} предложений от инженеров")
         
         # Суммаризация и превращение в задачу для тренировки
-
         logger.info(f"Этап 3: Формирование итогового JSON...")
 
-        extra = f"Идентификаторы данных: \n dataset_id='{dataset_id}' \nversion_id='{version_id}'\n"
-
-        final_json, summary_metrics = run_create_task_params_json(
-            previous_outputs=engineers_results,
-            verbose=verbose,
-            extra=extra
+        out_agent_task_preparer, summary_metrics = run_create_task_params_json(
+            previous_outputs=out_engineers,
+            dataset_id=dataset_id,
+            version_id=version_id,
+            verbose=verbose
         )
         
-        pipeline_metrics["stages"]["task_preparer"] = {
-            "status": "success",
+        stages["task_preparer"] = {
             "metrics": _metrics_to_dict(summary_metrics)
         }
-        
         logger.info("✅ JSON сформирован")
-        
-        # Отправка в сервис задач
-        logger.info(f"Этап 4: Отправка в сервис задач...")
-        
-        task_result = tasker.post_task(final_json)
-        
-        pipeline_metrics["stages"]["tasker"] = {
+
+        logger.info(f"Отправка в сервис задач...")
+        task_result = tasker.post_task(out_agent_task_preparer)
+        stages["post_task"] = {
             **task_result
         }
-        
         logger.info(f"✅ Задача отправлена")
 
-        logger.info(f"Этап 5: Ожидание выполнения задачи...")
-
+        logger.info(f"Этап 6: Анализ итогов выполнения задачи")
+        
         is_complete = False
+        
+        logger.info(f"Ожидание выполнения задачи...")
+
         while is_complete is False:
             is_complete = tasker.task_is_finish(task_result["task_id"])
             time.sleep(1)
 
-        logger.info(f"Этап 6: Анализ итогов выполнения задачи")
+        logger.info(f"✅ Задача выполнена. Запускаем анализ полученных метрик")
 
-        _, metric_analysis_metrics = run_metrics_analysis(
+        out_agent_metrics_analytic, metric_analysis_metrics = run_metrics_analysis(
             task_id=task_result["task_id"],
             dataset_id=dataset_id,
             version_id=version_id,
@@ -121,49 +118,27 @@ def full_pipeline(
             verbose=verbose
         )
 
-        pipeline_metrics["stages"]["metric_analysis"] = {
-            "status": "success",
+        stages["metric_analysis"] = {
+            "out": out_agent_metrics_analytic,
             "metrics": _metrics_to_dict(metric_analysis_metrics)
         }
-
-                # Общая сводка
-        total_tokens = sum([
-            analysis_metrics.total_tokens if analysis_metrics else 0,
-            engineers_metrics.total_tokens if engineers_metrics else 0,
-            summary_metrics.total_tokens if summary_metrics else 0,
-            metric_analysis_metrics.total_tokens if metric_analysis_metrics else 0
-        ])
         
-        pipeline_metrics["summary"] = {
-            "status": "success",
-            "total_tokens": total_tokens,
-            "total_requests": (
-                (analysis_metrics.successful_requests if analysis_metrics else 0) +
-                (engineers_metrics.successful_requests if engineers_metrics else 0) +
-                (summary_metrics.successful_requests if summary_metrics else 0) +
-                (metric_analysis_metrics.successful_requests if metric_analysis_metrics else 0)
-            )
-        }
-        
-        logger.info('✨ Пайплайн завершён успешно')
+        logger.info("✨ Пайплайн завершён успешно")
 
         return {
-            "success": True,
-            "result": final_json,
-            "task_response": task_result,
-            "metrics": pipeline_metrics
+            **pipeline
         }
         
     except Exception as e:
-        pipeline_metrics["status"] = "failed"
-        pipeline_metrics["error"] = str(e)
+        pipeline["status"] = "failed"
+        pipeline["error"] = str(e)
         
-        logger.error(f"\n❌ Ошибка в пайплайне: {str(e)}")
+        logger.error(f"❌ Ошибка в пайплайне: {str(e)}")
         
         return {
             "success": False,
             "error": str(e),
-            "metrics": pipeline_metrics
+            **pipeline
         }
 
 
