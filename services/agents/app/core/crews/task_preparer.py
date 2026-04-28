@@ -8,10 +8,12 @@ from app.core.tasks.task_preparer import new_task_task_preparer
 
 
 def create_summary_crew(
-    previous_outputs: Optional[List[str]] = None,
+    previous_outputs: List[str],
     verbose: bool = True,
-    agent: Optional[BaseAgent] = None,
-    task: Optional[Task] = None,
+    dataset_id: str | None = None,
+    version_id: str | None = None,
+    agent: BaseAgent | None = None,
+    task: Task | None = None,
     extra: str | None = None
 ) -> Crew:
     """
@@ -20,6 +22,8 @@ def create_summary_crew(
     Args:
         previous_outputs: Список результатов от ML инженеров
         verbose: Подробный вывод
+        dataset_id: Id датасета с которым мы работаем,
+        version_id: Id версии с которой мы работаем,
         agent: Агент-подготовщик (если None - создается новый)
         task: Задача (если None - создается новая)
         extra: Дополнительная информация для агента
@@ -27,9 +31,14 @@ def create_summary_crew(
     Returns:
         Crew: Сконфигурированная команда для подготовки JSON
     """
-    
+
     preparer = agent if agent else new_agent_task_preparer()
-    summary_task = task if task else new_task_task_preparer(previous_outputs or [], extra=extra)
+    summary_task = task if task else new_task_task_preparer(
+        previous_outputs, 
+        dataset_id=dataset_id,
+        version_id=version_id,
+        extra=extra
+    )
     
     return Crew(
         agents=[preparer],
@@ -39,8 +48,10 @@ def create_summary_crew(
 
 
 def run_create_task_params_json(
-    previous_outputs: Optional[List[str]] = None,
+    previous_outputs: List[str],
     verbose: bool = True,
+    dataset_id: str | None = None,
+    version_id: str | None = None,
     extra: str | None = None
 ) -> Tuple[str, UsageMetrics]:
     """
@@ -49,6 +60,8 @@ def run_create_task_params_json(
     Args:
         previous_outputs: Список результатов от ML инженеров
         verbose: Подробный вывод
+        dataset_id: Id датасета с которым мы работаем,
+        version_id: Id версии с которой мы работаем,
         extra: дополнительная информация для агента
     
     Returns:
@@ -60,6 +73,8 @@ def run_create_task_params_json(
     crew = create_summary_crew(
         previous_outputs=previous_outputs,
         verbose=verbose,
+        dataset_id=dataset_id,
+        version_id=version_id,
         extra=extra
     )
     
