@@ -1,28 +1,28 @@
 from pydantic import BaseModel, Field
 from typing import List
 
-class MetricAdd(BaseModel):
+class TrainingMetricAdd(BaseModel):
     """Схема на добавление метрики"""
     task_id: str = Field(..., description='ID задачи')
     name: str = Field(..., description='Название метрики')
     value: float = Field(..., description='Значения метрики')
 
-class MetricsAdd(BaseModel):
+class TrainingMetricAdds(BaseModel):
     """Схема на добавление нескольких метрик"""
     task_id: str = Field(..., description='ID задачи')
-    metrics: List[MetricData] = Field(..., description='Список метрик')
+    metrics: List[TrainingMetricData] = Field(..., description='Список метрик')
 
-class MetricData(BaseModel):
+class TrainingMetricData(BaseModel):
     """Схема метрик"""
     name: str = Field(..., description='Название метрики')
     values: List[float] = Field(default_factory=list, description='Значения метрик')
 
-class TaskMetrics(BaseModel):
+class TaskTrainingMetrics(BaseModel):
     """Задача и все её метрики"""
     task_id: str = Field(...,description='Id задачи')
-    metrics: List[MetricData] = Field(default_factory=list, description='Метрики')
+    metrics: List[TrainingMetricData] = Field(default_factory=list, description='Метрики')
 
-class SearchMetric(BaseModel):
+class SearchTrainingMetric(BaseModel):
     """Запрос на поиск требуемой метрики"""
     task_id: str = Field(..., description='Id задачи')
     name: str = Field(..., description='Название метрики')
