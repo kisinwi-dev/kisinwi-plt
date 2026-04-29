@@ -11,7 +11,7 @@ from app.api.routers import routers
 
 # Создание `сервера`
 app = FastAPI(
-    title="Data Manipulation Service",
+    title="Metrics Service",
     version="0.1.0"
 )
 
