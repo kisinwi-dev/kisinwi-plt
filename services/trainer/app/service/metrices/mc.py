@@ -79,7 +79,7 @@ class MetricesClient:
             }
 
             response = requests.post(
-                f"{self._url}/metrics/adds",
+                f"{self._url}/training/adds",
                 json=metrics_data,
                 timeout=30
             )
