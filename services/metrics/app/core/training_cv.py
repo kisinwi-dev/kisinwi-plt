@@ -1,69 +1,13 @@
 from typing import Optional
-from pymongo import MongoClient
-from pymongo.collection import Collection
 from pymongo.errors import PyMongoError
 
-from app.api.schemes import *
-from app.config import mongodb_config
+from .storebase import ManagerBase
+from app.api.schemes import MetricAdd, MetricsAdd, MetricData, TaskMetrics
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 
-class CVMetricManager:
-    def __init__(
-            self
-    ) -> None:
-        self.url = mongodb_config.URL_METRIC
-        self.database_name = mongodb_config.DATABASE_METRIC
-        self.collection_name = mongodb_config.COLLECTION_TRAINING_CV
-        self.client: MongoClient
-        self.collection: Collection
-        self.create_index()
-
-    def create_index(self):
-        """Создание индексов"""
-
-        # __WARNING__ постоянно создаёт индексы после перезагрузки контейнера
-        # ТРЕБУЕТСЯ ИСПРАВИТЬ ЭТО В БУДУЩЕМ
-
-        try:
-            # Коллекция метрик CV
-            self.client = MongoClient(self.url)
-            self.db = self.client[self.database_name]
-            self.collection = self.db[self.collection_name]
-
-            self.collection.create_index('task_id', unique=True)
-            self.collection.create_index([('task_id', 1), ('metrics.metric', 1)])
-            logger.debug("✅ Индексы созданы")
-        except PyMongoError as e:
-            logger.error(f"Ошибка создания индексов: {e}")
-
-    def connect(self):
-        """Подключение к MongoDB"""
-        try:
-            # Заходим в коллекцию для работы с CV метриками
-            self.client = MongoClient(self.url)
-            self.db = self.client[self.database_name]
-            self.collection = self.db[self.collection_name]
-
-            logger.debug(f"🟩 {self.database_name} подключена")
-        except PyMongoError as e:
-            logger.error(f"😡 Не удалось подключиться к {self.database_name} : {e}")
-            raise
-    
-    def disconnect(self):
-        """Отключение от MongoDB"""
-        if self.client:
-            self.client.close()
-            logger.debug(f"⚠️ Соединение с {self.database_name} закрыто")
-
-    def __enter__(self):
-        self.connect()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.disconnect()
-        return False
+class CVMetricManager(ManagerBase):
 
     def add_metric(
             self, 
