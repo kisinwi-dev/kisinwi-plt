@@ -4,6 +4,7 @@ from crewai.types.usage_metrics import UsageMetrics
 
 from app.core.agents.analysts.metrics import new_analytic as new_agent_metrics_analytic
 from app.core.tasks.analytics.metrics import new_analysis as new_task_metrics_analysis
+from app.services.metrics.post import add_agent_in_metrics
 
 def create_data_analysis(
     task_id: str,
@@ -47,7 +48,8 @@ def run_analysis(
     dataset_id: str, 
     version_id: str,
     bus_req: str | None,
-    verbose: bool = True
+    verbose: bool = True,
+    conversation_id: str | None = None
 ) -> Tuple[str, UsageMetrics]:
     """
     Запуск анализа данных
@@ -56,6 +58,7 @@ def run_analysis(
         task_id: ID задачи
         bus_req: Бизнес требования к модели
         verbose: Подробный вывод
+        conversation_id: id диалога
     
     Returns:
         Tuple[str, UsageMetrics]: 
@@ -74,6 +77,11 @@ def run_analysis(
     try:
         crew_output = crew.kickoff()
         metrics = crew.usage_metrics
+
+        add_agent_in_metrics(
+            crew=crew,
+            conversation_id=conversation_id if conversation_id else "no_dialog"
+        )
         
         if isinstance(crew_output, CrewOutput) and isinstance(metrics, UsageMetrics):
             return crew_output.raw, metrics
