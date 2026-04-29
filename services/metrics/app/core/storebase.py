@@ -27,7 +27,6 @@ class ManagerBase:
             self.db = self.client[self.database_name]
             self.collection = self.db[self.collection_name]
 
-            logger.debug(f"🟩 {self.database_name} подключена")
         except PyMongoError as e:
             logger.error(f"😡 Не удалось подключиться к {self.database_name}/{self.collection_name} : {e}")
             raise
@@ -36,7 +35,6 @@ class ManagerBase:
         """Отключение от MongoDB"""
         if self.client:
             self.client.close()
-            logger.debug(f"⚠️ Соединение с {self.database_name}/{self.collection_name} закрыто")
 
     def __enter__(self):
         self.connect()
