@@ -1,5 +1,5 @@
 import time
-from crewai.types.usage_metrics import UsageMetrics
+import uuid
 
 from app.logs import get_logger
 from app.core.crews.analytics import run_data_analysis, run_metrics_analysis
@@ -14,7 +14,7 @@ def full_pipeline(
     version_id: str,
     bus_req: str,
     count_engine: int = 3,
-    verbose: bool = True
+    verbose: bool = False
 ) -> dict:
     """
     Полный пайплайн анализа и подготовки задачи
@@ -38,41 +38,33 @@ def full_pipeline(
         "count_engine": count_engine,
         "stages": {}
     }
-    stages = pipeline["stages"]
     
-    try:
+    conversation_id = str(uuid.uuid4())
 
+    try:
+        logger.info(f"Запуск диалога: {conversation_id}")
         # Анализ датасета 
         info_start_analysis_data = f"{dataset_id} {' версия:' + version_id if version_id else ''}..."
         logger.info(f"Этап 1: Анализ датасета {info_start_analysis_data}")
         
-        out_agent_analytic, analysis_metrics = run_data_analysis(
+        out_agent_analytic, _ = run_data_analysis(
             dataset_id=dataset_id,
             version_id=version_id,
+            conversation_id=conversation_id,
             verbose=verbose
         )
-        
-        # Фиксируем результат
-        stages["data_analysis"] = {
-            "out": out_agent_analytic,
-            "metrics": _metrics_to_dict(analysis_metrics)
-        }
         
         logger.info(f"✅ Анализ завершён")
         
         # ML инженеры
         logger.info(f"Этап 2: Запуск {count_engine} ML инженеров...")
         
-        out_engineers, engineers_metrics = run_ml_engineering(
+        out_engineers, _ = run_ml_engineering(
             num_engineers=count_engine,
+            conversation_id=conversation_id,
             info_data=out_agent_analytic,
             verbose=verbose
         )
-        
-        stages["ml_engineers"] = {
-            "out": out_engineers,
-            "metrics": _metrics_to_dict(engineers_metrics)
-        }
         
         logger.info(f"✅ Получено {len(out_engineers)} предложений от инженеров")
         
@@ -83,19 +75,15 @@ def full_pipeline(
             previous_outputs=out_engineers,
             dataset_id=dataset_id,
             version_id=version_id,
+            conversation_id=conversation_id,
             verbose=verbose
         )
         
-        stages["task_preparer"] = {
-            "metrics": _metrics_to_dict(summary_metrics)
-        }
         logger.info("✅ JSON сформирован")
 
         logger.info(f"Отправка в сервис задач...")
         task_result = tasker.post_task(out_agent_task_preparer)
-        stages["post_task"] = {
-            **task_result
-        }
+        
         logger.info(f"✅ Задача отправлена")
 
         logger.info(f"Этап 6: Анализ итогов выполнения задачи")
@@ -110,18 +98,14 @@ def full_pipeline(
 
         logger.info(f"✅ Задача выполнена. Запускаем анализ полученных метрик")
 
-        out_agent_metrics_analytic, metric_analysis_metrics = run_metrics_analysis(
+        out_agent_metrics_analytic, _ = run_metrics_analysis(
             task_id=task_result["task_id"],
             dataset_id=dataset_id,
             version_id=version_id,
             bus_req=bus_req,
+            conversation_id=conversation_id,
             verbose=verbose
         )
-
-        stages["metric_analysis"] = {
-            "out": out_agent_metrics_analytic,
-            "metrics": _metrics_to_dict(metric_analysis_metrics)
-        }
         
         logger.info("✨ Пайплайн завершён успешно")
 
@@ -140,19 +124,3 @@ def full_pipeline(
             "error": str(e),
             **pipeline
         }
-
-
-def _metrics_to_dict(
-        metrics: UsageMetrics
-) -> dict:
-    """Конвертирует UsageMetrics в словарь для сериализации"""
-    if metrics is None:
-        return {"available": False}
-    
-    return {
-        "available": True,
-        "total_tokens": metrics.total_tokens,
-        "prompt_tokens": metrics.prompt_tokens,
-        "completion_tokens": metrics.completion_tokens,
-        "successful_requests": metrics.successful_requests
-    }

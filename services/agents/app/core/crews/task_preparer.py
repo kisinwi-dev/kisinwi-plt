@@ -5,7 +5,7 @@ from crewai.types.usage_metrics import UsageMetrics
 
 from app.core.agents.task_preparer import new_agent_task_preparer
 from app.core.tasks.task_preparer import new_task_task_preparer
-
+from app.services.metrics.post import add_agent_in_metrics
 
 def create_summary_crew(
     previous_outputs: List[str],
@@ -52,7 +52,8 @@ def run_create_task_params_json(
     verbose: bool = True,
     dataset_id: str | None = None,
     version_id: str | None = None,
-    extra: str | None = None
+    extra: str | None = None,
+    conversation_id: str | None = None
 ) -> Tuple[str, UsageMetrics]:
     """
     Запуск агента для подготовки итогового JSON
@@ -63,6 +64,7 @@ def run_create_task_params_json(
         dataset_id: Id датасета с которым мы работаем,
         version_id: Id версии с которой мы работаем,
         extra: дополнительная информация для агента
+        conversation_id: id диалога
     
     Returns:
         Tuple[str], UsageMetrics]:
@@ -82,6 +84,11 @@ def run_create_task_params_json(
         crew_output = crew.kickoff()
         metrics = crew.usage_metrics
         
+        add_agent_in_metrics(
+            crew=crew,
+            conversation_id=conversation_id if conversation_id else "no_dialog"
+        )
+
         if isinstance(crew_output, CrewOutput) and isinstance(metrics, UsageMetrics):
             return crew_output.raw, metrics
         else: 

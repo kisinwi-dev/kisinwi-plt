@@ -1,11 +1,11 @@
-from typing import Optional, Tuple, List
+from typing import Tuple, List
 from crewai import Crew, Task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.types.usage_metrics import UsageMetrics
 
 from app.core.agents.ml_engineer import new_agent_ml_engineer
 from app.core.tasks.ml_engine import new_task_search_best_model
-
+from app.services.metrics.post import add_agent_in_metrics
 
 def create_ml_ensemble_crew(
     num_engineers: int = 1,
@@ -54,7 +54,8 @@ def create_ml_ensemble_crew(
 def run_ml_engineering(
     num_engineers: int = 1,
     info_data: str = "",
-    verbose: bool = True
+    verbose: bool = True,
+    conversation_id: str | None = None
 ) -> Tuple[list[str], UsageMetrics]:
     """
     Запуск ML инженеров
@@ -63,6 +64,7 @@ def run_ml_engineering(
         num_engineering: Количество инженеров
         info_data: Информация о данных на которых будет обучаться модель
         verbose: Логирование работы агентов
+        conversation_id: id диалога
     
     Returns:
         Tuple[list[str], UsageMetrics] - список результатов рассуждений агентов и 
@@ -78,6 +80,12 @@ def run_ml_engineering(
     try:
         crew.kickoff()
         results = []
+
+        add_agent_in_metrics(
+            crew=crew,
+            conversation_id=conversation_id if conversation_id else "no_dialog"
+        )
+
         for task in crew.tasks:
             if task.output and hasattr(task.output, 'raw'):
                 results.append(task.output.raw)
@@ -85,7 +93,7 @@ def run_ml_engineering(
                 results.append(str(task.output))
         
         metrics = crew.usage_metrics
-        
+
         if metrics is None:
             raise ValueError("Метрики работы агента не получены")
         

@@ -20,7 +20,7 @@ def get_metrics(
     Returns:
         Dict с метриками или ошибкой
     """
-    json = get_json(f"/metrics/task/{task_id}")
+    json = get_json(f"/training/task/{task_id}")
     return json["metrics"]
     
 
@@ -39,7 +39,7 @@ def task_metrics_exists(
     
     *True - метрики для task_id существуют, в противном случае отсутвуют
     """
-    json = get_json(f"/metrics/task/{task_id}/exists")
+    json = get_json(f"/training/task/{task_id}/exists")
     if json["exists"] is True:
         return True
     else:
