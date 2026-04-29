@@ -15,7 +15,7 @@ class CVMetricManager:
     ) -> None:
         self.url = mongodb_config.URL_METRIC
         self.database_name = mongodb_config.DATABASE_METRIC
-        self.collection_cv = mongodb_config.COLLECTION_CV
+        self.collection_name = mongodb_config.COLLECTION_TRAINING_CV
         self.client: MongoClient
         self.collection: Collection
         self.create_index()
@@ -30,7 +30,7 @@ class CVMetricManager:
             # Коллекция метрик CV
             self.client = MongoClient(self.url)
             self.db = self.client[self.database_name]
-            self.collection = self.db[self.collection_cv]
+            self.collection = self.db[self.collection_name]
 
             self.collection.create_index('task_id', unique=True)
             self.collection.create_index([('task_id', 1), ('metrics.metric', 1)])
@@ -44,7 +44,7 @@ class CVMetricManager:
             # Заходим в коллекцию для работы с CV метриками
             self.client = MongoClient(self.url)
             self.db = self.client[self.database_name]
-            self.collection = self.db[self.collection_cv]
+            self.collection = self.db[self.collection_name]
 
             logger.debug(f"🟩 {self.database_name} подключена")
         except PyMongoError as e:
