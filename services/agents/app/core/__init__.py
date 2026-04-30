@@ -1,4 +1,3 @@
-import time
 import uuid
 
 from app.logs import get_logger
@@ -30,15 +29,6 @@ def full_pipeline(
         Результат выполнения пайплайна с метриками
     """
     
-    # Информация по процессам в пайплайне
-    pipeline = {
-        "dataset_id": dataset_id,
-        "version_id": version_id,
-        "bus_req": bus_req,
-        "count_engine": count_engine,
-        "stages": {}
-    }
-    
     conversation_id = str(uuid.uuid4())
 
     try:
@@ -53,53 +43,40 @@ def full_pipeline(
             conversation_id=conversation_id,
             verbose=verbose
         )
-        
         logger.info(f"✅ Анализ завершён")
         
         # ML инженеры
         logger.info(f"Этап 2: Запуск {count_engine} ML инженеров...")
-        
         out_engineers, _ = run_ml_engineering(
             num_engineers=count_engine,
             conversation_id=conversation_id,
             info_data=out_agent_analytic,
             verbose=verbose
         )
-        
         logger.info(f"✅ Получено {len(out_engineers)} предложений от инженеров")
         
         # Суммаризация и превращение в задачу для тренировки
         logger.info(f"Этап 3: Формирование итогового JSON...")
-
-        out_agent_task_preparer, summary_metrics = run_create_task_params_json(
+        out_agent_task_preparer, _ = run_create_task_params_json(
             previous_outputs=out_engineers,
             dataset_id=dataset_id,
             version_id=version_id,
             conversation_id=conversation_id,
             verbose=verbose
         )
-        
         logger.info("✅ JSON сформирован")
 
         logger.info(f"Отправка в сервис задач...")
-        task_result = tasker.post_task(out_agent_task_preparer)
-        
+        task_id = tasker.post_task(out_agent_task_preparer)
         logger.info(f"✅ Задача отправлена")
 
         logger.info(f"Этап 6: Анализ итогов выполнения задачи")
-        
-        is_complete = False
-        
         logger.info(f"Ожидание выполнения задачи...")
-
-        while is_complete is False:
-            is_complete = tasker.task_is_finish(task_result["task_id"])
-            time.sleep(1)
-
+        tasker.waiting_completed(task_id)
         logger.info(f"✅ Задача выполнена. Запускаем анализ полученных метрик")
 
-        out_agent_metrics_analytic, _ = run_metrics_analysis(
-            task_id=task_result["task_id"],
+        run_metrics_analysis(
+            task_id=task_id,
             dataset_id=dataset_id,
             version_id=version_id,
             bus_req=bus_req,
@@ -110,17 +87,14 @@ def full_pipeline(
         logger.info("✨ Пайплайн завершён успешно")
 
         return {
-            **pipeline
+            "success": True
         }
         
     except Exception as e:
-        pipeline["status"] = "failed"
-        pipeline["error"] = str(e)
-        
+
         logger.error(f"❌ Ошибка в пайплайне: {str(e)}")
         
         return {
             "success": False,
-            "error": str(e),
-            **pipeline
+            "error": str(e)
         }
