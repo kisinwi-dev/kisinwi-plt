@@ -1,7 +1,11 @@
 from crewai import Agent
 
 from app.core.llm import llm
-from app.services.trainer import get_example_run_config_trainer_json, get_type_and_name_models, get_info_device
+from app.services.trainer import (
+    get_example_run_config_trainer_json, 
+    get_type_and_name_models, get_info_device,
+    get_optimizers, get_scheduler
+)
 
 def new_agent_task_preparer():
     """Создать агента для подготовки итогового JSON на основе всех предыдущих анализов"""
@@ -17,7 +21,9 @@ def new_agent_task_preparer():
         tools=[
             get_example_run_config_trainer_json, 
             get_type_and_name_models, 
-            get_info_device
+            get_info_device,
+            get_scheduler,
+            get_optimizers
         ],
         verbose=True,
         allow_delegation=False,
