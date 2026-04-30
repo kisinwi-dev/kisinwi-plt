@@ -1,6 +1,10 @@
 from crewai import Agent
 from app.core.llm import llm
 
+from app.services.trainer import (
+    get_info_device, get_type_and_name_models,
+    get_scheduler, get_optimizers
+)
 
 def new_agent_ml_engineer() -> Agent:
     """Создать агента ML-инженера"""
@@ -15,6 +19,12 @@ def new_agent_ml_engineer() -> Agent:
         llm=llm,
         verbose=True,
         allow_delegation=False,
+        tools=[
+            get_type_and_name_models, 
+            get_info_device,
+            get_scheduler,
+            get_optimizers
+        ],
         max_iter=5
     )
     

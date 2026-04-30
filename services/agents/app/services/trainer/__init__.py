@@ -29,3 +29,15 @@ def get_type_and_name_models(filter: str) -> Dict[str, Any]:
 def get_info_device() -> Dict[str, Any]:
     """Получить информацию о технических возможностях обучения"""
     return get_json("/info/device")
+
+@tool("GetOptimizers")
+@handle_errors
+def get_optimizers() -> Dict[str, Any]:
+    """Получить список оптимайзеров"""
+    return get_json("/info/optimizers")
+
+@tool("GetSchedulers")
+@handle_errors
+def get_scheduler() -> Dict[str, Any]:
+    """Получить список планировщиков"""
+    return get_json("/info/schedulers")

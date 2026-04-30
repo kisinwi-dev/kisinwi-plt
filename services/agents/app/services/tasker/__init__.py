@@ -1,12 +1,20 @@
 import json
 import requests
 import re
+import time
+from enum import Enum
 from typing import Dict
 
 from app.logs import get_logger
 from app.config import config_url
 
 logger = get_logger(__name__)
+
+class TaskStatus(str, Enum):
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    FAILED = "failed"
 
 class Tasker():
     def __init__(self) -> None:
@@ -16,7 +24,7 @@ class Tasker():
     def post_task(
             self,
             json_data: Dict | str
-    ):
+    ) -> str:
         """Отправить JSON для запуска тренировки модели"""
         try:
             # Проверяем, что json_data не пустой
@@ -39,11 +47,7 @@ class Tasker():
             task_id = response.json()["task_id"]
             logger.debug(f" Задач отправлена и имеет id={task_id}")
             
-            return {
-                "status": "success",
-                "status_code": response.status_code,
-                "task_id": task_id
-            }
+            return task_id
         
         except requests.RequestException as e:
             logger.error(f"Ошибка HTTP при отправке задачи: {e}")
@@ -70,7 +74,7 @@ class Tasker():
             logger.error(f"Ошибка парсинга JSON. Полученный текст:\n{cleaned}\nОшибка: {e}")
             raise ValueError(f"Invalid JSON format: {e}")
 
-    def task_is_finish(self, task_id: str) -> bool:
+    def task_is_finish(self, task_id: str) -> TaskStatus:
         """Проверить, завершена ли задача"""
         try:
             response = self.session.get(
@@ -79,13 +83,24 @@ class Tasker():
             response.raise_for_status()
             
             status = response.json().get("status")
-            logger.debug(f"Задача {task_id} имеет статус: {status}")
             
-            return status == "completed"
+            return TaskStatus(status)
         
         except requests.RequestException as e:
-            logger.error(f"Ошибка при проверке задачи {task_id}: {e}")
-            return False
+            logger.error(f"Ошибка при проверке статуса задачи {task_id}: {e}")
+            raise requests.RequestException(e)
+        
+    def waiting_completed(self, task_id: str):
+        """Ожидание завершения задачи"""
+        while True:
+            status = tasker.task_is_finish(task_id)
+            if status == TaskStatus.COMPLETED:
+                break
+            elif status == TaskStatus.FAILED:
+                logger.error(f"Задача {task_id} завершена с ошибкой")
+                raise Exception(f"Задача {task_id} завершена с ошибкой")
+            
+            time.sleep(2)
 
     def close(self):
         self.session.close()

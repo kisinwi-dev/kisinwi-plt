@@ -44,7 +44,7 @@ async def next_task():
     
     task = tasks_db[task_id]
     # Помечаем как running (опционально, можно позже)
-    task["status"] = "running"
+    task["status"] = "in_progress"
     return {"task_id": task_id, "params": task["params"]}
 
 @routers.patch("/tasks/{task_id}/status")
