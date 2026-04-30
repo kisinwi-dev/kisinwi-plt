@@ -96,6 +96,18 @@ class Trainer:
             raise ValueError(f"Функция потерь '{loss_fn_type}' не найдена в torch.nn")
         
         loss_fn_params = loss_config.params
+        
+        # Конвертируем list в Tensor для весов классов
+        if 'weight' in loss_fn_params:
+            if isinstance(loss_fn_params['weight'], list):
+                loss_fn_params['weight'] = torch.tensor(loss_fn_params['weight'])
+                logger.debug(f"Конвертирован weight из list в Tensor: {loss_fn_params['weight'].shape}")
+        
+        # Для pos_weight в BCEWithLogitsLoss
+        if 'pos_weight' in loss_fn_params:
+            if isinstance(loss_fn_params['pos_weight'], list):
+                loss_fn_params['pos_weight'] = torch.tensor(loss_fn_params['pos_weight'])
+        
         loss_fn_class = getattr(nn, loss_fn_type)
         self.loss_fn = loss_fn_class(**loss_fn_params)
         
