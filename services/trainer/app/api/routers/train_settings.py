@@ -3,6 +3,7 @@ from fastapi import APIRouter, Query, HTTPException, status
 
 from app.logs import get_logger
 from app.core.utils import get_system_info as system_info
+from app.core.utils import get_schedulers as schedulers, get_optimizers as optimizers
 from app.core.models import get_models_type_name
 from app.api.schemes import TaskParams
 
@@ -71,5 +72,41 @@ async def get_system_info():
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Не удалось получить список имеющихся вычислительных устройств: {e}"
+        )
+
+@routers.get(
+        "/optimizers",
+        response_model=List[str],
+        summary="Получить список оптимизаторов"
+)
+async def get_optimizers():
+    """
+    Возвращает список доступных оптимизаторов устройств
+    """
+    try:
+        return optimizers()
+    except Exception as e:
+        logger.error(f"Ошибка при получении списка оптимизаторов: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Не удалось получить список имеющихся оптимизаторов: {e}"
+        )
+
+@routers.get(
+        "/schedulers",
+        response_model=List[str],
+        summary="Получить список планировщиков"
+)
+async def get_schedulers():
+    """
+    Возвращает список доступных планировщиков
+    """
+    try:
+        return schedulers()
+    except Exception as e:
+        logger.error(f"Ошибка при получении списка планировщиков: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Не удалось получить список имеющихся планировщиков: {e}"
         )
 
