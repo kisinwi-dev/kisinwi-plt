@@ -137,9 +137,16 @@ class Trainer:
 
     def _train_one_epoch(self):
         """Тренировка(одна эпоха)"""
+
+        # __WARNING__ Требуется создать отдельную функцию для работы scheduler
         
         self.model.train()
         
+        is_batch_scheduler = isinstance(
+            self.scheduler,
+            (lr_scheduler.OneCycleLR, lr_scheduler.CyclicLR)
+        )
+
         try:
             for batch in self._tqdm_loader(self.train_loader, "Тренировка"):
                 
@@ -160,6 +167,9 @@ class Trainer:
                 # Backward pass
                 loss.backward()
                 self.optimizer.step()
+
+                if is_batch_scheduler:
+                    self.scheduler.step()
                 
                 # Обновление метрик
                 _, predicted = torch.max(outputs, dim=1)
@@ -171,9 +181,10 @@ class Trainer:
                 )
             
             # Обновление scheduler
-            if self.scheduler is not None:
+            if self.scheduler is not None and not is_batch_scheduler:
                 logger.debug("Обновление scheduler")
                 self.scheduler.step()
+
         except Exception as e:
             logger.error(f"Ошибка на стадии тренировки модели: {e}")
             raise
