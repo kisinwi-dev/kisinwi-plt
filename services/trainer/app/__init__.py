@@ -49,7 +49,6 @@ async def to_work():
             task = await tasker_service.get_next_task()
 
             if task is None:
-                logger.debug(f"Повторный запрос через {time_sleep} сек.")
                 await asyncio.sleep(time_sleep)
                 continue
 

@@ -27,7 +27,6 @@ class TaskerClient():
             resp.raise_for_status()
 
             if resp.status_code == 204:
-                logger.info("Нет доступных задач")
                 return None
 
             task = Task(**resp.json())
