@@ -9,39 +9,15 @@ from app.logs import get_logger
 logger = get_logger(__name__)
 
 def add_agent_in_metrics(
-        crew: Crew, 
-        conversation_id: str
+        crew: Crew
 ) -> bool:
     
     agent_info = {}
 
-    for i in range(len(crew.agents)):
+    agent_info["response_id"] = str(crew.id)
+    agent_info["metrics"] = _token_metrics_to_dict(crew.usage_metrics)
 
-        agent = crew.agents[i]
-        task = crew.tasks[i]
-
-        name = agent.role
-        tools = []
-
-        if isinstance(agent.tools, list):
-            for tool in agent.tools:
-                tools.append(tool.name)
-
-        agent_info["agent"] = {
-            "name": name,
-            "tools": tools
-        }
-        agent_info["conversation_id"] = conversation_id
-        agent_info["response_id"] = str(crew.id)
-        
-        if task.output and hasattr(task.output, 'raw'):
-            agent_info["out"] = task.output.raw
-        else:
-            agent_info["out"] = str(task.output)
-        
-        agent_info["metrics"] = _token_metrics_to_dict(crew.usage_metrics)
-
-        _post(agent_info)
+    _post(agent_info)
 
     return True
 
@@ -51,7 +27,7 @@ def _post(
     """
     Синхронная отправка ответа агента
     """
-    url = f"{config_url.METRICS_URL}/agents/response/add"
+    url = f"{config_url.METRICS_URL}/agents/add"
     
     try:
         
@@ -61,14 +37,14 @@ def _post(
         )
         
         if result.status_code == 200:
-            logger.info(f"✅ Ответ агента {agent_response["response_id"]} отправлен в сервис метрик")
+            logger.info(f"✅ Метрики ответа {agent_response["response_id"]} отправлены в сервис метрик")
             return True
         else:
-            logger.error(f"❌ Ошибка отправки: {result.status_code} - {result.text}")
+            logger.error(f"Ошибка отправки: {result.status_code} - {result.text}")
             return False
 
     except Exception as e:
-        logger.error(f"😡 Ошибка: {e}")
+        logger.error(f"Непредвиденная ошибка: {e}")
         return False
 
 
