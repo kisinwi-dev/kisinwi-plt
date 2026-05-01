@@ -2,7 +2,7 @@ from typing import Optional
 from pymongo.errors import PyMongoError
 
 from .mongo import ManagerBase
-from app.api.schemes import *
+from app.api.schemes import AgentResponse
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -22,18 +22,18 @@ class AgentsResponseManager(ManagerBase):
             )
             
             if existing:
-                logger.warning(f"⚠️ Ответ с response_id {response.response_id} уже существует")
+                logger.warning(f"Метрики для ответа (id:'{response.response_id}') уже существуют")
                 return False
             
             result = self.collection.insert_one(response.model_dump())
             
             if result.inserted_id:
-                logger.debug(f"➕ Добавлен ответ агента {response.agent.name}")
+                logger.debug(f"✅ Добавлены метрики ответа(id:'{response.response_id}')")
                 return True
             return False
             
         except PyMongoError as e:
-            logger.error(f"😡 Ошибка добавления ответа: {e}")
+            logger.error(f"Ошибка добавления метрик ответа(id:'{response.response_id}'): {e}")
             return False
 
     def get_response_by_id(
@@ -47,10 +47,10 @@ class AgentsResponseManager(ManagerBase):
             if doc:
                 doc.pop('_id', None)
                 return AgentResponse(**doc)
-            raise ValueError(f"Не найден '{response_id}'")
+            raise ValueError(f"Не найдены метрики ответа(id:'{response_id}')")
             
         except PyMongoError as e:
-            logger.error(f"😡 Ошибка получения ответа: {e}")
+            logger.error(f"Ошибка получения ответа(id:'{response_id}'): {e}")
             return None
 
     def delete_response(
@@ -62,21 +62,21 @@ class AgentsResponseManager(ManagerBase):
             result = self.collection.delete_one({'response_id': response_id})
             
             if result.deleted_count > 0:
-                logger.debug(f"🗑️ Удален ответ {response_id}")
+                logger.debug(f"Удален метрик ответа(id:'{response_id}')")
                 return True
             else:
-                logger.debug(f"⚠️ Ответ {response_id} не найден")
+                logger.debug(f"Метрики ответа(id:'{response_id}') не найден")
                 return False
                 
         except PyMongoError as e:
-            logger.error(f"😡 Ошибка удаления ответа: {e}")
+            logger.error(f"Ошибка удаления метрик ответа(id:'{response_id}'): {e}")
             return False
 
     def response_exists(
             self, 
             response_id: str
     ) -> bool:
-        """Проверка существования диалога"""
+        """Проверка существования метрик ответа"""
         try:
             result = self.collection.find_one(
                 {'response_id': response_id},
@@ -85,5 +85,5 @@ class AgentsResponseManager(ManagerBase):
             return result is not None
             
         except PyMongoError as e:
-            logger.error(f"😡 Ошибка проверки диалога: {e}")
+            logger.error(f"Ошибка проверки метрик ответа(id:'{response_id}'): {e}")
             return False

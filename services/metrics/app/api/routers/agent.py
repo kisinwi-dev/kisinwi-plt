@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
+
 from app.api.schemes import AgentResponse
 from app.api.deps import get_agent_metrics_manager, AgentsResponseManager
 from app.logs import get_logger

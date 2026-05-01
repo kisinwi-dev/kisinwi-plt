@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from .info import routers as r_i
-from .storage import router as r_s
-from .agents import router as r_a
+from .model import router as r_s
+from .agent import router as r_a
 
 routers = APIRouter()
 
