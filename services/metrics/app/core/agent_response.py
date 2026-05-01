@@ -28,38 +28,13 @@ class AgentsResponseManager(ManagerBase):
             result = self.collection.insert_one(response.model_dump())
             
             if result.inserted_id:
-                logger.debug(
-                    f"➕ Добавлен ответ агента {response.agent.name} "
-                    f"для диалога {response.conversation_id}"
-                )
+                logger.debug(f"➕ Добавлен ответ агента {response.agent.name}")
                 return True
             return False
             
         except PyMongoError as e:
             logger.error(f"😡 Ошибка добавления ответа: {e}")
             return False
-
-    def get_conversation_responses(
-            self, 
-            conversation_id: str
-    ) -> List[AgentResponse]:
-        """Получение всех ответов для конкретного диалога"""
-        try:
-            cursor = self.collection.find(
-                {'conversation_id': conversation_id}
-            )
-            
-            responses = []
-            for doc in cursor:
-                doc.pop('_id', None)
-                responses.append(AgentResponse(**doc))
-            
-            logger.debug(f"📖 Получено {len(responses)} ответов для диалога {conversation_id}")
-            return responses
-            
-        except PyMongoError as e:
-            logger.error(f"😡 Ошибка получения ответов диалога: {e}")
-            return []
 
     def get_response_by_id(
             self, 
@@ -72,34 +47,11 @@ class AgentsResponseManager(ManagerBase):
             if doc:
                 doc.pop('_id', None)
                 return AgentResponse(**doc)
-            return None
+            raise ValueError(f"Не найден '{response_id}'")
             
         except PyMongoError as e:
             logger.error(f"😡 Ошибка получения ответа: {e}")
             return None
-
-    def delete_conversation(
-            self, 
-            conversation_id: str
-    ) -> bool:
-        """Удаление всех ответов диалога"""
-        try:
-            # Проверка существования
-            exists = self.conversation_exists(conversation_id)
-            
-            if not exists:
-                logger.warning(f"⚠️ Диалог {conversation_id} не найден")
-                return False
-            
-            # Удаляем ответы
-            self.collection.delete_many({'conversation_id': conversation_id})
-            
-            logger.debug(f"Диалог {conversation_id} удалён")
-            return True
-                
-        except PyMongoError as e:
-            logger.error(f"😡 Ошибка удаления диалога: {e}")
-            return False
 
     def delete_response(
             self, 
@@ -120,14 +72,14 @@ class AgentsResponseManager(ManagerBase):
             logger.error(f"😡 Ошибка удаления ответа: {e}")
             return False
 
-    def conversation_exists(
+    def response_exists(
             self, 
-            conversation_id: str
+            response_id: str
     ) -> bool:
         """Проверка существования диалога"""
         try:
             result = self.collection.find_one(
-                {'conversation_id': conversation_id},
+                {'response_id': response_id},
                 {'_id': 1}
             )
             return result is not None
