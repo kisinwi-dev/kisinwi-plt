@@ -7,11 +7,13 @@ CREATE TYPE task_status AS ENUM (
 
 CREATE TABLE IF NOT EXISTS train_models_tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    model_name VARCHAR(255) NOT NULL,
+    
+    -- Информация по используемой модели
+    model_id VARCHAR(255) NOT NULL,
     
     -- Информация по агентам
     discussion_id VARCHAR(255),
-    agent_responses JSONB DEFAULT '[]',
+    agent_respons_ids JSONB DEFAULT '[]',
     
     -- Статус
     status task_status NOT NULL DEFAULT 'pending',
