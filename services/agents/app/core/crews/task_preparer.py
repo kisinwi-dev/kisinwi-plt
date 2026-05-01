@@ -85,8 +85,7 @@ def run_create_task_params_json(
         metrics = crew.usage_metrics
         
         add_agent_in_metrics(
-            crew=crew,
-            conversation_id=conversation_id if conversation_id else "no_dialog"
+            crew=crew
         )
 
         if isinstance(crew_output, CrewOutput) and isinstance(metrics, UsageMetrics):
