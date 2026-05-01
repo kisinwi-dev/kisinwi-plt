@@ -1,7 +1,7 @@
 from typing import Optional
 from pymongo.errors import PyMongoError
 
-from .storebase import ManagerBase
+from .mongo import ManagerBase
 from app.api.schemes import *
 from app.logs import get_logger
 
