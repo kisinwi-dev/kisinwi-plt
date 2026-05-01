@@ -2,14 +2,15 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.core.health import check_bd_all
+from app.core.health import check_health_all
 
-# Проверка состояния требуемых БД для правильной работы сервиса
-check_bd_all()
+# Проверка состояния требуемых БД
+# НЕ БЛОКИРУЕТ ЗАПУСК ЕСЛИ ТРЕБУЕМЫЕ БД НЕ РАБОТАЮТ
+check_health_all()
 
 from app.api.routers import routers
 
-# Создание `сервера`
+# Обьект приложения
 app = FastAPI(
     title="Metrics Service",
     version="0.1.0"
