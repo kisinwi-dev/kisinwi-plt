@@ -1,5 +1,5 @@
-from app.core.agent_response import AgentsResponseManager
-from app.core.training_cv import CVMetricManager
+from app.core.agent import AgentsResponseManager
+from app.core.model import CVMetricManager
 from app.config import mongodb_config
 
 cv_training_metric_manager = CVMetricManager(

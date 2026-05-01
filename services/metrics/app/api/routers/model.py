@@ -1,15 +1,16 @@
 from fastapi import APIRouter, HTTPException, Depends
-from app.api.schemes import TrainingMetricAdd, TrainingMetricAdds, TaskTrainingMetrics
+
+from app.api.schemes import ModelMetricAdd, ModelMetricAdds, ModelMetrics
 from app.api.deps import get_cv_training_metrics_manager, CVMetricManager
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/training", tags=["metrics"])
+router = APIRouter(prefix="/models", tags=["metrics"])
 
 @router.post("/add")
 async def add_metric(
-    metric: TrainingMetricAdd,
+    metric: ModelMetricAdd,
     manager: CVMetricManager = Depends(get_cv_training_metrics_manager)
 ):
     success = manager.add_metric(metric)
@@ -19,7 +20,7 @@ async def add_metric(
 
 @router.post("/adds")
 async def add_metrics(
-    metric: TrainingMetricAdds,
+    metric: ModelMetricAdds,
     manager: CVMetricManager = Depends(get_cv_training_metrics_manager)
 ):
     success = manager.add_metrics(metric)
@@ -27,29 +28,29 @@ async def add_metrics(
         raise HTTPException(status_code=500, detail="Ошибка добавления метрик")
     return {"status": "ok"}
 
-@router.get("/task/{task_id}", response_model=TaskTrainingMetrics)
+@router.get("/{model_id}", response_model=ModelMetrics)
 async def get_task_metrics(
-    task_id: str,
+    model_id: str,
     manager: CVMetricManager = Depends(get_cv_training_metrics_manager)
 ):
-    metrics = manager.get_task_metrics(task_id)
+    metrics = manager.get_model_metrics(model_id)
     if metrics is None:
-        raise HTTPException(status_code=404, detail=f"Задача {task_id} не найдена")
+        raise HTTPException(status_code=404, detail=f"Модель {model_id} не найдена")
     return metrics
 
-@router.get("/task/{task_id}/exists")
+@router.get("/{model_id}/exists")
 async def task_exists(
-    task_id: str,
+    model_id: str,
     manager: CVMetricManager = Depends(get_cv_training_metrics_manager)
 ):
-    exists = manager.task_exists(task_id)
-    return {"task_id": task_id, "exists": exists}
+    exists = manager.model_metrics_exists(model_id)
+    return {"model_id": model_id, "exists": exists}
 
 
-@router.delete("/task/{task_id}")
+@router.delete("/{model_id}")
 async def task_delete(
-    task_id: str,
+    model_id: str,
     manager: CVMetricManager = Depends(get_cv_training_metrics_manager)
 ):
-    res = manager.delete_task(task_id)
+    res = manager.model_metrics_exists(model_id)
     return {"is_delet": res}
