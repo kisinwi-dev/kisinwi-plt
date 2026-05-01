@@ -13,12 +13,12 @@ logger = get_logger(__name__)
 class MetricesClient:
     def __init__(
             self, 
-            task_id: str,
+            model_id: str,
             metrices_params: MetricesParamCollections,
             num_class: int,
             device: device
     ):
-        self._task_id = task_id
+        self._model_id = model_id
         self._url = config_domain.METRIC
         self._collections = create_classification_collections(
             metrices_params,
@@ -68,7 +68,7 @@ class MetricesClient:
         """Отправка метрик в сервис метрик"""
         try:
             metrics_data = {
-                "task_id": self._task_id,
+                "model_id": self._model_id,
                 "metrics": [
                     {
                         "name": name,
@@ -79,12 +79,12 @@ class MetricesClient:
             }
 
             response = requests.post(
-                f"{self._url}/training/adds",
+                f"{self._url}/models/adds",
                 json=metrics_data,
                 timeout=30
             )
             response.raise_for_status()
-            logger.debug(f"✅ Метрики для задачи {self._task_id} отправлены в сервис метрик")
+            logger.debug(f"✅ Метрики модели {self._model_id} отправлены в сервис метрик")
 
         except requests.RequestException as e:
             logger.error(f"😡 Не удалось передать метрики в сервис метрик: {e}")

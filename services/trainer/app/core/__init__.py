@@ -39,7 +39,7 @@ async def training_model(config: TaskParams):
 
         await tasker_service.update_status_task(11, description="Настройка метрик...")
         metric_client = MetricesClient(
-            task_id=tasker_service.task_id,
+            model_id=tasker_service.task_id,
             metrices_params=config.metrices_params,
             num_class=len(classes),
             device=device
