@@ -7,7 +7,7 @@ logger = get_logger(__name__)
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
-@router.post("/response/add")
+@router.post("/add")
 async def add_agent_response(
     response: AgentResponse,
     manager: AgentsResponseManager = Depends(get_agent_metrics_manager)
@@ -23,7 +23,7 @@ async def add_agent_response(
         logger.error(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/response/{response_id}", response_model=AgentResponse)
+@router.get("/{response_id}", response_model=AgentResponse)
 async def get_agent_response(
     response_id: str,
     manager: AgentsResponseManager = Depends(get_agent_metrics_manager)
@@ -39,7 +39,7 @@ async def get_agent_response(
         logger.error(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete("/response/{response_id}")
+@router.delete("/{response_id}")
 async def delete_agent_response(
     response_id: str,
     manager: AgentsResponseManager = Depends(get_agent_metrics_manager)
