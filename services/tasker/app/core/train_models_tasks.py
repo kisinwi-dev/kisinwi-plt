@@ -1,3 +1,4 @@
+import json
 from typing import List, Dict
 from psycopg2.extras import Json
 
@@ -12,19 +13,34 @@ class TrainingTaskManager:
         self.db = PostgresManager(postgresql_config.URL)
         self._table = "train_models_tasks"
 
+    def count_task(self) -> int:
+        """Выводит количество имеющихся задач"""
+        query = f"""
+            SELECT COUNT(id)
+            FROM {self._table} 
+        """
+        with self.db as db:
+            result = db.fetch_one(query)
+            return result[0] if result else 0
+
     def create(
             self, 
             model_id: str, 
+            name: str | None = None,
             discussion_id: str | None = None
     ) -> str:
         """Создание задачи"""
+
+        if name is None:
+            pass
+
         query = f"""
-            INSERT INTO {self._table} (model_id, discussion_id)
-            VALUES (%s, %s)
+            INSERT INTO {self._table} (model_id, name, discussion_id)
+            VALUES (%s, %s, %s)
             RETURNING id
         """
         with self.db as db:
-            result = db.fetch_one(query, (model_id, discussion_id))
+            result = db.fetch_one(query, (model_id, name, discussion_id))
 
             if not result:
                 raise RuntimeError(f"Ошибка создания задачи для обучения модели({model_id})")
@@ -32,24 +48,39 @@ class TrainingTaskManager:
             task_id = result[0]
             logger.info(f"✅ Создана задача {task_id} для модели {model_id}")
             return task_id
+        
+    def delete(
+        self,
+        task_id: str,
+    ) -> bool:
+        """Удаление задачи"""
+        query = f"""
+            DELETE FROM {self._table}
+            WHERE id = %s
+            RETURNING id
+        """
+        params = (task_id,)
+        with self.db as db:
+            row = db.fetch_one(query, params)
+            return row is not None
 
     def update_status(
             self, 
             task_id: str, 
             status: str, 
+            status_info: str,
             error: str | None = None
     ):
         """Обновить статус"""
         query = f"""
             UPDATE {self._table} 
             SET status = %s, 
-                error_message = %s,
-                completed_at = CASE WHEN %s = 'completed' THEN CURRENT_TIMESTAMP END,
-                updated_at = CURRENT_TIMESTAMP
+                status_info = %s, 
+                error_message = %s
             WHERE id = %s
         """
         with self.db as db:
-            db.execute(query, (status, error, status, task_id))
+            db.execute(query, (status, status_info, error, task_id))
 
     def add_agent_response(
         self, 
@@ -84,15 +115,96 @@ class TrainingTaskManager:
             
             logger.info(f"Добавлен ответ {agent_response_id} к задаче {task_id}")
             return True
-    
+        
+    def get_task(
+            self, 
+            task_id: str
+    ) -> Dict | None:
+        """Получить информацию о задаче"""
+
+        query = f"""
+            SELECT 
+                id,
+                name,
+                model_id,
+                discussion_id,
+                agent_respons_ids,
+                status,
+                status_info,
+                error_message,
+                created_at,
+                started_at,
+                updated_at,
+                completed_at
+            FROM {self._table}
+            WHERE id = %s
+        """
+        with self.db as db:
+            row = db.fetch_one(query, (task_id,))
+            
+            if row is None:
+                return None
+            
+            return {
+                'id': row[0],
+                'name': row[1],
+                'model_id': row[2],
+                'discussion_id': row[3],
+                'agent_respons_ids': row[4],
+                'status': row[5],
+                'status_info': row[6],
+                'error_message': row[7],
+                'created_at': row[8],
+                'started_at': row[9],
+                'updated_at': row[10],
+                'completed_at': row[11]
+            }
+
+    def get_status_values(self) -> List[str]:
+        """Получить все возможные значения статуса из ENUM"""
+        query = """
+            SELECT unnest(enum_range(NULL::task_status))::text
+        """
+        with self.db as db:
+            rows = db.fetch_all(query)
+            return [row[0] for row in rows]
+
+
     def get_pending(self) -> List[Dict]:
         """Получить все pending задачи"""
         query = f"""
-            SELECT id, model_id, discussion_id, agent_respons_ids
+            SELECT id, name, model_id, discussion_id, agent_respons_ids, status, status_info
             FROM {self._table} 
             WHERE status = 'pending'
             ORDER BY created_at ASC
         """
         with self.db as db:
             rows = db.fetch_all(query)
-            return [dict(zip(['id', 'model_id', 'discussion_id', 'agent_respons_ids'], row)) for row in rows]
+            columns = ['id', 'name','model_id', 'discussion_id', 'agent_respons_ids', 'status', 'status_info']
+            return [dict(zip(columns, row)) for row in rows]
+    
+    def get_one_pending(self) -> dict | None:
+        """Получить одну pending задачу"""
+        rows = self.get_pending()
+        if rows is not None:
+            return rows[0]
+        else:
+            return None
+        
+    def add_agent_respons(
+            self, 
+            task_id: str, 
+            agent_respons: str
+        ):
+        """Добавление id ответа агента в задачу"""
+        query = f"""
+            UPDATE {self._table}
+            SET agent_respons_ids = agent_respons_ids || %s::jsonb
+            WHERE id = %s
+            RETURNING id
+        """
+        params = (json.dumps(agent_respons), task_id)
+        
+        with self.db as db:
+            result = db.fetch_one(query, params)
+            return result is not None

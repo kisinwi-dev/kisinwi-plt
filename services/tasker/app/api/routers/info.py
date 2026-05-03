@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 
 from app.core.health import check_health_all
 from app.api.schemas import HealthResponse
+from app.core.train_models_tasks import TrainingTaskManager
+from app.api.deps import get_training_task_manager
 
 routers = APIRouter(
     prefix="/info", 
@@ -31,3 +33,13 @@ async def health():
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Неопределённая ошибка: {e}"
         )
+    
+@routers.get(
+    "/statuses",
+    summary="Получение списка статусов",
+    description="Получение списка возможных значений статуса задач"
+)
+async def get_status(
+    manager: TrainingTaskManager = Depends(get_training_task_manager)
+):
+    return manager.get_status_values()
