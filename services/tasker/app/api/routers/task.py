@@ -1,83 +1,111 @@
-import asyncio
-import uuid
 from typing import Optional
-from fastapi import APIRouter, Response, HTTPException
+from fastapi import APIRouter, Depends
 
-from app.api.schemas import TaskCreate, TaskUpdate
-from app.core import tasks_db, task_queue
+from app.api.schemas import TaskCreate, TaskUpdate, AddAgentResponse
+from app.core.train_models_tasks import TrainingTaskManager
+from app.api.deps import get_training_task_manager
 
-routers = APIRouter()
+routers = APIRouter(
+    prefix='/tasks',
+    tags=['task']
+)
 
-@routers.post("/tasks")
-async def create_task(task: TaskCreate):
-    task_id = str(uuid.uuid4())
-    tasks_db[task_id] = {
-        "status": "pending",
-        "progress": 0,
-        "result": None,
-        "params": task.params
-    }
-    await task_queue.put(task_id)
-    return {"task_id": task_id, "status": "pending"}
+@routers.post(
+    "",
+    summary="Создание задачи для обучения"
+)
+async def create_task(
+    task: TaskCreate, 
+    manager: TrainingTaskManager = Depends(get_training_task_manager)
+):
+    task_id = manager.create(
+        name=task.task_name,
+        model_id=task.model_id,
+        discussion_id=task.discussion_id
+    )
+    return {"task_id": task_id}
 
-@routers.get("/tasks/{task_id}")
-async def get_task_status(task_id: str):
-    task = tasks_db.get(task_id)
-    if not task:
-        raise HTTPException(404, "Task not found")
-    return {
-        "task_id": task_id,
-        "status": task["status"],
-        "progress": task["progress"],
-        "result": task["result"]
-    }
+@routers.get(
+    "/pending",
+    summary="Получение задач с статусом 'pending'"
+)
+async def get_pending(
+    manager: TrainingTaskManager = Depends(get_training_task_manager)
+):
+    """Получаем список всех задач в статусе pending"""
+    return manager.get_pending()
 
-# --- API для воркера (pull задачи и обновление статуса) ---
-@routers.post("/tasks/next", response_model=Optional[dict])
-async def next_task():
+@routers.get(
+    "/next",
+    summary="Получение первой задачи в очереди"
+)
+async def next_task(
+    manager: TrainingTaskManager = Depends(get_training_task_manager)
+):
     """Воркер вызывает этот endpoint, чтобы получить следующую задачу."""
-    try:
-        # Неблокирующее получение (если очереди нет, вернём 204)
-        task_id = await asyncio.wait_for(task_queue.get(), timeout=0.5)
-    except asyncio.TimeoutError:
-        return Response(status_code=204)
-    
-    task = tasks_db[task_id]
-    # Помечаем как running (опционально, можно позже)
-    task["status"] = "in_progress"
-    return {"task_id": task_id, "params": task["params"]}
+    return manager.get_pending()[0]
 
-@routers.patch("/tasks/{task_id}/status")
-async def update_task_status(task_id: str, update: TaskUpdate):
-    """
-    Обновление статуса задачи.
-    
-    - PATCH метод для частичного обновления
-    - Все поля опциональные
-    """
-    try:
-        task = tasks_db.get(task_id)
-        if not task:
-            raise HTTPException(404, "Task not found")
-        
-        if update.status is not None:
-            task["status"] = update.status
-        
-        if update.progress is not None:
-            if not 0 <= update.progress <= 100:
-                raise HTTPException(422, "Progress must be between 0 and 100")
-            task["progress"] = update.progress
-        
-        if update.result is not None:
-            task["result"] = update.result
-        
-        if update.description is not None: 
-            task["description"] = update.description
-        
-        print(task)
-    except Exception as e:
-        print("Error", e) 
-        
-    return {
-        "status": "ok",
-    }
+
+@routers.post(
+    "/count",
+    summary="Количество задач"
+)
+async def count_task(
+    manager: TrainingTaskManager = Depends(get_training_task_manager)
+):
+    return manager.count_task()
+
+
+@routers.delete(
+    "/{task_id}",
+    summary="Удаление задачи"
+)
+async def delete_task(
+    task_id: str,
+    manager: TrainingTaskManager = Depends(get_training_task_manager)
+):
+    return manager.delete(task_id)
+
+@routers.get(
+    "/{task_id}",
+    summary="Получить информацию о задаче",
+)
+async def get_task_for_id(
+    task_id: str,
+    manager: TrainingTaskManager = Depends(get_training_task_manager)
+):
+    return manager.get_task(task_id)
+
+@routers.post(
+    "/{task_id}/status",
+    summary="Обновить статус задачи"
+)
+async def update_task_status(
+    task_id: str,
+    update: TaskUpdate,
+    manager: TrainingTaskManager = Depends(get_training_task_manager)
+):
+    manager.update_status(
+        task_id=task_id,
+        status=update.status,
+        status_info=update.status_info,
+        error=update.error
+    )
+
+    return True
+
+@routers.post(
+    "/{task_id}/agents-response",
+    summary="Добавление id ответа агента к задаче"
+)
+async def add_agent_response(
+    task_id: str,
+    agent_respons: str,
+    manager: TrainingTaskManager = Depends(get_training_task_manager)
+):
+    manager.add_agent_respons(
+        task_id=task_id,
+        agent_respons=agent_respons
+    )
+
+    return True
