@@ -7,7 +7,7 @@ logger = get_logger(__name__)
 
 
 class PostgresManager:
-    """Базовый класс для работы с PostgreSQL (минимальная версия)"""
+    """Базовый класс для работы с PostgreSQL"""
     
     def __init__(self, url: str):
         self.url = url
@@ -40,7 +40,7 @@ class PostgresManager:
             self.conn.commit()
         except Exception as e:
             self.conn.rollback()
-            logger.error(f"Ошибка: {e}")
+            logger.error(f"Ошибка выполнение запроса:\nQuery:\n{query}\n\nParams:\n{params}\n\nError:\n{e}")
             raise
     
     def fetch_one(
