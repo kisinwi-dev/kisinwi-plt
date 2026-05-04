@@ -13,6 +13,7 @@ routers = APIRouter(
 def fp(
     dataset_id: str = Query(..., description="ID датасета для анализа"),
     version_id: str = Query(..., description="ID версии датасета"),
+    model_name: str = Query(..., description="Имя модели"),
     bus_req: str = Query(..., description="Описание бизнес требований"),
     count_engine: int = Query("", description="Количество используемых агентов ML-инженеров"),
 ):
@@ -20,6 +21,7 @@ def fp(
         return full_pipeline(
             dataset_id,
             version_id,
+            model_name=model_name,
             bus_req=bus_req,
             count_engine=count_engine,
         )

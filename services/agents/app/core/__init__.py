@@ -4,13 +4,17 @@ from app.logs import get_logger
 from app.core.crews.analytics import run_data_analysis, run_metrics_analysis
 from app.core.crews.ml_engine import run_ml_engineering
 from app.core.crews.task_preparer import run_create_task_params_json
+from app.core.crews.work_with_ml_models import run_create_desc_model
 from app.services.tasker import tasker
+from app.services.ml_models import ml_models
+from app.services.data import get_dataset_info_classes
 
 logger = get_logger(__name__)
 
 def full_pipeline(
     dataset_id: str,
     version_id: str,
+    model_name: str,
     bus_req: str,
     count_engine: int = 3,
     verbose: bool = False
@@ -34,7 +38,7 @@ def full_pipeline(
     try:
         logger.info(f"Запуск диалога: {conversation_id}")
         # Анализ датасета 
-        info_start_analysis_data = f"{dataset_id} {' версия:' + version_id if version_id else ''}..."
+        info_start_analysis_data = f"{dataset_id}{' версия: ' + version_id if version_id else ''} ..."
         logger.info(f"Этап 1: Анализ датасета {info_start_analysis_data}")
         
         out_agent_analytic, _ = run_data_analysis(
@@ -56,23 +60,39 @@ def full_pipeline(
         logger.info(f"✅ Получено {len(out_engineers)} предложений от инженеров")
         
         # Суммаризация и превращение в задачу для тренировки
-        logger.info(f"Этап 3: Формирование итогового JSON...")
-        out_agent_task_preparer, _ = run_create_task_params_json(
+        logger.info(f"Этап 3: Формирование этапов обучения...")
+        train_params, _ = run_create_task_params_json(
             previous_outputs=out_engineers,
             dataset_id=dataset_id,
             version_id=version_id,
             conversation_id=conversation_id,
             verbose=verbose
         )
-        logger.info("✅ JSON сформирован")
+        logger.info("✅ План обучения сформирован")
 
-        logger.info(f"Отправка в сервис задач...")
-        task_id = tasker.post_task(
-            task_name="киви соло",
-            model_id="82750197581357",
-            discussion_id="82750197581357"
+        logger.info(f"Этап 4: Создание задачи и формирование модели...")
+
+        models_desc, _ = run_create_desc_model(
+            train_params,
+            out_agent_analytic,
+            verbose=verbose
         )
-        logger.info(f"✅ Задача отправлена")
+
+        model_id = ml_models.create_model(
+            name=model_name,
+            model_type=models_desc.model_type,
+            description=models_desc.description,
+            classes=get_dataset_info_classes(dataset_id),
+            train_params=train_params
+        )
+        logger.info(f"✅ Информация о модели занесена")
+
+        task_id = tasker.post_task(
+            task_name=f"Тренировка {model_name}",
+            model_id=model_id,
+            discussion_id=conversation_id
+        )
+        logger.info(f"✅ Задача создана")
 
         logger.info(f"Этап 6: Анализ итогов выполнения задачи")
         logger.info(f"Ожидание выполнения задачи...")
