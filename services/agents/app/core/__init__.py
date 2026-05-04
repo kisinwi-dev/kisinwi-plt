@@ -67,7 +67,11 @@ def full_pipeline(
         logger.info("✅ JSON сформирован")
 
         logger.info(f"Отправка в сервис задач...")
-        task_id = tasker.post_task(out_agent_task_preparer)
+        task_id = tasker.post_task(
+            task_name="киви соло",
+            model_id="82750197581357",
+            discussion_id="82750197581357"
+        )
         logger.info(f"✅ Задача отправлена")
 
         logger.info(f"Этап 6: Анализ итогов выполнения задачи")
