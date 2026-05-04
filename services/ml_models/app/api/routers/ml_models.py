@@ -47,7 +47,7 @@ async def delete_task(
     return manager.delete(model_id)
 
 @routers.get(
-    "/{task_id}",
+    "/{model_id}",
     summary="Получить информацию о модели",
 )
 async def get_task_for_id(
