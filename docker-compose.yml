@@ -81,6 +81,56 @@ services:
       - network
 
   # =============================================================
+  # Сервис ML моделей
+  # =============================================================
+
+  ml_models:
+    container_name: 
+      ml_models
+    build: 
+      context: ./services/ml_models
+      dockerfile: Dockerfile
+    environment:
+      - POSTGRES_HOST=ml_models_postgres
+      - POSTGRES_PORT=${ML_MODELS_POSTGRES_PORT}
+      - POSTGRES_DB=${ML_MODELS_POSTGRES_DB}
+      - POSTGRES_APP_USERNAME=${ML_MODELS_POSTGRES_USER}
+      - POSTGRES_APP_PASSWORD=${ML_MODELS_POSTGRES_PASSWORD}
+    ports:
+      - "${TASKER_PORT}:${TASKER_PORT}"
+    networks:
+      - network
+    depends_on:
+      ml_models_postgres:
+        condition: service_healthy
+
+  ml_models_postgres:
+    image: postgres:17-alpine
+    container_name: 
+      ml_models_postgres
+    restart: unless-stopped
+    command: -p ${ML_MODELS_POSTGRES_PORT}
+    environment:
+      POSTGRES_USER: ${ML_MODELS_POSTGRES_ROOT_USERNAME}
+      POSTGRES_PASSWORD: ${ML_MODELS_POSTGRES_ROOT_PASSWORD}
+      POSTGRES_DB: ${ML_MODELS_POSTGRES_DB}
+      APP_USER: ${ML_MODELS_POSTGRES_USER}
+      APP_PASSWORD: ${ML_MODELS_POSTGRES_PASSWORD}
+    ports:
+      - "${ML_MODELS_POSTGRES_PORT}:${ML_MODELS_POSTGRES_PORT}"
+    volumes:
+      - ./db/postgres/ml_models/data:/var/lib/postgresql/data
+      - ./db/postgres/ml_models/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ML_MODELS_POSTGRES_ROOT_USERNAME} -d ${ML_MODELS_POSTGRES_DB} -p ${ML_MODELS_POSTGRES_PORT}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - network
+
+
+  # =============================================================
   # Сервис тренировок
   # =============================================================
     
