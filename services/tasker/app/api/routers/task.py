@@ -1,9 +1,11 @@
-from typing import Optional
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 
-from app.api.schemas import TaskCreate, TaskUpdate, AddAgentResponse
+from app.api.schemas import TaskCreate, TaskUpdate
 from app.core.train_models_tasks import TrainingTaskManager
 from app.api.deps import get_training_task_manager
+from app.logs import get_logger
+
+logger = get_logger(__name__)
 
 routers = APIRouter(
     prefix='/tasks',
@@ -43,7 +45,11 @@ async def next_task(
     manager: TrainingTaskManager = Depends(get_training_task_manager)
 ):
     """Воркер вызывает этот endpoint, чтобы получить следующую задачу."""
-    return manager.get_pending()[0]
+    tasks = manager.get_pending()
+    if len(tasks) != 0:
+        return tasks[0]
+    else:
+        return Response(status_code=204)
 
 
 @routers.post(
