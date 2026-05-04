@@ -1,18 +1,17 @@
-import json
 import requests
-import re
 import time
 from enum import Enum
 from typing import Dict
 
 from app.logs import get_logger
 from app.config import config_url
+from app.services.tools import parse_in_json
 
 logger = get_logger(__name__)
 
 class TaskStatus(str, Enum):
     PENDING = "pending"
-    IN_PROGRESS = "in_progress"
+    IN_PROGRESS = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
 
@@ -23,21 +22,26 @@ class Tasker():
 
     def post_task(
             self,
-            json_data: Dict | str
+            task_name: str,
+            model_id: str,
+            discussion_id: str
     ) -> str:
         """Отправить JSON для запуска тренировки модели"""
         try:
-            # Проверяем, что json_data не пустой
-            if not json_data:
-                raise ValueError("JSON data cannot be empty")
             
+            data = {
+                "task_name": task_name,
+                "model_id": model_id,
+                "discussion_id": discussion_id
+            }
+
             # Парсим JSON если это строка
-            params = self._parse_in_json(json_data)
+            params = parse_in_json(data)
 
             # Отправляем POST запрос
             response = self.session.post(
                 f"{self.URL}/tasks",
-                json={"params": params},
+                json=params,
                 headers={"Content-Type": "application/json"},
                 timeout=30
             )
@@ -55,24 +59,6 @@ class Tasker():
         except Exception as e:
             logger.error(f"Ошибка при отправке задачи в сервис задач: {e}")
             raise
-    
-    def _parse_in_json(
-        self, 
-        data: Dict | str
-    ) -> Dict:
-        """Парсинг в JSON из строки или возврат словаря"""
-        if isinstance(data, dict):
-            return data
-        
-        # Очищаем строку от маркеров markdown
-        data = re.sub(r'```json\s*\n?', '', data)
-        cleaned = re.sub(r'```\s*\n?', '', data)
-
-        try:
-            return json.loads(cleaned)
-        except json.JSONDecodeError as e:
-            logger.error(f"Ошибка парсинга JSON. Полученный текст:\n{cleaned}\nОшибка: {e}")
-            raise ValueError(f"Invalid JSON format: {e}")
 
     def task_is_finish(self, task_id: str) -> TaskStatus:
         """Проверить, завершена ли задача"""

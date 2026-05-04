@@ -64,3 +64,15 @@ def get_version_split_info(
 def list_datasets() -> dict:
     """Список всех датасетов"""
     return get_json("/api/datasets/")
+
+def get_dataset_info_classes(dataset_id: str) -> list:
+    """
+    Получить всю информацию о датасете по ID
+    
+    Args:
+        dataset_id: Id датасета
+        
+    Returns:
+        Dict с информацией о датасете или ошибкой
+    """    
+    return get_json(f"/api/datasets/{dataset_id}")["class_names"]
