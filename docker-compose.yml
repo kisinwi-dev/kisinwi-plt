@@ -97,7 +97,7 @@ services:
       - POSTGRES_APP_USERNAME=${ML_MODELS_POSTGRES_USER}
       - POSTGRES_APP_PASSWORD=${ML_MODELS_POSTGRES_PASSWORD}
     ports:
-      - "${TASKER_PORT}:${TASKER_PORT}"
+      - "${ML_MODELS_SERVICE_PORT}:${ML_MODELS_SERVICE_PORT}"
     networks:
       - network
     depends_on:
