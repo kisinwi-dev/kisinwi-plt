@@ -13,7 +13,10 @@ services:
       - network
     depends_on:
       - datasets
-    
+
+  # =============================================================
+  # Сервис для работы с датасетами
+  # =============================================================
   
   datasets:
     container_name: 
@@ -28,6 +31,9 @@ services:
     networks:
       - network
 
+  # =============================================================
+  # Сервис задач
+  # =============================================================
 
   tasker:
     container_name: 
@@ -36,42 +42,97 @@ services:
       context: ./services/tasker
       dockerfile: Dockerfile
     environment:
-      - POSTGRES_HOST=data_postgres
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_APP_USERNAME=${APP_TASKER_USER}
-      - POSTGRES_APP_PASSWORD=${APP_TASKER_PASSWORD}
+      - POSTGRES_HOST=tasker_postgres
+      - POSTGRES_PORT=${TASKER_POSTGRES_PORT}
+      - POSTGRES_DB=${TASKER_POSTGRES_DB}
+      - POSTGRES_APP_USERNAME=${TASKER_POSTGRES_USER}
+      - POSTGRES_APP_PASSWORD=${TASKER_POSTGRES_PASSWORD}
     ports:
       - "${TASKER_PORT}:${TASKER_PORT}"
     networks:
       - network
     depends_on:
-      postgres:
+      tasker_postgres:
         condition: service_healthy
 
-  postgres:
+  tasker_postgres:
     image: postgres:17-alpine
     container_name: 
-      data_postgres
+      tasker_postgres
     restart: unless-stopped
+    command: -p ${TASKER_POSTGRES_PORT}
     environment:
-      POSTGRES_USER: ${POSTGRES_ROOT_USERNAME}
-      POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      APP_TASKER_USER: ${APP_TASKER_USER}
-      APP_TASKER_PASSWORD: ${APP_TASKER_PASSWORD}
+      POSTGRES_USER: ${TASKER_POSTGRES_ROOT_USERNAME}
+      POSTGRES_PASSWORD: ${TASKER_POSTGRES_ROOT_PASSWORD}
+      POSTGRES_DB: ${TASKER_POSTGRES_DB}
+      APP_USER: ${TASKER_POSTGRES_USER}
+      APP_PASSWORD: ${TASKER_POSTGRES_PASSWORD}
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "${TASKER_POSTGRES_PORT}:${TASKER_POSTGRES_PORT}"
     volumes:
-      - ./db/postgres/data:/var/lib/postgresql/data
-      - ./db/postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./db/postgres/tasker/data:/var/lib/postgresql/data
+      - ./db/postgres/tasker/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_ROOT_USERNAME} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${TASKER_POSTGRES_ROOT_USERNAME} -d ${TASKER_POSTGRES_DB} -p ${TASKER_POSTGRES_PORT}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - network
+
+  # =============================================================
+  # Сервис ML моделей
+  # =============================================================
+
+  ml_models:
+    container_name: 
+      ml_models
+    build: 
+      context: ./services/ml_models
+      dockerfile: Dockerfile
+    environment:
+      - POSTGRES_HOST=ml_models_postgres
+      - POSTGRES_PORT=${ML_MODELS_POSTGRES_PORT}
+      - POSTGRES_DB=${ML_MODELS_POSTGRES_DB}
+      - POSTGRES_APP_USERNAME=${ML_MODELS_POSTGRES_USER}
+      - POSTGRES_APP_PASSWORD=${ML_MODELS_POSTGRES_PASSWORD}
+    ports:
+      - "${ML_MODELS_SERVICE_PORT}:${ML_MODELS_SERVICE_PORT}"
+    networks:
+      - network
+    depends_on:
+      ml_models_postgres:
+        condition: service_healthy
+
+  ml_models_postgres:
+    image: postgres:17-alpine
+    container_name: 
+      ml_models_postgres
+    restart: unless-stopped
+    command: -p ${ML_MODELS_POSTGRES_PORT}
+    environment:
+      POSTGRES_USER: ${ML_MODELS_POSTGRES_ROOT_USERNAME}
+      POSTGRES_PASSWORD: ${ML_MODELS_POSTGRES_ROOT_PASSWORD}
+      POSTGRES_DB: ${ML_MODELS_POSTGRES_DB}
+      APP_USER: ${ML_MODELS_POSTGRES_USER}
+      APP_PASSWORD: ${ML_MODELS_POSTGRES_PASSWORD}
+    ports:
+      - "${ML_MODELS_POSTGRES_PORT}:${ML_MODELS_POSTGRES_PORT}"
+    volumes:
+      - ./db/postgres/ml_models/data:/var/lib/postgresql/data
+      - ./db/postgres/ml_models/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ML_MODELS_POSTGRES_ROOT_USERNAME} -d ${ML_MODELS_POSTGRES_DB} -p ${ML_MODELS_POSTGRES_PORT}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - network
+
+
+  # =============================================================
+  # Сервис тренировок
+  # =============================================================
     
   trainer:
     container_name: 
@@ -100,28 +161,9 @@ services:
       - network
     shm_size: 2gb
 
-  mongodb:
-    image: mongo:8.2.7
-    container_name: data_mongodb
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
-      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
-      - MONGO_APP_USERNAME=${MONGO_APP_USERNAME}
-      - MONGO_APP_PASSWORD=${MONGO_APP_PASSWORD}
-    ports:
-      - "${MONGO_PORT}:27017"
-    volumes:
-      - ./db/mongodb/data:/data/db
-      - ./db/mongodb/config:/data/configdb
-      - ./db/mongodb/init:/docker-entrypoint-initdb.d
-    networks:
-      - network
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
+  # =============================================================
+  # Сервис метрик
+  # =============================================================
 
   metrics:
     container_name: 
@@ -130,19 +172,46 @@ services:
       context: ./services/metrics
       dockerfile: Dockerfile
     environment:
-      - MONGO_HOST=data_mongodb
-      - MONGO_PORT=${MONGO_PORT}
-      - MONGO_APP_USERNAME=${MONGO_APP_USERNAME}
-      - MONGO_APP_PASSWORD=${MONGO_APP_PASSWORD}
-      - MONGO_METRIC_DATABASE=${MONGO_INITDB_DATABASE}
+      - MONGO_HOST=metrics_mongo
+      - MONGO_PORT=${METRICS_MONGO_PORT}
+      - MONGO_APP_USERNAME=${METRICS_MONGO_APP_USERNAME}
+      - MONGO_APP_PASSWORD=${METRICS_MONGO_APP_PASSWORD}
+      - MONGO_METRIC_DATABASE=${METRICS_MONGO_INITDB_ROOT_USERNAME}
     ports: 
       - "${METRICS_SERVICE_PORT}:${METRICS_SERVICE_PORT}"
     networks:
       - network
     depends_on:
-      mongodb:
+      metrics_mongo:
         condition: service_healthy
 
+  metrics_mongo:
+    image: mongo:8.2.7
+    container_name: metrics_mongo
+    command: --port ${METRICS_MONGO_PORT}
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${METRICS_MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${METRICS_MONGO_INITDB_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=${METRICS_MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_APP_USERNAME=${METRICS_MONGO_APP_USERNAME}
+      - MONGO_APP_PASSWORD=${METRICS_MONGO_APP_PASSWORD}
+    ports:
+      - "${METRICS_MONGO_PORT}:${METRICS_MONGO_PORT}"
+    volumes:
+      - ./db/mongodb/data:/data/db
+      - ./db/mongodb/config:/data/configdb
+      - ./db/mongodb/init:/docker-entrypoint-initdb.d
+    networks:
+      - network
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "${METRICS_MONGO_PORT}", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # =============================================================
+  # Сервис агентов
+  # =============================================================
 
   agents:
     container_name: 
@@ -159,7 +228,6 @@ services:
       - METRICS_DOMEN=metrics:${METRICS_SERVICE_PORT}
     networks:
       - network
-
 
 networks:
   network:
