@@ -1,0 +1,17 @@
+# docker
+.dockerignore
+Dockerfile
+
+# git
+.git
+.gitignore
+
+# cache
+__pycache__
+.venv
+.vscode
+README.md
+
+# tests and dev
+tests/
+datasets/
