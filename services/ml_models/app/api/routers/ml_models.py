@@ -67,11 +67,6 @@ async def create_model(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Ошибка в запросе: {e}"
         )
-    except (OperationalError, InterfaceError) as e:
-        raise HTTPException(
-            status_code=503, 
-            detail=f"Ошибка подключения к БД: {e}"
-        )
 
 @routers.delete(
     "/{model_id}",
@@ -102,11 +97,6 @@ async def delete_task(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Некорректный формат введённых данных: {e}"
-        )
-    except (OperationalError, InterfaceError) as e:
-        raise HTTPException(
-            status_code=503, 
-            detail=f"Ошибка подключения к БД: {e}"
         )
 
 @routers.get(
