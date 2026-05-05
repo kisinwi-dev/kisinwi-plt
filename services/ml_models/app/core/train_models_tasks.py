@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Any
 from psycopg2.extras import Json
 
 from .postresql import PostgresManager
@@ -10,13 +10,41 @@ logger = get_logger(__name__)
 class MlModelsManager:
     def __init__(self):
         self.db = PostgresManager(postgresql_config.URL)
-        self._table = "ml_models"
+        self._models_table = "ml_models"
+        self._statuses_models_table = "ml_model_statuses"
+
+    def get_statuses_info(self) -> List[Dict[str, Any]]:
+        """Получить список возможных статусов"""
+        query = f"""
+            SELECT 
+                id,
+                status,
+                description
+            FROM {self._statuses_models_table} 
+        """
+        with self.db as db:
+            
+            db_response = db.fetch_all(query)
+            if len(db_response) == 0:
+                logger.warning("Не найдены статусы")
+                return []
+            
+            results = [
+                {
+                    "id": result[0],
+                    "status": result[1],
+                    "description": result[2]
+                } 
+                for result in db_response
+            ]
+
+            return results
 
     def count_models(self) -> int:
         """Выводит количество имеющихся моделей"""
         query = f"""
             SELECT COUNT(id)
-            FROM {self._table} 
+            FROM {self._models_table} 
         """
         with self.db as db:
             result = db.fetch_one(query)
@@ -33,7 +61,7 @@ class MlModelsManager:
         """Создание модели"""
 
         query = f"""
-            INSERT INTO {self._table} (name, model_type, description, classes, train_params)
+            INSERT INTO {self._models_table} (name, model_type, description, classes, train_params)
             VALUES (%s, %s, %s, %s, %s)
             RETURNING id
         """
@@ -53,7 +81,7 @@ class MlModelsManager:
     ) -> bool:
         """Удаление модели"""
         query = f"""
-            DELETE FROM {self._table}
+            DELETE FROM {self._models_table}
             WHERE id = %s
             RETURNING id
         """
@@ -70,7 +98,7 @@ class MlModelsManager:
     ):
         """Обновить статус"""
         query = f"""
-            UPDATE {self._table} 
+            UPDATE {self._models_table} 
             SET model_type = %s, 
                 description = %s, 
             WHERE id = %s
@@ -93,7 +121,7 @@ class MlModelsManager:
                 classes,
                 train_params,
                 created_at
-            FROM {self._table}
+            FROM {self._models_table}
             WHERE id = %s
         """
         with self.db as db:
