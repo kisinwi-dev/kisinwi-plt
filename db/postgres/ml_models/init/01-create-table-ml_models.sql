@@ -1,9 +1,15 @@
--- ENUM для статуса модели
-CREATE TYPE ml_model_status_enum AS ENUM (
-    'draft',    -- модель ещё не обучена или не готова
-    'training', -- в процессе обучения
-    'completed' -- готова к использованию
+-- Таблица статсусов моделей
+CREATE TABLE IF NOT EXISTS ml_model_statuses (
+    id SERIAL PRIMARY KEY,
+    status VARCHAR(50) NOT NULL UNIQUE,
+    description TEXT NOT NULL
 );
+
+INSERT INTO ml_model_statuses (status, description) VALUES
+    ('draft', 'Не обучена'),
+    ('training', 'В процессе обучения'),
+    ('completed', 'Обучена');
+
 
 -- Таблица ML моделей (разбирается только вариант с классификацией изображений)
 CREATE TABLE IF NOT EXISTS ml_models (
@@ -11,6 +17,7 @@ CREATE TABLE IF NOT EXISTS ml_models (
     name VARCHAR(255) NOT NULL,
     version VARCHAR(20) NOT NULL,
     model_type VARCHAR(100) NOT NULL,
+    status_id INTEGER NOT NULL DEFAULT 1,
     description TEXT,
     classes JSONB NOT NULL DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -33,7 +40,10 @@ CREATE TABLE IF NOT EXISTS ml_models (
     -- уникальность имени и версии
     CONSTRAINT unique_model_name_version UNIQUE (name, version),
     -- атрибут с количеством классов не должен быть пустым
-    CONSTRAINT check_classes_not_empty CHECK (jsonb_array_length(classes) > 0)
+    CONSTRAINT check_classes_not_empty CHECK (jsonb_array_length(classes) > 0),
+    -- связь с таблицей статусов
+    CONSTRAINT fk_ml_models_status FOREIGN KEY (status_id) 
+        REFERENCES ml_model_statuses(id)
 );
 
 -- Индексы
