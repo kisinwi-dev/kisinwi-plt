@@ -154,23 +154,32 @@ class MlModelsManager:
             db.execute(query, (model_type, description, model_id))
         
     def get_model(
-            self, 
-            model_id: str
-    ) -> Dict | None:
-        """Получить информацию о модели"""
-
+        self, 
+        model_id: str
+    ) -> Dict[str, Any] | None:
+        """Получить полную информацию о модели по ID"""
+        
         query = f"""
             SELECT 
-                id,
-                name,
-                model_type,
-                description,
-                classes,
-                train_params,
-                created_at
-            FROM {self._models_table}
-            WHERE id = %s
+                m.id,
+                m.name,
+                m.version,
+                m.model_type,
+                s.status as status,
+                m.description,
+                m.classes,
+                m.train_params,
+                m.created_at,
+                m.dataset_id,
+                m.dataset_version_id,
+                m.framework,
+                m.framework_version,
+                m.storage_path
+            FROM {self._models_table} m
+            LEFT JOIN ml_model_statuses s ON m.status_id = s.id
+            WHERE m.id = %s
         """
+        
         with self.db as db:
             row = db.fetch_one(query, (model_id,))
             
@@ -178,11 +187,18 @@ class MlModelsManager:
                 return None
             
             return {
-                'id': row[0],
+                'id': str(row[0]),
                 'name': row[1],
-                'model_type': row[2],
-                'description': row[3],
-                'classes': row[4],
-                'train_params': row[5],
-                'creatred_at': row[6]
+                'version': row[2],  
+                'model_type': row[3],
+                'status': row[4],
+                'description': row[5],
+                'classes': row[6],
+                'train_params': row[7],
+                'created_at': row[8],
+                'dataset_id': str(row[9]),
+                'dataset_version_id': row[10],
+                'framework': row[11],
+                'framework_version': row[12],
+                'storage_path': row[13]
             }
