@@ -9,7 +9,7 @@ CREATE TYPE ml_model_status_enum AS ENUM (
 CREATE TABLE IF NOT EXISTS ml_models (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
-    version INTEGER NOT NULL DEFAULT 1,
+    version VARCHAR(20) NOT NULL,
     model_type VARCHAR(100) NOT NULL,
     description TEXT,
     classes JSONB NOT NULL DEFAULT '[]'::jsonb,
