@@ -18,6 +18,10 @@ class MLModelStatus(BaseModel):
     status: str = Field(..., description="Статус модели")
     description: Optional[str] = Field(None, description="Описание статуса")
 
+class MLModels(BaseModel):
+    """ML модели"""
+    models: List[MLModel] = Field(..., description="Список ML моделей")
+
 class MLModel(BaseModel):
     """Полная схема ML модели"""
     id: str
@@ -26,10 +30,7 @@ class MLModel(BaseModel):
     model_type: str
     description: Optional[str] = Field(None, description="Описание модели")
     classes: List[str] = Field(..., description="Список классов")
-    train_params: Dict[str, Any] = Field(
-        default_factory=Dict[str, Any], 
-        description="Параметры обучения модели"
-    )
+    train_params: Dict[str, Any] = Field(..., description="Параметры обучения модели")
     created_at: datetime = Field(..., description="Создание модели")
 
     # Датасет

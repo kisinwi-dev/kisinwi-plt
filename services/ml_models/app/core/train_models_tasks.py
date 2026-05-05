@@ -155,8 +155,8 @@ class MlModelsManager:
         
     def get_model(
         self, 
-        model_id: str
-    ) -> Dict[str, Any] | None:
+        model_id: str | None = None
+    ) -> List[Dict[str, Any]] | None:
         """Получить полную информацию о модели по ID"""
         
         query = f"""
@@ -176,29 +176,41 @@ class MlModelsManager:
                 m.framework_version,
                 m.storage_path
             FROM {self._models_table} m
-            LEFT JOIN ml_model_statuses s ON m.status_id = s.id
-            WHERE m.id = %s
+            LEFT JOIN {self._statuses_models_table} s ON m.status_id = s.id
         """
         
+        if model_id:
+            query += "WHERE m.id = %s\n"
+        
         with self.db as db:
-            row = db.fetch_one(query, (model_id,))
+            rows = db.fetch_all(query, (model_id,))
             
-            if row is None:
+            if len(rows) == 0:
                 return None
-            
-            return {
-                'id': str(row[0]),
-                'name': row[1],
-                'version': row[2],  
-                'model_type': row[3],
-                'status': row[4],
-                'description': row[5],
-                'classes': row[6],
-                'train_params': row[7],
-                'created_at': row[8],
-                'dataset_id': str(row[9]),
-                'dataset_version_id': row[10],
-                'framework': row[11],
-                'framework_version': row[12],
-                'storage_path': row[13]
-            }
+                    
+            models = [
+                self._row_full_info_model_in_dict(row) 
+                for row in rows
+            ] 
+
+            return models 
+    
+    def _row_full_info_model_in_dict(self, row: tuple):
+        """Преобразовать всю строчку из соединённой таблицы  """
+        return {
+            'id': str(row[0]),
+            'name': row[1],
+            'version': row[2],  
+            'model_type': row[3],
+            'status': row[4],
+            'description': row[5],
+            'classes': row[6],
+            'train_params': row[7],
+            'created_at': row[8],
+            'dataset_id': str(row[9]),
+            'dataset_version_id': row[10],
+            'framework': row[11],
+            'framework_version': row[12],
+            'storage_path': row[13]
+        }
+    
