@@ -1,5 +1,5 @@
-from psycopg2 import OperationalError, InterfaceError, IntegrityError
-from fastapi import APIRouter, Depends, HTTPException, status
+from psycopg2 import OperationalError, InterfaceError
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 
 from app.logs import get_logger
 from app.api.schemas import *
@@ -44,23 +44,44 @@ async def create_model(
             status_code=503, 
             detail=f"Ошибка подключения к БД: {e}"
         )
-    except Exception as e:
-        logger.error(f"Неожиданная ошибка при создании модели: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Внутрення ошибка сервиса"
+
+@routers.delete(
+    "/{model_id}",
+    summary="Удаление модели",
+    status_code=status.HTTP_200_OK,
+    responses={
+        204: {"description": "Модель успешно удалена"},
+        404: {"description": "Модель не найдена"},
+        503: {"description": "Ошибка подключения к БД"},
+        500: {"description": "Внутренняя ошибка сервера"}
+    }
+)
+async def delete_task(
+    model_id: str,
+    manager: MlModelsManager = Depends(get_ml_models_manager)
+):
+    try:
+        deleted = manager.delete(model_id)
+
+        if not deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Модель с ID {model_id} не найдена"
+            )
+                
+        return Response(
+            status_code=204
         )
-
-
-# @routers.delete(
-#     "/{model_id}",
-#     summary="Удаление моделей"
-# )
-# async def delete_task(
-#     model_id: str,
-#     manager: MlModelsManager = Depends(get_ml_models_manager)
-# ):
-#     return manager.delete(model_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Некорректный формат введённых данных: {e}"
+        )
+    except (OperationalError, InterfaceError) as e:
+        raise HTTPException(
+            status_code=503, 
+            detail=f"Ошибка подключения к БД: {e}"
+        )
 
 # @routers.get(
 #     "/{model_id}",

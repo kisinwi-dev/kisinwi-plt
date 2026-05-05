@@ -1,3 +1,4 @@
+import uuid
 from typing import List, Dict, Any
 from psycopg2.extras import Json
 from psycopg2 import DatabaseError, IntegrityError
@@ -119,6 +120,7 @@ class MlModelsManager:
         model_id: str,
     ) -> bool:
         """Удаление модели"""
+
         query = f"""
             DELETE FROM {self._models_table}
             WHERE id = %s
@@ -126,8 +128,14 @@ class MlModelsManager:
         """
         params = (model_id,)
         with self.db as db:
-            row = db.fetch_one(query, params)
-            return row is not None
+            result = db.fetch_one(query, params)
+
+            if result is None:
+                logger.warning(f"Не удалось найти модель '{model_id}' для удаления")
+                return False
+
+            logger.info(f"✅ Удалена модель '{model_id}'")
+            return True
 
     def update_model(
             self, 
