@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from uuid import UUID
 from typing import Optional, List, Dict, Any
 
 class MLModelsStatistics(BaseModel):
@@ -21,7 +20,7 @@ class MLModelStatus(BaseModel):
 
 class MLModel(BaseModel):
     """Полная схема ML модели"""
-    id: UUID
+    id: str
     name: str = Field(..., description="Имя модели")
     version: int = Field(..., description="Версия модели")
     model_type: str
@@ -34,7 +33,7 @@ class MLModel(BaseModel):
     created_at: datetime = Field(..., description="Создание модели")
 
     # Датасет
-    dataset_id: UUID = Field(..., description="Id датасета, на котором обучалась модель")
+    dataset_id: str = Field(..., description="Id датасета, на котором обучалась модель")
     dataset_version_id: str = Field(..., description="Id версии датасета, на котором обучалась модель")
     
     # Framework
@@ -52,11 +51,10 @@ class MLModelCreate(BaseModel):
     description: Optional[str] = None
     classes: List[str]
     train_params: Dict[str, Any]
-    dataset_id: UUID
+    dataset_id: str
     dataset_version_id: str
     framework: Optional[str] = None
     framework_version: Optional[str] = None
-    storage_path: Optional[str] = None
 
 class MLModelUpdate(BaseModel):
     """Схема для обновления ML модели"""
@@ -66,7 +64,7 @@ class MLModelUpdate(BaseModel):
     description: Optional[str] = None
     classes: Optional[List[str]] = None
     train_params: Optional[Dict[str, Any]] = None
-    dataset_id: Optional[UUID] = None
+    dataset_id: Optional[str] = None
     dataset_version_id: Optional[str] = None
     framework: Optional[str] = None
     framework_version: Optional[str] = None

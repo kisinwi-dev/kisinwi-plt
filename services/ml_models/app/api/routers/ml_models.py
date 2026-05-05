@@ -1,39 +1,55 @@
-# from fastapi import APIRouter, Depends
+from psycopg2 import OperationalError, InterfaceError, IntegrityError
+from fastapi import APIRouter, Depends, HTTPException, status
 
-# from app.api.schemas import ModelCreate
-# from app.core.train_models_tasks import MlModelsManager
-# from app.api.deps import get_ml_models_manager
+from app.logs import get_logger
+from app.api.schemas import *
+from app.api.deps import get_ml_models_manager, MlModelsManager
 
-# routers = APIRouter(
-#     prefix='/models',
-#     tags=['models']
-# )
+routers = APIRouter(
+    prefix='/models',
+    tags=['models']
+)
 
-# @routers.post(
-#     "",
-#     summary="Создание модели"
-# )
-# async def create_task(
-#     model: ModelCreate, 
-#     manager: MlModelsManager = Depends(get_ml_models_manager)
-# ):
-#     model_id = manager.create(
-#         name=model.name,
-#         model_type=model.model_type,
-#         description=model.description,
-#         classes=model.classes,
-#         train_params=model.train_params
-#     )
-#     return {"model_id": model_id}
+logger = get_logger(__name__)
 
-# @routers.post(
-#     "/count",
-#     summary="Количество моделей"
-# )
-# async def count_task(
-#     manager: MlModelsManager = Depends(get_ml_models_manager)
-# ):
-#     return manager.count_models()
+@routers.post(
+    "",
+    summary="Создание модели",
+    status_code=201,
+    responses={
+        201: {"description": "Модель успешно создана"},
+        400: {"description": "Некорректные данные"},
+        409: {"description": "Модель с таким name и version уже существует"},
+        422: {"description": "Ошибка валидации данных"},
+        500: {"description": "Внутренняя ошибка сервера"},
+        503: {"description": "Ошибка подключения к БД"}
+    }
+)
+async def create_model(
+    model: MLModelCreate,
+    manager: MlModelsManager = Depends(get_ml_models_manager)
+):
+    try:
+        model_id = manager.create(
+            **model.model_dump()
+        )
+        return {"model_id": model_id}
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Ошибка в запросе: {e}"
+        )
+    except (OperationalError, InterfaceError) as e:
+        raise HTTPException(
+            status_code=503, 
+            detail=f"Ошибка подключения к БД: {e}"
+        )
+    except Exception as e:
+        logger.error(f"Неожиданная ошибка при создании модели: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Внутрення ошибка сервиса"
+        )
 
 
 # @routers.delete(

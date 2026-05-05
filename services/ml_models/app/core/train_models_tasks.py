@@ -1,5 +1,6 @@
 from typing import List, Dict, Any
 from psycopg2.extras import Json
+from psycopg2 import DatabaseError, IntegrityError
 
 from .postresql import PostgresManager
 from app.config import postgresql_config
@@ -53,28 +54,66 @@ class MlModelsManager:
     def create(
             self, 
             name: str,
+            version: str,
             model_type: str,
-            description: str | None,
-            classes: List[str],
+            classes: list,
+            dataset_id: str ,
+            dataset_version_id: str,
             train_params: dict,
+            description: str | None = None,
+            framework: str | None = None,
+            framework_version: str | None = None,
     ) -> str:
         """Создание модели"""
 
+        fields = [
+            "name", "version", "model_type", 
+            "classes", "dataset_id", "dataset_version_id", "train_params"
+        ]
+
+        values = [
+            name, version, model_type,
+            Json(classes), dataset_id, dataset_version_id, Json(train_params)
+        ]
+
+        if description is not None:
+            fields.append("description")
+            values.append(description)
+        
+        if framework is not None:
+            fields.append("framework")
+            values.append(framework)
+        
+        if framework_version is not None:
+            fields.append("framework_version")
+            values.append(framework_version)
+        
+        fields_str = ", ".join(fields)
+        placeholders = ", ".join(["%s"] * len(values))
+
         query = f"""
-            INSERT INTO {self._models_table} (name, model_type, description, classes, train_params)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO {self._models_table} ({fields_str})
+            VALUES ({placeholders})
             RETURNING id
         """
         with self.db as db:
-            result = db.fetch_one(query, (name, model_type, description, Json(classes), Json(train_params)))
+            try:
+                result = db.fetch_one(query, tuple(values))
+                
+                if not result:
+                    raise RuntimeError(f"Не удалось создать модель (name={name}, version={version})")
+                
+                model_id = result[0]
+                logger.info(f"✅ Создана модель {model_id} (name={name}, version={version})")
+                return model_id
+            except IntegrityError as e:
+                if "unique_model_name_version" in str(e):
+                    logger.error(f"Модель с именем '{name}' и версией '{version}' уже существует")
+                    raise ValueError(f"Модель с именем '{name}' и версией '{version}' уже существует")
+                
+                logger.error(f"Ошибка целостности данных: {e}")
+                raise RuntimeError(f"Ошибка целостности данных: {e}")
 
-            if not result:
-                raise RuntimeError(f"Ошибка создания модели (name={name}, model_type={model_type})")
-            
-            model_id = result[0]
-            logger.info(f"✅ Создана модель {model_id}")
-            return model_id
-        
     def delete(
         self,
         model_id: str,
