@@ -135,3 +135,56 @@ async def get_model_by_id(
     model = MLModel(**models[0])
 
     return model
+
+@routers.patch(
+    "/{model_id}",
+    summary="Частичное обновление модели",
+    responses={
+        200: {"description": "Модель успешно обновлена"},
+        400: {"description": "Некорректные данные запроса"},
+        404: {"description": "Модель не найдена"}
+    }
+)
+async def update_model(
+    model_id: str,
+    update_data: MLModelUpdate,
+    manager: MlModelsManager = Depends(get_ml_models_manager)
+):
+    """
+    Частичное обновление модели.
+    Можно обновить любое из полей, передав только нужные.
+    """
+
+    try:
+        valid_uuid(model_id, True)
+    except ValueError as e:
+        logger.error(f"Получен не валидный model_id = '{model_id}'")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Модель с ID {model_id} не найдена"
+        )
+
+    try:
+        # Получаем словарь без None значений
+        update_dict = update_data.model_dump(exclude_none=True)
+        
+        if not update_dict:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Нет данных для обновления"
+            )
+
+        # Выполняем обновление
+        updated_model = manager.update_model(model_id, update_dict)
+        
+        if updated_model:
+            return Response(
+                status_code=200
+            )
+        else:
+            raise
+    except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e)
+            )

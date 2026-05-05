@@ -10,15 +10,6 @@ def setup_exception_handlers(app: FastAPI):
     
     logger.info("Настройка обработчиков ошибок...")
 
-    @app.exception_handler(404)
-    async def not_found_handler(request: Request, exc: Exception):
-        logger.warning(f"URL не найден: {request.method} {request.url.path}")
-        return JSONResponse(
-            status_code=404,
-            content={"detail": f"Endpoint {request.method} {request.url.path} не найден"}
-        )
-    logger.info(" ✅ Обработчик 404 (Not Found)")
-
     @app.exception_handler(OperationalError)
     async def operational_error_handler(request: Request, exc: OperationalError):
         logger.error(f"Ошибка подключения к БД (OperationalError): {exc}", exc_info=True)

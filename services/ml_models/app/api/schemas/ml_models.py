@@ -28,6 +28,7 @@ class MLModel(BaseModel):
     name: str = Field(..., description="Имя модели")
     version: int = Field(..., description="Версия модели")
     model_type: str
+    status: str = Field(..., description="Статус модели")
     description: Optional[str] = Field(None, description="Описание модели")
     classes: List[str] = Field(..., description="Список классов")
     train_params: Dict[str, Any] = Field(..., description="Параметры обучения модели")
@@ -59,14 +60,9 @@ class MLModelCreate(BaseModel):
 
 class MLModelUpdate(BaseModel):
     """Схема для обновления ML модели"""
-    name: Optional[str] = None
-    version: Optional[int] = None
-    model_type: Optional[str] = None
+    status: Optional[str] = None
     description: Optional[str] = None
-    classes: Optional[List[str]] = None
     train_params: Optional[Dict[str, Any]] = None
-    dataset_id: Optional[str] = None
-    dataset_version_id: Optional[str] = None
     framework: Optional[str] = None
     framework_version: Optional[str] = None
     storage_path: Optional[str] = None

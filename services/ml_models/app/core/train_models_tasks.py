@@ -140,19 +140,74 @@ class MlModelsManager:
     def update_model(
             self, 
             model_id: str, 
-            model_type: str | None = None, 
-            description: str | None = None
+            update_data: Dict[str, Any]
     ):
-        """Обновить статус"""
+        """Обновить информацию о модели"""
+
+        data = {
+            k: v for k, v in update_data.items()
+            if v is not None
+        }
+
+        # Проверка существования модели
+        if self.get_model(str(model_id)) is None:
+            raise ValueError("")
+
+        # Обработка статуса
+        if data.get("status"):
+            statuses = self.get_statuses_info()
+            status_found = False
+
+            for status in statuses:
+                if status["status"] == data["status"]:
+                    data["status_id"] = status["id"]
+                    status_found = True
+                    break
+
+            if status_found:
+                logger.debug("Значение статуса переведено в id статуса")
+            else:
+                logger.error(f"Неизвестный статус '{data["status"]}'")
+                raise ValueError(f"Неизвестный статус '{data["status"]}'")
+
+            del data["status"]
+
+        # Формирование запрос
+        set_clauses = []
+        values = []
+        for key, val in data.items():
+            set_clauses.append(f"{key} = %s")
+
+            # JSON поле
+            if key in ("classes", "train_params"):
+                val = Json(val)
+
+            values.append(val)
+
+        values.append(str(model_id)) # для where
+
         query = f"""
-            UPDATE {self._models_table} 
-            SET model_type = %s, 
-                description = %s, 
+            UPDATE {self._models_table}
+            SET {", ".join(set_clauses)}
             WHERE id = %s
+            RETURNING id
         """
+
         with self.db as db:
-            db.execute(query, (model_type, description, model_id))
-        
+            try:
+                result = db.fetch_one(query, tuple(values))
+                
+                if result is None:
+                    logger.error(f"Модель '{model_id}' не обновлена")
+                    return False
+
+                logger.info(f"✅ Обновлена модель '{model_id}'")
+                return True
+
+            except Exception as e:
+                logger.error(f"Ошибка при обновлении модели {model_id}: {e}", exc_info=True)
+                raise RuntimeError(f"Не удалось обновить модель: {e}")
+
     def get_model(
         self, 
         model_id: str | None = None
