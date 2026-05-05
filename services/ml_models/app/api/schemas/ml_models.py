@@ -3,8 +3,18 @@ from datetime import datetime
 from uuid import UUID
 from typing import Optional, List, Dict, Any
 
-class MLModelStatusInfo(BaseModel):
-    """Информация о возможных статусах модели"""
+class MLModelsStatistics(BaseModel):
+    """Статситика по моделям"""
+    total: int = Field(..., description="Общее поличество моделей")
+    by_status: List[MLModelsCountByStatus] = Field(..., description="Распределение моделей по статусам")
+
+class MLModelsCountByStatus(BaseModel):
+    """Информация о количестве моделей с """
+    status: MLModelStatus = Field(..., description="Информация о статусе")
+    count: int = Field(..., description="Количество моделей в данном статусе")
+
+class MLModelStatus(BaseModel):
+    """Информация о статусe модели"""
     id: int = Field(..., description="ID статуса")
     status: str = Field(..., description="Статус модели")
     description: Optional[str] = Field(None, description="Описание статуса")

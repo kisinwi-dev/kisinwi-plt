@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 
 from app.logs import get_logger
 from app.core.health import check_health_all
-from app.api.schemas import HealthResponse, MLModelsStatusesResponse, MLModelStatusInfo
+from app.api.schemas import HealthResponse, MLModelsStatusesResponse, MLModelStatus
 from app.api.deps import get_ml_models_manager, MlModelsManager
 
 logger = get_logger(__name__)
@@ -57,7 +57,7 @@ async def get_statuses(
         statuses_list = manager.get_statuses_info()
         
         status_infos = [
-            MLModelStatusInfo(
+            MLModelStatus(
                 id=item["id"],
                 status=item["status"],
                 description=item["description"]
