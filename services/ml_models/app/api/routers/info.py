@@ -1,5 +1,5 @@
 from psycopg2 import OperationalError, InterfaceError
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, Depends
 
 from app.logs import get_logger
 from app.core.health import check_health_all
@@ -28,17 +28,11 @@ routers = APIRouter(
 )
 async def health():
     """Проверка подключения к БД"""
-    try:
-        info = check_health_all()
-        return HealthResponse(
-            status="healthy",
-            info=info
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Неопределённая ошибка: {e}"
-        )
+    info = check_health_all()
+    return HealthResponse(
+        status="healthy",
+        info=info
+    )
 
 @routers.get(
     "/models/status",
@@ -70,10 +64,4 @@ async def get_statuses(
         raise HTTPException(
             status_code=503, 
             detail=f"Ошибка подключения к БД: {e}"
-        )
-    except Exception as e:
-        logger.error(f"Непредвиденная ошибка: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Неопределённая ошибка: {e}"
         )
