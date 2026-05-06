@@ -98,6 +98,8 @@ services:
       - POSTGRES_APP_PASSWORD=${ML_MODELS_POSTGRES_PASSWORD}
     ports:
       - "${ML_MODELS_SERVICE_PORT}:${ML_MODELS_SERVICE_PORT}"
+    volumes:
+      - ./db/model_files:/app/model_files
     networks:
       - network
     depends_on:

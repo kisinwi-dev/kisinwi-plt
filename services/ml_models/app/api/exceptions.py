@@ -35,7 +35,7 @@ def setup_exception_handlers(app: FastAPI):
             status_code=500,
             content={"detail": "Неизвестная внутренняя ошибка сервера."}
         )
-    logger.info(" ✅ 500 ERROR")
+    logger.info(" ✅ Обработчик 500")
     
 
     logger.info("✅ Добавлены обработчики ошибок")

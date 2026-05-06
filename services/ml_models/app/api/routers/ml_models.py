@@ -32,10 +32,7 @@ async def get_models(
     models = manager.get_model()
 
     if models is None:
-        raise HTTPException(
-            status_code=status.HTTP_204_NO_CONTENT,
-            detail=f"Нет моделей"
-        )
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     models = [MLModel(**model) for model in models]
     model = MLModels(models=models)
@@ -90,9 +87,7 @@ async def delete_task(
                 detail=f"Модель с ID {model_id} не найдена"
             )
                 
-        return Response(
-            status_code=204
-        )
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

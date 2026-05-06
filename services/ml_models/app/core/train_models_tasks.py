@@ -228,8 +228,7 @@ class MlModelsManager:
                 m.dataset_id,
                 m.dataset_version_id,
                 m.framework,
-                m.framework_version,
-                m.storage_path
+                m.framework_version
             FROM {self._models_table} m
             LEFT JOIN {self._statuses_models_table} s ON m.status_id = s.id
         """
@@ -265,7 +264,6 @@ class MlModelsManager:
             'dataset_id': str(row[9]),
             'dataset_version_id': row[10],
             'framework': row[11],
-            'framework_version': row[12],
-            'storage_path': row[13]
+            'framework_version': row[12]
         }
     
