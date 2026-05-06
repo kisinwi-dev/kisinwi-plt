@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Response, HTTPException, status
 
 from app.api.schemas import TaskCreate, TaskUpdate
 from app.core.train_models_tasks import TrainingTaskManager
 from app.api.deps import get_training_task_manager
+from app.core.utils import valid_uuid
+from app.service.ml_models import models_is_exists
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -14,18 +16,46 @@ routers = APIRouter(
 
 @routers.post(
     "",
-    summary="Создание задачи для обучения"
+    summary="Создание задачи для обучения",
+    responses={
+        201: {"description": "Задача успешно создана"},
+        400: {"description": "Полученные данные не валидны"},
+        404: {"description": "Модель не найдена"},
+        503: {"description": "Ошибка подключения к БД"}
+    },
+    status_code=status.HTTP_201_CREATED
 )
 async def create_task(
     task: TaskCreate, 
     manager: TrainingTaskManager = Depends(get_training_task_manager)
 ):
-    task_id = manager.create(
-        name=task.task_name,
-        model_id=task.model_id,
-        discussion_id=task.discussion_id
-    )
-    return {"task_id": task_id}
+    try:
+        # Валидация данных
+        valid_uuid(task.model_id, on_error=True)
+        if task.discussion_id:
+            valid_uuid(task.discussion_id, on_error=True)
+        
+        # Проверка существования модели в сервисе метрик
+        if not models_is_exists(task.model_id):
+            logger.warning(f"МЛ модель '{task.model_id}' не существует")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Модель с ID {task.model_id} не найдена"
+            )
+
+        task_id = manager.create(
+            name=task.task_name,
+            model_id=task.model_id,
+            discussion_id=task.discussion_id
+        )
+        return {"task_id": task_id}
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Невалидный UUID: {e}"
+        )
 
 @routers.get(
     "/pending",

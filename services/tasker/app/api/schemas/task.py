@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 class TaskCreate(BaseModel):
     task_name: str
     model_id: str
-    discussion_id: str | None
+    discussion_id: str | None = Field(None, description="Id диалога к которому относится задача")
 
 class TaskUpdate(BaseModel):
     status: str
