@@ -78,6 +78,100 @@ class FilesManager:
             }
             for row in rows
         ]
+    
+    def drop(
+            self, 
+            model_id: str,
+            id_files: List[str] | None = None
+        ):
+        """
+        Удаление файлов по их id
+        
+        Args:
+            model_id: ID модели
+            file_ids: Список ID файлов для удаления (если не указывать, удаляет все файлы
+        """
+        model_dir = self._get_model_dir(model_id)
+        
+        if id_files:
+            
+            pl = ', '.join(['%s::uuid' for _ in id_files])
+            query = f"""
+                SELECT file_path
+                FROM ml_model_files
+                WHERE model_id = %s AND id IN ({pl})
+            """
+            with self.db as db:
+                files = db.fetch_all(query, (model_id, *id_files))
+        else:
+            query = """
+                SELECT file_path
+                FROM ml_model_files
+                WHERE model_id = %s
+            """
+            with self.db as db:
+                files = db.fetch_all(query, (model_id,))
+
+        for file_row in files:
+            file_path = Path(file_row[0])
+            if file_path.exists():
+                file_path.unlink()
+                logger.info(f"Удалён файл: {file_path}")
+
+        deleted_count = self._delete_info(model_id, id_files)
+        
+        if not id_files and model_dir.exists() and not any(model_dir.iterdir()):
+            model_dir.rmdir()
+            logger.info(f"Удалена директория модели {model_id}")
+
+        return deleted_count
+
+    def _delete_info(
+        self, 
+        model_id: str, 
+        file_ids: List[str] | None = None 
+    ) -> int:
+        """
+        Удаление из бд информации о файле/файлах
+        
+        Args:
+            model_id: ID модели
+            file_ids: Список ID файлов для удаления (если не указывать, удаляет все файлы)
+        
+        Returns:
+            Количество удалённых записей
+        """
+        
+        if file_ids: # Удаляем конкретные файлы
+            
+            pl = ', '.join(['%s::uuid' for _ in file_ids])
+            query = f"""
+                DELETE FROM ml_model_files
+                WHERE model_id = %s AND id IN ({pl})
+                RETURNING id
+            """
+
+            with self.db as db:
+                result = db.fetch_all(query, (model_id, *file_ids))
+                
+                deleted_count = len(result)
+                logger.info(f"Удалено {deleted_count} записей для модели {model_id} (конкретные файлы: {file_ids})")
+                return deleted_count
+            
+        else: # Удаляем все файлы модели
+            
+            query = """
+                DELETE FROM ml_model_files
+                WHERE model_id = %s
+                RETURNING id
+            """
+
+            with self.db as db:
+                result = db.fetch_all(query, (model_id,))
+                
+                deleted_count = len(result)
+                logger.info(f"Удалено {deleted_count} записей о файлах для модели {model_id}")
+                return deleted_count
 
     def _get_model_dir(self, model_id: str) -> Path:
         """Получить путь к папке модели"""

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, Response
 
 from app.logs import get_logger
-from app.api.schemas import Files, File
+from app.api.schemas import Files, File, FileDeletes
 from app.api.deps import get_files_manager, FilesManager
 from app.core.utils import valid_uuid
 
@@ -73,4 +73,40 @@ async def add_file(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Файл уже существует"
+        )
+
+@routers.delete(
+    "",
+    summary="Удаление файлов модели",
+    responses={
+        200: {"description": "Операция удалёния выполнена"},
+        204: {"description": "Нет файлов для удаления"},
+        404: {"description": "Модель не найдена"},
+        503: {"description": "Ошибка подключения к БД"}
+    }
+)
+async def del_file(
+    model_id: str,
+    files: FileDeletes,
+    manager: FilesManager = Depends(get_files_manager)
+):
+    try:
+        valid_uuid(model_id, True)
+
+        if files.ids is None:
+            result = manager.drop(model_id)
+        else:
+            result = manager.drop(model_id, files.ids)
+
+        if result == 0:
+            return Response(
+                status_code=status.HTTP_204_NO_CONTENT,
+                content="Нет файлов для удаления"
+            )
+
+    except ValueError as e:
+        logger.error(f"Получен не валидный model_id('{model_id}')")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Модель с ID {model_id} не найдена"
         )

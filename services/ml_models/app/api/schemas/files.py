@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel, Field
 
@@ -11,3 +11,6 @@ class File(BaseModel):
     filename: str = Field(..., description="Имя файла")
     file_size: int = Field(..., description="Размер файла в байтах")
     created_at: datetime = Field(..., description="Создание модели")
+
+class FileDeletes(BaseModel):
+    ids: Optional[List[str]] = Field(..., description="Список id файлов, которые нужно удалить")
