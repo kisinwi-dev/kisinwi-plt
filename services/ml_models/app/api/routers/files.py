@@ -1,16 +1,49 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, Response
 
 from app.logs import get_logger
-from app.api.schemas import *
+from app.api.schemas import Files, File
 from app.api.deps import get_files_manager, FilesManager
 from app.core.utils import valid_uuid
 
 routers = APIRouter(
-    prefix='/models/{model_id}',
+    prefix='/models/{model_id}/files',
     tags=['models', 'files']
 )
 
 logger = get_logger(__name__)
+
+@routers.get(
+    "",
+    summary="Получение информации о файлах модели",
+    responses={
+        200: {"description": "Информация о файлах модели успешно получена"},
+        204: {"description": "Модель не имеет файлов"},
+        404: {"description": "Модель не найдена"},
+        503: {"description": "Ошибка подключения к БД"}
+    }
+)
+async def get_files(
+    model_id: str,
+    manager: FilesManager = Depends(get_files_manager)
+):
+    try:
+        valid_uuid(model_id, True)
+        files = manager.get_info_files(model_id)
+        if files:
+            return Files(
+                files=[
+                    File(**file)
+                    for file in files
+                ]
+            )
+        else:
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except ValueError as e:
+        logger.error(f"Получен не валидный model_id('{model_id}')")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Модель с ID {model_id} не найдена"
+        )
 
 @routers.post(
     "",
@@ -22,7 +55,7 @@ logger = get_logger(__name__)
         503: {"description": "Ошибка подключения к БД"}
     }
 )
-async def get_models(
+async def add_file(
     model_id: str,
     files: UploadFile,
     manager: FilesManager = Depends(get_files_manager)

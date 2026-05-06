@@ -1,6 +1,6 @@
 import shutil
 from pathlib import Path
-from typing import List
+from typing import List, Dict, Any
 from fastapi import UploadFile
 
 from .postresql import PostgresManager
@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 class FilesManager:
     def __init__(self, storage_dir: str = "model_files"):
         self.db = PostgresManager(postgresql_config.URL)
-        self._models_table = "ml_model_files"
+        self._files_table = "ml_model_files"
         self.storage_dir = Path(storage_dir)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
        
@@ -47,6 +47,37 @@ class FilesManager:
         except Exception as e:
             logger.error(f"Ошибка при сохранении нового файла '{file.filename}' для '{model_id}': {e}")
             raise Exception(f"Не удалось сохранить файл {file.filename}: {e}")
+
+    def get_info_files(
+        self, 
+        model_id: str
+    ) -> List[Dict[str, Any]] | None:
+        """Получение информации о файлах конретной модели"""
+        query = f"""
+            SELECT id, model_id, filename, file_size, created_at
+            FROM {self._files_table}
+            WHERE model_id = %s
+        """
+
+        with self.db as db:    
+            rows = db.fetch_all(
+                query,
+                (model_id,)
+            )
+        
+        if len(rows) == 0:
+            return None
+        
+        return [
+            {
+                "id": row[0],
+                "model_id": row[1],
+                "filename": row[2],
+                "file_size": row[3],
+                "created_at": row[4]
+            }
+            for row in rows
+        ]
 
     def _get_model_dir(self, model_id: str) -> Path:
         """Получить путь к папке модели"""
