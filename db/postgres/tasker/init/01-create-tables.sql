@@ -1,9 +1,22 @@
-CREATE TYPE task_status AS ENUM (
-    'pending',
-    'processing',
-    'completed',
-    'failed'
+-- ============================================================================
+-- Таблица для информации о статусах
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS task_statuses (
+    id SERIAL PRIMARY KEY,
+    status VARCHAR(50) NOT NULL UNIQUE,
+    description TEXT NOT NULL
 );
+
+INSERT INTO task_statuses (status, description) VALUES
+    ('waiting', 'Ожидает начало выполнения'),
+    ('running', 'Выполняется'),
+    ('completed', 'Завершено'),
+    ('failed', 'Завершена с ошибкой');
+
+-- ============================================================================
+-- Таблица для информации о задачах тренировок
+-- ============================================================================
 
 CREATE TABLE IF NOT EXISTS train_models_tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -17,7 +30,8 @@ CREATE TABLE IF NOT EXISTS train_models_tasks (
     agent_respons_ids JSONB DEFAULT '[]',
 
     -- Статус
-    status task_status NOT NULL DEFAULT 'pending',
+    status_id INTEGER NOT NULL DEFAULT 1,
+    percentages INTEGER NOT NULL DEFAULT 0,
     status_info TEXT,
     error_message TEXT,
     
@@ -25,11 +39,15 @@ CREATE TABLE IF NOT EXISTS train_models_tasks (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     started_at TIMESTAMPTZ,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    completed_at TIMESTAMPTZ
+    completed_at TIMESTAMPTZ,
+
+    -- связь с таблицей статусов
+    CONSTRAINT fk_task_status FOREIGN KEY (status_id) 
+        REFERENCES task_statuses(id)
 );
 
 -- Индексы
-CREATE INDEX idx_tasks_status ON train_models_tasks(status);
+CREATE INDEX idx_tasks_status_id ON train_models_tasks(status_id);
 CREATE INDEX idx_tasks_created ON train_models_tasks(created_at DESC);
 
 -- Авто обновление времени
