@@ -1,6 +1,6 @@
 import shutil
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 from fastapi import UploadFile
 
 from .postresql import PostgresManager
@@ -215,3 +215,26 @@ class FilesManager:
                 elif item.is_dir():
                     shutil.rmtree(item)
             logger.debug(f"Очищена: {directory}")
+
+    def get_file_path(self, file_id: str) -> Tuple[Path, str]:
+        """Получить путь к файлу по его ID и его имя"""
+
+        query = """
+            SELECT file_path, filename
+            FROM ml_model_files
+            WHERE id = %s
+        """
+        
+        with self.db as db:
+            result = db.fetch_one(query, (file_id,))
+            
+            if not result:
+                raise ValueError(f"Файл с ID {file_id} не найден")
+            
+            file_path_str, filename = result
+            file_path = Path(file_path_str)
+            
+            if not file_path.exists():
+                raise ValueError(f"Физический файл не найден: {filename}")
+            
+            return file_path, filename
