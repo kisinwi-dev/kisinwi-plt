@@ -94,6 +94,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "psycopg2" },
+    { name = "python-multipart" },
     { name = "unicorn" },
     { name = "uvicorn" },
 ]
@@ -102,6 +103,7 @@ dependencies = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.135.3" },
     { name = "psycopg2", specifier = ">=2.9.12" },
+    { name = "python-multipart", specifier = ">=0.0.27" },
     { name = "unicorn", specifier = ">=2.1.4" },
     { name = "uvicorn", specifier = ">=0.42.0" },
 ]
@@ -169,6 +171,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/e0/15/3228774cb7cd45f5f721ddf1b2242747f4eb834d0c491f0c02d606f09fed/pydantic_core-2.46.3-cp314-cp314t-win32.whl", hash = "sha256:ffe0883b56cfc05798bf994164d2b2ff03efe2d22022a2bb080f3b626176dd56", size = 1949756, upload-time = "2026-04-20T14:41:25.717Z" },
     { url = "https://files.pythonhosted.org/packages/b8/2a/c79cf53fd91e5a87e30d481809f52f9a60dd221e39de66455cf04deaad37/pydantic_core-2.46.3-cp314-cp314t-win_amd64.whl", hash = "sha256:706d9d0ce9cf4593d07270d8e9f53b161f90c57d315aeec4fb4fd7a8b10240d8", size = 2051305, upload-time = "2026-04-20T14:43:18.627Z" },
     { url = "https://files.pythonhosted.org/packages/0b/db/d8182a7f1d9343a032265aae186eb063fe26ca4c40f256b21e8da4498e89/pydantic_core-2.46.3-cp314-cp314t-win_arm64.whl", hash = "sha256:77706aeb41df6a76568434701e0917da10692da28cb69d5fb6919ce5fdb07374", size = 2026310, upload-time = "2026-04-20T14:41:01.778Z" },
+]
+
+[[package]]
+name = "python-multipart"
+version = "0.0.27"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/69/9b/f23807317a113dc36e74e75eb265a02dd1a4d9082abc3c1064acd22997c4/python_multipart-0.0.27.tar.gz", hash = "sha256:9870a6a8c5a20a5bf4f07c017bd1489006ff8836cff097b6933355ee2b49b602", size = 44043, upload-time = "2026-04-27T10:51:26.649Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/99/78/4126abcbdbd3c559d43e0db7f7b9173fc6befe45d39a2856cc0b8ec2a5a6/python_multipart-0.0.27-py3-none-any.whl", hash = "sha256:6fccfad17a27334bd0193681b369f476eda3409f17381a2d65aa7df3f7275645", size = 29254, upload-time = "2026-04-27T10:51:24.997Z" },
 ]
 
 [[package]]
