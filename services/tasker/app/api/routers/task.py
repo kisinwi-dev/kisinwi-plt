@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Response, HTTPException, status
 
-from app.api.schemas import TaskCreate, TaskUpdate, TaskStatistics, TaskResponse
+from app.api.schemas import TaskCreate, TaskUpdate, TaskStatistics, TaskResponse, TasksResponse
 from app.core.train_models_tasks import TrainingTaskManager
 from app.api.deps import get_training_task_manager
 from app.core.utils import valid_uuid
@@ -56,6 +56,39 @@ async def create_task(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Невалидный UUID: {e}"
         )
+    
+@routers.get(
+    "",
+    summary="Получение всех задач",
+    response_model=TasksResponse,
+    responses={
+        200: {"description": "Задачи успешно получены"},
+        204: {"description": "Задачи не найдены"},
+        503: {"description": "Ошибка подключения к БД"}
+    },
+    status_code=status.HTTP_201_CREATED
+)
+async def get_tasks(
+    manager: TrainingTaskManager = Depends(get_training_task_manager)
+):
+    try:
+        
+        tasks = manager.get_tasks()
+
+        if tasks is None:
+            raise HTTPException(
+                status_code=status.HTTP_204_NO_CONTENT,
+                detail="Задачи не найдены"
+            )
+
+        return TasksResponse(
+            tasks=[
+                TaskResponse(**task)
+                for task in tasks
+            ]
+        )
+    except HTTPException:
+        raise
 
 @routers.get(
     "/pending",

@@ -2,6 +2,9 @@ from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, Field
 
+class TasksResponse(BaseModel):
+    tasks: List[TaskResponse] = Field(..., description="Список задач с полной информацией о них")
+
 class TaskResponse(BaseModel):
     id: str
     name: str

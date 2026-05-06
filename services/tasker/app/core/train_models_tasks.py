@@ -168,6 +168,59 @@ class TrainingTaskManager:
                 'updated_at': row[13],
                 'completed_at': row[14]
             }
+        
+    def get_tasks(
+            self
+    ) -> List[Dict] | None:
+        """Получить информацию о задачах"""
+
+        query = f"""
+            SELECT 
+                t.id,
+                t.name,
+                t.model_id,
+                t.discussion_id,
+                t.agent_respons_ids,
+                t.status_id,
+                s.status as status_name,
+                s.description as status_description,
+                t.percentages,
+                t.status_info,
+                t.error_message,
+                t.created_at,
+                t.started_at,
+                t.updated_at,
+                t.completed_at
+            FROM {self._table} t
+            LEFT JOIN {self._status_tables} s ON t.status_id = s.id
+        """
+
+        with self.db as db:
+            rows = db.fetch_all(query)
+            
+            if len(rows) == 0:
+                return None
+            
+            return [
+                {
+                    'id': row[0],
+                    'name': row[1],
+                    'model_id': row[2],
+                    'discussion_id': row[3],
+                    'agent_respons_ids': row[4],
+                    'status_id': row[5],
+                    'status': row[6],
+                    'status_description': row[7],
+                    "percentages": row[8],
+                    'status_info': row[9],
+                    'error_message': row[10],
+                    'created_at': row[11],
+                    'started_at': row[12],
+                    'updated_at': row[13],
+                    'completed_at': row[14]
+                }
+                for row in rows
+            ]
 
     def get_status_values(self) -> List[Dict[str, Any]]:
         """Получить все возможные значения статуса"""
