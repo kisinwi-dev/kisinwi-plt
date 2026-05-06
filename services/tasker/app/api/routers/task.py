@@ -101,13 +101,37 @@ async def count_task(
 
 @routers.delete(
     "/{task_id}",
-    summary="Удаление задачи"
+    summary="Удаление задачи",
+    responses={
+        204: {"description": "Задача успешно удалена"},
+        404: {"description": "Задача не найдена"},
+        400: {"description": "Невалидный UUID"},
+        503: {"description": "Ошибка подключения к БД"}
+    }
 )
 async def delete_task(
     task_id: str,
     manager: TrainingTaskManager = Depends(get_training_task_manager)
 ):
-    return manager.delete(task_id)
+    try:
+        valid_uuid(task_id, True)
+
+        deleted = manager.delete(task_id)
+        
+        if not deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Задача с ID {task_id} не найдена"
+            )
+        
+        return Response(
+            status_code=status.HTTP_204_NO_CONTENT
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Ошибка удаления задачи {task_id}: {e}")
+        raise
 
 @routers.get(
     "/{task_id}",
