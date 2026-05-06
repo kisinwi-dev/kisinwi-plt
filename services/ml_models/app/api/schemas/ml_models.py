@@ -41,9 +41,6 @@ class MLModel(BaseModel):
     # Framework
     framework: Optional[str] = Field(None, description="Название framework для работы с моделью")
     framework_version: Optional[str] = Field(None, description="Версия framework")
-    
-    # Путь до весов
-    storage_path: Optional[str] = Field(None, description="Путь до весов модели")
 
 class MLModelCreate(BaseModel):
     """Схема для создания ML модели"""
@@ -65,4 +62,3 @@ class MLModelUpdate(BaseModel):
     train_params: Optional[Dict[str, Any]] = None
     framework: Optional[str] = None
     framework_version: Optional[str] = None
-    storage_path: Optional[str] = None

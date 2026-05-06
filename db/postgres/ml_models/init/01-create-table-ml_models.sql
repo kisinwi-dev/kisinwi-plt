@@ -30,9 +30,6 @@ CREATE TABLE IF NOT EXISTS ml_models (
     framework VARCHAR(50),
     framework_version VARCHAR(20),
 
-    -- Путь до весов
-    storage_path TEXT,
-
     -- Параметры обучения модели
     train_params JSONB NOT NULL,
 
