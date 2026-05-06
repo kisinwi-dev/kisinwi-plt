@@ -125,21 +125,26 @@ class TrainingTaskManager:
 
         query = f"""
             SELECT 
-                id,
-                name,
-                model_id,
-                discussion_id,
-                agent_respons_ids,
-                status,
-                status_info,
-                error_message,
-                created_at,
-                started_at,
-                updated_at,
-                completed_at
-            FROM {self._table}
-            WHERE id = %s
+                t.id,
+                t.name,
+                t.model_id,
+                t.discussion_id,
+                t.agent_respons_ids,
+                t.status_id,
+                s.status as status_name,
+                s.description as status_description,
+                t.percentages,
+                t.status_info,
+                t.error_message,
+                t.created_at,
+                t.started_at,
+                t.updated_at,
+                t.completed_at
+            FROM {self._table} t
+            LEFT JOIN {self._status_tables} s ON t.status_id = s.id
+            WHERE t.id = %s
         """
+
         with self.db as db:
             row = db.fetch_one(query, (task_id,))
             
@@ -152,13 +157,16 @@ class TrainingTaskManager:
                 'model_id': row[2],
                 'discussion_id': row[3],
                 'agent_respons_ids': row[4],
-                'status': row[5],
-                'status_info': row[6],
-                'error_message': row[7],
-                'created_at': row[8],
-                'started_at': row[9],
-                'updated_at': row[10],
-                'completed_at': row[11]
+                'status_id': row[5],
+                'status': row[6],
+                'status_description': row[7],
+                "percentages": row[8],
+                'status_info': row[9],
+                'error_message': row[10],
+                'created_at': row[11],
+                'started_at': row[12],
+                'updated_at': row[13],
+                'completed_at': row[14]
             }
 
     def get_status_values(self) -> List[Dict[str, Any]]:
@@ -177,7 +185,6 @@ class TrainingTaskManager:
                 }
                 for row in rows
             ]
-
 
     def get_pending(self) -> List[Dict]:
         """Получить все pending задачи"""

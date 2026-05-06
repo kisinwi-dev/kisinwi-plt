@@ -1,5 +1,23 @@
-from typing import List
+from datetime import datetime
+from typing import List, Optional
 from pydantic import BaseModel, Field
+
+class TaskResponse(BaseModel):
+    id: str
+    name: str
+    model_id: str
+    discussion_id: Optional[str]
+    agent_respons_ids: List[str]
+    status_id: int
+    status: str
+    status_description: str
+    percentages: int
+    status_info: Optional[str]
+    error_message: Optional[str]
+    created_at: datetime
+    started_at: Optional[datetime]
+    updated_at: Optional[datetime]
+    completed_at: Optional[datetime]
 
 class TaskCreate(BaseModel):
     task_name: str

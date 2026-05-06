@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Response, HTTPException, status
 
-from app.api.schemas import TaskCreate, TaskUpdate, TaskStatistics
+from app.api.schemas import TaskCreate, TaskUpdate, TaskStatistics, TaskResponse
 from app.core.train_models_tasks import TrainingTaskManager
 from app.api.deps import get_training_task_manager
 from app.core.utils import valid_uuid
@@ -112,12 +112,29 @@ async def delete_task(
 @routers.get(
     "/{task_id}",
     summary="Получить информацию о задаче",
+    response_model=TaskResponse,
+    responses={
+        201: {"description": "Задача получена"},
+        400: {"description": "Полученные данные не валидны"},
+        404: {"description": "Задача не найдена"},
+        503: {"description": "Ошибка подключения к БД"}
+    },
 )
 async def get_task_for_id(
     task_id: str,
     manager: TrainingTaskManager = Depends(get_training_task_manager)
 ):
-    return manager.get_task(task_id)
+    valid_uuid(task_id, True)
+    
+    task = manager.get_task(task_id)
+    
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Задача с ID {task_id} не найдена"
+        )
+    return TaskResponse(**task)
+  
 
 @routers.post(
     "/{task_id}/status",

@@ -1,4 +1,5 @@
 import uuid
+from fastapi import HTTPException, status
 
 def valid_uuid(
         val: str, 
@@ -12,12 +13,15 @@ def valid_uuid(
         on_error: Если включить выбрасывает ошибку. По умолчанию выключен.
 
     Raises:
-        ValueError: Если raise_on_error=True и значение невалидный UUID
+        HTTPException_409: Если raise_on_error=True и значение невалидный UUID
     """
     try:
         uuid.UUID(str(val))
         return True
     except (ValueError, AttributeError, TypeError):
         if on_error:
-            raise ValueError(f"Некорректный формат UUID: {val}")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Некорректный формат UUID: {val}"
+            )
         return False
