@@ -1,5 +1,5 @@
 import json
-from typing import List, Dict
+from typing import List, Dict, Any
 from psycopg2.extras import Json
 
 from .postresql import PostgresManager
@@ -12,6 +12,7 @@ class TrainingTaskManager:
     def __init__(self):
         self.db = PostgresManager(postgresql_config.URL)
         self._table = "train_models_tasks"
+        self._status_tables = "task_statuses"
 
     def count_task(self) -> int:
         """Выводит количество имеющихся задач"""
@@ -160,14 +161,22 @@ class TrainingTaskManager:
                 'completed_at': row[11]
             }
 
-    def get_status_values(self) -> List[str]:
-        """Получить все возможные значения статуса из ENUM"""
-        query = """
-            SELECT unnest(enum_range(NULL::task_status))::text
+    def get_status_values(self) -> List[Dict[str, Any]]:
+        """Получить все возможные значения статуса"""
+        query = f"""
+            SELECT id, status, description
+            FROM {self._status_tables}
         """
         with self.db as db:
             rows = db.fetch_all(query)
-            return [row[0] for row in rows]
+            return [
+                {
+                    "id": row[0],
+                    "status": row[1],
+                    "description": row[2]
+                }
+                for row in rows
+            ]
 
 
     def get_pending(self) -> List[Dict]:

@@ -1,4 +1,5 @@
-from pydantic import BaseModel 
+from typing import List
+from pydantic import BaseModel, Field
 
 class TaskCreate(BaseModel):
     task_name: str
@@ -13,3 +14,11 @@ class TaskUpdate(BaseModel):
 class AddAgentResponse(BaseModel):
     task_id: str
     agent_response_id: str
+
+class StatusesInfo(BaseModel):
+    statuses: List[Status] = Field(..., description="Список статусов")
+
+class Status(BaseModel):
+    id: int = Field(..., description="Id статуса")
+    status: str = Field(..., description="Название статуса")
+    description: str = Field(..., description="Описание статуса")
