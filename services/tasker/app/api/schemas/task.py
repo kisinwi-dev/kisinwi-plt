@@ -22,3 +22,6 @@ class Status(BaseModel):
     id: int = Field(..., description="Id статуса")
     status: str = Field(..., description="Название статуса")
     description: str = Field(..., description="Описание статуса")
+
+class TaskStatistics(BaseModel):
+    count: int = Field(..., description="Количество задач")

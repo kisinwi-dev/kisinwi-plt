@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Response, HTTPException, status
 
-from app.api.schemas import TaskCreate, TaskUpdate
+from app.api.schemas import TaskCreate, TaskUpdate, TaskStatistics
 from app.core.train_models_tasks import TrainingTaskManager
 from app.api.deps import get_training_task_manager
 from app.core.utils import valid_uuid
@@ -84,12 +84,19 @@ async def next_task(
 
 @routers.post(
     "/count",
-    summary="Количество задач"
+    summary="Количество задач",
+    response_model=TaskStatistics,
+    responses={
+        200: {"description": "Количество задач успешно получено"},
+        503: {"description": "Ошибка подключения к БД"}
+    }
 )
 async def count_task(
     manager: TrainingTaskManager = Depends(get_training_task_manager)
 ):
-    return manager.count_task()
+    return TaskStatistics(
+        count=manager.count_task()
+    )
 
 
 @routers.delete(
