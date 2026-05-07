@@ -9,24 +9,18 @@ from app.services.tools import parse_in_json
 
 logger = get_logger(__name__)
 
-class TaskStatus(str, Enum):
-    PENDING = "pending"
-    IN_PROGRESS = "processing"
-    COMPLETED = "completed"
-    FAILED = "failed"
-
 class Tasker():
     def __init__(self) -> None:
         self.URL = config_url.TASKER_URL
         self.session = requests.Session()
 
-    def post_task(
+    def task_training_create(
             self,
             task_name: str,
             model_id: str,
             discussion_id: str
     ) -> str:
-        """Отправить JSON для запуска тренировки модели"""
+        """Создание задачи для обучения"""
         try:
             
             data = {
@@ -35,14 +29,13 @@ class Tasker():
                 "discussion_id": discussion_id
             }
 
-            # Парсим JSON если это строка
+            # Парсим в JSON
             params = parse_in_json(data)
 
             # Отправляем POST запрос
             response = self.session.post(
                 f"{self.URL}/tasks",
                 json=params,
-                headers={"Content-Type": "application/json"},
                 timeout=30
             )
             
@@ -60,7 +53,7 @@ class Tasker():
             logger.error(f"Ошибка при отправке задачи в сервис задач: {e}")
             raise
 
-    def task_is_finish(self, task_id: str) -> TaskStatus:
+    def task_status(self, task_id: str) -> str:
         """Проверить, завершена ли задача"""
         try:
             response = self.session.get(
@@ -70,7 +63,7 @@ class Tasker():
             
             status = response.json().get("status")
             
-            return TaskStatus(status)
+            return status
         
         except requests.RequestException as e:
             logger.error(f"Ошибка при проверке статуса задачи {task_id}: {e}")
@@ -79,10 +72,10 @@ class Tasker():
     def waiting_completed(self, task_id: str):
         """Ожидание завершения задачи"""
         while True:
-            status = tasker.task_is_finish(task_id)
-            if status == TaskStatus.COMPLETED:
+            status = tasker.task_status(task_id)
+            if status == "completed":
                 break
-            elif status == TaskStatus.FAILED:
+            elif status == "failed":
                 logger.error(f"Задача {task_id} завершена с ошибкой")
                 raise Exception(f"Задача {task_id} завершена с ошибкой")
             
