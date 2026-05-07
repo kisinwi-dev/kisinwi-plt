@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS ml_models (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     -- Датасет для которого создана модель
-    dataset_id UUID NOT NULL,
+    dataset_id VARCHAR(20) NOT NULL, 
     dataset_version_id VARCHAR(20) NOT NULL, 
 
     -- Framework для работы с моделью
