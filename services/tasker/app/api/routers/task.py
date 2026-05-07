@@ -1,6 +1,10 @@
 from fastapi import APIRouter, Depends, Response, HTTPException, status
 
-from app.api.schemas import TaskCreate, TaskUpdate, TaskStatistics, TaskResponse, TasksResponse
+from app.api.schemas import (
+    TaskCreate, TaskUpdate, TaskStatistics, 
+    TaskResponse, TasksResponse,
+    TaskResponseMin
+)
 from app.core.train_models_tasks import TrainingTaskManager
 from app.api.deps import get_training_task_manager
 from app.core.utils import valid_uuid
@@ -91,28 +95,32 @@ async def get_tasks(
         raise
 
 @routers.get(
-    "/pending",
-    summary="Получение задач с статусом 'pending'"
-)
-async def get_pending(
-    manager: TrainingTaskManager = Depends(get_training_task_manager)
-):
-    """Получаем список всех задач в статусе pending"""
-    return manager.get_pending()
-
-@routers.get(
     "/next",
-    summary="Получение первой задачи в очереди"
+    summary="Получение первой задачи в очереди",
+    response_model=TaskResponse,
+    responses={
+        200: {"description": "Задача успешно получена"},
+        204: {"description": "Нет задач в очереди"},
+        503: {"description": "Ошибка подключения к БД"}
+    }
 )
 async def next_task(
     manager: TrainingTaskManager = Depends(get_training_task_manager)
 ):
     """Воркер вызывает этот endpoint, чтобы получить следующую задачу."""
-    tasks = manager.get_pending()
-    if len(tasks) != 0:
-        return tasks[0]
-    else:
-        return Response(status_code=204)
+    try:
+        task = manager.get_next_task()
+        
+        if task is None:
+            raise HTTPException(
+                status_code=status.HTTP_204_NO_CONTENT,
+                detail="Нет задач с статусом ожидания"
+            )
+        
+        return TaskResponse(**task)
+
+    except HTTPException:
+        raise
 
 
 @routers.post(

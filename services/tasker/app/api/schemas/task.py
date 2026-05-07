@@ -22,6 +22,10 @@ class TaskResponse(BaseModel):
     updated_at: Optional[datetime]
     completed_at: Optional[datetime]
 
+class TaskResponseMin(BaseModel):
+    id: str
+    model_id: str
+
 class TaskCreate(BaseModel):
     task_name: str
     model_id: str

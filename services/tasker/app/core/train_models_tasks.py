@@ -239,27 +239,55 @@ class TrainingTaskManager:
                 for row in rows
             ]
 
-    def get_pending(self) -> List[Dict]:
-        """Получить все pending задачи"""
+    def get_task_with_status(
+        self,
+        status: str
+    ) -> List[Dict] | None:
+        """Получить задачи c заданным статусом"""
         query = f"""
-            SELECT id, name, model_id, discussion_id, agent_respons_ids, status, status_info
-            FROM {self._table} 
-            WHERE status = 'pending'
+            SELECT 
+                t.id, 
+                t.model_id,
+                s.status,
+                t.discussion_id,
+                t.agent_respons_ids,
+                t.percentages,
+                t.status_info,
+                t.error_message,
+                t.created_at,
+                t.started_at,
+                t.updated_at,
+                t.completed_at
+            FROM {self._table} t 
+            LEFT JOIN {self._status_tables} s ON t.status_id = s.id
+            WHERE s.status = %s
             ORDER BY created_at ASC
         """
+
         with self.db as db:
-            rows = db.fetch_all(query)
-            columns = ['id', 'name','model_id', 'discussion_id', 'agent_respons_ids', 'status', 'status_info']
+            rows = db.fetch_all(query, (status,))
+
+            if len(rows) == 0:
+                return None
+
+            columns = [
+                'id', 'model_id', 'status',
+                'discussion_id', 'agent_respons_ids', 'percentages',
+                'status_info', 'error_message',
+                'created_at', 'started_at', 'updated_at', 
+                'completed_at'
+            ]
+
             return [dict(zip(columns, row)) for row in rows]
-    
-    def get_one_pending(self) -> dict | None:
-        """Получить одну pending задачу"""
-        rows = self.get_pending()
-        if rows is not None:
-            return rows[0]
-        else:
+
+    def get_next_task(self) -> Dict[str, Any] | None:
+        "Получить первую задачу в очереди на выполнение"
+        tasks = self.get_task_with_status('waiting')
+
+        if tasks is None:
             return None
-        
+        return tasks[0]
+
     def add_agent_respons(
             self, 
             task_id: str, 
