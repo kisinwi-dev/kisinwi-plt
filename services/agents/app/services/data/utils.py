@@ -73,3 +73,27 @@ def handle_errors(func):
             logger.error(error_str)
             return {"ERROR": error_str}
     return wrapper
+
+def health() -> dict:
+    try:
+        # Отправляем POST запрос
+        response = requests.get(
+            f"{config_url.DMS_URL}/info/health",
+            timeout=30
+        )
+        
+        # Проверяем статус ответа
+        response.raise_for_status()
+        
+        return response.json()
+    
+    except requests.RequestException as e:
+        logger.error(f"Ошибка HTTP при обращении к сервису датасетов: {e}")
+        return {
+            "status": "dead"
+        }
+    except Exception as e:
+        logger.error(f"Ошибка при обращении к сервису датасетов: {e}")
+        return {
+            "status": "dead"
+        }

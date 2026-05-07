@@ -1,3 +1,4 @@
+import requests
 from typing import Dict, Any
 from crewai.tools import tool
 
@@ -41,3 +42,27 @@ def get_optimizers() -> Dict[str, Any]:
 def get_scheduler() -> Dict[str, Any]:
     """Получить список планировщиков"""
     return get_json("/info/schedulers")
+
+def health() -> dict:
+    try:
+        # Отправляем POST запрос
+        response = requests.get(
+            f"{config_url.TRAINER_URL}/info/health",
+            timeout=30
+        )
+        
+        # Проверяем статус ответа
+        response.raise_for_status()
+        
+        return response.json()
+    
+    except requests.RequestException as e:
+        logger.error(f"Ошибка HTTP при обращении к сервису метрик: {e}")
+        return {
+            "status": "dead"
+        }
+    except Exception as e:
+        logger.error(f"Ошибка при обращении к сервису метрик: {e}")
+        return {
+            "status": "dead"
+        }
