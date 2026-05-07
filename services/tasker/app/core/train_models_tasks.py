@@ -271,8 +271,11 @@ class TrainingTaskManager:
         query = f"""
             SELECT 
                 t.id, 
+                t.name,
                 t.model_id,
                 s.status,
+                t.status_id,
+                s.description as status_description,
                 t.discussion_id,
                 t.agent_respons_ids,
                 t.percentages,
@@ -295,7 +298,7 @@ class TrainingTaskManager:
                 return None
 
             columns = [
-                'id', 'model_id', 'status',
+                'id', 'name', 'model_id', 'status', 'status_id', 'status_description',
                 'discussion_id', 'agent_respons_ids', 'percentages',
                 'status_info', 'error_message',
                 'created_at', 'started_at', 'updated_at', 
