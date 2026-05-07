@@ -410,7 +410,10 @@ class Trainer:
                 logger.info(text_info_start)
                 
                 # Обновление статуса задачи
-                await self._tasker_service.update_status_task(value_procces + 1, description=text_info_start)
+                await self._tasker_service.update_status_task(
+                    percentages=value_procces + 1, 
+                    status_info=text_info_start
+                )
                 
                 # Тренировка и валидация
                 await asyncio.to_thread(self._train_one_full_epoch)
@@ -419,7 +422,10 @@ class Trainer:
                 text_info_end = f"☑️ Эпоха [{epoch}/{self.epochs}] завершена"
                 value_procces += one_epoch_procces_value
                 logger.info(text_info_end)
-                await self._tasker_service.update_status_task(value_procces - 1, description=text_info_end)
+                await self._tasker_service.update_status_task(
+                    percentages=value_procces - 1, 
+                    status_info=text_info_end
+                )
 
             logger.info("🦾 Тестирование модели...")
             await self._test_model()

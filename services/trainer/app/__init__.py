@@ -4,10 +4,10 @@ import uvicorn
 from fastapi import FastAPI
 
 from .api.routers import api_routers
-from .api.schemes import TaskStatus
 from .core import training_model
 from .logs import get_logger
 from .service.tasker import tasker_service
+from .service.ml_models import get_params
 
 logger = get_logger(__name__)
 
@@ -52,22 +52,45 @@ async def to_work():
                 await asyncio.sleep(time_sleep)
                 continue
 
-            task_id = task.task_id
-            params = task.params
+            task_id = task["id"]
+            model_id = task["model_id"]
+            params = get_params(model_id)
+
+            if params is None:
+                logger.info(f"Получена не верная структура параметров обучения: {task_id}")
+                await tasker_service.update_status_task(
+                    status="failed", 
+                    percentages=0,
+                    status_info="Задача завершена с ошибкой", 
+                    error=f"Не верная структура параметров обучения в модели '{model_id}'"
+                )
+                continue
 
             logger.info(f"Worker начинает работу над задачей: {task_id}")
             
             # Обновение статуса задачи (выполняется)
-            await tasker_service.update_status_task(0, status=TaskStatus.IN_PROGRESS, description="Задача принята воркером")
+            await tasker_service.update_status_task(
+                status="running", 
+                percentages=0,
+                status_info="Задача принята воркером", 
+            )
             
             try:
                 # Процесс обучения
                 await training_model(params)
 
                 # Завершение
-                await tasker_service.update_status_task(100, TaskStatus.COMPLETED, description="Задача выполнена")
+                await tasker_service.update_status_task(
+                    status="running", 
+                    percentages=100,
+                    status_info="Задача выполнена", 
+                )
                 logger.info(f"Задача {task_id} выполнена")
                 
             except Exception as e:
-                await tasker_service.update_status_task(status=TaskStatus.FAILED, description="Задача завершена с ошибкой")
+                await tasker_service.update_status_task(
+                    status="failed", 
+                    status_info="Задача завершена с ошибкой", 
+                    error=f"Error: {str(e)}"
+                )
                 logger.error(f"Ошибка {task_id}: {e}")

@@ -1,0 +1,39 @@
+import requests
+from typing import Dict, Any
+
+from app.api.schemes import TaskParams
+from app.config import config_domain
+from app.logs import get_logger
+
+logger = get_logger(__name__)
+
+def get_params(model_id) -> TaskParams | None: 
+    """Получение параметров обучения"""
+    try:
+        res = requests.get(
+            f"{config_domain.ML_MODELS}/models/{model_id}",
+            timeout=30
+        )
+        res.raise_for_status()
+        params = res.json()['train_params']
+        return TaskParams.model_validate(params)
+    
+    except requests.exceptions.Timeout as e:
+        logger.error(f"Таймаут при запросе параметров модели {model_id}")
+        raise e
+        
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"Ошибка соединения при запросе модели {model_id}")
+        raise e
+        
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Ошибка при запросе параметров модели {model_id}: {e}")
+        raise e
+        
+    except ValueError as e:
+        logger.error(f"Ошибка парсинга JSON для модели {model_id}: {e}")
+        raise e
+        
+    except Exception as e:
+        logger.error(f"Неожиданная ошибка при получении параметров модели {model_id}: {e}")
+        raise e
