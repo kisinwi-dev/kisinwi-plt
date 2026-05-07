@@ -5,7 +5,7 @@ from app.logs import get_logger
 from app.core.utils import get_system_info as system_info
 from app.core.utils import get_schedulers as schedulers, get_optimizers as optimizers
 from app.core.models import get_models_type_name
-from app.api.schemes import TaskParams
+from app.api.schemes import TaskParams, HealthResponse
 
 logger = get_logger(__name__)
 
@@ -110,3 +110,16 @@ async def get_schedulers():
             detail=f"Не удалось получить список имеющихся планировщиков: {e}"
         )
 
+@routers.get(
+        "/health",
+        response_model=HealthResponse,
+        summary="Работаспособность сервиса"
+)
+async def health():
+    """Проверка работоспособности сервиса"""
+    return HealthResponse(
+        status="healthy",
+        info={
+            "services": "Not require"
+        }
+    )
