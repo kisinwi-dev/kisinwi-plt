@@ -14,6 +14,32 @@ class Tasker():
         self.URL = config_url.TASKER_URL
         self.session = requests.Session()
 
+    def health(
+        self,
+    ) -> dict:
+        try:
+            # Отправляем POST запрос
+            response = self.session.get(
+                f"{self.URL}/info/health",
+                timeout=30
+            )
+            
+            # Проверяем статус ответа
+            response.raise_for_status()
+            
+            return response.json()
+        
+        except requests.RequestException as e:
+            logger.error(f"Ошибка HTTP при обращении к сервисе задач: {e}")
+            return {
+                "status": "dead"
+            }
+        except Exception as e:
+            logger.error(f"Ошибка при обращении к сервисе задач: {e}")
+            return {
+                "status": "dead"
+            }
+
     def task_training_create(
             self,
             task_name: str,
