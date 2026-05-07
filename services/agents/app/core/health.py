@@ -8,6 +8,7 @@ from app.services.tasker import tasker
 from app.services.ml_models import ml_models
 from app.services.metrics.post import health as metrics_health
 from app.services.trainer import health as trainer_health
+from app.services.data import health as datasets_healt
 
 logger = get_logger(__name__)
 
@@ -87,10 +88,11 @@ def check_health_all() -> Dict[str, List]:
 
     logger.info(" - подключение к внутренним сервисам...")
     info["services"] = {
-        "tasker": tasker.health(),
-        "metrics": metrics_health(),
+        "datasets": datasets_healt(),
         "ml_models": ml_models.health(),
-        "trainer": trainer_health()
+        "tasker": tasker.health(),
+        "trainer": trainer_health(),
+        "metrics": metrics_health()
     }
 
     logger.info("✅ Проверка завершена")
