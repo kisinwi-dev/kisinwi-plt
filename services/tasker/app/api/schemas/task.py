@@ -34,6 +34,7 @@ class TaskCreate(BaseModel):
 class TaskUpdate(BaseModel):
     status: str
     status_info: str
+    percentages: int | None = None
     error: str | None = None
 
 class AddAgentResponse(BaseModel):

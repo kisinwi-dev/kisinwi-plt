@@ -66,22 +66,46 @@ class TrainingTaskManager:
             return row is not None
 
     def update_status(
-            self, 
-            task_id: str, 
-            status: str, 
-            status_info: str,
-            error: str | None = None
+        self, 
+        task_id: str, 
+        status: str, 
+        status_info: str,
+        percentages: int | None = None,
+        error: str | None = None
     ):
         """Обновить статус"""
-        query = f"""
-            UPDATE {self._table} 
-            SET status = %s, 
-                status_info = %s, 
-                error_message = %s
-            WHERE id = %s
-        """
+        
         with self.db as db:
-            db.execute(query, (status, status_info, error, task_id))
+
+            # Получаем status_id
+            status_result = db.fetch_one(
+                f"SELECT id FROM {self._status_tables} WHERE status = %s",
+                (status,)
+            )
+            
+            if not status_result:
+                raise ValueError(f"Неизвестный статус: {status}")
+            
+            status_id = status_result[0]
+            
+            # Обновляем задачу
+            query = f"""
+                UPDATE {self._table} 
+                SET status_id = %s, 
+                    status_info = %s, 
+                    error_message = %s,
+                    percentages = COALESCE(%s, percentages),
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+                RETURNING id
+            """
+            
+            result = db.fetch_one(query, (status_id, status_info, error, percentages, task_id))
+            
+            if not result:
+                raise ValueError(f"Задача с ID {task_id} не найдена")
+            
+            logger.info(f"Статус задачи {task_id} обновлён на '{status}'")
 
     def add_agent_response(
         self, 

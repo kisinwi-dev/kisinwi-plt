@@ -123,7 +123,7 @@ async def next_task(
         raise
 
 
-@routers.post(
+@routers.get(
     "/count",
     summary="Количество задач",
     response_model=TaskStatistics,
@@ -203,21 +203,31 @@ async def get_task_for_id(
 
 @routers.post(
     "/{task_id}/status",
-    summary="Обновить статус задачи"
+    summary="Обновить статус задачи",
+    responses={
+        200: {"description": "Задача обновлена"},
+        404: {"description": "Задача/статус не найдены"},
+        503: {"description": "Ошибка подключения к БД"}
+    },
 )
 async def update_task_status(
     task_id: str,
     update: TaskUpdate,
     manager: TrainingTaskManager = Depends(get_training_task_manager)
 ):
-    manager.update_status(
-        task_id=task_id,
-        status=update.status,
-        status_info=update.status_info,
-        error=update.error
-    )
-
-    return True
+    try:
+        manager.update_status(
+            task_id=task_id,
+            status=update.status,
+            percentages=update.percentages,
+            status_info=update.status_info,
+            error=update.error
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_BAD_REQUEST,
+            detail=str(e)
+        )
 
 @routers.post(
     "/{task_id}/agents-response",
