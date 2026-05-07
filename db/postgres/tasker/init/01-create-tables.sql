@@ -58,13 +58,18 @@ BEGIN
     -- Обновляем updated_at всегда
     NEW.updated_at = CURRENT_TIMESTAMP;
     
-    -- Если статус меняется с pending на processing
-    IF OLD.status = 'pending' AND NEW.status = 'processing' THEN
+    -- Если статус меняется на статус обучения
+    IF NEW.status_id = 2 AND OLD.status_id != 2 THEN
         NEW.started_at = CURRENT_TIMESTAMP;
     END IF;
+
+    -- Если задача успешно завершена
+    IF NEW.status_id = 3 AND OLD.status_id != 3 THEN
+        NEW.completed_at = CURRENT_TIMESTAMP;
+    END IF;
     
-    -- Если статус меняется на completed
-    IF NEW.status IN ('completed') THEN
+    -- Если задача закончена с ошибкой
+    IF NEW.status_id = 4 AND OLD.status_id != 4 THEN
         NEW.completed_at = CURRENT_TIMESTAMP;
     END IF;
     
