@@ -231,16 +231,36 @@ async def update_task_status(
 
 @routers.post(
     "/{task_id}/agents-response",
-    summary="Добавление id ответа агента к задаче"
+    summary="Добавление id ответа агента к задаче",
+    responses={
+        200: {"description": "ID ответа агента успешно добавлен"},
+        400: {"description": "Невалидный UUID или agent_response_id"},
+        404: {"description": "Задача не найдена"},
+        503: {"description": "Ошибка подключения к БД"}
+    }
 )
 async def add_agent_response(
     task_id: str,
-    agent_respons: str,
+    agent_respons_id: str,
     manager: TrainingTaskManager = Depends(get_training_task_manager)
 ):
-    manager.add_agent_respons(
-        task_id=task_id,
-        agent_respons=agent_respons
-    )
-
-    return True
+    try:
+        # Валидация UUID
+        valid_uuid(task_id, True)
+        valid_uuid(agent_respons_id, True)
+        result = manager.add_agent_respons(
+            task_id=task_id,
+            agent_respons_id=agent_respons_id
+        )
+        
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Задача с ID {task_id} не найдена"
+            )
+        
+        return Response(
+            status_code=status.HTTP_200_OK
+        )
+    except HTTPException:
+        raise

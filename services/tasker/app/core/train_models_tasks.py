@@ -315,7 +315,7 @@ class TrainingTaskManager:
     def add_agent_respons(
             self, 
             task_id: str, 
-            agent_respons: str
+            agent_respons_id: str
         ):
         """Добавление id ответа агента в задачу"""
         query = f"""
@@ -324,7 +324,7 @@ class TrainingTaskManager:
             WHERE id = %s
             RETURNING id
         """
-        params = (json.dumps(agent_respons), task_id)
+        params = (json.dumps(agent_respons_id), task_id)
         
         with self.db as db:
             result = db.fetch_one(query, params)
