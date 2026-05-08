@@ -20,34 +20,34 @@ async def training_model(config: TaskParams):
     try:
 
         # Проверка технических возможностей
-        await tasker_service.update_status_task(1, description="Проверка устройства...")
+        await tasker_service.update_status_task(percentages=1, status_info="Проверка устройства...")
         device = setup_device(config.device)
-        await tasker_service.update_status_task(2, description="Устройство проверено на вычислительные возможности.")
+        await tasker_service.update_status_task(percentages=2, status_info="Устройство проверено на вычислительные возможности.")
 
         # Загружаем данные
-        await tasker_service.update_status_task(3, description="Загрузка данных...")
+        await tasker_service.update_status_task(percentages=3, status_info="Загрузка данных...")
         train_loader, val_loader, test_loader, classes = create_dataloaders(config.data_loader_params)
-        await tasker_service.update_status_task(5, description="Данные загружены.")
+        await tasker_service.update_status_task(percentages=5, status_info="Данные загружены.")
 
         # Загружаем модель
-        await tasker_service.update_status_task(6, description="Загрузка модели...")
+        await tasker_service.update_status_task(percentages=6, status_info="Загрузка модели...")
         model = get_model(
             config.model_params,
             num_classes = len(classes)
         ).to(device)
-        await tasker_service.update_status_task(10, description=f"Модель {config.model_params.type} загружена.")
+        await tasker_service.update_status_task(percentages=10, status_info=f"Модель {config.model_params.type} загружена.")
 
-        await tasker_service.update_status_task(11, description="Настройка метрик...")
+        await tasker_service.update_status_task(percentages=11, status_info="Настройка метрик...")
         metric_client = MetricesClient(
             model_id=tasker_service.task_id,
             metrices_params=config.metrices_params,
             num_class=len(classes),
             device=device
         )
-        await tasker_service.update_status_task(12, description="Метрики настроены.")
+        await tasker_service.update_status_task(percentages=12, status_info="Метрики настроены.")
 
         # Запуск обучения
-        await tasker_service.update_status_task(13, description=f"Формирование процесса обучения...")
+        await tasker_service.update_status_task(percentages=13, status_info="Формирование процесса обучения...")
         trainer = Trainer(
             # Вспомогательные сервисы
             tasker_service=tasker_service,
@@ -64,11 +64,10 @@ async def training_model(config: TaskParams):
             # Конфигурация
             train_params=config.trainer_params
         )
-        await tasker_service.update_status_task(19, description=f"Процесса обучения сформирован")
-        await tasker_service.update_status_task(20, description=f"Обучения...")
+        await tasker_service.update_status_task(percentages=19, status_info="Процесса обучения сформирован")
+        await tasker_service.update_status_task(percentages=20, status_info="Обучение...")
         model = await trainer.train(20, 80)
-        await tasker_service.update_status_task(80, description=f"Модель обучена.")
-
+        await tasker_service.update_status_task(percentages=80, status_info="Модель обучена.")
 
     except Exception as e:
         logger.error(e)

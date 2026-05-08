@@ -159,6 +159,7 @@ services:
       - TASKER_DOMAIN=tasker:${TASKER_PORT}
       - METRICS_DOMAIN=metrics:${METRICS_SERVICE_PORT}
       - ML_MODELS_DOMAIN=ml_models:${ML_MODELS_SERVICE_PORT}
+      - ML_MODELS_HOST=ml_models:${ML_MODELS_SERVICE_PORT}
     depends_on:
       - metrics
       - tasker

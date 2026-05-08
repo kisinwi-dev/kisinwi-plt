@@ -77,6 +77,7 @@ def create_dataloaders(
         # Проверяем существование обязательных папок
         for d in [train_dir, val_dir, test_dir]:
             if not os.path.isdir(d):
+                logger.error(f"Не верная структура датасета {d} не найдена")
                 raise FileNotFoundError("Не верная структура датасета.")
 
         # Трансформация без усложнений к определённому размеру
