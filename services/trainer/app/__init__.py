@@ -77,7 +77,7 @@ async def to_work():
             
             try:
                 # Процесс обучения
-                await training_model(params)
+                await training_model(params, model_id)
 
                 # Завершение
                 await tasker_service.update_status_task(
