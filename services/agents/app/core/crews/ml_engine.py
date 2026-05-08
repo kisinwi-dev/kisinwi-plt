@@ -11,6 +11,7 @@ def create_ml_ensemble_crew(
     num_engineers: int = 1,
     info_data: str = "",
     verbose: bool = True,
+    ml_models_ids: List[str] = [],
     agents: List[BaseAgent] | None = None,
     tasks: List[Task] | None = None
 ) -> Crew:
@@ -20,6 +21,7 @@ def create_ml_ensemble_crew(
     Args:
         num_engineers: Количество инженеров,
         info_data: Описание имеющихся данных,
+        ml_models_ids: Список обученных ранее ML моделей,
         verbos: Логирование в консоли,
         agents: Агенты
         tasks: Задачи для агентов
@@ -44,6 +46,7 @@ def create_ml_ensemble_crew(
         task = new_task_search_best_model(
             number_engineer=i+1,
             info_data=info_data,
+            ml_models_ids=ml_models_ids,
             agent=agent
         )
         agents.append(agent)
@@ -55,6 +58,7 @@ def run_ml_engineering(
     num_engineers: int = 1,
     info_data: str = "",
     verbose: bool = True,
+    ml_models_ids: List[str] = [],
     conversation_id: str | None = None
 ) -> Tuple[list[str], UsageMetrics]:
     """
@@ -74,6 +78,7 @@ def run_ml_engineering(
     crew = create_ml_ensemble_crew(
         num_engineers=num_engineers,
         info_data=info_data,
+        ml_models_ids=ml_models_ids,
         verbose=verbose
     )
     

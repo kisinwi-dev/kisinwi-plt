@@ -1,6 +1,9 @@
 from crewai import Agent
 from app.core.llm import llm
 
+from app.services.ml_models import(
+    get_ml_models_info
+)
 from app.services.trainer import (
     get_info_device, get_type_and_name_models,
     get_scheduler, get_optimizers
@@ -23,7 +26,8 @@ def new_agent_ml_engineer() -> Agent:
             get_type_and_name_models, 
             get_info_device,
             get_scheduler,
-            get_optimizers
+            get_optimizers,
+            get_ml_models_info
         ],
         max_iter=5
     )
