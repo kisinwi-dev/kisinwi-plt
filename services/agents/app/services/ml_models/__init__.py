@@ -1,6 +1,9 @@
 import requests
+from typing import Dict, Any
+from crewai.tools import tool
 from pydantic import BaseModel
 
+from .utils import *
 from app.logs import get_logger
 from app.config import config_url
 from app.services.tools import parse_in_json
@@ -94,6 +97,38 @@ class MLModels():
             logger.error(f"Ошибка при отправке задачи в сервис задач: {e}")
             raise
 
+    def update_model(
+        self,
+        model_id: str,
+        train_params: dict | str
+    ):
+        """Отправить JSON для запуска тренировки модели"""
+        try:
+            # Парсим JSON если это строка
+            params = {}
+            params["train_params"] = parse_in_json(train_params)
+
+            logger.debug(f"Jsons отправляемый в сервис моделей: \n{params}")
+
+            # Отправляем POST запрос
+            response = self.session.patch(
+                f"{self.URL}/models/{model_id}",
+                json=params,
+                headers={"Content-Type": "application/json"},
+                timeout=30
+            )
+            
+            # Проверяем статус ответа
+            response.raise_for_status()
+            response.json()["model_id"]
+        
+        except requests.RequestException as e:
+            logger.error(f"Ошибка HTTP при отправке задачи: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Ошибка при отправке задачи в сервис задач: {e}")
+            raise
+
     def close(self):
         self.session.close()
 
@@ -101,3 +136,16 @@ class MLModels():
         self.close()
 
 ml_models = MLModels()
+
+# ============= ИНСТРУМЕНТЫ ДЛЯ АГЕНТОВ ================
+
+@tool("GetMLModelsInfo")
+@handle_errors
+def get_ml_models_info(ml_model_id: str) -> Dict[str, Any]:
+    """
+    Получить все имеющиеся модели в распоряжении.
+
+    Args:
+        ml_model_id - ID мл моделей
+    """
+    return get_json(f"/models/{ml_model_id}")

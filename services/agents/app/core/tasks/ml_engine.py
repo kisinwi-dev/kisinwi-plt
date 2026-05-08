@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from crewai import Task, Agent
 
 from app.core.agents.ml_engineer import new_agent_ml_engineer
@@ -8,6 +8,7 @@ from app.core.agents.ml_engineer import new_agent_ml_engineer
 def new_task_search_best_model(
     number_engineer: int | None = None,
     info_data: str = "",
+    ml_models_ids: List[str] = [],
     agent: Optional[Agent] = None
 ) -> Task:
     """
@@ -16,13 +17,14 @@ def new_task_search_best_model(
     Args: 
       number_engineer: Количество инжеров
       info_data: Описание имеющихся данных
+      ml_models_ids: Список созданных ранее мл моделей с этой задачей
       agent: Агент
 
     Returns:
       Task
     """
 
-    description = _get_task_desc(number_engineer, info_data)
+    description = _get_task_desc(number_engineer, info_data, ml_models_ids)
     output = _get_expected_output_template(number_engineer)
 
     return Task(
@@ -33,7 +35,8 @@ def new_task_search_best_model(
 
 def _get_task_desc(
     number_engineer: Optional[int] = None,
-    info_data: str = ""
+    info_data: str = "",
+    ml_models_ids: List[str] = []
 ) -> str:
     """Получить детальное описание задачи для ML инженера"""
     
@@ -45,6 +48,10 @@ def _get_task_desc(
 ДАННЫЕ О ДАТАСЕТЕ:
 
 {info_data}
+
+Список обученных ранее нами моделей:
+
+{ml_models_ids}
 
 ЧТО НУЖНО ОПРЕДЕЛИТЬ:
 
@@ -59,15 +66,6 @@ def _get_task_desc(
    - learning_rate
    - optimizer (AdamW / SGD / Adam)
    - scheduler (ReduceLROnPlateau / CosineAnnealingLR)
-
-3. АУГМЕНТАЦИИ:
-   - Какие аугментации применить?
-   - С какой вероятностью?
-
-4. ПРОГНОЗ ОБУЧЕНИЯ:
-   - Ожидаемое время одной эпохи (в минутах)
-   - Итоговое время обучения (в часах)
-   - Ожидаемая точность (грубая оценка)
 
 ОГРАНИЧЕНИЯ:
 - Учитывай размер датасета

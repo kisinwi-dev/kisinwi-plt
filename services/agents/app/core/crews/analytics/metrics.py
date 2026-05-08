@@ -7,7 +7,7 @@ from app.core.tasks.analytics.metrics import new_analysis as new_task_metrics_an
 from app.services.metrics.post import add_agent_in_metrics
 
 def create_data_analysis(
-    task_id: str,
+    model_id: str,
     dataset_id: str, 
     version_id: str,
     bus_req: str | None = None,
@@ -19,7 +19,7 @@ def create_data_analysis(
     Создает Crew для анализа датасета
     
     Args:
-        task_id: ID задачи
+        model_id: ID задачи
         bus_req: Бизнес требования к модели
         agent: Агент-аналитик (если None - создается новый)
         task: Задача для анализа (если None - создается новая)
@@ -31,7 +31,7 @@ def create_data_analysis(
     
     analyst = agent if agent else new_agent_metrics_analytic()
     analysis_task = task if task else new_task_metrics_analysis(
-        task_id, 
+        model_id, 
         dataset_id, 
         version_id,
         bus_req
@@ -44,7 +44,7 @@ def create_data_analysis(
     )
 
 def run_analysis(
-    task_id: str, 
+    model_id: str, 
     dataset_id: str, 
     version_id: str,
     bus_req: str | None,
@@ -55,7 +55,7 @@ def run_analysis(
     Запуск анализа данных
     
     Args:
-        task_id: ID задачи
+        model_id: ID модели
         bus_req: Бизнес требования к модели
         verbose: Подробный вывод
         conversation_id: id диалога
@@ -67,7 +67,7 @@ def run_analysis(
     """
     
     crew = create_data_analysis(
-        task_id, 
+        model_id, 
         dataset_id=dataset_id,
         version_id=version_id,
         bus_req=bus_req,
@@ -87,4 +87,4 @@ def run_analysis(
         else: 
             raise TypeError(f"Неверный тип данных: CrewOutput={type(crew_output)}, UsageMetrics={type(metrics)}")    
     except Exception as e:
-        raise Exception(f"Ошибка при анализе метрик задачи {task_id}: {str(e)}")
+        raise Exception(f"Ошибка при анализе метрик задачи {model_id}: {str(e)}")

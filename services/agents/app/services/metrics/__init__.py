@@ -6,10 +6,10 @@ from app.logs import get_logger
 
 logger = get_logger(__name__)
 
-@tool("GetMetricsForTask")
+@tool("GetMetricsForModel")
 @handle_errors
 def get_metrics(   
-    task_id: str
+    model_id: str
 ) -> List[Dict[str, Any]]:
     """
     Получение метрик из сервиса метрик.
@@ -20,26 +20,26 @@ def get_metrics(
     Returns:
         Dict с метриками или ошибкой
     """
-    json = get_json(f"/training/task/{task_id}")
+    json = get_json(f"/models/{model_id}")
     return json["metrics"]
     
-
+@tool("MetricsForModelExists")
 @handle_errors
-def task_metrics_exists(
-    task_id: str
+def model_metrics_exists(
+    model_id: str
 ) -> bool:
     """
-    Проверка существования метрик для задачи task_id
+    Проверка существования метрик для задачи model_id
     
     Args:
-        task_id: Id задачи
+        model_id: Id задачи
     
     Returns:
         bool или ошибка
     
-    *True - метрики для task_id существуют, в противном случае отсутвуют
+    *True - метрики для model_id существуют, в противном случае отсутвуют
     """
-    json = get_json(f"/training/task/{task_id}/exists")
+    json = get_json(f"/models/{model_id}/exists")
     if json["exists"] is True:
         return True
     else:

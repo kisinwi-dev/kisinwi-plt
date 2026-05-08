@@ -17,6 +17,7 @@ def new_analytic():
         llm=llm,
         tools=[
             get_metrics,
+            model_metrics_exists,
             get_version_split_info
         ],
         verbose=True,

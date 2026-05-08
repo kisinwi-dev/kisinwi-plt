@@ -10,7 +10,7 @@ from .utils import setup_device
 
 logger = get_logger(__name__)
 
-async def training_model(config: TaskParams):
+async def training_model(config: TaskParams, model_id: str):
     """
     Обучение модели.
 
@@ -39,7 +39,7 @@ async def training_model(config: TaskParams):
 
         await tasker_service.update_status_task(percentages=11, status_info="Настройка метрик...")
         metric_client = MetricesClient(
-            model_id=tasker_service.task_id,
+            model_id=model_id,
             metrices_params=config.metrices_params,
             num_class=len(classes),
             device=device

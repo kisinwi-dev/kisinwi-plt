@@ -3,7 +3,7 @@ from crewai import Task, Agent
 from app.core.agents.analysts.metrics import new_analytic as new_agent_metrics_analytic
 
 def new_analysis(
-    task_id: str,
+    model_id: str,
     dataset_id: str, 
     version_id: str,
     bus_req: str | None = None,
@@ -11,8 +11,8 @@ def new_analysis(
 ) -> Task:
     """Создать задачу для аналитики метрик"""
 
-    task_description = _get_task_desc(task_id, dataset_id, version_id, bus_req)
-    expected_output = _get_expected_output_template(task_id)
+    task_description = _get_task_desc(model_id, dataset_id, version_id, bus_req)
+    expected_output = _get_expected_output_template(model_id)
 
     return Task(
         description=task_description,
@@ -21,7 +21,7 @@ def new_analysis(
     )
 
 def _get_task_desc(
-    task_id: str,
+    model_id: str,
     dataset_id: str, 
     version_id: str,
     bus_req: str | None = None
@@ -37,11 +37,11 @@ def _get_task_desc(
         bus_req = ''
 
     return f"""
-Проведи анализ метрик качества ML модели для задачи {task_id}.
+Проведи анализ метрик качества ML модели {model_id}
 
 ## ШАГ 1: Получение данных
 
-Вызови инструмент `get_metrics` с параметром task_id = '{task_id}' для получения метрик
+Вызови инструмент `get_metrics` с параметром model_id = '{model_id}' для получения метрик
 Вызови инструмент `get_version_split_info` с параметрами dataset_id = '{dataset_id}', version_id = '{version_id}'
 для получения информации о распределении данных в датасете
 
@@ -83,11 +83,11 @@ def _get_task_desc(
 {bus_req}
 """
 
-def _get_expected_output_template(task_id: str) -> str:
+def _get_expected_output_template(model_id: str) -> str:
     """Шаблон ожидаемого вывода аналитика метрик"""
     
     return f"""
-# 📊 Отчет по метрикам модели: `{task_id}`
+# 📊 Отчет по метрикам модели: `{model_id}`
 
 ## 🎯 Общая оценка
 **Статус модели**: [ГОТОВА К PRODUCTION / ТРЕБУЕТ ДОРАБОТКИ / НЕ ПРИГОДНА]

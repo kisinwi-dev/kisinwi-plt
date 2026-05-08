@@ -79,7 +79,7 @@ class Tasker():
             logger.error(f"Ошибка при отправке задачи в сервис задач: {e}")
             raise
 
-    def task_status(self, task_id: str) -> str:
+    def task_status(self, task_id: str) -> dict:
         """Проверить, завершена ли задача"""
         try:
             response = self.session.get(
@@ -87,9 +87,9 @@ class Tasker():
             )
             response.raise_for_status()
             
-            status = response.json().get("status")
+            task = response.json()
             
-            return status
+            return task
         
         except requests.RequestException as e:
             logger.error(f"Ошибка при проверке статуса задачи {task_id}: {e}")
@@ -98,12 +98,12 @@ class Tasker():
     def waiting_completed(self, task_id: str):
         """Ожидание завершения задачи"""
         while True:
-            status = tasker.task_status(task_id)
-            if status == "completed":
-                break
-            elif status == "failed":
+            task = tasker.task_status(task_id)
+            if task["status"] == "completed":
+                return True, task
+            elif task["status"] == "failed":
                 logger.error(f"Задача {task_id} завершена с ошибкой")
-                raise Exception(f"Задача {task_id} завершена с ошибкой")
+                return False, task
             
             time.sleep(2)
 
