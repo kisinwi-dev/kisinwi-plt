@@ -81,11 +81,11 @@ async def to_work():
 
                 # Завершение
                 await tasker_service.update_status_task(
-                    status="running", 
+                    status="completed", 
                     percentages=100,
                     status_info="Задача выполнена", 
                 )
-                logger.info(f"Задача {task_id} выполнена")
+                logger.info(f"Задача '{task_id}' по обучению модели '{model_id}' выполнена")
                 
             except Exception as e:
                 await tasker_service.update_status_task(
@@ -93,4 +93,4 @@ async def to_work():
                     status_info="Задача завершена с ошибкой", 
                     error=f"Error: {str(e)}"
                 )
-                logger.error(f"Ошибка {task_id}: {e}")
+                logger.error(f"Ошибка task_id='{task_id}' model_id='{model_id}':\n{e}")

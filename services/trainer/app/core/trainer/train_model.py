@@ -406,7 +406,7 @@ class Trainer:
             for epoch in range(1, self.epochs + 1):
                 # Логгирование начала эпохи
                 logger.info("=" * 40)
-                text_info_start = f"🔄 Начало тренировки [{epoch}/{self.epochs}] эпохи"
+                text_info_start = f"🔄 [{epoch}/{self.epochs}] эпоха"
                 logger.info(text_info_start)
                 
                 # Обновление статуса задачи
