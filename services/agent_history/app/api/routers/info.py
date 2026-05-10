@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 
-from app.api.schemes import HealthResponse
+from app.api.schemas import HealthResponse
 
 routers = APIRouter(
     prefix="/info", 

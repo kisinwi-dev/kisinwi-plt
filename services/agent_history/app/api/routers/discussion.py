@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 
-from app.api.schemes import AgentResponse
+from app.api.schemas import AgentResponse
 from app.api.deps import agent_response_manager
 from app.logs import get_logger
 
