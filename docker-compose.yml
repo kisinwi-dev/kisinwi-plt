@@ -236,6 +236,23 @@ services:
     networks:
       - network
 
+  # =============================================================
+  # Сервис истории использования агентов
+  # =============================================================
+
+  agent_history:
+    container_name: 
+      agent_history
+    build: 
+      context: ./services/agent_history
+      dockerfile: Dockerfile
+    ports:
+      - "${AGENT_MONITORING_PORT}:${AGENT_MONITORING_PORT}"
+    volumes:
+      - ./db/agent_history:/app/datasets
+    networks:
+      - network
+
 networks:
   network:
     driver: bridge
