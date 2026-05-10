@@ -249,7 +249,7 @@ services:
     ports:
       - "${AGENT_MONITORING_PORT}:${AGENT_MONITORING_PORT}"
     volumes:
-      - ./db/agent_history:/app/datasets
+      - ./db/agent_history/discussion:/app/discussion
     networks:
       - network
 
