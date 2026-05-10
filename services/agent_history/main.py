@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routers import routers
+from app.api.exceptions import setup_exception_handlers
 
 # Обьект приложения
 app = FastAPI(
@@ -10,6 +11,7 @@ app = FastAPI(
     version="0.1.0"
 )
 
+setup_exception_handlers(app)
 app.include_router(routers)
 
 app.add_middleware(
