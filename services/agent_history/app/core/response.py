@@ -46,12 +46,12 @@ class AgentResponseStorage:
 
         return str(filepath)
     
-    def get_discussion_history(self, discussion_id: str) -> List[AgentResponse]:
+    def get_discussion_history(self, discussion_id: str) -> List[AgentResponse] | None:
         """Получить всю историю дискуссии по ID (Автоматическая сортировка по времени)"""
         discussion_dir = self.base_path / discussion_id
 
         if not discussion_dir.exists():
-            return []
+            return None
 
         responses = []
         for filepath in sorted(discussion_dir.glob("*.json")):

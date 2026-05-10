@@ -1,6 +1,5 @@
-import uuid
 from datetime import datetime
-from pydantic import BaseModel, Field, UUID4
+from pydantic import BaseModel, Field
 
 class AgentResponseCreate(BaseModel):
     """Модель создания ответа агента"""
