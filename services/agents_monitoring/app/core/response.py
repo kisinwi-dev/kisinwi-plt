@@ -1,0 +1,4 @@
+
+
+class AgentResponseStorage:
+    pass
