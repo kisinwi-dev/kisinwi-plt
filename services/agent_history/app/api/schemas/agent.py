@@ -2,6 +2,11 @@ import uuid
 from datetime import datetime
 from pydantic import BaseModel, Field, UUID4
 
+class AgentResponseCreate(BaseModel):
+    """Модель ответа агента (Pydantic схема)"""
+    discussion_id: str = Field(..., description="ID дискуссии")
+    agent_response: AgentResponse = Field(..., description="Информация об ответе агента")
+
 class AgentResponse(BaseModel):
     """Модель ответа агента (Pydantic схема)"""
     

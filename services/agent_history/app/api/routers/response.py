@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Response, status
 
-from app.api.schemas import AgentResponse
+from app.api.schemas import AgentResponseCreate, AgentResponse
 from app.api.deps import agent_response_manager
 from app.logs import get_logger
 
@@ -8,20 +8,26 @@ logger = get_logger(__name__)
 
 router = APIRouter(prefix="/response", tags=["agents"])
 
-@router.post("/add")
-async def add_agent_response(
-    response: AgentResponse,
-):
-    """
-    Добавление нового ответа агента
-    """
+@router.post(
+    "",
+    status_code=201,
+    summary="Сохранить ответ агента"
+)
+async def save_response(req: AgentResponseCreate):
+    """Сохранить новый ответ агента"""
     try:
-        # manager.add_response(response)
-        return True
         
+        agent_response_manager.save_response(
+            discussion_id=req.discussion_id,
+            response=req.agent_response
+        )
+        
+        return Response(
+            status_code=status.HTTP_201_CREATED
+        )
     except Exception as e:
-        logger.error(f"Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Ошибка при сохранении ответа агента: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка при сохранении ответа агента: {str(e)}")
 
 @router.get("/{response_id}", response_model=AgentResponse)
 async def get_agent_response(

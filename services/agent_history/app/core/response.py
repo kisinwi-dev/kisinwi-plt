@@ -42,7 +42,7 @@ class AgentResponseStorage:
 
         # Сохраняем JSON
         with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(response.model_dump(), f, ensure_ascii=False, indent=2)
+            f.write(response.model_dump_json(indent=2, ensure_ascii=False))
 
         return str(filepath)
     
