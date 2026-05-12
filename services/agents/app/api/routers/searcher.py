@@ -3,6 +3,7 @@ from fastapi import APIRouter, Query, HTTPException
 
 from app.core.crews.praxis_searcher import run_praxis_searcher, PraxisSearchOutput
 from app.core.crews.ml_models_searcher import run_ml_models_searcher, MLModelsSearcherOutput
+from app.core.discussion import discussion_context
 
 routers = APIRouter(
     prefix='/searcher',
@@ -20,6 +21,9 @@ def praxis_in_internet(
     context: str = Query(..., description="Контекст поиска"),
 ):
     try:
+
+        discussion_context.set(discussion_id)
+
         result = run_praxis_searcher(
             discussion_id=discussion_id,
             search_query=search_query,
@@ -33,6 +37,8 @@ def praxis_in_internet(
             status_code=500,
             detail=f"Ошибка при выполнении: {str(e)}"
         )
+    finally:
+        discussion_context.clear()
 
 @routers.get(
     "/info_ml_models",
@@ -45,8 +51,10 @@ def get_info_ml_models(
     context: str = Query(..., description="Контекст"),
 ):
     try:
+
+        discussion_context.set(discussion_id)
+
         result = run_ml_models_searcher(
-            discussion_id=discussion_id,
             model_ids=model_ids,
             context=context,
             verbose=True
@@ -58,3 +66,5 @@ def get_info_ml_models(
             status_code=500,
             detail=f"Ошибка при выполнении: {str(e)}"
         )
+    finally:
+        discussion_context.clear()

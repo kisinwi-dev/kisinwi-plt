@@ -2,6 +2,7 @@ from fastapi import APIRouter, Query, HTTPException
 
 from app.core.crews.metrics_analyst import run_metrics_analyst
 from app.core.crews.dataset_analyst import run_dataset_analyst
+from app.core.discussion import discussion_context
 
 routers = APIRouter(
     prefix='/analytics',
@@ -18,8 +19,10 @@ def analyze_datasets(
     dataset_version_id: str = Query(..., description="ID версии датасета"),
 ):
     try:
+
+        discussion_context.set(discussion_id)
+
         result = run_dataset_analyst(
-            discussion_id=discussion_id,
             dataset_id=dataset_id,
             dataset_version_id=dataset_version_id,
             verbose=True
@@ -31,6 +34,8 @@ def analyze_datasets(
             status_code=500,
             detail=f"Ошибка при выполнении: {str(e)}"
         )
+    finally:
+        discussion_context.clear()
 
 
 @routers.get(
@@ -43,8 +48,10 @@ def analyze_ml_metric(
     model_id: str = Query(..., description="ID модели")
 ):
     try:
+        
+        discussion_context.set(discussion_id)
+
         result = run_metrics_analyst(
-            discussion_id=discussion_id,
             business_goal=business_goal,
             model_id=model_id,
             verbose=True
@@ -56,3 +63,5 @@ def analyze_ml_metric(
             status_code=500,
             detail=f"Ошибка при выполнении: {str(e)}"
         )
+    finally:
+        discussion_context.clear()

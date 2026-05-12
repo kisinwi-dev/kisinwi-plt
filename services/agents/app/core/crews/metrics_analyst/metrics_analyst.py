@@ -54,7 +54,6 @@ class MetricAnalystCrew:
         )
 
 def run_metrics_analyst(
-        discussion_id: str,
         model_id: str,
         business_goal: str,
         verbose: bool = False
@@ -63,7 +62,6 @@ def run_metrics_analyst(
     Агент аналитик метрик анализирует результаты работы ML модели.
 
     Args:
-        discussion_id: Id дискуссии
         model_id: Id модели для анализа
         business_goal: Требования бизнеса
         verbose: Логирование в консоли
@@ -87,7 +85,6 @@ def run_metrics_analyst(
     )
 
     add_reponse_in_history(
-        discussion_id=discussion_id,
         response_id=str(crew.id),
         agent_role=crew.agents[0].role,
         agent_response=result

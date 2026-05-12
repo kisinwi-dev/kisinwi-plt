@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Query, HTTPException
 
 from app.core.crews.ml_engeneer import run_ml_engineering
+from app.core.discussion import discussion_context
 
 routers = APIRouter(
     tags=['engineering']
@@ -17,9 +18,11 @@ def run_etp(
     training_goal: str = Query(description="Цель обучения"),
     researcher_info: str = Query(description="Количество инженеров")
 ):
-    try:  
+    try:
+        
+        discussion_context.set(discussion_id)
+
         result = run_ml_engineering(
-            discussion_id=discussion_id, 
             business_goal=business_goal,
             technical_goal=technical_goal,
             training_goal=training_goal,
@@ -33,3 +36,5 @@ def run_etp(
             status_code=500,
             detail=f"Ошибка при выполнении: {str(e)}"
         )
+    finally:
+        discussion_context.clear()

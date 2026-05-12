@@ -2,6 +2,7 @@ from typing import List
 from crewai import Agent, Crew, Process, Task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
+from crewai.tools import tool
 
 from app.services.metrics.post import add_agent_in_metrics
 from app.services.agent_history.post import add_reponse_in_history
@@ -58,7 +59,6 @@ class DatasetAnalystCrew:
         )
 
 def run_dataset_analyst(
-        discussion_id: str,
         dataset_id: str,
         dataset_version_id: str,
         verbose: bool = False
@@ -92,7 +92,6 @@ def run_dataset_analyst(
 
     add_reponse_in_history(
         response_id=str(crew.id),
-        discussion_id=discussion_id,
         agent_role=crew.agents[0].role,
         agent_response=agent_response
     )
@@ -108,3 +107,29 @@ def extract_result(crew_output):
         return crew_output.tasks_output[0].raw
 
     return str(crew_output)
+
+@tool("DatasetAgent")
+def tool_run_dataset_analyst(
+        dataset_id: str,
+        dataset_version_id: str,
+        verbose: bool = False
+    ) -> str:
+    """
+    НАЗНАЧЕНИЕ: Получить анализ датасета.
+    
+    КОГДА ИСПОЛЬЗОВАТЬ:
+    - Перед генерацией идей для понимания данных
+    - Для оценки готовности датасета к обучению
+    
+    ВХОДНЫЕ ДАННЫЕ:
+    - dataset_id: ID датасета
+    - dataset_version_id: ID версии датасета
+    
+    ВОЗВРАЩАЕТ:
+    - Анализ датасета в str формате
+    """
+    return run_dataset_analyst(        
+        dataset_id,
+        dataset_version_id,
+        verbose
+    )

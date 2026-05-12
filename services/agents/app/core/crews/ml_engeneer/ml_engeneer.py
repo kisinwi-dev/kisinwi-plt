@@ -74,7 +74,6 @@ class MLEngineerCrew:
         )
 
 def run_ml_engineering(
-        discussion_id: str,
         business_goal: str,
         technical_goal: str,
         researcher_info: str,
@@ -85,7 +84,6 @@ def run_ml_engineering(
     Агент ML инженер
 
     Args:
-        discussion_id: Id дискуссии
         business_goal: Требования бизнеса
         technical_goal: Технические требования
         training_goal: Задача решаемая при обучении
@@ -133,7 +131,6 @@ def run_ml_engineering(
     add_agent_in_metrics(crew=crew)
 
     add_reponse_in_history(
-        discussion_id=discussion_id,
         response_id=str(crew.id),
         agent_role=crew.agents[0].role,
         agent_response=result.reason  # сохраняем основной текст

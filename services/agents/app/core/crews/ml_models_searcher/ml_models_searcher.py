@@ -64,7 +64,6 @@ class MLModelsSearcherCrew:
 
 
 def run_ml_models_searcher(
-    discussion_id: str,
     model_ids: List[str],
     context: str,
     verbose: bool = False
@@ -113,7 +112,6 @@ def run_ml_models_searcher(
     add_agent_in_metrics(crew=crew)
 
     add_reponse_in_history(
-        discussion_id=discussion_id,
         response_id=str(crew.id),
         agent_role=crew.agents[0].role,
         agent_response=result.text  # сохраняем основной текст

@@ -1,33 +1,33 @@
 from fastapi import APIRouter, Query, HTTPException
 
-from app.core import full_pipeline
+# from app.core import full_pipeline
 
 routers = APIRouter(
     tags=['pipeline']
 )
 
-@routers.get(
-        "/full_pipeline",
-        description="Одна полная итерация. Анализ, рассуждение и запуск тренировки"
-)
-def fp(
-    dataset_id: str = Query(..., description="ID датасета для анализа"),
-    version_id: str = Query(..., description="ID версии датасета"),
-    model_name: str = Query(..., description="Имя модели"),
-    bus_req: str = Query(..., description="Описание бизнес требований"),
-    count_engine: int = Query("", description="Количество используемых агентов ML-инженеров"),
-):
-    try:
-        return full_pipeline(
-            dataset_id,
-            version_id,
-            model_name=model_name,
-            bus_req=bus_req,
-            count_engine=count_engine,
-        )
+# @routers.get(
+#         "/full_pipeline",
+#         description="Одна полная итерация. Анализ, рассуждение и запуск тренировки"
+# )
+# def fp(
+#     dataset_id: str = Query(..., description="ID датасета для анализа"),
+#     version_id: str = Query(..., description="ID версии датасета"),
+#     model_name: str = Query(..., description="Имя модели"),
+#     bus_req: str = Query(..., description="Описание бизнес требований"),
+#     count_engine: int = Query("", description="Количество используемых агентов ML-инженеров"),
+# ):
+#     try:
+#         return full_pipeline(
+#             dataset_id,
+#             version_id,
+#             model_name=model_name,
+#             bus_req=bus_req,
+#             count_engine=count_engine,
+#         )
 
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Ошибка при выполнении: {str(e)}"
-        )
+#     except Exception as e:
+#         raise HTTPException(
+#             status_code=500,
+#             detail=f"Ошибка при выполнении: {str(e)}"
+#         )

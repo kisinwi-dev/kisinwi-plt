@@ -79,7 +79,6 @@ def run_praxis_searcher(
     Запускает агента-поисковика лучших практик.
     
     Args:
-        discussion_id: ID дискуссии
         search_query: Конкретный запрос для поиска
         context: Дополнительный контекст
         verbose: Логирование
@@ -119,7 +118,6 @@ def run_praxis_searcher(
     add_agent_in_metrics(crew=crew)
 
     add_reponse_in_history(
-        discussion_id=discussion_id,
         response_id=str(crew.id),
         agent_role=crew.agents[0].role,
         agent_response=result.text
