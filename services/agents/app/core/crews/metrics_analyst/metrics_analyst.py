@@ -2,6 +2,7 @@ from typing import List
 from crewai import Agent, Crew, Process, Task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
+from crewai.tools import tool
 
 from app.services.metrics.post import add_agent_in_metrics
 from app.services.agent_history.post import add_reponse_in_history
@@ -101,3 +102,26 @@ def extract_result(crew_output):
         return crew_output.tasks_output[0].raw
 
     return str(crew_output)
+
+@tool("DatasetAgent")
+def tool_run_metrics_analyst(
+        model_id: str,
+        business_goal: str
+    ) -> str:
+    """
+    НАЗНАЧЕНИЕ: Получить информацию о метриках модели.
+
+    КОГДА ИСПОЛЬЗОВАТЬ:
+    - Если требуется информация об эфективности обученной модели
+
+    ВХОДНЫЕ ДАННЫЕ:
+    - model_id: ID модели
+    - business_goal: Требования к модели от бизнеса
+
+    ВОЗВРАЩАЕТ:
+    - Анализ метрик в str формате
+    """
+    return run_metrics_analyst(
+        model_id=model_id,
+        business_goal=business_goal
+    )

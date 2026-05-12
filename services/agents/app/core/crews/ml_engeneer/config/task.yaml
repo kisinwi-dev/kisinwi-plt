@@ -6,7 +6,7 @@ ml_engineer_task:
     ВХОДНЫЕ ДАННЫЕ:
 
     Требования бизнеса к модели: 
-    {business_goal}
+    {business_requirements}
     
     УСЛОВИЯ ЭКСПЛУАТАЦИИ (как и где будет работать модель после обучения):
 
@@ -18,13 +18,13 @@ ml_engineer_task:
     Это НЕ требования к оборудованию для обучения!
     Это требования к тому, как модель будет использоваться в продакшене.
 
-    {technical_goal}
+    {deployment_constraints}
 
     Цель обучения (что должна уметь модель): 
-    {training_goal}
+    {training_objective}
 
     Информация от resercher для запуска обучения: 
-    {researcher_info}
+    {researcher_proposals}
 
     АЛГОРИТМ:
     1. Вызови get_info_device и проверь можем ли мы обучить модель с такой архитектурой

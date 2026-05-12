@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from crewai import Agent, Crew, Task, CrewOutput
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
+from crewai.tools import tool
 
 from app.services.ml_models import get_ml_models_info, get_all_ml_models_info
 from app.services.metrics import get_metrics
@@ -128,3 +129,38 @@ def extract_result(crew_output):
         return crew_output.tasks_output[0].raw
 
     return str(crew_output)
+
+@tool("MLModelsSearcher")
+def tool_run_ml_models_searcher(
+    model_ids: str,
+    context: str
+) -> str:
+    """
+    НАЗНАЧЕНИЕ: Получить информцию об обученных ранее ML моделях.
+
+    КОГДА ИСПОЛЬЗОВАТЬ:
+    - Когда нужно проанализировать успешные и неудачные эксперименты
+    - Для поиска лучшей модели среди уже обученных
+    - Чтобы не повторять ошибки прошлых экспериментов
+    - Для понимания, какие архитектуры уже пробовали
+
+    ВХОДНЫЕ ДАННЫЕ:
+    - model_ids: ID моделей (Пример: '["model_123", "model_456"]')
+    - context: Контекст поиска моделей
+
+    ВОЗВРАЩАЕТ:
+    - Структурированный ответ с информацией об обученных моделях
+    """
+    result = run_ml_models_searcher(
+        model_ids=[model_ids],
+        context=context
+    )
+
+    result_str = "# Ответ Поисковика моделей"
+    result_str += f"\n## Подробное описание всех моделей:\n{result.text}"
+    result_str += f"\n## Краткий вывод о лучшей модели:\n{result.summary}"
+    
+    for metric_summary in result.metrics_summary:
+        result_str += f"\n## Модель: {metric_summary.model_name}\n{metric_summary.summary_metric_info}"
+
+    return result_str

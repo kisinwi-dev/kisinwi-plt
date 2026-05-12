@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from crewai import Agent, Crew, Process, Task, CrewOutput
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
+from crewai.tools import tool
 
 from app.services.metrics.post import add_agent_in_metrics
 from app.services.agent_history.post import add_reponse_in_history
@@ -74,20 +75,20 @@ class MLEngineerCrew:
         )
 
 def run_ml_engineering(
-        business_goal: str,
-        technical_goal: str,
-        researcher_info: str,
-        training_goal: str,
+        business_requirements: str,
+        deployment_constraints: str,
+        training_objective: str,
+        researcher_proposals: str,
         verbose: bool = False
     ) -> MlEngineerResponse:
     """
     Агент ML инженер
 
     Args:
-        business_goal: Требования бизнеса
-        technical_goal: Технические требования
-        training_goal: Задача решаемая при обучении
-        researcher_info: Предложение от ресерчера
+        business_requirements: Требования бизнеса
+        deployment_constraints: Технические требования
+        training_objective: Задача решаемая при обучении
+        researcher_proposals: Предложение от ресерчера
         verbose: логирование в консоли
 
     * Автоматически записывает метрики использования агента, а так же
@@ -97,10 +98,10 @@ def run_ml_engineering(
 
     crew_output = crew.kickoff(
         inputs={
-            "business_goal": business_goal,
-            "technical_goal": technical_goal,
-            "training_goal": training_goal,
-            "researcher_info": researcher_info
+            "business_requirements": business_requirements,
+            "deployment_constraints": deployment_constraints,
+            "training_objective": training_objective,
+            "researcher_proposals": researcher_proposals
         }
     )
 
@@ -147,3 +148,42 @@ def extract_result(crew_output):
         return crew_output.tasks_output[0].raw
 
     return str(crew_output)
+
+@tool("MLEngineer")
+def tool_run_ml_engineering(
+    business_requirements: str,
+    deployment_constraints: str,
+    training_objective: str,
+    researcher_proposals: str,
+) -> str:
+    """
+    НАЗНАЧЕНИЕ: Получить информацию от ML инженера о том, стоит ли начинать обучение.
+
+    КОГДА ИСПОЛЬЗОВАТЬ:
+    - Когда нужно принять решение о запуске обучения
+    - Для оценки предложений Researcher
+    - Перед отправкой задачи в сервис тренировок
+
+    ВХОДНЫЕ ДАННЫЕ:
+    - business_requirements: Бизнес требования к модели
+    - deployment_constraints: УСЛОВИЮ ЭКСПЛУАТАЦИИ модели
+    - training_objective: Цель тренировки
+    - researcher_proposals: Предложение конфигураций обучения
+
+    ВОЗВРАЩАЕТ:
+    - Структурированный ответ с решением и обоснованием
+    """
+    result = run_ml_engineering(
+        business_requirements=business_requirements,
+        deployment_constraints=deployment_constraints,
+        training_objective=training_objective,
+        researcher_proposals=researcher_proposals
+    ) 
+
+    result_str = "# Решение ML инженера"
+    result_str += f"## Обучать\n {'ДА ✅' if result.decision else 'НЕТ ❌'}"
+    result_str += f"\n## Развёрнутое обоснование решения\n{result.reason}"
+    result_str += f"\n## Конфигурация обучения\n{result.configuration if result.configuration else 'Не требуется'}"
+    result_str += f"\n## Рекомендации\n{result.recommendations}"
+
+    return result_str

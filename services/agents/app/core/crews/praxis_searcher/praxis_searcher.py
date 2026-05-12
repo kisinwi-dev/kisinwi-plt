@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from crewai import Agent, Crew, Task, CrewOutput
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
+from crewai.tools import tool
 from crewai_tools import (
     SerperDevTool,
     ScrapeWebsiteTool,
@@ -70,7 +71,6 @@ class PraxisSearcherCrew:
 
 
 def run_praxis_searcher(
-    discussion_id: str,
     search_query: str,
     context: str = "",
     verbose: bool = False
@@ -134,3 +134,35 @@ def extract_result(crew_output):
         return crew_output.tasks_output[0].raw
 
     return str(crew_output)
+
+@tool("PraxisSearcher")
+def tool_run_praxis_searcher(
+    search_query: str,
+    context: str = ""
+) -> str:
+    """
+    НАЗНАЧЕНИЕ: Найти лучшие практики ML в интернете.
+
+    КОГДА ИСПОЛЬЗОВАТЬ:
+    - Когда нужно узнать о современных подходах к решению задачи
+    - Когда нужно подтвердить гипотезу индустриальным опытом
+    - Для изучения best practices по конкретной проблеме
+
+    ВХОДНЫЕ ДАННЫЕ:
+    - search_query (str): Поисковый запрос на английском
+    - context (str): Дополнительный контекст (опционально)
+
+    ВОЗВРАЩАЕТ:
+    - Структурированный ответ с лучшими практиками, ссылками и рекомендациями
+    """
+    result = run_praxis_searcher(
+        search_query=search_query,
+        context=context
+    ) 
+
+    result_str = "# 🌐 Результаты поиска лучших практик"
+    result_str += f"\n## Запрос: {search_query}"
+    result_str += f"\n## Найденные практики\n{result.text}"
+    result_str += f"\n## Краткий обзор\n{result.summary}"
+
+    return result_str
