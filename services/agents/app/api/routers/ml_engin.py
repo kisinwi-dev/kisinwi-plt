@@ -1,58 +1,33 @@
 from fastapi import APIRouter, Query, HTTPException
 
-from app.core.crews.ml_engine import run_ml_engineering
-from app.core.crews.task_preparer import run_create_task_params_json
+from app.core.crews.ml_engeneer import run_ml_engineering
 
 routers = APIRouter(
     tags=['engineering']
 )
 
 @routers.get(
-        "/engine_reasoning",
+        "/ml_engineer",
         description="Рассуждения агентов ML-инженеров"
 )
 def run_etp(
-    number_engineer: int = Query(1, description="Количество инженеров"),
-    analysis_result: str = Query("", description="Дополнительная информация по имеющимся данным и задаче")
+    discussion_id: str = Query(description="ID дискуссии"),
+    business_goal: str = Query(description="Бизнес требования к модели"),
+    technical_goal: str = Query(description="Технические требования к модели"),
+    training_goal: str = Query(description="Цель обучения"),
+    researcher_info: str = Query(description="Количество инженеров")
 ):
     try:  
-        result, metrics = run_ml_engineering(
-            number_engineer, 
-            analysis_result
+        result = run_ml_engineering(
+            discussion_id=discussion_id, 
+            business_goal=business_goal,
+            technical_goal=technical_goal,
+            training_goal=training_goal,
+            researcher_info=researcher_info,
+            verbose=True
         )
 
-        return {
-            "number_engineer": number_engineer,
-            "analysis": result,
-            "metrics": metrics
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Ошибка при выполнении: {str(e)}"
-        )
-
-@routers.get(
-        "/create_task",
-        description="Получение json для задачи тренировки. Json формирует агент."
-)
-def run_ctpj(
-    dataset_id: str = Query(..., description="Датасет используемый при обучении"),
-    version_id: str = Query(..., description="Версия датасета используемая при обучении"),
-    previous_outputs: list = Query(..., description="Описание действий для достижения требуемого результата"),
-):
-    try:
-
-        result, metrics = run_create_task_params_json(
-            previous_outputs,
-            dataset_id=dataset_id,
-            version_id=version_id
-        )
-
-        return {
-            "result": result,
-            "metrics": metrics
-        }
+        return result
     except Exception as e:
         raise HTTPException(
             status_code=500,
