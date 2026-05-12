@@ -1,6 +1,8 @@
+from typing import List
 from fastapi import APIRouter, Query, HTTPException
 
 from app.core.crews.praxis_searcher import run_praxis_searcher, PraxisSearchOutput
+from app.core.crews.ml_models_searcher import run_ml_models_searcher, MLModelsSearcherOutput
 
 routers = APIRouter(
     prefix='/searcher',
@@ -12,7 +14,7 @@ routers = APIRouter(
     description="Поиск источников практик и их описания.",
     response_model=PraxisSearchOutput
 )
-def analyze_datasets(
+def praxis_in_internet(
     discussion_id: str = Query(..., description="ID диалога"),
     search_query: str = Query(..., description="Что именно ищет агент"),
     context: str = Query(..., description="Контекст поиска"),
@@ -21,6 +23,31 @@ def analyze_datasets(
         result = run_praxis_searcher(
             discussion_id=discussion_id,
             search_query=search_query,
+            context=context,
+            verbose=True
+        )
+        
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при выполнении: {str(e)}"
+        )
+
+@routers.get(
+    "/info_ml_models",
+    description="Получение описания ml моделей разработанных нами.",
+    response_model=MLModelsSearcherOutput
+)
+def get_info_ml_models(
+    discussion_id: str = Query(..., description="ID диалога"),
+    model_ids: List[str] = Query(..., description="Список ID моделей"),
+    context: str = Query(..., description="Контекст"),
+):
+    try:
+        result = run_ml_models_searcher(
+            discussion_id=discussion_id,
+            model_ids=model_ids,
             context=context,
             verbose=True
         )

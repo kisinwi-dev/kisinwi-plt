@@ -81,7 +81,7 @@ def run_praxis_searcher(
     Args:
         discussion_id: ID дискуссии
         search_query: Конкретный запрос для поиска
-                    context: Дополнительный контекст
+        context: Дополнительный контекст
         verbose: Логирование
     """
     crew = PraxisSearcherCrew().crew(verbose=verbose)
@@ -120,9 +120,9 @@ def run_praxis_searcher(
 
     add_reponse_in_history(
         discussion_id=discussion_id,
-        response_id=str(getattr(crew, 'id', 'unknown')),
-        agent_role=crew.agents[0].role if crew.agents else "Agent Praxis Searcher",
-        agent_response=result.text  # сохраняем основной текст
+        response_id=str(crew.id),
+        agent_role=crew.agents[0].role,
+        agent_response=result.text
     )
 
     logger.info(f"Praxis Searcher завершён | Источников: {len(result.sources)}")
