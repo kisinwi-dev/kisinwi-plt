@@ -48,7 +48,7 @@ def get_type_and_name_models(filter: str) -> Dict[str, Any]:
     
     ВХОДНЫЕ ДАННЫЕ:
     - filter (str): Фильтр для поиска моделей по названию.
-      Поддерживает wildcard паттерны.
+      Поддерживает wildcard паттерны. ПЕРЕДАВАТЬ ФИЛЬТР В НИЖНЕМ РЕГИСТРЕ!!
       Примеры:
       - "*resnet*" - все модели, содержащие "resnet"
       - "*convnext*" - все модели ConvNeXt
