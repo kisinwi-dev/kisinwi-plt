@@ -12,7 +12,7 @@ routers = APIRouter(
         "/datasets",
         description="Анализ датасета"
 )
-def analyze_metrics(
+def analyze_datasets(
     discussion_id: str = Query(..., description="ID диалога"),
     dataset_id: str = Query(..., description="ID датасета"),
     dataset_version_id: str = Query(..., description="ID версии датасета"),
@@ -33,25 +33,26 @@ def analyze_metrics(
         )
 
 
-# @routers.get(
-#         "/data",
-#         description="Анализ датасета"
-# )
-# def analyze_dataset(
-#     dataset_id: str = Query(..., description="ID датасета"),
-#     version_id: str | None = Query(None, description="ID версии")
-# ):
-#     try:
-#         result, metrics = data_analyse(dataset_id, version_id)
+@routers.get(
+        "/ml_metrics",
+        description="Анализ метрик"
+)
+def analyze_ml_metric(
+    discussion_id: str = Query(..., description="ID диалога"),
+    business_goal: str = Query(..., description="Требования бизнеса"),
+    model_id: str = Query(..., description="ID модели")
+):
+    try:
+        result = run_metrics_analyst(
+            discussion_id=discussion_id,
+            business_goal=business_goal,
+            model_id=model_id,
+            verbose=True
+        )
         
-#         return {
-#             "dataset_id": dataset_id,
-#             "version_id": version_id,
-#             "analysis": result,
-#             "metrics": metrics
-#         }
-#     except Exception as e:
-#         raise HTTPException(
-#             status_code=500,
-#             detail=f"Ошибка при выполнении: {str(e)}"
-#         )
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при выполнении: {str(e)}"
+        )
