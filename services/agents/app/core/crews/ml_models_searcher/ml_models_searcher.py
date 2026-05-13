@@ -9,6 +9,7 @@ from app.services.ml_models import get_ml_models_info, get_all_ml_models_info
 from app.services.metrics import get_metrics
 from app.services.metrics.post import add_agent_in_metrics
 from app.services.agent_history.post import add_reponse_in_history
+from app.core.memory import models_context
 from app.logs import get_logger
 from app.core.llm import llm
 
@@ -132,7 +133,6 @@ def extract_result(crew_output):
 
 @tool("MLModelsSearcher")
 def tool_run_ml_models_searcher(
-    model_ids: str,
     context: str
 ) -> str:
     """
@@ -145,14 +145,13 @@ def tool_run_ml_models_searcher(
     - Для понимания, какие архитектуры уже пробовали
 
     ВХОДНЫЕ ДАННЫЕ:
-    - model_ids: ID моделей (Пример: '["model_123", "model_456"]')
     - context: Контекст поиска моделей
 
     ВОЗВРАЩАЕТ:
     - Структурированный ответ с информацией об обученных моделях
     """
     result = run_ml_models_searcher(
-        model_ids=[model_ids],
+        model_ids=models_context.get_models(),
         context=context
     )
 

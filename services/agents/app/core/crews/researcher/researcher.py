@@ -73,7 +73,7 @@ class ResearcherCrew:
 def run_researcher(
     business_requirements: str,
     dataset_info: str,
-    denied_hypotheses_info: List[str] | None = None,
+    denied_hypotheses_info: List[str],
     verbose: bool = False
 ) -> ResearcherOutput:
     """
@@ -87,9 +87,8 @@ def run_researcher(
     crew = ResearcherCrew().crew(verbose=verbose)
 
     denied_hypotheses_info_str = ""
-    if denied_hypotheses_info:
-        for denied_hypothesis in denied_hypotheses_info:
-            denied_hypotheses_info_str += f"\nОтвергнутая гипотеза:\n{denied_hypothesis}"
+    for denied_hypothesis in denied_hypotheses_info:
+        denied_hypotheses_info_str += f"\nОтвергнутая гипотеза:\n{denied_hypothesis}"
 
     inputs = {
         "business_requirements": business_requirements,

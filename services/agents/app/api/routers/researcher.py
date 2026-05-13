@@ -18,7 +18,7 @@ def praxis_in_internet(
     discussion_id: str = Query(..., description="ID диалога"),
     business_requirements: str = Query(..., description="Требования бизнеса"),
     dataset_info: str = Query(..., description="Информация о датасете"),
-    denied_hypotheses_info: List[str] | None = Query(None, description="Гипотезы отклонённые ML инженером с обоснованием"),
+    denied_hypotheses_info: List[str] = Query(description="Гипотезы отклонённые ML инженером с обоснованием"),
 ):
     try:
 

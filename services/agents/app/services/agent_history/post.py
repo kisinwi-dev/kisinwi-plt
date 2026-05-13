@@ -1,10 +1,9 @@
 import requests
-from uuid import uuid4
 from typing import Any, Dict
 
 from app.config import config_url
 from app.logs import get_logger
-from app.core.discussion import discussion_context
+from app.core.memory import discussion_context
 
 logger = get_logger(__name__)
 
