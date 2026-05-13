@@ -40,4 +40,42 @@ ml_engineer_task:
     после обучения (инференс).
 
   expected_output: |
-    Верни результат в формате MlEngineerResponse
+    Твой ответ должен быть строго в формате JSON, который соответствует схеме:
+      
+    {
+      "decision": true/false,
+      "reason": "Развёрнутое обоснование решения",
+      "ml_model": {
+        "description_model": "Описание модели",
+        "type": "тип модели (например, CNN, ResNet, Transformer)",
+        "configuration": "JSON конфигурация для обучения"
+      },
+      "recommendations": "Рекомендации по улучшению"
+    }
+    
+    ВАЖНО:
+    - Если decision == false, то ml_model должен быть null
+    - Если decision == true, ml_model обязателен
+    - configuration должен быть валидным JSON, полученным из get_example_run_config_trainer_json
+    - Используй ТОЛЬКО те оптимизаторы и планировщики, которые вернули инструменты
+    - Не добавляй пояснений вне JSON — только чистый JSON объект
+    
+    Пример ответа при успехе:
+    {
+      "decision": true,
+      "reason": "ResNet50 подходит по требованиям к памяти и скорости",
+      "ml_model": {
+        "description_model": "ResNet50 для классификации эмоций",
+        "type": "CNN",
+        "configuration": "{\"model_name\": \"resnet50\", \"batch_size\": 32, ...}"
+      },
+      "recommendations": "Использовать аугментацию данных"
+    }
+    
+    Пример ответа при отказе:
+    {
+      "decision": false,
+      "reason": "Требования к инференсу (<10ms) невыполнимы для ResNet50",
+      "ml_model": null,
+      "recommendations": "Рассмотреть MobileNet или EfficientNet"
+    }

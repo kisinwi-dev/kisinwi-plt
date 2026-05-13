@@ -23,14 +23,14 @@ class MlModel(BaseModel):
     description_model: str = Field(description="Описание модели")
     type: str = Field(description="Тип модели (принадлежность к архитектуреы)")
     configuration: str = Field(
-        description="Конфигурация для сервиса обучения (только если decision==True)"
+        description="Конфигурация для сервиса обучения"
     )
 
 class MlEngineerResponse(BaseModel):
     """Формат ответа ML Инженера"""
     decision: bool = Field(description="Решение. Обучать(True) или нет(False).")
     reason: str = Field(description="Развёрнутое обоснование решения.")
-    ml_model: MlModel | None = Field(default=None, description="Информация о разработанной модели")
+    ml_model: MlModel | None = Field(default=None, description="Информация о разработываемой модели (только если decision==True)")
     recommendations: str = Field(description="Рекомендации по улучшению или альтернативные варианты")
 
 @CrewBase
