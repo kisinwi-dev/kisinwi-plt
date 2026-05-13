@@ -20,8 +20,8 @@ ml_engineer_task:
 
     {deployment_constraints}
 
-    Цель обучения (что должна уметь модель): 
-    {training_objective}
+    Информация о датасете: 
+    {dataset_info}
 
     Информация от resercher для запуска обучения: 
     {researcher_proposals}

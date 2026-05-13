@@ -75,9 +75,9 @@ class MLEngineerCrew:
         )
 
 def run_ml_engineering(
+        dataset_info: str,
         business_requirements: str,
         deployment_constraints: str,
-        training_objective: str,
         researcher_proposals: str,
         verbose: bool = False
     ) -> MlEngineerResponse:
@@ -85,9 +85,9 @@ def run_ml_engineering(
     Агент ML инженер
 
     Args:
+        dataset_info: Информация о датасете
         business_requirements: Требования бизнеса
         deployment_constraints: Технические требования
-        training_objective: Задача решаемая при обучении
         researcher_proposals: Предложение от ресерчера
         verbose: логирование в консоли
 
@@ -98,9 +98,9 @@ def run_ml_engineering(
 
     crew_output = crew.kickoff(
         inputs={
+            "dataset_info": dataset_info,
             "business_requirements": business_requirements,
             "deployment_constraints": deployment_constraints,
-            "training_objective": training_objective,
             "researcher_proposals": researcher_proposals
         }
     )
@@ -151,9 +151,9 @@ def extract_result(crew_output):
 
 @tool("MLEngineer")
 def tool_run_ml_engineering(
+    dataset_info: str,
     business_requirements: str,
     deployment_constraints: str,
-    training_objective: str,
     researcher_proposals: str,
 ) -> str:
     """
@@ -165,18 +165,18 @@ def tool_run_ml_engineering(
     - Перед отправкой задачи в сервис тренировок
 
     ВХОДНЫЕ ДАННЫЕ:
+    - dataset_info: Информация о датасете
     - business_requirements: Бизнес требования к модели
     - deployment_constraints: УСЛОВИЮ ЭКСПЛУАТАЦИИ модели
-    - training_objective: Цель тренировки
     - researcher_proposals: Предложение конфигураций обучения
 
     ВОЗВРАЩАЕТ:
     - Структурированный ответ с решением и обоснованием
     """
     result = run_ml_engineering(
+        dataset_info=dataset_info,
         business_requirements=business_requirements,
         deployment_constraints=deployment_constraints,
-        training_objective=training_objective,
         researcher_proposals=researcher_proposals
     ) 
 
