@@ -25,7 +25,6 @@ def praxis_in_internet(
         discussion_context.set(discussion_id)
 
         result = run_praxis_searcher(
-            discussion_id=discussion_id,
             search_query=search_query,
             context=context,
             verbose=True
