@@ -15,17 +15,17 @@ def run_etp(
     discussion_id: str = Query(description="ID дискуссии"),
     business_requirements: str = Query(description="Бизнес требования к модели"),
     deployment_constraints: str = Query(description="Технические требования к модели"),
-    training_objective: str = Query(description="Цель обучения"),
-    researcher_proposals: str = Query(description="Количество инженеров")
+    dataset_info: str = Query(description="Информация о датасете"),
+    researcher_proposals: str = Query(description="Рекомендации от исследователя")
 ):
     try:
         
         discussion_context.set(discussion_id)
 
         result = run_ml_engineering(
+            dataset_info=dataset_info,
             business_requirements=business_requirements,
             deployment_constraints=deployment_constraints,
-            training_objective=training_objective,
             researcher_proposals=researcher_proposals,
             verbose=True
         )

@@ -19,14 +19,18 @@ from app.core.llm import llm
 
 logger = get_logger(__name__)
 
+class MlModel(BaseModel):
+    description_model: str = Field(description="Описание модели")
+    type: str = Field(description="Тип модели (принадлежность к архитектуреы)")
+    configuration: str = Field(
+        description="Конфигурация для сервиса обучения (только если decision==True)"
+    )
+
 class MlEngineerResponse(BaseModel):
     """Формат ответа ML Инженера"""
     decision: bool = Field(description="Решение. Обучать(True) или нет(False).")
     reason: str = Field(description="Развёрнутое обоснование решения.")
-    configuration: Optional[str] = Field(
-        default=None,
-        description="Конфигурация для сервиса обучения (только если decision==True)"
-    )
+    ml_model: MlModel | None = Field(default=None, description="Информация о разработанной модели")
     recommendations: str = Field(description="Рекомендации по улучшению или альтернативные варианты")
 
 @CrewBase
@@ -183,7 +187,7 @@ def tool_run_ml_engineering(
     result_str = "# Решение ML инженера"
     result_str += f"## Обучать\n {'ДА ✅' if result.decision else 'НЕТ ❌'}"
     result_str += f"\n## Развёрнутое обоснование решения\n{result.reason}"
-    result_str += f"\n## Конфигурация обучения\n{result.configuration if result.configuration else 'Не требуется'}"
+    result_str += f"\n## Конфигурация обучения\n{result.ml_model.configuration if result.ml_model is not None else 'Не требуется'}"
     result_str += f"\n## Рекомендации\n{result.recommendations}"
 
     return result_str
