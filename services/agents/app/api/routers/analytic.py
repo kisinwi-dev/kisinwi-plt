@@ -2,7 +2,7 @@ from fastapi import APIRouter, Query, HTTPException
 
 from app.core.crews.metrics_analyst import run_metrics_analyst
 from app.core.crews.dataset_analyst import run_dataset_analyst
-from app.core.discussion import discussion_context
+from app.core.memory import discussion_context
 
 routers = APIRouter(
     prefix='/analytics',

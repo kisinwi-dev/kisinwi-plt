@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, HTTPException
 
 from app.core.crews.ml_engeneer import run_ml_engineering
-from app.core.discussion import discussion_context
+from app.core.memory import discussion_context
 
 routers = APIRouter(
     tags=['engineering']

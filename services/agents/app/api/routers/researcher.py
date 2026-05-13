@@ -2,7 +2,7 @@ from typing import List
 from fastapi import APIRouter, Query, HTTPException
 
 from app.core.crews.researcher import run_researcher, ResearcherOutput
-from app.core.discussion import discussion_context
+from app.core.memory import discussion_context
 
 routers = APIRouter(
     prefix='/research',

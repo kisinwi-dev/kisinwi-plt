@@ -3,7 +3,7 @@ from fastapi import APIRouter, Query, HTTPException
 
 from app.core.crews.praxis_searcher import run_praxis_searcher, PraxisSearchOutput
 from app.core.crews.ml_models_searcher import run_ml_models_searcher, MLModelsSearcherOutput
-from app.core.discussion import discussion_context
+from app.core.memory import discussion_context
 
 routers = APIRouter(
     prefix='/searcher',
