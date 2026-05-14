@@ -54,28 +54,19 @@ async def to_work():
 
             task_id = task["id"]
             model_id = task["model_id"]
-            params = get_params(model_id)
-
-            if params is None:
-                logger.info(f"Получена не верная структура параметров обучения: {task_id}")
-                await tasker_service.update_status_task(
-                    status="failed", 
-                    percentages=0,
-                    status_info="Задача завершена с ошибкой", 
-                    error=f"Не верная структура параметров обучения в модели '{model_id}'"
-                )
-                continue
-
-            logger.info(f"Worker начинает работу над задачей: {task_id}")
-            
-            # Обновение статуса задачи (выполняется)
-            await tasker_service.update_status_task(
-                status="running", 
-                percentages=0,
-                status_info="Задача принята воркером", 
-            )
             
             try:
+                # получаем параметры для запуска обучения
+                params = get_params(model_id)
+                logger.info(f"Worker начинает работу над задачей: {task_id}")
+            
+                # Обновение статуса задачи (выполняется)
+                await tasker_service.update_status_task(
+                    status="running", 
+                    percentages=0,
+                    status_info="Задача принята воркером", 
+                )
+
                 # Процесс обучения
                 await training_model(params, model_id)
 
@@ -91,6 +82,6 @@ async def to_work():
                 await tasker_service.update_status_task(
                     status="failed", 
                     status_info="Задача завершена с ошибкой", 
-                    error=f"Error: {str(e)}"
+                    error=f"Ошибка: {str(e)}"
                 )
-                logger.error(f"Ошибка task_id='{task_id}' model_id='{model_id}':\n{e}")
+                logger.error(f"Ошибка task_id='{task_id}' model_id='{model_id}'\n{str(e)}\n{e}")
