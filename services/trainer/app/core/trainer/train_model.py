@@ -198,8 +198,9 @@ class Trainer:
                 self.scheduler.step()
 
         except Exception as e:
-            logger.error(f"Ошибка на стадии тренировки модели: {e}")
-            raise
+            mes = f"Ошибка на стадии тренировки модели: {str(e)}"
+            logger.error(mes)
+            raise Exception(mes) from e
         
         # Расчёт метрик
         self._metric_service.compute('train')
@@ -312,8 +313,9 @@ class Trainer:
                         loss=loss
                     )
             except Exception as e:
-                logger.error(f"Ошибка на этапе валидации модели: {e}")
-                raise e
+                mes = f"Ошибка на этапе валидации модели: {str(e)}"
+                logger.error(mes)
+                raise Exception(mes) from e
         
         # Расчёт метрик
         self._metric_service.compute('val')
@@ -345,8 +347,9 @@ class Trainer:
             self._metric_service.compute('test')
             
         except Exception as e:
-            logger.error(f"Ошибка на стадии тестирования: {e}")
-            return None
+            mes = f"Ошибка на стадии тестирования: {str(e)}"
+            logger.error(mes, exc_info=True)
+            raise Exception(mes) from e
 
     def _save_checkpoint(self, epoch: int, metrics: Dict[str, Any]) -> None:
         """Save model checkpoint"""
@@ -432,7 +435,8 @@ class Trainer:
             logger.info("✅ Тестирование завершено")
 
         except Exception as e:
-            logger.error(f"Ошибка при обучении: {e}")
-            raise
+            mes = f"Ошибка в процессе обучения: {str(e)}"
+            logger.error(mes, exc_info=True)
+            raise Exception(mes) from e
         
         return self.model

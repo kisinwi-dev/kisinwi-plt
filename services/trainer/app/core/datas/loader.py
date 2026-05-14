@@ -135,21 +135,21 @@ def create_dataloaders(
             batch_size=params.batch_size,
             shuffle=True,
             pin_memory=True,
-            num_workers=2
+            num_workers=0
         )
         val_loader = DataLoader(
             val_dataset,
             batch_size=params.batch_size,
             shuffle=False,
             pin_memory=True,
-            num_workers=2
+            num_workers=0
         )
         test_loader = DataLoader(
             test_dataset,
             batch_size=params.batch_size,
             shuffle=False,
             pin_memory=True,
-            num_workers=2
+            num_workers=0
         )
 
         logger.info("✅ Датасеты собраны")
@@ -160,5 +160,6 @@ def create_dataloaders(
 
         return train_loader, val_loader, test_loader, classes
     except Exception as e:
-        logger.error(f'Ошибка: {e}')
-        raise e
+        mes = f'Ошибка при создании DataLoader: {str(e)}'
+        logger.error(mes, exc_info=True)
+        raise Exception(mes) from e
