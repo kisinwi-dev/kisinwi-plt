@@ -70,5 +70,6 @@ async def training_model(config: TaskParams, model_id: str):
         await tasker_service.update_status_task(percentages=80, status_info="Модель обучена.")
 
     except Exception as e:
-        logger.error(e)
-        raise
+        mes = f"Ошибка в процессе обучения: {str(e)}"
+        logger.error(mes, exc_info=True)
+        raise Exception(mes) from e

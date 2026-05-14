@@ -160,5 +160,6 @@ def create_dataloaders(
 
         return train_loader, val_loader, test_loader, classes
     except Exception as e:
-        logger.error(f'Ошибка: {e}')
-        raise e
+        mes = f'Ошибка при создании DataLoader: {str(e)}'
+        logger.error(mes, exc_info=True)
+        raise Exception(mes) from e
