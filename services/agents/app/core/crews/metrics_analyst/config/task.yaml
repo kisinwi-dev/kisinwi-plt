@@ -1,7 +1,7 @@
 metrics_analysis_task:
   agent: metrics_analyst
 
-  description: >
+  description: |
     Получи и проанализируй метрики модели по её ID.
 
     ID модели: {model_id}

@@ -1,6 +1,6 @@
 dataset_analyst_task:
   agent: dataset_analyst
-  description: >
+  description: |
     Проведи анализ датасета.
 
     Используй следующие параметры:
@@ -21,7 +21,7 @@ dataset_analyst_task:
     - Работай ТОЛЬКО с указанным датасетом
     - Если информации недостаточно - сообщи об этом
 
-  expected_output: >
+  expected_output: |
     Структурированный отчет по датасету, содержащий:
 
     - Краткое описание
