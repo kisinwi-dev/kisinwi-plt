@@ -7,7 +7,7 @@ from .api.routers import api_routers
 from .core import training_model
 from .logs import get_logger
 from .service.tasker import tasker_service
-from .service.ml_models import get_params
+from .service.ml_models import get_params, path_status_model
 
 logger = get_logger(__name__)
 
@@ -57,7 +57,7 @@ async def to_work():
             
             try:
                 # получаем параметры для запуска обучения
-                params = get_params(model_id)
+                params = await get_params(model_id)
                 logger.info(f"Worker начинает работу над задачей: {task_id}")
             
                 # Обновение статуса задачи (выполняется)
@@ -67,6 +67,7 @@ async def to_work():
                     status_info="Задача принята воркером", 
                 )
 
+                await path_status_model(model_id, "training")
                 # Процесс обучения
                 await training_model(params, model_id)
 
@@ -76,12 +77,14 @@ async def to_work():
                     percentages=100,
                     status_info="Задача выполнена", 
                 )
+                await path_status_model(model_id, "completed")
                 logger.info(f"Задача '{task_id}' по обучению модели '{model_id}' выполнена")
-                
+
             except Exception as e:
                 await tasker_service.update_status_task(
                     status="failed", 
                     status_info="Задача завершена с ошибкой", 
                     error=f"Ошибка: {str(e)}"
                 )
+                await path_status_model(model_id, "draft")
                 logger.error(f"Ошибка task_id='{task_id}' model_id='{model_id}'\n{str(e)}\n{e}")
