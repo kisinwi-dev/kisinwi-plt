@@ -1,5 +1,5 @@
 import requests
-from typing import Dict, Any
+from typing import Dict, Any, List
 from crewai.tools import tool
 from pydantic import BaseModel
 
@@ -141,11 +141,62 @@ ml_models = MLModels()
 
 @tool("GetMLModelsInfo")
 @handle_errors
-def get_ml_models_info(ml_model_id: str) -> Dict[str, Any]:
+def get_ml_models_info(ml_model_id: str) -> dict:
     """
-    Получить все имеющиеся модели в распоряжении.
-
-    Args:
-        ml_model_id - ID мл моделей
+    НАЗНАЧЕНИЕ: Получить полную информацию об ОДНОЙ ML модели по её ID.
+    
+    КОГДА ИСПОЛЬЗОВАТЬ:
+    - Когда нужно узнать детали конкретной модели
+    - Когда у вас есть один ID модели
+    
+    ВХОДНЫЕ ДАННЫЕ:
+    - ml_model_id (str): Уникальный идентификатор модели.
+      Пример: "f0536964-7950-4087-aa93-91bd50d835be"
+    
+    ВОЗВРАЩАЕТ:
+    - dict с информацией о модели:
+    
+    ПРИМЕР ВЫЗОВА:
+    get_ml_models_info("f0536964-7950-4087-aa93-91bd50d835be")
     """
+    logger.info(f"🔧 GetMLModelsInfo вызван для модели: {ml_model_id}")
     return get_json(f"/models/{ml_model_id}")
+
+@tool("GetAllMLModelsInfo")
+@handle_errors
+def get_all_ml_models_info(ml_models_id: List[str]) -> dict:
+    """
+    НАЗНАЧЕНИЕ: Получить информацию о НЕСКОЛЬКИХ ML моделях по списку ID.
+    
+    КОГДА ИСПОЛЬЗОВАТЬ:
+    - Когда нужно сравнить несколько моделей
+    - Когда нужно получить информацию о 2+ моделях за один вызов
+    - Основной инструмент для анализа и сравнения моделей
+    
+    ВХОДНЫЕ ДАННЫЕ:
+    - ml_models_id (List[str]): Список ID моделей.
+      Пример: ["f0536964-7950-4087-aa93-91bd50d835be", "9b5cddc4-6992-471d-b423-4de7be7c2b91"]
+    
+    ВОЗВРАЩАЕТ:
+    - dict, где ключ = ID модели, значение = информация о модели:
+        {
+            "model_id_1": { ... },
+            "model_id_2": { ... }
+        }
+    
+    ПРИМЕР ВЫЗОВА:
+    get_all_ml_models_info([
+        "f0536964-7950-4087-aa93-91bd50d835be",
+        "9b5cddc4-6992-471d-b423-4de7be7c2b91"
+    ])
+
+    🔹 ВАЖНО:
+    - Этот инструмент предпочтительнее, чем многократный вызов GetMLModelsInfo
+    - Используй его для сравнения моделей
+    """
+    logger.info(f"🔧 GetAllMLModelsInfo вызван для моделей: {ml_models_id}")
+    info_models = {}
+
+    for id in ml_models_id:
+        info_models[id] = get_json(f"/models/{id}")
+    return info_models

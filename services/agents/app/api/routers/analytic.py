@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Query, HTTPException
 
-from app.core.crews.analytics.metrics import run_analysis as metrics_analyse
-from app.core.crews.analytics.datasets import run_analysis as data_analyse
+from app.core.crews.metrics_analyst import run_metrics_analyst
+from app.core.crews.dataset_analyst import run_dataset_analyst
+from app.core.memory import discussion_context
 
 routers = APIRouter(
     prefix='/analytics',
@@ -9,56 +10,58 @@ routers = APIRouter(
 )
 
 @routers.get(
-        "/metrics",
-        description="Анализ метрик"
+        "/datasets",
+        description="Анализ датасета"
 )
-def analyze_metrics(
-    task_id: str = Query(..., description="ID задачи"),
+def analyze_datasets(
+    discussion_id: str = Query(..., description="ID диалога"),
     dataset_id: str = Query(..., description="ID датасета"),
-    version_id: str = Query(None, description="ID версии"),
-    bus_req: str = Query(None, description="Бизне требования к модели")
+    dataset_version_id: str = Query(..., description="ID версии датасета"),
 ):
     try:
-        result, metrics = metrics_analyse(
-            task_id,
+
+        discussion_context.set(discussion_id)
+
+        result = run_dataset_analyst(
             dataset_id=dataset_id,
-            version_id=version_id,
-            bus_req=bus_req
+            dataset_version_id=dataset_version_id,
+            verbose=True
         )
         
-        return {
-            "task_id": task_id,
-            "dataset_id": dataset_id,
-            "version_id": version_id,
-            "analysis": result,
-            "metrics": metrics
-        }
+        return result
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"Ошибка при выполнении: {str(e)}"
         )
+    finally:
+        discussion_context.clear()
 
 
 @routers.get(
-        "/data",
-        description="Анализ датасета"
+        "/ml_metrics",
+        description="Анализ метрик"
 )
-def analyze_dataset(
-    dataset_id: str = Query(..., description="ID датасета"),
-    version_id: str | None = Query(None, description="ID версии")
+def analyze_ml_metric(
+    discussion_id: str = Query(..., description="ID диалога"),
+    business_goal: str = Query(..., description="Требования бизнеса"),
+    model_id: str = Query(..., description="ID модели")
 ):
     try:
-        result, metrics = data_analyse(dataset_id, version_id)
         
-        return {
-            "dataset_id": dataset_id,
-            "version_id": version_id,
-            "analysis": result,
-            "metrics": metrics
-        }
+        discussion_context.set(discussion_id)
+
+        result = run_metrics_analyst(
+            business_goal=business_goal,
+            model_id=model_id,
+            verbose=True
+        )
+        
+        return result
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"Ошибка при выполнении: {str(e)}"
         )
+    finally:
+        discussion_context.clear()

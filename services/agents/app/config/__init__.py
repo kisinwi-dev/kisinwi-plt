@@ -11,6 +11,7 @@ class ConfigURL:
     TRAINER_URL = f"http://{os.getenv('TRAINER_DOMEN', 'localhost:6200')}"
     ML_MODELS_URL = f"http://{os.getenv('ML_MODELS_DOMEN', 'localhost:6300')}"
     METRICS_URL = f"http://{os.getenv('METRICS_DOMEN', 'localhost:6310')}"
+    AGENT_HISTORY = f"http://{os.getenv('AGENT_HISTORY', 'localhost:6410')}"
 
 @dataclass
 class ConfigBaseLLM:
