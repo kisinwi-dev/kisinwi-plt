@@ -5,6 +5,7 @@ from app.logs import get_logger
 from app.core.utils import get_system_info as system_info
 from app.core.utils import get_schedulers as schedulers, get_optimizers as optimizers
 from app.core.models import get_models_type_name
+from app.service.metrices.collection import METRICS_REGISTRY
 from app.api.schemes import TaskParams, HealthResponse
 
 logger = get_logger(__name__)
@@ -123,3 +124,21 @@ async def health():
             "services": "Not require"
         }
     )
+
+@routers.get(
+        "/metrics",
+        response_model=List[str],
+        summary="Получить список доступных метрик"
+)
+async def get_available_metrics():
+    """
+    Возвращает список доступных метрик
+    """
+    try:
+        return list(METRICS_REGISTRY.keys())
+    except Exception as e:
+        logger.error(f"Ошибка при получении списка метрик: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Не удалось получить список доступных метрик: {e}"
+        )
