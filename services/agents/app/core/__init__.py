@@ -37,23 +37,26 @@ def development_models(
         iterations: Количество версий разработанной модели
         verbose: Логирование
     """
-    # Переменные-хранилища
-    denied_hypotheses_info = []
 
     logger.info("Анализа датасета...")
-    dataset_info = run_dataset_analyst(
+    dataset_analyst_out = run_dataset_analyst(
         dataset_id=dataset_id,
         dataset_version_id=dataset_version_id,
         verbose=verbose
     )
+    if not dataset_analyst_out.readiness_assessment:
+        logger.info("🟥 Анализ датасета показал, что данные не готовы к обучению")
+        return None
+
     logger.info("✅ Анализ датасета")
+
 
     for iter in range(1, iterations+1):
         logger.info("Старт рассуждающей группы...")
         ml_engin_out = reasoning(
-            dataset_info=dataset_info,
+            dataset_info=dataset_analyst_out.get_short_info(),
             business_requirements=business_requirements,
-            denied_hypotheses_info=denied_hypotheses_info,
+            denied_hypotheses_info=[],
             verbose=verbose,
             deployment_constraints=deployment_constraints
         )
@@ -190,8 +193,10 @@ def reasoning(
 
         # логи
         logger.warning(f"\n\nОтказ на итерации {iteration + 1}: \n {ml_engineer_output.reason}...")
-        denied_hypotheses_info.append(ml_engineer_output.reason)
-        denied_hypotheses_info.append(f"\nРекомендация: {ml_engineer_output.recommendations}")
+        hypotheses_info = f"Гипотезы: {researcher_output.hypotheses_1} \n {researcher_output.hypotheses_2} \n {researcher_output.hypotheses_3}"
+        hypotheses_info += f"\nРешение ML Инженера: {ml_engineer_output.reason}"
+        hypotheses_info += f"\nРекомендация: {ml_engineer_output.recommendations}"
+        denied_hypotheses_info.append(hypotheses_info)
     
     # Если не удалось найти решение
     logger.error(f"🟥 Не удалось найти решение (пройдено {max_iterations} итераций)")
