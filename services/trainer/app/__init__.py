@@ -1,3 +1,14 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+hf_token = os.getenv("HF_TOKEN")
+if not hf_token:
+    print("⚠️ HF_TOKEN не найден в .env")
+else:
+    print(f"✅ HF_TOKEN загружен ({hf_token[:10]}...)")
+
 import httpx
 import asyncio
 import uvicorn

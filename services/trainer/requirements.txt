@@ -1,4 +1,5 @@
 anyio==4.13.0
+dotenv==0.9.9
 fastapi==0.135.3
 httpx==0.28.1
 numpy==2.4.3

@@ -139,7 +139,7 @@ def training(
 
     return TrainingOut(
         is_completed_successfully=is_complete,
-        error=task["error"]
+        error=task["error_message"]
     )
 
 def reasoning(

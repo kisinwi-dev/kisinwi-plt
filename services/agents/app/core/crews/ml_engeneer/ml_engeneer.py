@@ -13,7 +13,8 @@ from app.services.trainer import (
     get_type_and_name_models,
     get_info_device,
     get_scheduler,
-    get_optimizers
+    get_optimizers,
+    get_metrics
 )
 from app.logs import get_logger
 from app.core.llm import llm
@@ -55,7 +56,8 @@ class MLEngineerCrew:
                 get_info_device,
                 get_scheduler,
                 get_optimizers,
-                get_dataset_info
+                get_dataset_info,
+                get_metrics
             ],
             allow_delegation=False,
             max_iter=8,
