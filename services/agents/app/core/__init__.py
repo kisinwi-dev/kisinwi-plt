@@ -1,20 +1,13 @@
 from typing import List
-from pydantic import BaseModel, Field
 
 from app.logs import get_logger
 from app.core.crews.researcher import run_researcher
 from app.core.crews.ml_engeneer import run_ml_engineering, MlEngineerResponse
 from app.core.crews.dataset_analyst import run_dataset_analyst
-from app.core.memory import discussion_context, models_context
-from app.services.tasker import tasker
-from app.services.ml_models import ml_models
-from app.services.data import get_dataset_info_classes
+
+from .pipeline import training, debuging, TrainingOut, TrainingInput
 
 logger = get_logger(__name__)
-
-class TrainingOut(BaseModel):
-    is_completed_successfully: bool = Field(description="Задача успешно завершена")
-    error: str | None = Field(None, description="Информация об ошибке, если задача завершена с ошибкой") 
 
 def development_models(
     dataset_id: str,
@@ -49,9 +42,11 @@ def development_models(
         return None
 
     logger.info("✅ Анализ датасета")
-
+    version_model=0
 
     for iter in range(1, iterations+1):
+        version_model+=1
+
         logger.info("Старт рассуждающей группы...")
         ml_engin_out = reasoning(
             dataset_info=dataset_analyst_out.get_short_info(),
@@ -66,81 +61,33 @@ def development_models(
             return None
         logger.info("✅ Конец рассуждений.")
 
-        logger.info("Старт секции обучения...")
-        trainning_res = training(
+        training_input=TrainingInput(
             model_name=model_name,
-            version_model=iter,
+            version_model=version_model,
             ml_engin_out=ml_engin_out,
             dataset_id=dataset_id,
-            dataset_version_id=dataset_version_id,
+            dataset_version_id=dataset_version_id
+        )
+        
+        # внутри функций training и debuging реализовано логирование        
+        training_res = training(training_input)
+
+        training_res = TrainingOut(
+            is_completed_successfully=False,
+            error="Ошибочка"
         )
 
-        if trainning_res.is_completed_successfully:
-            logger.info("✅ Модель обучена")
+        training_res, version_model = debuging(training_input, training_res)
+
+        if training_res.is_completed_successfully:
+            logger.info("✅ Модель успешно обучена")
         else:
-            logger.info(f"🟥 Модель не была обучена. Ошибка: {trainning_res.error}")
+            logger.info(
+                "🟥 Не удалось обучить модель"
+                f"\nОписание: {training_res.error}"
+            )
 
     return None
-
-def training(
-    model_name: str,
-    version_model: int,
-    ml_engin_out: MlEngineerResponse,
-    dataset_id: str,
-    dataset_version_id: str,
-) -> TrainingOut:
-    """
-    Создание модели на основе ответа мл инженера, запуск обучения и
-    ожидание конца тренировки. На выход получаем итоги обучения.
-
-    Args:
-        model_name: Имя модели
-        version_model: Версия модели
-        ml_engin_out: Информация от мл инженера
-        dataset_id: ID датасета
-        dataset_version_id: ID версии датасета
-    """
-
-    if ml_engin_out.ml_model is None:
-        return TrainingOut(
-            is_completed_successfully=False, 
-            error="Не найдены конфигурации для мл модели"
-        )
-
-    logger.info("Создание ML модели...")
-    new_ml_model = ml_engin_out.ml_model
-    model_id = ml_models.create_model(
-        name=model_name,
-        version=version_model,
-        model_type=new_ml_model.type,
-        description=new_ml_model.description_model,
-        dataset_id=dataset_id,
-        dataset_version_id=dataset_version_id,
-        train_params=new_ml_model.configuration,
-        classes=get_dataset_info_classes(dataset_id)
-    )
-
-    logger.info("✅ ML модель создана")
-
-    logger.info("Создание задачи на обучение...")
-    task_id = tasker.task_training_create(
-        task_name=f"Обучение модели {model_name} версия {version_model}",
-        model_id=model_id,
-        discussion_id=discussion_context.get()
-    )
-    logger.info("✅ Задача создана")
-
-    logger.info("Ожидаем конец выполнения задачи...")
-    is_complete, task = tasker.waiting_completed(task_id)
-
-    if is_complete:
-        # занесение модели в список обученных моделей
-        models_context.add_model(model_id)
-
-    return TrainingOut(
-        is_completed_successfully=is_complete,
-        error=task["error_message"]
-    )
 
 def reasoning(
     dataset_info: str,
