@@ -6,7 +6,8 @@ metrics_analysis_task:
 
     ID модели: {model_id}
 
-    Требования бизнеса: {business_goal}    
+    Требования бизнеса: 
+    {business_goal}    
 
     ТВОИ ЗАДАЧИ:
     - Получить метрики модели через инструменты

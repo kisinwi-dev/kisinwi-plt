@@ -1,7 +1,8 @@
 praxis_search_task:
   agent: praxis_searcher
   description: |
-    Выполни поиск по запросу: {search_query}
+    Выполни поиск по запросу: 
+    {search_query}
     
     Дополнительный контекст:
     {context}
