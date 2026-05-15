@@ -7,7 +7,7 @@ from crewai.tools import tool
 
 from app.services.metrics.post import add_agent_in_metrics
 from app.services.agent_history.post import add_reponse_in_history
-from app.services.data import get_dataset_info
+from app.services.data import get_dataset_info, list_datasets
 from app.services.trainer import (
     get_example_run_config_trainer_json,
     get_type_and_name_models,
@@ -52,7 +52,8 @@ class MLDebugerCrew:
                 get_scheduler,
                 get_optimizers,
                 get_dataset_info,
-                get_metrics
+                get_metrics,
+                list_datasets
             ],
             allow_delegation=False,
             max_iter=8,
