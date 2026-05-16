@@ -10,8 +10,8 @@ import asyncio
 from app.service.metrices import MetricesClient
 from app.service.tasker import TaskerClient
 from app.api.schemes import TrainerParams, LossConfig, OptimizerConfig, ShedulerConfig
+from app.core.utils.save_model import model_to_onnx
 from app.logs import get_logger
-
 
 logger = get_logger(__name__)
 
@@ -358,31 +358,6 @@ class Trainer:
             logger.error(mes, exc_info=True)
             raise Exception(mes) from e
 
-    def _save_checkpoint(self, epoch: int, metrics: Dict[str, Any]) -> None:
-        """Save model checkpoint"""
-        pass
-        # if self.checkpoint_dir is None:
-        #     return
-        
-        # try:
-        #     checkpoint = {
-        #         'epoch': epoch,
-        #         'model_state_dict': self.model.state_dict(),
-        #         'optimizer_state_dict': self.optimizer.state_dict(),
-        #         'metrics': metrics,
-        #         'history': self.history
-        #     }
-            
-        #     if self.scheduler is not None:
-        #         checkpoint['scheduler_state_dict'] = self.scheduler.state_dict()
-            
-        #     checkpoint_path = f"{self.checkpoint_dir}/checkpoint_epoch_{epoch}.pt"
-        #     torch.save(checkpoint, checkpoint_path)
-            
-        #     logger.info(f"Checkpoint saved: {checkpoint_path}")
-        # except Exception as e:
-        #     logger.error(f"🔴 Failed to save checkpoint: {e}")
-
     def _tqdm_loader(self, data_loader: DataLoader, desc: str = "process") -> tqdm:
         """Получение обьекта tqdm"""
         return tqdm(
@@ -449,6 +424,16 @@ class Trainer:
             logger.info("🦾 Тестирование модели...")
             await self._test_model()
             logger.info("✅ Тестирование завершено")
+
+            logger.info("💾 Сохранение модели...")
+            sample_img = self.train_loader.dataset[0][0]
+            input_shape = (1,) + sample_img.shape
+            model_to_onnx(
+                model_id=self._metric_service._model_id,
+                model=self.model,
+                input_shape=input_shape,
+                device=self.device
+            )
 
         except Exception as e:
             mes = f"Ошибка в процессе обучения: {str(e)}"
