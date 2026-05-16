@@ -222,6 +222,7 @@ class MlModelsManager:
                 m.model_type,
                 s.status as status,
                 m.description,
+                m.metrics_result,
                 m.classes,
                 m.train_params,
                 m.created_at,
@@ -258,12 +259,13 @@ class MlModelsManager:
             'model_type': row[3],
             'status': row[4],
             'description': row[5],
-            'classes': row[6],
-            'train_params': row[7],
-            'created_at': row[8],
-            'dataset_id': str(row[9]),
-            'dataset_version_id': row[10],
-            'framework': row[11],
-            'framework_version': row[12]
+            'metrics_result': row[6],
+            'classes': row[7],
+            'train_params': row[8],
+            'created_at': row[9],
+            'dataset_id': str(row[10]),
+            'dataset_version_id': row[11],
+            'framework': row[12],
+            'framework_version': row[13]
         }
     
