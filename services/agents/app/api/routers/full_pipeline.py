@@ -19,7 +19,7 @@ def development(
     model_name: str = Query(..., description="Имя модели"),
     deployment_constraints: str = Query(..., description="Технические возможности прода"),
     business_requirements: str = Query(..., description="Описание бизнес требований"),
-    denied_hypotheses_info: List[str] = Query(..., description="Гипотезы и практики, которые нужно избегать"),
+    denied_hypotheses_info: List[str] = Query(default_factory=list, description="Гипотезы и практики, которые нужно избегать"),
     max_iter: int = Query("", description="Количество попыток обучения")
 ):
     try:
