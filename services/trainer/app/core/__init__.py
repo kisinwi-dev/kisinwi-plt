@@ -81,7 +81,7 @@ async def training_model(config: TaskParams, model_id: str):
             device=device
         )
         await tasker_service.update_status_task(percentages=88, status_info="Сохранение модели...")
-        await upload_file_model_in_ml_models(model_id, onnx_path)
+        await upload_file_model_in_ml_models(model_id, onnx_path, "onnx_model")
         await tasker_service.update_status_task(percentages=95, status_info="Модель сохранена.")
 
     except Exception as e:
