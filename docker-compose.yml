@@ -233,6 +233,7 @@ services:
       - TRAINER_DOMEN=trainer:${TRAINER_SERVICE_PORT}
       - METRICS_DOMEN=metrics:${METRICS_SERVICE_PORT}
       - ML_MODELS_DOMEN=ml_models:${ML_MODELS_SERVICE_PORT}
+      - AGENT_HISTORY_DOMEN=agent_history:${AGENT_MONITORING_PORT}
     networks:
       - network
 
