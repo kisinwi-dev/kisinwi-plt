@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Query, HTTPException
 
 from app.core.crews.ml_engeneer import run_ml_engineering
+from app.core.crews.ml_debuger import run_ml_debug
 from app.core.memory import discussion_context
 
 routers = APIRouter(
@@ -27,6 +28,34 @@ def run_etp(
             business_requirements=business_requirements,
             deployment_constraints=deployment_constraints,
             researcher_proposals=researcher_proposals,
+            verbose=True
+        )
+
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при выполнении: {str(e)}"
+        )
+    finally:
+        discussion_context.clear()
+
+@routers.get(
+        "/ml_debug",
+        description="Агент исправляет ошибку в конфиге запуска обучения мл моделей"
+)
+def run_ed(
+    discussion_id: str = Query(description="ID дискуссии"),
+    error: str = Query(description="Ошибка полученная при обучении"),
+    config: str = Query(description="Конфигурации обучения")
+):
+    try:
+    
+        discussion_context.set(discussion_id)
+
+        result = run_ml_debug(
+            error=error,
+            config=config,
             verbose=True
         )
 
