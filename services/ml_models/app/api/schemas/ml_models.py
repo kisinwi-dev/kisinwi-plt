@@ -30,6 +30,7 @@ class MLModel(BaseModel):
     model_type: str
     status: str = Field(..., description="Статус модели")
     description: Optional[str] = Field(None, description="Описание модели")
+    metrics_result: str = Field(..., description="Описание метрик модели")
     classes: List[str] = Field(..., description="Список классов")
     train_params: Dict[str, Any] = Field(..., description="Параметры обучения модели")
     created_at: datetime = Field(..., description="Создание модели")
@@ -59,6 +60,7 @@ class MLModelUpdate(BaseModel):
     """Схема для обновления ML модели"""
     status: Optional[str] = None
     description: Optional[str] = None
+    metrics_result: Optional[str] = None
     train_params: Optional[Dict[str, Any]] = None
     framework: Optional[str] = None
     framework_version: Optional[str] = None
