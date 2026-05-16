@@ -1,23 +1,38 @@
 import requests
-from typing import Dict
+from typing import Dict, Any
 from torch import device, Tensor
 
 from .collection import create_classification_collections
 
-from app.api.schemes import MetricesParamCollections
+from app.api.schemes import MetricesParamCollections, EarlyStop
 from app.config import config_domain
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 
 class MetricesClient:
+    """
+    Клиент метрик отвечает за работу с метриками.
+    - Создание списка метрик и посчёт каждой метрики
+    - Передача данных в сервис метрик
+
+    Args:
+        model_id: Id модели
+        metrices_params: Заданные параметры метрик(какие метрик и с чем)
+        num_class: Количество классов
+        device: Устройство на котором раполагается весь pipeline обучения
+        early_stop_params: Параметры для трекинга остановки
+    """
+    
     def __init__(
-            self, 
-            model_id: str,
-            metrices_params: MetricesParamCollections,
-            num_class: int,
-            device: device
+        self, 
+        model_id: str,
+        metrices_params: MetricesParamCollections,
+        num_class: int,
+        device: device,
+        early_stop_params: EarlyStop = EarlyStop(),
     ):
+        # Информация для расчёта метрик
         self._model_id = model_id
         self._url = config_domain.METRIC
         self._collections = create_classification_collections(
@@ -25,13 +40,19 @@ class MetricesClient:
             num_class,
             device
         )
-        
+
+        # Информация для определения логики досрочного окончания
+        self._early_stop = early_stop_params
+        self._metrics_early_stop_values = {
+            f"val_{early_stop_params.metric_name}": []
+        }
+
     def update(
-            self,
-            type: str,
-            preds: Tensor,
-            targets: Tensor,
-            loss: Tensor|None = None,
+        self,
+        type: str,
+        preds: Tensor,
+        targets: Tensor,
+        loss: Tensor|None = None,
     ):
         """Добавление значений для расчёта метрик"""
         self._collections[type].update(
@@ -41,29 +62,84 @@ class MetricesClient:
         )
 
     def compute(
-            self,
-            type_: str,
-    ):
-        """Рассчёт метрик и их очистка"""
-        metrics = self._collections[type_].compute()
-        logger.debug('Метрики расчитаны.')
+        self,
+        type_: str,
+    ) -> bool:
+        """
+        Рассчёт метрик и их очистка. Проверка актуальности обучения.
         
-        if type_ != 'test':
-            logger.info(f"{type_} loss: {metrics.get(f'{type_}_loss', 'N/A')}")
-        else: 
-            logger.debug('Метрики на тестовых даннных')
-            for key, value in metrics.items():
-                name_metric = "".join(key.split('_')[1:])
-                logger.info(f"{name_metric:^20}: {value:.5}")
+        Returns:
+            bool: где True - обучение актуально. False - требуется остановка обучения 
+        """
+        # Расчёт метрик
+        metrics = self._collections[type_].compute()
+        logger.debug('✅ Метрики расчитаны')
+
+        # Проверка актуальности обучения
+        relevance = self._check_relevance(type_, metrics)
 
         self._send_in_service(metrics)
 
+        # очистка коллекции для дальнейших расчётов
         self._collections[type_].reset()
         logger.debug('✅ Коллекция метрик очищена')
+        return relevance
+
+    def _check_relevance(
+        self,
+        type_: str,
+        metrics: Dict[str, Tensor]
+    ) -> bool:
+        """
+        Проверка, нужно ли остановить обучение.
+
+        Args:
+            type_: Тип метрик train/test/train
+            metrics: Словарь метрик
+
+        Returns:
+            True - продолжаем обучение
+            False - останавливаем обучение
+        """
+
+        if type_ == 'train':
+            logger.info(f"{type_} loss: {metrics.get(f'{type_}_loss', 'N/A')}")
+            return True
+        elif type_ == 'test':
+            logger.info('Метрики на тестовых даннных')
+            for key, value in metrics.items():
+                name_metric = "".join(key.split('_')[1:])
+                logger.info(f"{name_metric:^20}: {value:.5}")
+            return True
+
+        # Проверяем актуальность на валидационных метриках
+        patience = self._early_stop.patience
+        min_delta = self._early_stop.min_delta
+        logger.info(f"{type_} loss: {metrics.get(f'{type_}_loss', 'N/A')}")
+
+        for metric_name, history in self._metrics_early_stop_values.items():
+            if metric_name not in metrics:
+                logger.warning(f"⚠️ Целевая метрика {metric_name} не найдена в результатах")
+                continue
+            
+            current_value = metrics[metric_name]
+            self._metrics_early_stop_values[metric_name].append(current_value.item())
+
+            # Проверяем, достаточно ли данных
+            if len(history) > patience:
+                old_value = history[-patience - 1]
+                delta = abs(current_value - old_value)
+
+                logger.debug(f"Изменение за {patience} эпох: {delta:.6f})")
+                if delta < min_delta:
+                    logger.warning(f" РАННЯЯ ОСТАНОВКА! Метрика {metric_name} не изменилась за {patience} эпох на {min_delta}")
+                    return False
+
+        return True
 
     def _send_in_service(
-            self,
-            metrics: Dict[str, Tensor]
+        self,
+        metrics: Dict[str, Tensor]
     ):
         """Отправка метрик в сервис метрик"""
         try:

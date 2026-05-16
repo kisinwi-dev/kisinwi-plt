@@ -288,8 +288,13 @@ class Trainer:
         
         return labels
 
-    def _validate_one_epoch(self):
-        """Валидация(одна эпоха)"""
+    def _validate_one_epoch(self) -> bool:
+        """
+        Валидация(одна эпоха)
+        
+        Returns:
+            bool: True - стоит продолжать обучение. False - нет смысла продолжать обучение.
+        """
         self.model.eval()
         
         with torch.no_grad():
@@ -318,11 +323,13 @@ class Trainer:
                 raise Exception(mes) from e
         
         # Расчёт метрик
-        self._metric_service.compute('val')
+        relevance = self._metric_service.compute('val')
         
         # Очистка кэша
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+        
+        return relevance
 
     async def _test_model(self) -> Optional[Dict[str, Any]]:
         """Тестирование модели на тестовых данных"""
@@ -387,12 +394,17 @@ class Trainer:
             file=sys.stdout
         )
 
-    def _train_one_full_epoch(self):
-        """Полное синхронное обучение"""
+    def _train_one_full_epoch(self) -> bool:
+        """
+        Полное синхронное обучение
+        
+        Returns:
+            bool: True - стоит продолжать обучение. False - нет смысла продолжать обучение.
+        """
         logger.debug("Тренировка...")
         self._train_one_epoch()
         logger.debug("Валидация...")
-        self._validate_one_epoch()
+        return self._validate_one_epoch()
 
     async def train(
             self,
@@ -419,7 +431,7 @@ class Trainer:
                 )
                 
                 # Тренировка и валидация
-                await asyncio.to_thread(self._train_one_full_epoch)
+                relevance = await asyncio.to_thread(self._train_one_full_epoch)
 
                 # Логгирование конца эпохи
                 text_info_end = f"☑️ Эпоха [{epoch}/{self.epochs}] завершена"
@@ -429,6 +441,10 @@ class Trainer:
                     percentages=value_procces - 1, 
                     status_info=text_info_end
                 )
+
+                if relevance == False:
+                    logger.info("Обучение модели остановлено")
+                    break
 
             logger.info("🦾 Тестирование модели...")
             await self._test_model()
