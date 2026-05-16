@@ -49,29 +49,29 @@ class TaskerClient():
             task_id: str | None = None
     ) -> bool:
         """Обновляет статус задачи"""
-        
-        if task_id is None:
-            task_id = self.task_id
+        return True 
+        # if task_id is None:
+        #     task_id = self.task_id
 
-        url = f"{self._domen}/tasks/{task_id}/status"
-        data_json = {
-            k: v for k, v in {
-                "status": status,
-                "status_info": status_info,
-                "percentages": percentages,
-                "error": error
-            }.items() if v is not None
-        }
+        # url = f"{self._domen}/tasks/{task_id}/status"
+        # data_json = {
+        #     k: v for k, v in {
+        #         "status": status,
+        #         "status_info": status_info,
+        #         "percentages": percentages,
+        #         "error": error
+        #     }.items() if v is not None
+        # }
 
-        logger.debug(f"Отправка нового статуса задачи в сервис задач.\ntask_id:{task_id}\nData:{data_json}")
+        # logger.debug(f"Отправка нового статуса задачи в сервис задач.\ntask_id:{task_id}\nData:{data_json}")
 
-        try:
-            await self._client.post(url, json=data_json)
-            return True
-        except Exception as e:
-            logger.error("Не удалось обновить статус задачи")
-            logger.error(f"Ошибка: {e}")
-            return False
+        # try:
+        #     await self._client.post(url, json=data_json)
+        #     return True
+        # except Exception as e:
+        #     logger.error("Не удалось обновить статус задачи")
+        #     logger.error(f"Ошибка: {e}")
+        #     return False
         
 
 tasker_service = TaskerClient()

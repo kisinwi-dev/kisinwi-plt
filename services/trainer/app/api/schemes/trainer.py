@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 from pydantic import BaseModel, Field
 
 class LossConfig(BaseModel):
@@ -67,6 +67,20 @@ class ShedulerConfig(BaseModel):
             }
         }
     }
+
+class EarlyStop(BaseModel):
+    metric_name: str = Field(
+        default='loss',
+        description='Метрикa на которую стоит смотреть при обучении'
+    )
+    patience: int = Field(
+        default=4,
+        description="Количество эпох по которым мы опрделяем изменяемость"
+    )
+    min_delta: float = Field(
+        default=0.001,
+        description="Размер допустимого изменения метрики"
+    )
 
 class TrainerParams(BaseModel):
     loss_fn: LossConfig = Field(
