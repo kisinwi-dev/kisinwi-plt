@@ -1,4 +1,5 @@
 from uuid import uuid4
+from typing import List
 from fastapi import APIRouter, Query, HTTPException
 
 from app.core import development_models
@@ -18,7 +19,8 @@ def development(
     model_name: str = Query(..., description="Имя модели"),
     deployment_constraints: str = Query(..., description="Технические возможности прода"),
     business_requirements: str = Query(..., description="Описание бизнес требований"),
-    iterations: int = Query("", description="Количество попыток обучения")
+    denied_hypotheses_info: List[str] = Query(..., description="Гипотезы и практики, которые нужно избегать"),
+    max_iter: int = Query("", description="Количество попыток обучения")
 ):
     try:
         discussion_context.set(str(uuid4()))
@@ -29,7 +31,8 @@ def development(
             model_name=model_name,
             deployment_constraints=deployment_constraints,
             business_requirements=business_requirements,
-            iterations=iterations,
+            denied_hypotheses_info=denied_hypotheses_info,
+            max_iter=max_iter,
         )
 
     except Exception as e:

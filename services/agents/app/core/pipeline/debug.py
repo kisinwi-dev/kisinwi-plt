@@ -1,12 +1,11 @@
 from typing import Tuple
 from .train import TrainingOut, TrainingInput, training
-from app.core.crews.ml_engeneer import MlEngineerResponse
 from app.core.crews.ml_debuger import run_ml_debug
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 
-def debuging(
+def debugging(
     train_input: TrainingInput,
     training_res: TrainingOut,
     max_iter: int = 3
