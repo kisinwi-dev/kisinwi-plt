@@ -5,6 +5,7 @@ httpx==0.28.1
 numpy==2.4.3
 onnx==1.21.0
 onnxruntime==1.26.0
+onnxscript==0.7.0
 pydantic==2.12.5
 py-cpuinfo==9.0.0
 requests==2.33.1
