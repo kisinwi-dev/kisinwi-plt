@@ -1,8 +1,10 @@
 from app.api.schemes import TaskParams
 from app.service.tasker import tasker_service
 from app.service.metrices import MetricesClient
+from app.service.ml_models import upload_file_model_in_ml_models
 from app.logs import get_logger
 
+from .utils.save_model import save_model_to_onnx
 from .datas import create_dataloaders
 from .models import get_model
 from .trainer import Trainer
@@ -68,6 +70,19 @@ async def training_model(config: TaskParams, model_id: str):
         await tasker_service.update_status_task(percentages=20, status_info="Обучение...")
         model = await trainer.train(20, 80)
         await tasker_service.update_status_task(percentages=80, status_info="Модель обучена.")
+
+        await tasker_service.update_status_task(percentages=81, status_info="Сохранение модели...")
+        sample_img = train_loader.dataset[0][0]
+        input_shape = (1,) + sample_img.shape
+        onnx_path = await save_model_to_onnx(
+            model_id=model_id,
+            model=model,
+            input_shape=input_shape,
+            device=device
+        )
+        await tasker_service.update_status_task(percentages=88, status_info="Сохранение модели...")
+        await upload_file_model_in_ml_models(model_id, onnx_path, "onnx_model")
+        await tasker_service.update_status_task(percentages=95, status_info="Модель сохранена.")
 
     except Exception as e:
         mes = f"Ошибка в процессе обучения: {str(e)}"
