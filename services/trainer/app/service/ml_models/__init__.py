@@ -1,4 +1,6 @@
 import requests
+from typing import Optional
+from pathlib import Path
 
 from app.api.schemes import TaskParams
 from app.config import config_domain
@@ -81,3 +83,38 @@ async def path_status_model(
         mes = f"Неожиданная ошибка при обновлении статуса модели {model_id}: {str(e)}"
         logger.error(mes, exc_info=True)
         raise Exception(mes) from e
+
+async def upload_file_model_in_ml_models(
+    model_id: str, 
+    file_path: str,
+    filename: Optional[str] = None
+):
+    """
+    Отправляет файл модели в сервис ml_models.
+
+    Args:
+        model_id: ID модели
+        file_path: Путь к файлу
+        filename: Желаемое имя файла в сервисе (без расширения)
+    """
+    try:
+        path = Path(file_path)
+
+        if filename:
+            filename = f"{filename}{path.suffix}"
+        else:
+            filename = path.name
+
+        url = f"{config_domain.ML_MODELS}/models/{model_id}/files"
+
+        with open(file_path, 'rb') as f:
+            files = {'files': (filename, f, 'application/octet-stream')}
+            response = requests.post(url, files=files, timeout=60)
+
+        response.raise_for_status()
+        file_size = path.stat().st_size / (1024**2)
+        logger.info(f"✅ Файл '{filename}' отправлен в ml_models, размер: {file_size:.2f} MB")
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка при отправке файла: {e}")
+        return False

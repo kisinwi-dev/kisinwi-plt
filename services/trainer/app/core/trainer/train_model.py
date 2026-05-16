@@ -10,7 +10,6 @@ import asyncio
 from app.service.metrices import MetricesClient
 from app.service.tasker import TaskerClient
 from app.api.schemes import TrainerParams, LossConfig, OptimizerConfig, ShedulerConfig
-from app.core.utils.save_model import model_to_onnx
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -425,15 +424,6 @@ class Trainer:
             await self._test_model()
             logger.info("✅ Тестирование завершено")
 
-            logger.info("💾 Сохранение модели...")
-            sample_img = self.train_loader.dataset[0][0]
-            input_shape = (1,) + sample_img.shape
-            model_to_onnx(
-                model_id=self._metric_service._model_id,
-                model=self.model,
-                input_shape=input_shape,
-                device=self.device
-            )
 
         except Exception as e:
             mes = f"Ошибка в процессе обучения: {str(e)}"

@@ -8,7 +8,7 @@ from app.logs import get_logger
 
 logger = get_logger(__name__)
 
-def model_to_onnx(
+async def save_model_to_onnx(
     model: torch.nn.Module,
     model_id: str,
     input_shape: Tuple[int, ...],
@@ -51,7 +51,8 @@ def model_to_onnx(
             onnx_path,
             input_names=['input'],
             output_names=['output'],
-            dynamic_axes=dynamic_axes
+            dynamic_axes=dynamic_axes,
+            dynamo=False
         )
 
         logger.info(f"✅ Модель сохранена в ONNX: {onnx_path}")
