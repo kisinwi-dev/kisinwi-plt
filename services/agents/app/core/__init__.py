@@ -2,7 +2,7 @@ from typing import List
 
 from app.logs import get_logger
 from app.core.crews.dataset_analyst import run_dataset_analyst
-
+from app.core.crews.reporter import run_reporter
 from .pipeline import (
     train_and_debug, reasoning, 
     TrainingInput
@@ -111,5 +111,12 @@ def development_models(
                 f"\n{'='*100}"
             )
 
-    return None
+    # Подводим итоги обучений
+    result = run_reporter(
+        business_requirements=business_requirements,
+        deployment_constraints=deployment_constraints,
+        verbose=verbose
+    )
+
+    return result
 

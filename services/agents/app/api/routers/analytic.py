@@ -1,8 +1,10 @@
+from typing import List
 from fastapi import APIRouter, Query, HTTPException
 
 from app.core.crews.metrics_analyst import run_metrics_analyst
 from app.core.crews.dataset_analyst import run_dataset_analyst
-from app.core.memory import discussion_context
+from app.core.crews.reporter import run_reporter
+from app.core.memory import discussion_context, models_context
 
 routers = APIRouter(
     prefix='/analytics',
@@ -54,6 +56,37 @@ def analyze_ml_metric(
         result = run_metrics_analyst(
             business_goal=business_goal,
             model_id=model_id,
+            verbose=True
+        )
+        
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при выполнении: {str(e)}"
+        )
+    finally:
+        discussion_context.clear()
+
+@routers.get(
+        "/reporter",
+        description="Составление итогов итераций"
+)
+def reporter(
+    discussion_id: str = Query(..., description="ID диалога"),
+    models_id: List[str] = Query(..., description="ID моделей используемых для обучения в порядке по итерациям"),
+    business_requirements: str = Query(..., description="Требования бизнеса"),
+    deployment_constraints: str = Query(..., description="Возможности прода")
+):
+    try:
+        
+        discussion_context.set(discussion_id)
+        for model_id in models_id: 
+            models_context.add_model(model_id)
+
+        result = run_reporter(
+            business_requirements=business_requirements,
+            deployment_constraints=deployment_constraints,
             verbose=True
         )
         
