@@ -13,6 +13,11 @@ class SystemMessageType(Enum):
 class SystemMessage(BaseModel):
     type_: SystemMessageType = Field(default_factory=SystemMessageType, description="Тип информации")
     desc: str = Field(..., description="Описание лога")
+    timestamp: datetime = Field(default_factory=datetime.now, description="Время создания ответа")
+
+    def model_dump_json_custom(self) -> str:
+        """Кастомная сериализация с русскими символами"""
+        return self.model_dump_json(indent=2)
 
 class AgentResponseCreate(BaseModel):
     """Модель создания ответа агента"""

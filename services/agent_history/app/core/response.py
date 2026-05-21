@@ -67,7 +67,7 @@ class AgentResponseStorage:
 
         return str(filepath)
     
-    def get_discussion_history(self, discussion_id: str) -> List[AgentResponse] | None:
+    def get_discussion_history(self, discussion_id: str) -> List[dict] | None:
         """Получить всю историю дискуссии по ID (Автоматическая сортировка по времени)"""
         discussion_dir = self.base_path / discussion_id
 
@@ -79,12 +79,12 @@ class AgentResponseStorage:
             try:
                 with open(filepath, 'r', encoding='utf-8') as f:
                     response = json.load(f)
-                    responses.append(AgentResponse(**response))
+                    responses.append(response)
             except (json.JSONDecodeError, ValidationError, KeyError) as e:
                 logger.error(f"Ошибка при чтении файла {filepath}: {e}")
                 continue 
 
-        responses.sort(key=lambda x: x.timestamp)
+        responses.sort(key=lambda x: x["timestamp"])
 
         return responses
 

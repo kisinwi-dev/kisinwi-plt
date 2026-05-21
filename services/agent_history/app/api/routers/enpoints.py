@@ -24,11 +24,11 @@ async def get_response_in_discussion(
     """Получить ответы агентов"""
     try:
 
-        agents_responses = agent_response_manager.get_discussion_history(
+        events = agent_response_manager.get_discussion_history(
             discussion_id=discussion_id
         )
 
-        if agents_responses is None:
+        if events is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Дискуссия '{discussion_id}' не найдена"
@@ -36,11 +36,11 @@ async def get_response_in_discussion(
 
         return Discussion(
             discussion_id=discussion_id,
-            agents_responses=agents_responses
+            events=events
         )
     except Exception as e:
-        logger.error(f"Ошибка при удалении дискуссии: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка при удалении дискуссии: {str(e)}")
+        logger.error(f"Ошибка при получении всей информации о дискуссии: {e}")
+        raise HTTPException(status_code=500, detail=f"Ошибка при получении всей информации о дискуссии: {str(e)}")
 
 
 @router.delete(
@@ -55,7 +55,7 @@ async def get_response_in_discussion(
 async def delete_discussion(
     discussion_id: str
 ):
-    """Сохранить новый ответ агента"""
+    """Удалить дискуссию"""
     try:
 
         success = agent_response_manager.delete_discussion(
