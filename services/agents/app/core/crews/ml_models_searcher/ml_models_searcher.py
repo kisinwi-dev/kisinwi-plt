@@ -6,7 +6,7 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
-from ..utils import track_agent
+from ..utils import track_agent, get_agent_role_from_config
 from app.services.ml_models import get_ml_models_info, get_all_ml_models_info
 from app.services.metrics import get_metrics
 from app.services.metrics.post import add_agent_in_metrics
@@ -16,6 +16,11 @@ from app.logs import get_logger
 from app.core.llm import llm
 
 logger = get_logger(__name__)
+
+AGENT_ROLE = get_agent_role_from_config(
+    "ml_models_searcher",
+    Path(__file__)
+)
 
 class MetricSummary(BaseModel):
     model_name: str = Field(..., description="Имя модели и её версия")
@@ -66,10 +71,7 @@ class MLModelsSearcherCrew:
             verbose=verbose
         )
 
-@track_agent(
-    agent_key="ml_models_searcher",
-    agent_path=Path(__file__)
-)
+@track_agent(agent_role=AGENT_ROLE)
 def run_ml_models_searcher(
     model_ids: List[str],
     context: str,

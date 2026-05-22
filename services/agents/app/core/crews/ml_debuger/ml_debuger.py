@@ -5,7 +5,7 @@ from crewai import Agent, Crew, Process, Task, CrewOutput
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 
-from ..utils import track_agent
+from ..utils import track_agent, get_agent_role_from_config
 from app.services.metrics.post import add_agent_in_metrics
 from app.services.agent_history.post import agent_history_client
 from app.services.data import get_dataset_info, list_datasets
@@ -21,6 +21,11 @@ from app.logs import get_logger
 from app.core.llm import llm
 
 logger = get_logger(__name__)
+
+AGENT_ROLE = get_agent_role_from_config(
+    "ml_debuger",
+    Path(__file__)
+)
 
 class MlDebugerOut(BaseModel):
     """Формат ответа ML Инженера"""
@@ -79,10 +84,7 @@ class MLDebugerCrew:
             verbose=verbose
         )
 
-@track_agent(
-    agent_key="ml_debuger",
-    agent_path=Path(__file__)
-)
+@track_agent(agent_role=AGENT_ROLE)
 def run_ml_debug(
         error: str,
         config: str,

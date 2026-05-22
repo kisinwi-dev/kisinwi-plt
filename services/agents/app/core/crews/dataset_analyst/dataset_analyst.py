@@ -6,7 +6,7 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
-from ..utils import track_agent
+from ..utils import track_agent, get_agent_role_from_config
 from app.services.metrics.post import add_agent_in_metrics
 from app.services.agent_history.post import agent_history_client
 from app.services.data import (
@@ -18,6 +18,11 @@ from app.logs import get_logger
 from app.core.llm import llm
 
 logger = get_logger(__name__)
+
+AGENT_ROLE = get_agent_role_from_config(
+    "dataset_analyst",
+    Path(__file__)
+)
 
 class DatasetAnalystOut(BaseModel):
     brief_description: str = Field(description="Краткое описание датасета")
@@ -107,10 +112,7 @@ class DatasetAnalystCrew:
             verbose=verbose
         )
 
-@track_agent(
-    agent_key="dataset_analyst",
-    agent_path=Path(__file__)
-)
+@track_agent(agent_role=AGENT_ROLE)
 def run_dataset_analyst(
         dataset_id: str,
         dataset_version_id: str,

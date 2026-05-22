@@ -8,18 +8,16 @@ from app.logs import get_logger
 
 logger = get_logger(__name__)
 
-def track_agent(agent_key: str, agent_path: Path):
+def track_agent(agent_role: str):
     """
     Декоратор для отслеживания запуска и завершения работы агента.
     
     Args:
-        agent_key: Ключ агента в YAML файле (например, "praxis_searcher")
-        agent_path: Path к файлу с реализацией crew (передайте Path(__file__))
+        agent_role: роль агента
 
     Usage:
         @track_agent(
-            agent_key="praxis_searcher",
-            agent_path=Path(__file__)
+            agent_role="praxis_searcher"
         )
         def run_praxis_searcher(...):
             ...
@@ -27,13 +25,6 @@ def track_agent(agent_key: str, agent_path: Path):
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
-
-            # Получаем роль агента из YAML
-            agent_role = _get_agent_role_from_config(agent_key, agent_path)
-
-            if not agent_role:
-                agent_role = agent_key.replace("_", " ").title()
-                logger.warning(f"Не удалось найти роль для '{agent_key}', используем '{agent_role}'")
 
             # Логируем начало работы
             agent_history_client.agent_start(agent_role)
@@ -57,7 +48,10 @@ def track_agent(agent_key: str, agent_path: Path):
         return wrapper
     return decorator
 
-def _get_agent_role_from_config(agent_key: str, agent_path: Path) -> Optional[str]:
+def get_agent_role_from_config(
+    agent_key: str, 
+    agent_path: Path
+) -> str:
     """
     Загружает роль агента из YAML файла.
 
@@ -75,12 +69,11 @@ def _get_agent_role_from_config(agent_key: str, agent_path: Path) -> Optional[st
             └── agent.yaml      # здесь лежит конфиг
     """
     try:
-        # путь к config/agent.yaml
         config_file = agent_path.parent / "config" / "agent.yaml"
 
         if not config_file.exists():
             logger.warning(f"Файл конфигурации не найден: {config_file}")
-            return None
+            return agent_key
 
         with open(config_file, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
@@ -94,11 +87,11 @@ def _get_agent_role_from_config(agent_key: str, agent_path: Path) -> Optional[st
                 return role
 
         logger.warning(f"Ключ '{agent_key}' или поле 'role' не найдены в {config_file}")
-        return None
+        return agent_key
 
     except yaml.YAMLError as e:
         logger.error(f"Ошибка парсинга YAML файла {config_file}: {e}")
-        return None
+        return agent_key
     except Exception as e:
         logger.error(f"Ошибка загрузки роли агента: {e}")
-        return None
+        return agent_key

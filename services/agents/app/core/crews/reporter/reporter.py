@@ -5,7 +5,7 @@ from crewai import Agent, Crew, Process, Task, CrewOutput
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 
-from ..utils import track_agent
+from ..utils import track_agent, get_agent_role_from_config
 from app.core.memory import models_context, discussion_context
 from app.services.metrics.post import add_agent_in_metrics
 from app.services.agent_history import get_agent_history
@@ -16,6 +16,11 @@ from app.logs import get_logger
 from app.core.llm import llm
 
 logger = get_logger(__name__)
+
+AGENT_ROLE = get_agent_role_from_config(
+    "reporter",
+    Path(__file__)
+)
 
 class ReporterOut(BaseModel):
     result: str = Field(description="Готова ли модель к обучению")
@@ -70,10 +75,7 @@ class ReporterCrew:
             verbose=verbose
         )
 
-@track_agent(
-    agent_key="reporter",
-    agent_path=Path(__file__)
-)
+@track_agent(agent_role=AGENT_ROLE)
 def run_reporter(
         business_requirements: str,
         deployment_constraints: str,

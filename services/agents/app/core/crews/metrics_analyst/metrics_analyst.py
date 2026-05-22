@@ -5,7 +5,7 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
-from ..utils import track_agent
+from ..utils import track_agent, get_agent_role_from_config
 from app.services.metrics.post import add_agent_in_metrics
 from app.services.agent_history.post import agent_history_client
 from app.services.ml_models import get_ml_models_info
@@ -14,6 +14,11 @@ from app.logs import get_logger
 from app.core.llm import llm
 
 logger = get_logger(__name__)
+
+AGENT_ROLE = get_agent_role_from_config(
+    "metrics_analyst",
+    Path(__file__)
+)
 
 @CrewBase
 class MetricAnalystCrew:
@@ -56,10 +61,7 @@ class MetricAnalystCrew:
             verbose=verbose
         )
 
-@track_agent(
-    agent_key="metrics_analyst",
-    agent_path=Path(__file__)
-)
+@track_agent(agent_role=AGENT_ROLE)
 def run_metrics_analyst(
         model_id: str,
         business_goal: str,
