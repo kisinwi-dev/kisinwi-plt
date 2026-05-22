@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List
 from pydantic import BaseModel, Field
 from crewai import Agent, Crew, Process, Task, CrewOutput
@@ -5,6 +6,7 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
+from ..utils import track_agent
 from app.services.metrics.post import add_agent_in_metrics
 from app.services.agent_history.post import agent_history_client
 from app.services.data import (
@@ -105,6 +107,10 @@ class DatasetAnalystCrew:
             verbose=verbose
         )
 
+@track_agent(
+    agent_key="dataset_analyst",
+    agent_path=Path(__file__)
+)
 def run_dataset_analyst(
         dataset_id: str,
         dataset_version_id: str,

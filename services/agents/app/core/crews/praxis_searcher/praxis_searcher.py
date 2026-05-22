@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel, Field
 from crewai import Agent, Crew, Task, CrewOutput
@@ -10,6 +11,7 @@ from crewai_tools import (
     ArxivPaperTool
 )
 
+from ..utils import track_agent
 from app.services.metrics.post import add_agent_in_metrics
 from app.services.agent_history.post import agent_history_client
 from app.logs import get_logger
@@ -47,7 +49,7 @@ class PraxisSearcherCrew:
             llm=llm,
             allow_delegation=False,
             max_iter=15,
-            tools= [
+            tools=[
                 SerperDevTool(),
                 ArxivPaperTool(),
                 ScrapeWebsiteTool()
@@ -69,7 +71,10 @@ class PraxisSearcherCrew:
             verbose=verbose
         )
 
-
+@track_agent(
+    agent_key="praxis_searcher",
+    agent_path=Path(__file__)
+)
 def run_praxis_searcher(
     search_query: str,
     context: str = "",
@@ -91,9 +96,6 @@ def run_praxis_searcher(
     }
 
     agent_role = crew.agents[0].role
-
-    # Заносим в историю информацию о старте агента
-    agent_history_client.agent_start(agent_role)
 
     crew_output = crew.kickoff(inputs=inputs)
     result: PraxisSearchOutput
@@ -128,7 +130,6 @@ def run_praxis_searcher(
         agent_response=result.text
     )
 
-    logger.info(f"Praxis Searcher завершён | Источников: {len(result.sources)}")
     return result
 
 def extract_result(crew_output):

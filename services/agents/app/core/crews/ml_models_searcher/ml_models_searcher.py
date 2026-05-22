@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Dict, Optional
 from pydantic import BaseModel, Field
 from crewai import Agent, Crew, Task, CrewOutput
@@ -5,6 +6,7 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
+from ..utils import track_agent
 from app.services.ml_models import get_ml_models_info, get_all_ml_models_info
 from app.services.metrics import get_metrics
 from app.services.metrics.post import add_agent_in_metrics
@@ -64,7 +66,10 @@ class MLModelsSearcherCrew:
             verbose=verbose
         )
 
-
+@track_agent(
+    agent_key="ml_models_searcher",
+    agent_path=Path(__file__)
+)
 def run_ml_models_searcher(
     model_ids: List[str],
     context: str,

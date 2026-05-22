@@ -1,9 +1,11 @@
+from pathlib import Path
 from typing import List
 from crewai import Agent, Crew, Process, Task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
+from ..utils import track_agent
 from app.services.metrics.post import add_agent_in_metrics
 from app.services.agent_history.post import agent_history_client
 from app.services.ml_models import get_ml_models_info
@@ -54,6 +56,10 @@ class MetricAnalystCrew:
             verbose=verbose
         )
 
+@track_agent(
+    agent_key="metrics_analyst",
+    agent_path=Path(__file__)
+)
 def run_metrics_analyst(
         model_id: str,
         business_goal: str,

@@ -1,9 +1,11 @@
+from pathlib import Path
 from typing import List
 from pydantic import BaseModel, Field
 from crewai import Agent, Crew, Task, CrewOutput
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 
+from ..utils import track_agent
 from app.services.metrics.post import add_agent_in_metrics
 from app.services.agent_history.post import agent_history_client
 from app.services.trainer import get_example_run_config_trainer_json
@@ -69,7 +71,10 @@ class ResearcherCrew:
             verbose=verbose
         )
 
-
+@track_agent(
+    agent_key="researcher",
+    agent_path=Path(__file__)
+)
 def run_researcher(
     business_requirements: str,
     dataset_info: str,
