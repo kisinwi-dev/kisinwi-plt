@@ -4,12 +4,12 @@ from pathlib import Path
 from typing import List, Optional
 from pydantic import ValidationError
 
-from app.api.schemas import AgentResponse, SystemMessage
+from app.api.schemas import AgentResponse, SystemMessage, Tool
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 
-class AgentResponseStorage:
+class Storage:
     """
     Хранилище ответов агентов в JSON-файлах.
 
@@ -30,7 +30,7 @@ class AgentResponseStorage:
         discussion_id: str, 
         message: SystemMessage
     ):
-        # апка для дискуссий
+        # папка для дискуссий
         discussion_dir = self.base_path / discussion_id
         discussion_dir.mkdir(exist_ok=True)
 
@@ -45,6 +45,34 @@ class AgentResponseStorage:
 
         return str(filepath)
 
+    def save_tool_info(
+        self,
+        discussion_id: str, 
+        tool_info: Tool
+    ):
+        # папка для дискуссий
+        discussion_dir = self.base_path / discussion_id
+        discussion_dir.mkdir(exist_ok=True)
+
+        # имя файла
+        filename = f"tool_{tool_info.id}.json"
+        filepath = discussion_dir / filename
+
+        # Сохраняем JSON
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(tool_info.model_dump_json(indent=2, ensure_ascii=False))
+
+        return str(filepath)
+
+    def update_tool_info(
+        self,
+        discussion_id: str, 
+        tool_info: Tool
+    ):
+        self.save_tool_info(
+            discussion_id,
+            tool_info
+        )
 
     def save_response(
         self, 
