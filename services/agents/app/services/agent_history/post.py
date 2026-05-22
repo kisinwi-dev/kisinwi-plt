@@ -23,18 +23,18 @@ def add_reponse_in_history(
     discussion_id = discussion_context.get()
 
     agent_info = {}
+    agent_info["response_id"] = response_id
     agent_info["text"] = agent_response
     agent_info["agent_role"] = agent_role
 
-    return _post(discussion_id, response_id, agent_info)
+    return _post(discussion_id, agent_info)
 
 def _post(
     discussion_id: str,
-    response_id: str, 
-    agent_response: Dict[str, Any],
+    agent_response: Dict[str, Any]
 ) -> bool:
     """Синхронная отправка ответа агента в сервис истории"""
-    url = f"{config_url.AGENT_HISTORY}/discussions/{discussion_id}/responses/{response_id}"
+    url = f"{config_url.AGENT_HISTORY}/discussions/{discussion_id}/responses"
     
     try:
         
@@ -44,7 +44,7 @@ def _post(
         )
         
         if result.status_code == 201:
-            logger.info(f"✅ Ответ агента занесён в историю discussion_id=`{discussion_id}` response=`{response_id}`")
+            logger.info(f"✅ Ответ агента занесён в историю discussion_id=`{discussion_id}` response=`{agent_response["response_id"]}`")
             return True
         else:
             logger.error(f"Ошибка отправки: {result.status_code} - {result.text}")
