@@ -1,14 +1,12 @@
 import requests
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from enum import Enum
-from uuid import uuid4
 
 from app.config import config_url
 from app.logs import get_logger
 from app.core.memory import discussion_context
 
 logger = get_logger(__name__)
-
 
 class SystemMessageType(Enum):
     """Типы системных сообщений"""
@@ -50,7 +48,7 @@ class AgentHistoryClient:
             response = requests.post(url, json=data)
             
             if response.status_code == 201:
-                logger.info(f"✅ Событие '{data['type_']}' сохранено в историю discussion_id=`{discussion_id}`")
+                logger.debug(f"✅ Событие '{data['type_']}' сохранено в историю discussion_id=`{discussion_id}`")
                 return True
             else:
                 logger.error(f"Ошибка отправки: {response.status_code} - {response.text}")
