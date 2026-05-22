@@ -5,7 +5,7 @@ from enum import Enum
 class AgentMessageType(Enum):
     START = "START"
     RESPONSE = "RESPONSE"
-    
+
 class AgentStart(BaseModel):
     """Схема старта работы агента"""
     type_: AgentMessageType = Field(default=AgentMessageType.START, description="Тип")

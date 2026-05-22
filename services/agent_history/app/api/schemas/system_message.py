@@ -7,10 +7,6 @@ class SystemMessageType(Enum):
     WARNING = "WARNING" 
     ERROR = "ERROR"
 
-class AgentMessageType(Enum):
-    START = "START"
-    RESPONSE = "RESPONSE"
-    
 class SystemMessage(BaseModel):
     """Схема для создания сообщения от системы"""
     type_: SystemMessageType = Field(default_factory=SystemMessageType, description="Тип сообщения")

@@ -10,7 +10,7 @@ class ToolStatus(Enum):
     IN_PROGRESS = "IN PROGRESS"
     SUCCED = "SUCCEED"
     ERROR = "ERROR" 
-    
+
 class Tool(BaseModel):
     id: str = Field(..., description="Id инструмента")
     type_: ToolType = Field(..., description="Тип")
