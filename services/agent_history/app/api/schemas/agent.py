@@ -8,6 +8,7 @@ class SystemMessageType(Enum):
     ERROR = "ERROR"
     TOOL_CALL = "TOOL_CALL"
     TOOL_RESULT = "TOOL_RESULT"
+    AGENT_START = "AGENT_START"
     AGENT_RESPONSE = "AGENT_RESPONSE"
 
 class SystemMessage(BaseModel):
