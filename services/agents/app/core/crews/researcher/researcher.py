@@ -1,11 +1,13 @@
+from pathlib import Path
 from typing import List
 from pydantic import BaseModel, Field
 from crewai import Agent, Crew, Task, CrewOutput
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 
+from ..utils import track_agent, get_agent_role_from_config
 from app.services.metrics.post import add_agent_in_metrics
-from app.services.agent_history.post import add_reponse_in_history
+from app.services.agent_history.post import agent_history_client
 from app.services.trainer import get_example_run_config_trainer_json
 from app.core.crews.ml_models_searcher.ml_models_searcher import tool_run_ml_models_searcher
 from app.core.crews.praxis_searcher.praxis_searcher import tool_run_praxis_searcher
@@ -13,6 +15,11 @@ from app.logs import get_logger
 from app.core.llm import llm
 
 logger = get_logger(__name__)
+
+AGENT_ROLE = get_agent_role_from_config(
+    "researcher",
+    Path(__file__)
+)
 
 class ResearcherOutput(BaseModel):
     analysis_summary: str = Field(..., description="Краткий анализ текущей ситуации")
@@ -69,7 +76,7 @@ class ResearcherCrew:
             verbose=verbose
         )
 
-
+@track_agent(agent_role=AGENT_ROLE)
 def run_researcher(
     business_requirements: str,
     dataset_info: str,
@@ -85,6 +92,10 @@ def run_researcher(
         denied_hypotheses_info: Список гипотез, отстранённых ранее
     """
     crew = ResearcherCrew().crew(verbose=verbose)
+    agent_role = crew.agents[0].role
+
+    # Заносим в историю информацию о старте агента
+    agent_history_client.agent_start(agent_role)
 
     denied_hypotheses_info_str = ""
     for denied_hypothesis in denied_hypotheses_info:
@@ -126,9 +137,9 @@ def run_researcher(
     # Сохраняем метрики и историю
     add_agent_in_metrics(crew=crew)
 
-    add_reponse_in_history(
+    agent_history_client.add_response(
         response_id=str(crew.id),
-        agent_role=crew.agents[0].role,
+        agent_role=agent_role,
         agent_response=result.get_full_info()
     )
 

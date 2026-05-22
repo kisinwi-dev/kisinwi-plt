@@ -1,21 +1,24 @@
+from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel, Field
 from crewai import Agent, Crew, Task, CrewOutput
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
-from crewai_tools import (
-    SerperDevTool,
-    ScrapeWebsiteTool,
-    ArxivPaperTool
-)
 
+from ..utils import track_agent, get_agent_role_from_config
 from app.services.metrics.post import add_agent_in_metrics
-from app.services.agent_history.post import add_reponse_in_history
+from app.services.agent_history.post import agent_history_client
 from app.logs import get_logger
 from app.core.llm import llm
+from .tools import get_tools
 
 logger = get_logger(__name__)
+
+AGENT_ROLE = get_agent_role_from_config(
+    "praxis_searcher",
+    Path(__file__)
+)
 
 class SearchSource(BaseModel):
     url: str = Field(..., description="Ссылка на источник")
@@ -47,11 +50,7 @@ class PraxisSearcherCrew:
             llm=llm,
             allow_delegation=False,
             max_iter=15,
-            tools= [
-                SerperDevTool(),
-                ArxivPaperTool(),
-                ScrapeWebsiteTool()
-            ]
+            tools=get_tools(AGENT_ROLE)
         )
 
     @task
@@ -69,7 +68,7 @@ class PraxisSearcherCrew:
             verbose=verbose
         )
 
-
+@track_agent(agent_role=AGENT_ROLE)
 def run_praxis_searcher(
     search_query: str,
     context: str = "",
@@ -77,7 +76,7 @@ def run_praxis_searcher(
 ) -> PraxisSearchOutput:
     """
     Запускает агента-поисковика лучших практик.
-    
+
     Args:
         search_query: Конкретный запрос для поиска
         context: Дополнительный контекст
@@ -117,13 +116,12 @@ def run_praxis_searcher(
     # Сохраняем метрики и историю
     add_agent_in_metrics(crew=crew)
 
-    add_reponse_in_history(
+    agent_history_client.add_response(
         response_id=str(crew.id),
-        agent_role=crew.agents[0].role,
+        agent_role=AGENT_ROLE,
         agent_response=result.text
     )
 
-    logger.info(f"Praxis Searcher завершён | Источников: {len(result.sources)}")
     return result
 
 def extract_result(crew_output):

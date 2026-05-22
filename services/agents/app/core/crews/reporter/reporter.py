@@ -1,21 +1,26 @@
+from pathlib import Path
 from typing import List
 from pydantic import BaseModel, Field
 from crewai import Agent, Crew, Process, Task, CrewOutput
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
-from crewai.tools import tool
 
+from ..utils import track_agent, get_agent_role_from_config
 from app.core.memory import models_context, discussion_context
 from app.services.metrics.post import add_agent_in_metrics
 from app.services.agent_history import get_agent_history
-from app.services.agent_history.post import add_reponse_in_history
+from app.services.agent_history.post import agent_history_client
 from app.services.metrics import get_metrics
 from app.services.ml_models import get_ml_models_info
-# from app.services.da
 from app.logs import get_logger
 from app.core.llm import llm
 
 logger = get_logger(__name__)
+
+AGENT_ROLE = get_agent_role_from_config(
+    "reporter",
+    Path(__file__)
+)
 
 class ReporterOut(BaseModel):
     result: str = Field(description="Готова ли модель к обучению")
@@ -70,6 +75,7 @@ class ReporterCrew:
             verbose=verbose
         )
 
+@track_agent(agent_role=AGENT_ROLE)
 def run_reporter(
         business_requirements: str,
         deployment_constraints: str,
@@ -87,6 +93,10 @@ def run_reporter(
     записывает в историю дискусии.
     """
     crew = ReporterCrew().crew(verbose=verbose)
+    agent_role = crew.agents[0].role
+
+    # Заносим в историю информацию о старте агента
+    agent_history_client.agent_start(agent_role)
 
     crew_output = crew.kickoff(
         inputs={
@@ -121,9 +131,9 @@ def run_reporter(
     # Сохраняем метрики и историю
     add_agent_in_metrics(crew=crew)
 
-    add_reponse_in_history(
+    agent_history_client.add_response(
         response_id=str(crew.id),
-        agent_role=crew.agents[0].role,
+        agent_role=agent_role,
         agent_response=result.get_summary()  # сохраняем основной текст
     )
 

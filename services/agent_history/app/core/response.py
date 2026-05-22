@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Optional
 from pydantic import ValidationError
 
-from app.api.schemas import AgentResponse
+from app.api.schemas import AgentResponse, SystemMessage
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -24,11 +24,32 @@ class AgentResponseStorage:
     def __init__(self, base_path: str = "discussion"):
         self.base_path = Path(base_path)
         self.base_path.mkdir(exist_ok=True)
-    
+
+    def save_system_mes(
+        self,
+        discussion_id: str, 
+        message: SystemMessage
+    ):
+        # апка для дискуссий
+        discussion_dir = self.base_path / discussion_id
+        discussion_dir.mkdir(exist_ok=True)
+
+        # имя файла
+        file_count = len([f for f in discussion_dir.iterdir() if f.is_file()])
+        filename = f"system_{file_count}.json"
+        filepath = discussion_dir / filename
+
+        # Сохраняем JSON
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(message.model_dump_json(indent=2, ensure_ascii=False))
+
+        return str(filepath)
+
+
     def save_response(
-            self, 
-            discussion_id: str, 
-            response: AgentResponse
+        self, 
+        discussion_id: str, 
+        response: AgentResponse
     ):
         """Сохранить ответ агента в JSON файл"""
 
@@ -46,7 +67,7 @@ class AgentResponseStorage:
 
         return str(filepath)
     
-    def get_discussion_history(self, discussion_id: str) -> List[AgentResponse] | None:
+    def get_discussion_history(self, discussion_id: str) -> List[dict] | None:
         """Получить всю историю дискуссии по ID (Автоматическая сортировка по времени)"""
         discussion_dir = self.base_path / discussion_id
 
@@ -58,12 +79,12 @@ class AgentResponseStorage:
             try:
                 with open(filepath, 'r', encoding='utf-8') as f:
                     response = json.load(f)
-                    responses.append(AgentResponse(**response))
+                    responses.append(response)
             except (json.JSONDecodeError, ValidationError, KeyError) as e:
                 logger.error(f"Ошибка при чтении файла {filepath}: {e}")
                 continue 
 
-        responses.sort(key=lambda x: x.timestamp)
+        responses.sort(key=lambda x: x["timestamp"])
 
         return responses
 

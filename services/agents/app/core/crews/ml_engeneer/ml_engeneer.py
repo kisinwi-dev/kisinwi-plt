@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 from crewai import Agent, Crew, Process, Task, CrewOutput
@@ -5,8 +6,9 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
+from ..utils import track_agent, get_agent_role_from_config
 from app.services.metrics.post import add_agent_in_metrics
-from app.services.agent_history.post import add_reponse_in_history
+from app.services.agent_history.post import agent_history_client
 from app.services.data import get_dataset_info
 from app.services.trainer import (
     get_example_run_config_trainer_json,
@@ -20,6 +22,11 @@ from app.logs import get_logger
 from app.core.llm import llm
 
 logger = get_logger(__name__)
+
+AGENT_ROLE = get_agent_role_from_config(
+    "ml_engineer",
+    Path(__file__)
+)
 
 class MlModel(BaseModel):
     description_model: str = Field(description="Описание модели")
@@ -82,6 +89,7 @@ class MLEngineerCrew:
             verbose=verbose
         )
 
+@track_agent(agent_role=AGENT_ROLE)
 def run_ml_engineering(
         dataset_info: str,
         business_requirements: str,
@@ -103,6 +111,10 @@ def run_ml_engineering(
     записывает в историю дискусии.
     """
     crew = MLEngineerCrew().crew(verbose=verbose)
+    agent_role = crew.agents[0].role
+
+    # Заносим в историю информацию о старте агента
+    agent_history_client.agent_start(agent_role)
 
     crew_output = crew.kickoff(
         inputs={
@@ -139,9 +151,9 @@ def run_ml_engineering(
     # Сохраняем метрики и историю
     add_agent_in_metrics(crew=crew)
 
-    add_reponse_in_history(
+    agent_history_client.add_response(
         response_id=str(crew.id),
-        agent_role=crew.agents[0].role,
+        agent_role=agent_role,
         agent_response=result.reason  # сохраняем основной текст
     )
 
