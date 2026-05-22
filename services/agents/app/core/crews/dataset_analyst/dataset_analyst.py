@@ -6,7 +6,7 @@ from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
 from app.services.metrics.post import add_agent_in_metrics
-from app.services.agent_history.post import add_reponse_in_history
+from app.services.agent_history.post import agent_history_client
 from app.services.data import (
     get_dataset_info,
     get_version_info,
@@ -122,6 +122,10 @@ def run_dataset_analyst(
     записывает в историю дискусии.
     """
     crew = DatasetAnalystCrew().crew(verbose=verbose)
+    agent_role = crew.agents[0].role
+
+    # Заносим в историю информацию о старте агента аналитика
+    agent_history_client.agent_start(agent_role)
 
     crew_output = crew.kickoff(
         inputs={
@@ -160,9 +164,9 @@ def run_dataset_analyst(
     # Сохраняем метрики и историю
     add_agent_in_metrics(crew=crew)
 
-    add_reponse_in_history(
+    agent_history_client.add_response(
         response_id=str(crew.id),
-        agent_role=crew.agents[0].role,
+        agent_role=agent_role,
         agent_response=result.get_summary()  # сохраняем основной текст
     )
 

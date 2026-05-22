@@ -5,7 +5,7 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 
 from app.services.metrics.post import add_agent_in_metrics
-from app.services.agent_history.post import add_reponse_in_history
+from app.services.agent_history.post import agent_history_client
 from app.services.trainer import get_example_run_config_trainer_json
 from app.core.crews.ml_models_searcher.ml_models_searcher import tool_run_ml_models_searcher
 from app.core.crews.praxis_searcher.praxis_searcher import tool_run_praxis_searcher
@@ -85,6 +85,10 @@ def run_researcher(
         denied_hypotheses_info: Список гипотез, отстранённых ранее
     """
     crew = ResearcherCrew().crew(verbose=verbose)
+    agent_role = crew.agents[0].role
+
+    # Заносим в историю информацию о старте агента
+    agent_history_client.agent_start(agent_role)
 
     denied_hypotheses_info_str = ""
     for denied_hypothesis in denied_hypotheses_info:
@@ -126,9 +130,9 @@ def run_researcher(
     # Сохраняем метрики и историю
     add_agent_in_metrics(crew=crew)
 
-    add_reponse_in_history(
+    agent_history_client.add_response(
         response_id=str(crew.id),
-        agent_role=crew.agents[0].role,
+        agent_role=agent_role,
         agent_response=result.get_full_info()
     )
 
