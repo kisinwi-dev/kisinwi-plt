@@ -49,7 +49,7 @@ class MLEngineerCrew:
             config=self.agents_config["ml_engineer"],  # type: ignore[index]
             verbose=True,
             llm=llm,
-            tools=get_tools(AGENT_ROLE)
+            tools=get_tools(AGENT_ROLE),
             allow_delegation=False,
             max_iter=8,
         )
