@@ -1,6 +1,5 @@
 import requests
 from typing import Any, Dict
-from enum import Enum
 
 from app.config import config_url
 from app.logs import get_logger
@@ -14,7 +13,7 @@ class AgentHistoryClient:
 
     def __init__(self):
         self.base_url = config_url.AGENT_HISTORY        
-    
+
     def _make_discussion_request(
         self, 
         endpoint: str, 
@@ -22,33 +21,33 @@ class AgentHistoryClient:
     ) -> bool:
         """
         Метод отправки запросов
-        
+
         Args:
             endpoint: Endpoint для запроса
             data: Данные для отправки
-            
+
         Returns:
             bool: Успешность операции
         """
-        
+
         discussion_id = discussion_context.get()
 
         url = f"{self.base_url}/discussions/{discussion_id}/{endpoint}"
-        
+
         try:
             response = requests.post(url, json=data)
-            
+
             if response.status_code == 201:
                 logger.debug(f"✅ Событие сохранено в историю discussion_id=`{discussion_id}`")
                 return True
             else:
                 logger.error(f"Ошибка отправки: {response.status_code} - {response.text}")
                 return False
-                
+
         except Exception as e:
             logger.error(f"Непредвиденная ошибка: {str(e)}")
             return False
-    
+
     def _add_agent(
         self, 
         response_id: str,
@@ -66,7 +65,7 @@ class AgentHistoryClient:
             "text": text
         }
         return self._make_discussion_request("responses", data)
-    
+
     def agent_start(
         self, 
         response_id: str,
@@ -128,7 +127,7 @@ class AgentHistoryClient:
         }
 
         return self._make_discussion_request("tool", data)
-    
+
     def tool_start(
         self,
         id: str, 
@@ -149,7 +148,7 @@ class AgentHistoryClient:
             message,
             status= "IN PROGRESS"
         )
-    
+
     def tool_succed(
         self,
         id: str, 
@@ -196,7 +195,7 @@ class AgentHistoryClient:
     ) -> bool:
         """
         Добавление системного сообщения в историю
-        
+
         Args:
             type_: Тип сообщения
             message: Текст сообщения
@@ -205,20 +204,20 @@ class AgentHistoryClient:
             "type_": type_,
             "message": message
         }
-            
+
         return self._make_discussion_request("system_messages", data)
-        
+
     def info(self, message: str) -> bool:
         """Добавить информационное сообщение"""
         return self._add_system_message("INFO", message)
-    
+
     def warning(self, message: str) -> bool:
         """Добавить предупреждение"""
         return self._add_system_message("WARNING", message)
-    
+
     def error(self, message: str) -> bool:
         """Добавить ошибку"""
         return self._add_system_message("ERROR", message)
-    
+
 
 agent_history_client = AgentHistoryClient()

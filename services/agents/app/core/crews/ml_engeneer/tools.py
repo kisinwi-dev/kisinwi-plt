@@ -2,25 +2,29 @@ from typing import List
 from crewai.tools import BaseTool
 
 from ..utils import get_tools_with_tracking
-from app.services.data import get_dataset_info
+from app.services.data import GetDatasetDetailsTool, ListAllDatasetsTool
 from app.services.trainer import (
-    get_example_run_config_trainer_json,
-    get_type_and_name_models,
-    get_info_device,
-    get_scheduler,
-    get_optimizers,
-    get_metrics
+    GetExampleTrainingConfigTool,
+    GetAllAvailableModelsTool,
+    GetDeviceInfoTool,
+    GetOptimizersTool,
+    GetSchedulersTool,
+    GetMetricsForTrainerTool
 )
 
-tools = {
-    "GetExampleTrainingConfig": get_example_run_config_trainer_json,
-    "GetConfigMLModels": get_type_and_name_models,
-    "GetConfigInfoDevice": get_info_device,
-    "GetConfigScheduler":get_scheduler,
-    "GetConfigOptimizers":get_optimizers,
-    "GetConfigMetrics":get_metrics,
-    "GetDatasetInfo":get_dataset_info
-}
+_tool_instances = [
+    GetExampleTrainingConfigTool(),
+    GetAllAvailableModelsTool(),
+    GetDeviceInfoTool(),
+    GetOptimizersTool(),
+    GetSchedulersTool(),
+    GetMetricsForTrainerTool(),
+    GetDatasetDetailsTool(),
+    ListAllDatasetsTool()
+]
+
+tools = {tool.name: tool for tool in _tool_instances}
+
 
 def get_tools(
     agent_role:str

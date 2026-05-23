@@ -3,16 +3,20 @@ from crewai.tools import BaseTool
 
 from ..utils import get_tools_with_tracking
 from app.services.data import (
-    get_dataset_info,
-    get_version_info,
-    list_datasets,
+    GetDatasetDetailsTool,
+    GetDatasetVersionDetailsTool,
+    GetDatasetSplitSizesTool,
+    ListAllDatasetsTool
 )
 
-tools = {
-    "GetDatasetsList":list_datasets,
-    "GetDatasetVersionInfo":get_version_info,
-    "GetDatasetInfo":get_dataset_info
-}
+_tool_instances = [
+    GetDatasetDetailsTool(),
+    GetDatasetVersionDetailsTool(),
+    GetDatasetSplitSizesTool(),
+    ListAllDatasetsTool(),
+]
+
+tools = {tool.name: tool for tool in _tool_instances}
 
 def get_tools(
     agent_role:str

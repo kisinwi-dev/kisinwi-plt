@@ -9,9 +9,9 @@ from crewai_tools import (
 from ..utils import get_tools_with_tracking
 
 tools = {
-    "SerperDevTool": SerperDevTool(),
+    "Search the internet with Serper": SerperDevTool(),
     "ScrapeWebsiteTool": ScrapeWebsiteTool(),
-    "ArxivPaperTool": ArxivPaperTool()
+    "Arxiv Paper Fetcher and Download": ArxivPaperTool()
 }
 
 def get_tools(
