@@ -9,7 +9,7 @@ class ToolStatus(Enum):
 
 class Tool(BaseModel):
     id: str = Field(..., description="Id инструмента")
-    id_agent_response: str = Field(..., description="Id агентного ответа")
+    agent_role: str = Field(..., description="Роль агента, который использует инструмент")
     name: str = Field(..., description="Название инструмента")
     status: ToolStatus = Field(..., description="Статус")
     message: str = Field(..., description="Сообщение от системы")
