@@ -5,13 +5,11 @@ from crewai import Agent, Crew, Process, Task, CrewOutput
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 
+from .tools import get_tools
 from ..utils import track_agent, get_agent_role_from_config
 from app.core.memory import models_context, discussion_context
 from app.services.metrics.post import add_agent_in_metrics
-from app.services.agent_history import get_agent_history
 from app.services.agent_history.post import agent_history_client
-from app.services.metrics import get_metrics
-from app.services.ml_models import get_ml_models_info
 from app.logs import get_logger
 from app.core.llm import llm
 
@@ -47,11 +45,7 @@ class ReporterCrew:
             config=self.agents_config["reporter"],  # type: ignore[index]
             verbose=True,
             llm=llm,
-            tools=[
-                get_agent_history,
-                get_metrics,
-                get_ml_models_info
-            ],
+            tools=get_tools(AGENT_ROLE),
             allow_delegation=False,
             max_iter=8,
         )

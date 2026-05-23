@@ -1,14 +1,13 @@
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List
 from pydantic import BaseModel, Field
 from crewai import Agent, Crew, Task, CrewOutput
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
+from .tools import get_tools
 from ..utils import track_agent, get_agent_role_from_config
-from app.services.ml_models import get_ml_models_info, get_all_ml_models_info
-from app.services.metrics import get_metrics
 from app.services.metrics.post import add_agent_in_metrics
 from app.services.agent_history.post import agent_history_client
 from app.core.memory import models_context
@@ -49,11 +48,7 @@ class MLModelsSearcherCrew:
             verbose=True,
             llm=llm,
             max_iter=2,
-            tools= [
-                get_ml_models_info,
-                get_all_ml_models_info,
-                get_metrics
-            ]
+            tools=get_tools(AGENT_ROLE)
         )
 
     @task
