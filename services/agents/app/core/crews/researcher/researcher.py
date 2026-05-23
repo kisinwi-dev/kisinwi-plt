@@ -92,10 +92,6 @@ def run_researcher(
         denied_hypotheses_info: Список гипотез, отстранённых ранее
     """
     crew = ResearcherCrew().crew(verbose=verbose)
-    agent_role = crew.agents[0].role
-
-    # Заносим в историю информацию о старте агента
-    agent_history_client.agent_start(agent_role)
 
     denied_hypotheses_info_str = ""
     for denied_hypothesis in denied_hypotheses_info:
@@ -137,10 +133,10 @@ def run_researcher(
     # Сохраняем метрики и историю
     add_agent_in_metrics(crew=crew)
 
-    agent_history_client.add_response(
+    agent_history_client.agent_succeed(
         response_id=str(crew.id),
-        agent_role=agent_role,
-        agent_response=result.get_full_info()
+        agent_role=AGENT_ROLE,
+        text=result.get_full_info()
     )
 
     logger.info(f"Researcher завершён")

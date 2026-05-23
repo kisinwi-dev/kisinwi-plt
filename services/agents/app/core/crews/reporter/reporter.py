@@ -93,10 +93,6 @@ def run_reporter(
     записывает в историю дискусии.
     """
     crew = ReporterCrew().crew(verbose=verbose)
-    agent_role = crew.agents[0].role
-
-    # Заносим в историю информацию о старте агента
-    agent_history_client.agent_start(agent_role)
 
     crew_output = crew.kickoff(
         inputs={
@@ -131,10 +127,10 @@ def run_reporter(
     # Сохраняем метрики и историю
     add_agent_in_metrics(crew=crew)
 
-    agent_history_client.add_response(
+    agent_history_client.agent_start(
         response_id=str(crew.id),
-        agent_role=agent_role,
-        agent_response=result.get_summary()  # сохраняем основной текст
+        agent_role=AGENT_ROLE,
+        text=result.get_summary()  # сохраняем основной текст
     )
 
     logger.info(f"Аналитик датасетов отработал")

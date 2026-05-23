@@ -116,10 +116,10 @@ def run_praxis_searcher(
     # Сохраняем метрики и историю
     add_agent_in_metrics(crew=crew)
 
-    agent_history_client.add_response(
+    agent_history_client.agent_succeed(
         response_id=str(crew.id),
         agent_role=AGENT_ROLE,
-        agent_response=result.text
+        text=result.text
     )
 
     return result

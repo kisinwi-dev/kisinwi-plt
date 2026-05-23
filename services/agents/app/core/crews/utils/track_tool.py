@@ -1,3 +1,4 @@
+from uuid import uuid4
 from typing import List, Dict
 from crewai.tools import BaseTool
 from app.services.agent_history.post import agent_history_client
@@ -22,21 +23,30 @@ def track_tool(
     original_run = tool._run
     
     def wrapped_run(*args, **kwargs):
-        agent_history_client.tool_call(
+        id_tool = str(uuid4())
+        agent_history_client.tool_start(
+            id=id_tool,
             agent_role=agent_role,
-            tool_name=tool_name,
-            tool_desc=getattr(tool, 'description', None)
+            name=tool_name,
+            message=getattr(tool, 'description', None)
         )
         
         try:
             result = original_run(*args, **kwargs)
-            agent_history_client.tool_result(
-                tool_name=tool_name,
-                message=f"Инструмент {tool_name} выполнен"
+            agent_history_client.tool_succed(
+                id=id_tool,
+                agent_role=agent_role,
+                name=tool_name,
+                message=f"Инструмент {tool_name} завершил работу"
             )
             return result
         except Exception as e:
-            agent_history_client.error(f"Ошибка в {tool_name}: {str(e)}")
+            agent_history_client.tool_error(
+                id=id_tool,
+                agent_role=agent_role,
+                name=tool_name,
+                message=f"Ошибка: {str(e)}"
+            )
             raise
     
     tool._run = wrapped_run
