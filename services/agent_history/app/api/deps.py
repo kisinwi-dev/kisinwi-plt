@@ -1,3 +1,3 @@
-from app.core.response import AgentResponseStorage
+from app.core.response import Storage
 
-agent_response_manager = AgentResponseStorage()
+agent_response_manager = Storage()

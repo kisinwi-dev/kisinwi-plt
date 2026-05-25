@@ -6,14 +6,10 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
+from .tools import get_tools
 from ..utils import track_agent, get_agent_role_from_config
 from app.services.metrics.post import add_agent_in_metrics
 from app.services.agent_history.post import agent_history_client
-from app.services.data import (
-    get_dataset_info,
-    get_version_info,
-    list_datasets,
-)
 from app.logs import get_logger
 from app.core.llm import llm
 
@@ -84,11 +80,7 @@ class DatasetAnalystCrew:
             config=self.agents_config["dataset_analyst"],  # type: ignore[index]
             verbose=True,
             llm=llm,
-            tools=[
-                get_dataset_info,
-                get_version_info,
-                list_datasets,
-            ],
+            tools=get_tools(AGENT_ROLE),
             allow_delegation=False,
             max_iter=8,
         )
@@ -130,10 +122,6 @@ def run_dataset_analyst(
     записывает в историю дискусии.
     """
     crew = DatasetAnalystCrew().crew(verbose=verbose)
-    agent_role = crew.agents[0].role
-
-    # Заносим в историю информацию о старте агента аналитика
-    agent_history_client.agent_start(agent_role)
 
     crew_output = crew.kickoff(
         inputs={
@@ -172,10 +160,10 @@ def run_dataset_analyst(
     # Сохраняем метрики и историю
     add_agent_in_metrics(crew=crew)
 
-    agent_history_client.add_response(
+    agent_history_client.agent_succeed(
         response_id=str(crew.id),
-        agent_role=agent_role,
-        agent_response=result.get_summary()  # сохраняем основной текст
+        agent_role=AGENT_ROLE,
+        text=result.get_summary()  # сохраняем основной текст
     )
 
     logger.info(f"Аналитик датасетов отработал")

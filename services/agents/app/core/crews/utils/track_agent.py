@@ -1,7 +1,7 @@
 import yaml
 from pathlib import Path
 from functools import wraps
-from typing import Callable, Optional
+from typing import Callable
 
 from app.services.agent_history.post import agent_history_client
 from app.logs import get_logger
@@ -27,7 +27,7 @@ def track_agent(agent_role: str):
         def wrapper(*args, **kwargs):
 
             # Логируем начало работы
-            agent_history_client.agent_start(agent_role)
+            agent_history_client.info(f"🚀 Агент '{agent_role}' начал работу")
             logger.info(f"🚀 Агент '{agent_role}' начал работу")
 
             try:

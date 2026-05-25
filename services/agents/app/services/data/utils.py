@@ -1,4 +1,5 @@
 import requests
+from typing import List
 from functools import wraps
 
 from app.config import config_url
@@ -97,3 +98,15 @@ def health() -> dict:
         return {
             "status": "dead"
         }
+
+def get_dataset_info_classes(dataset_id: str) -> List[str]:
+    """
+    Получить всю информацию о датасете по ID
+    
+    Args:
+        dataset_id: Id датасета
+        
+    Returns:
+        Dict с информацией о датасете или ошибкой
+    """    
+    return get_json(f"/api/datasets/{dataset_id}")["class_names"]

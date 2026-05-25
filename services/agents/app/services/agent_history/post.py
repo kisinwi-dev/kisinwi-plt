@@ -1,6 +1,5 @@
 import requests
 from typing import Any, Dict
-from enum import Enum
 
 from app.config import config_url
 from app.logs import get_logger
@@ -8,145 +7,217 @@ from app.core.memory import discussion_context
 
 logger = get_logger(__name__)
 
-class SystemMessageType(Enum):
-    """Типы системных сообщений"""
-    INFO = "INFO"
-    WARNING = "WARNING"
-    ERROR = "ERROR"
-    TOOL_CALL = "TOOL_CALL"
-    TOOL_RESULT = "TOOL_RESULT"
-    AGENT_START = "AGENT_START"
-
 
 class AgentHistoryClient:
     """Клиент для работы с историей агентов"""
 
     def __init__(self):
         self.base_url = config_url.AGENT_HISTORY        
-    
-    def _make_request(
+
+    def _make_discussion_request(
         self, 
         endpoint: str, 
         data: Dict[str, Any]
     ) -> bool:
         """
         Метод отправки запросов
-        
+
         Args:
             endpoint: Endpoint для запроса
             data: Данные для отправки
-            
+
         Returns:
             bool: Успешность операции
         """
-        
+
         discussion_id = discussion_context.get()
 
         url = f"{self.base_url}/discussions/{discussion_id}/{endpoint}"
-        
+
         try:
             response = requests.post(url, json=data)
-            
+
             if response.status_code == 201:
-                logger.debug(f"✅ Событие '{data['type_']}' сохранено в историю discussion_id=`{discussion_id}`")
+                logger.debug(f"✅ Событие сохранено в историю discussion_id=`{discussion_id}`")
                 return True
             else:
                 logger.error(f"Ошибка отправки: {response.status_code} - {response.text}")
                 return False
-                
+
         except Exception as e:
-            logger.error(f"Непредвиденная ошибка: {e}")
+            logger.error(f"Непредвиденная ошибка: {str(e)}")
             return False
-    
-    def add_response(
+
+    def _add_agent(
         self, 
-        response_id: str, 
-        agent_role: str, 
-        agent_response: str
+        response_id: str,
+        agent_role: str,
+        text: str,
+        status: str
     ) -> bool:
         """
         Добавление ответа агента в историю
-        
-        Args:
-            response_id: ID ответа
-            agent_role: Роль агента
-            agent_response: Полученный ответ от агента
         """
         data = {
-            "type_": "AGENT_RESPONSE",
             "response_id": response_id,
+            "status": status,
             "agent_role": agent_role,
-            "text": agent_response
+            "text": text
         }
-        return self._make_request("responses", data)
-    
-    def add_system_message(
+        return self._make_discussion_request("responses", data)
+
+    def agent_start(
+        self, 
+        response_id: str,
+        agent_role: str,
+        text: str,
+    ) -> bool:
+        """
+        Добавление агента при инциализации первого
+
+        Args:
+            response_id: Id ответа,
+            agent_role: Роль агента,
+            text: Текст от агента,
+        """
+        return self._add_agent(
+            response_id,
+            agent_role,
+            text,
+            status="IN PROGRESS"
+        )
+
+    def agent_succeed(
+        self, 
+        response_id: str,
+        agent_role: str,
+        text: str,
+    ) -> bool:
+        """
+        Добавление результатов работы агента
+
+        Args:
+            response_id: Id ответа,
+            agent_role: Роль агента,
+            text: Текст от агента,
+        """
+        return self._add_agent(
+            response_id,
+            agent_role,
+            text,
+            status="SUCCEED"
+        )
+
+    def _add_tool(
+        self, 
+        id: str, 
+        agent_role: str,
+        name: str,
+        message: str,
+        status: str
+    ) -> bool:
+        """Добавить вызов инструмента"""
+
+        data = {
+            "id": id,
+            "agent_role": agent_role,
+            "name": name,
+            "status": status,
+            "message": message
+        }
+
+        return self._make_discussion_request("tool", data)
+
+    def tool_start(
         self,
-        type_: SystemMessageType,
+        id: str, 
+        agent_role: str,
+        name: str,
+        message: str | None,
+    ) -> bool:
+        """
+        Добавить историю инструмента
+        """
+
+        message = message if message else "Нет информации"
+
+        return self._add_tool(
+            id, 
+            agent_role,
+            name,
+            message,
+            status= "IN PROGRESS"
+        )
+
+    def tool_succed(
+        self,
+        id: str, 
+        agent_role: str,
+        name: str,
+        message: str,
+    ) -> bool:
+        """
+        Вывести результат работы агента
+        """
+
+        return self._add_tool(
+            id, 
+            agent_role,
+            name,
+            message,
+            status= "SUCCEED"
+        )
+
+    def tool_error(
+        self,
+        id: str, 
+        agent_role: str,
+        name: str,
+        message: str,
+    ) -> bool:
+        """
+        Вывести результат работы агента
+        """
+
+        return self._add_tool(
+            id, 
+            agent_role,
+            name,
+            message,
+            status= "ERROR"
+        )
+
+
+    def _add_system_message(
+        self,
+        type_: str,
         message: str,
     ) -> bool:
         """
         Добавление системного сообщения в историю
-        
+
         Args:
             type_: Тип сообщения
             message: Текст сообщения
         """
         data = {
-            "type_": type_.value if isinstance(type_, SystemMessageType) else type_,
+            "type_": type_,
             "message": message
         }
-            
-        return self._make_request("system_messages", data)
-        
+
+        return self._make_discussion_request("system_messages", data)
+
     def info(self, message: str) -> bool:
         """Добавить информационное сообщение"""
-        return self.add_system_message(SystemMessageType.INFO, message)
-    
+        return self._add_system_message("INFO", message)
+
     def warning(self, message: str) -> bool:
         """Добавить предупреждение"""
-        return self.add_system_message(SystemMessageType.WARNING, message)
-    
+        return self._add_system_message("WARNING", message)
+
     def error(self, message: str) -> bool:
         """Добавить ошибку"""
-        return self.add_system_message(SystemMessageType.ERROR, message)
-    
-    def tool_call(
-        self, 
-        agent_role: str, 
-        tool_name: str,
-        tool_desc: str | None = None
-    ) -> bool:
-        """Добавить вызов инструмента"""
-        msg =f"Агент {agent_role} вызвал инструмент {tool_name}"
-        msg += f"\nОписание: {tool_desc if tool_desc else "нет описания"}"
-        
-        return self.add_system_message(
-            SystemMessageType.TOOL_CALL,
-            msg
-        )
-    
-    def tool_result(
-        self,
-        tool_name: str,
-        message: str | None = None
-    ) -> bool:
-        """Добавить результат работы инструмента"""
-        msg = message or f"Инструмент {tool_name} закончил выполнение"
-        return self.add_system_message(
-            SystemMessageType.TOOL_RESULT,
-            msg
-        )
-    
-    def agent_start(
-        self,
-        agent_name: str,
-    ) -> bool:
-        """Добавить информацию о старте работы агента"""
-        msg = f"Агент '{agent_name}' начал работу"
-        return self.add_system_message(
-            SystemMessageType.AGENT_START,
-            msg
-        )
+        return self._add_system_message("ERROR", message)
+
 
 agent_history_client = AgentHistoryClient()

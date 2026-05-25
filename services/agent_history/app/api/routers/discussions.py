@@ -1,27 +1,27 @@
 from fastapi import APIRouter, HTTPException, Response, status
 
-from app.api.schemas import AgentResponse, Discussion, SystemMessage
+from app.api.schemas import Discussion
 from app.api.deps import agent_response_manager
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 
-router = APIRouter(tags=["agents"])
+router = APIRouter(tags=["discussion"])
 
 @router.get(
     "/discussions/{discussion_id}",
-    summary="Получить все ответы агентов в дискуссии",
+    summary="Получить всю историю дискуссии",
     response_model=Discussion,
     status_code=200,
     responses={
-        200: {"description": "Ответы агентов"},
+        200: {"description": "Информация дискуссии"},
         404: {"description": "Ответы агентов или дискуссия не найдены"}
     }
 )
-async def get_response_in_discussion(
+async def get_full_discussion_messages(
     discussion_id: str
 ):
-    """Получить ответы агентов"""
+    """Получить историю дискусии"""
     try:
 
         events = agent_response_manager.get_discussion_history(
@@ -38,6 +38,9 @@ async def get_response_in_discussion(
             discussion_id=discussion_id,
             events=events
         )
+    except HTTPException as e:
+        logger.error(f"Ошибка при удалении дискуссии: {e}")
+        raise e
     except Exception as e:
         logger.error(f"Ошибка при получении всей информации о дискуссии: {e}")
         raise HTTPException(status_code=500, detail=f"Ошибка при получении всей информации о дискуссии: {str(e)}")
@@ -71,60 +74,9 @@ async def delete_discussion(
         return Response(
             status_code=status.HTTP_204_NO_CONTENT
         )
+    except HTTPException as e:
+        logger.error(f"Ошибка при удалении дискуссии: {e}")
+        raise e
     except Exception as e:
         logger.error(f"Ошибка при удалении дискуссии: {e}")
         raise HTTPException(status_code=500, detail=f"Ошибка при удалении дискуссии: {str(e)}")
-
-@router.post(
-    "/discussions/{discussion_id}/responses",
-    summary="Сохранить ответ агента",
-    status_code=201,
-    responses={
-        201: {"description": "Ответ агента успешно сохранён"},
-    }
-)
-async def save_response(
-    discussion_id: str,
-    response: AgentResponse
-):
-    """Сохранить новый ответ агента"""
-    try:
-
-        agent_response_manager.save_response(
-            discussion_id=discussion_id,
-            response=response
-        )
-
-        return Response(
-            status_code=status.HTTP_201_CREATED
-        )
-    except Exception as e:
-        logger.error(f"Ошибка при сохранении ответа агента: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка при сохранении ответа агента: {str(e)}")
-
-@router.post(
-    "/discussions/{discussion_id}/system_messages",
-    summary="Сохранение сообщения от системы",
-    status_code=201,
-    responses={
-        201: {"description": "Сообщение системы успешно сохранено"},
-    }
-)
-async def post_system_message(
-    discussion_id: str,
-    message: SystemMessage
-):
-    """Сохранить сообщение системы"""
-    try:
-
-        agent_response_manager.save_system_mes(
-            discussion_id=discussion_id,
-            message=message
-        )
-
-        return Response(
-            status_code=status.HTTP_201_CREATED
-        )
-    except Exception as e:
-        logger.error(f"Ошибка при сохранении сообщения от системы: {e}")
-        raise HTTPException(status_code=500, detail=f"Ошибка при сохранении сообщения от системы: {str(e)}")
