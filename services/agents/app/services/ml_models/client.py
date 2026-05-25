@@ -7,13 +7,15 @@ from app.config import config_url
 
 logger = get_logger(__name__)
 
+ML_MODELS_URL = config_url.ML_MODELS['url']
+
 class ModelMeta(BaseModel):
     model_type: str
     description: str
 
 class MLModelsClient():
     def __init__(self) -> None:
-        self.URL = config_url.ML_MODELS_URL
+        self.URL = ML_MODELS_URL
         self.session = requests.Session()
 
     def health(
@@ -38,7 +40,7 @@ class MLModelsClient():
                 "status": "dead"
             }
 
-    @handle_errors(config_url.ML_MODELS_URL)
+    @handle_errors(ML_MODELS_URL)
     def create_model(
         self,
         name: str,
@@ -87,7 +89,7 @@ class MLModelsClient():
         
         return model_id
     
-    @handle_errors(config_url.ML_MODELS_URL)
+    @handle_errors(ML_MODELS_URL)
     def update_model(
         self,
         model_id: str,

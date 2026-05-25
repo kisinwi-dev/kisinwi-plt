@@ -7,6 +7,7 @@ from app.logs import get_logger
 
 logger = get_logger(__name__)
 
+TRAINER_URL = config_url.TRAINER['url']
 
 class GetExampleTrainingConfigTool(BaseTool):
     """Инструмент для получения примера конфигурации тренировки модели"""
@@ -32,12 +33,12 @@ class GetExampleTrainingConfigTool(BaseTool):
     - Пример всегда актуален для текущей версии API
     """
 
-    @handle_errors(config_url.TRAINER_URL)
+    @handle_errors(TRAINER_URL)
     def _run(self) -> Dict[str, Any]:
-        return get_json(f"{config_url.TRAINER_URL}/info/example_config")
+        return get_json(f"{TRAINER_URL}/info/example_config")
 
     async def _arun(self) -> Dict[str, Any]:
-        return get_json(f"{config_url.TRAINER_URL}/info/example_config")
+        return get_json(f"{TRAINER_URL}/info/example_config")
 
 
 class GetAllAvailableModelsTool(BaseTool):
@@ -71,12 +72,12 @@ class GetAllAvailableModelsTool(BaseTool):
     - Если filter пустой или "*", вернутся все доступные модели
     """
 
-    @handle_errors(config_url.TRAINER_URL)
+    @handle_errors(TRAINER_URL)
     def _run(self, filter_query: str = "*") -> Dict[str, Any]:
-        return get_json(f"{config_url.TRAINER_URL}/info/ml_models", params={"filter": filter_query})
+        return get_json(f"{TRAINER_URL}/info/ml_models", params={"filter": filter_query})
 
     async def _arun(self, filter_query: str = "*") -> Dict[str, Any]:
-        return get_json(f"{config_url.TRAINER_URL}/info/ml_models", params={"filter": filter_query})
+        return get_json(f"{TRAINER_URL}/info/ml_models", params={"filter": filter_query})
 
 
 class GetDeviceInfoTool(BaseTool):
@@ -105,12 +106,12 @@ class GetDeviceInfoTool(BaseTool):
     - Подбирай batch_size исходя из доступной памяти
     """
 
-    @handle_errors(config_url.TRAINER_URL)
+    @handle_errors(TRAINER_URL)
     def _run(self) -> Dict[str, Any]:
-        return get_json(f"{config_url.TRAINER_URL}/info/device")
+        return get_json(f"{TRAINER_URL}/info/device")
 
     async def _arun(self) -> Dict[str, Any]:
-        return get_json(f"{config_url.TRAINER_URL}/info/device")
+        return get_json(f"{TRAINER_URL}/info/device")
 
 
 class GetOptimizersTool(BaseTool):
@@ -136,12 +137,12 @@ class GetOptimizersTool(BaseTool):
     - Названия оптимизаторов чувствительны к регистру
     """
 
-    @handle_errors(config_url.TRAINER_URL)
+    @handle_errors(TRAINER_URL)
     def _run(self) -> Dict[str, Any]:
-        return get_json(f"{config_url.TRAINER_URL}/info/optimizers")
+        return get_json(f"{TRAINER_URL}/info/optimizers")
 
     async def _arun(self) -> Dict[str, Any]:
-        return get_json(f"{config_url.TRAINER_URL}/info/optimizers")
+        return get_json(f"{TRAINER_URL}/info/optimizers")
 
 
 class GetSchedulersTool(BaseTool):
@@ -169,12 +170,12 @@ class GetSchedulersTool(BaseTool):
     - Названия планировщиков чувствительны к регистру
     """
 
-    @handle_errors(config_url.TRAINER_URL)
+    @handle_errors(TRAINER_URL)
     def _run(self) -> Dict[str, Any]:
-        return get_json(f"{config_url.TRAINER_URL}/info/schedulers")
+        return get_json(f"{TRAINER_URL}/info/schedulers")
 
     async def _arun(self) -> Dict[str, Any]:
-        return get_json(f"{config_url.TRAINER_URL}/info/schedulers")
+        return get_json(f"{TRAINER_URL}/info/schedulers")
 
 
 class GetMetricsForTrainerTool(BaseTool):
@@ -202,9 +203,9 @@ class GetMetricsForTrainerTool(BaseTool):
     - Рекомендуется использовать несколько метрик для комплексной оценки
     """
 
-    @handle_errors(config_url.TRAINER_URL)
+    @handle_errors(TRAINER_URL)
     def _run(self) -> Dict[str, Any]:
-        return get_json(f"{config_url.TRAINER_URL}/info/metrics")
+        return get_json(f"{TRAINER_URL}/info/metrics")
 
     async def _arun(self) -> Dict[str, Any]:
-        return get_json(f"{config_url.TRAINER_URL}/info/metrics")
+        return get_json(f"{TRAINER_URL}/info/metrics")

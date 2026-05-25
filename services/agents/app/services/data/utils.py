@@ -7,7 +7,9 @@ from app.logs import get_logger
 
 logger = get_logger(__name__)
 
-@handle_errors(config_url.DMS_URL)
+DATASETS_URL = config_url.DATASETS['url']
+
+@handle_errors(DATASETS_URL)
 def get_dataset_info_classes(dataset_id: str) -> List[str]:
     """
     Получить всю информацию о датасете по ID
@@ -18,13 +20,13 @@ def get_dataset_info_classes(dataset_id: str) -> List[str]:
     Returns:
         Dict с информацией о датасете или ошибкой
     """    
-    return get_json(f"{config_url.DMS_URL}/api/datasets/{dataset_id}")["class_names"]
+    return get_json(f"{DATASETS_URL}/api/datasets/{dataset_id}")["class_names"]
 
 def health() -> dict:
     try:
         # Отправляем  запрос
         response = requests.get(
-            f"{config_url.DMS_URL}/info/health",
+            f"{DATASETS_URL}/info/health",
             timeout=30
         )        
         response.raise_for_status()

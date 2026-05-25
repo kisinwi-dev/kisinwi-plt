@@ -7,6 +7,8 @@ from app.logs import get_logger
 
 logger = get_logger(__name__)
 
+ML_MODELS_URL = config_url.ML_MODELS['url']
+
 class GetModelDetailsTool(BaseTool):
     """Инструмент для получения полной информации об одной ML модели по её ID"""
 
@@ -26,9 +28,9 @@ class GetModelDetailsTool(BaseTool):
     - dict с информацией о модели
     """
 
-    @handle_errors(config_url.ML_MODELS_URL)
+    @handle_errors(ML_MODELS_URL)
     def _run(self, model_id: str) -> Dict[str, Any]:
-        return get_json(f"{config_url.ML_MODELS_URL}/models/{model_id}")
+        return get_json(f"{ML_MODELS_URL}/models/{model_id}")
 
     async def _arun(self, model_id: str) -> Dict[str, Any]:
-        return get_json(f"{config_url.ML_MODELS_URL}/models/{model_id}")
+        return get_json(f"{ML_MODELS_URL}/models/{model_id}")

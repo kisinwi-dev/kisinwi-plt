@@ -7,6 +7,7 @@ from app.logs import get_logger
 
 logger = get_logger(__name__)
 
+METRICS_URL = config_url.METRICS['url']
 
 class GetMetricsForModelTool(BaseTool):
     """Инструмент для получения полного списка метрик ML модели по её ID"""
@@ -33,12 +34,12 @@ class GetMetricsForModelTool(BaseTool):
     - Перед использованием вызови инструмент DoesModelHaveMetrics, что бы проверить наличие модели
     """
 
-    @handle_errors(config_url.METRICS_URL)
+    @handle_errors(METRICS_URL)
     def _run(self, model_id: str) -> Dict[str, Any]:
-        return get_json(f"{config_url.METRICS_URL}/models/{model_id}")
+        return get_json(f"{METRICS_URL}/models/{model_id}")
 
     async def _arun(self, model_id: str) -> Dict[str, Any]:
-        return get_json(f"{config_url.METRICS_URL}/models/{model_id}")
+        return get_json(f"{METRICS_URL}/models/{model_id}")
 
 
 class DoesModelHaveMetricsTool(BaseTool):
@@ -66,11 +67,11 @@ class DoesModelHaveMetricsTool(BaseTool):
     - Если модель не найдена, вернётся False
     """
 
-    @handle_errors(config_url.METRICS_URL)
+    @handle_errors(METRICS_URL)
     def _run(self, model_id: str) -> bool:
-        data = get_json(f"{config_url.METRICS_URL}/models/{model_id}/exists")
+        data = get_json(f"{METRICS_URL}/models/{model_id}/exists")
         return data.get("exists", False)
 
     async def _arun(self, model_id: str) -> bool:
-        data = get_json(f"{config_url.METRICS_URL}/models/{model_id}/exists")
+        data = get_json(f"{METRICS_URL}/models/{model_id}/exists")
         return data.get("exists", False)

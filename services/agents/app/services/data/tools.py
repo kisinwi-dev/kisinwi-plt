@@ -9,6 +9,8 @@ from app.logs import get_logger
 
 logger = get_logger(__name__)
 
+DATASETS_URL = config_url.DATASETS['url']
+
 class GetDatasetDetailsTool(BaseTool):
     """Инструмент для получения полной информации о датасете по его ID"""
 
@@ -33,12 +35,12 @@ class GetDatasetDetailsTool(BaseTool):
     - Используй этот инструмент перед работой с конкретными версиями
     """
 
-    @handle_errors(config_url.DMS_URL)
+    @handle_errors(DATASETS_URL)
     def _run(self, dataset_id: str) -> Dict[str, Any]:
-        return get_json(f"{config_url.DMS_URL}/api/datasets/{dataset_id}")
+        return get_json(f"{DATASETS_URL}/api/datasets/{dataset_id}")
 
     async def _arun(self, dataset_id: str) -> Dict[str, Any]:
-        return get_json(f"{config_url.DMS_URL}/api/datasets/{dataset_id}")
+        return get_json(f"{DATASETS_URL}/api/datasets/{dataset_id}")
 
 
 class GetDatasetVersionDetailsTool(BaseTool):
@@ -66,12 +68,12 @@ class GetDatasetVersionDetailsTool(BaseTool):
     - Всегда проверяй существование версии перед вызовом
     """
 
-    @handle_errors(config_url.DMS_URL)
+    @handle_errors(DATASETS_URL)
     def _run(self, dataset_id: str, version_id: str) -> Dict[str, Any]:
-        return get_json(f"{config_url.DMS_URL}/api/datasets/{dataset_id}/versions/{version_id}")
+        return get_json(f"{DATASETS_URL}/api/datasets/{dataset_id}/versions/{version_id}")
 
     async def _arun(self, dataset_id: str, version_id: str) -> Dict[str, Any]:
-        return get_json(f"{config_url.DMS_URL}/api/datasets/{dataset_id}/versions/{version_id}")
+        return get_json(f"{DATASETS_URL}/api/datasets/{dataset_id}/versions/{version_id}")
 
 
 class GetDatasetSplitSizesTool(BaseTool):
@@ -101,13 +103,13 @@ class GetDatasetSplitSizesTool(BaseTool):
     - Для задач классификации важно, чтобы распределение классов было равномерным
     """
 
-    @handle_errors(config_url.DMS_URL)
+    @handle_errors(DATASETS_URL)
     def _run(self, dataset_id: str, version_id: str) -> Dict[str, Any]:
-        json_data = get_json(f"{config_url.DMS_URL}/api/datasets/{dataset_id}/versions/{version_id}")
+        json_data = get_json(f"{DATASETS_URL}/api/datasets/{dataset_id}/versions/{version_id}")
         return get_sample_sizes_for_all_data(json_data)
 
     async def _arun(self, dataset_id: str, version_id: str) -> Dict[str, Any]:
-        json_data = get_json(f"{config_url.DMS_URL}/api/datasets/{dataset_id}/versions/{version_id}")
+        json_data = get_json(f"{DATASETS_URL}/api/datasets/{dataset_id}/versions/{version_id}")
         return get_sample_sizes_for_all_data(json_data)
 
 
@@ -131,12 +133,12 @@ class ListAllDatasetsTool(BaseTool):
     - dict с информацией об имеющихся датасетах
     """
 
-    @handle_errors(config_url.DMS_URL)
+    @handle_errors(DATASETS_URL)
     def _run(self) -> Dict[str, Any]:
-        return get_json(f"{config_url.DMS_URL}/api/datasets/")
+        return get_json(f"{DATASETS_URL}/api/datasets/")
 
     async def _arun(self) -> Dict[str, Any]:
-        return get_json(f"{config_url.DMS_URL}/api/datasets/")
+        return get_json(f"{DATASETS_URL}/api/datasets/")
 
 # __WARNING__ ТРЕБУЕТСЯ РЕАЛИЗОВАТЬ ТАКОЙ МЕТОД В СЕРВИСЕ С ДАТАСЕТАМИ
 def get_sample_sizes_for_all_data(dataset_info: dict) -> dict:

@@ -10,7 +10,7 @@ logger = get_logger(__name__)
 
 class TaskerClient():
     def __init__(self) -> None:
-        self.URL = config_url.TASKER_URL
+        self.URL = config_url.TASKER['url']
         self.session = requests.Session()
 
     def health(
