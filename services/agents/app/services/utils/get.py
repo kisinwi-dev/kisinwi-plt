@@ -41,7 +41,10 @@ def handle_errors(domain: str):
         return wrapper
     return decorator
 
-def get_json(url: str) -> dict:
-    resp = requests.get(url)
+def get_json(url: str, params: dict | None = None) -> dict:
+    resp = requests.get(
+        url,
+        params=params
+    )
     resp.raise_for_status()
     return resp.json()
