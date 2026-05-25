@@ -9,9 +9,8 @@ logger = get_logger(__name__)
 
 def check_connection_status(
         url: str,
-        bd_name: str,
-        bd_info: str
-    ) -> Dict[str, str]:
+        bd_name: str
+    ) -> bool:
     """Проверка подключения к БД"""
     try:
         logger.debug(f"Проверка URL: {url}")
@@ -21,21 +20,15 @@ def check_connection_status(
         )
         client[bd_name].command("ping")
         logger.info(f"🟩 MongoDB[{bd_name}]: готов")
-        return {
-            "bd_info": bd_info,
-            "status": "healthy"
-        }
+        return True
     except ConnectionFailure as e:
         logger.error(f"Не удалось установить соединение с MongoDB (DB:'{bd_name}'):\n{e}")
-        return {
-            "bd_info": bd_info,
-            "status": "dead"
-        }
+        return False
     finally:
         if client:
             client.close()
 
-def check_health_all() -> List[Dict[str, str]]:
+def check_health_all() -> Dict[str, bool]:
     """
     Проверка подключения к базам данных
 
@@ -43,13 +36,17 @@ def check_health_all() -> List[Dict[str, str]]:
         Возвращает словарь с информацией по состоянию сервиса
     """
     logger.info("Проверяем состояние подключения к базам данных...")
-    check_info = []
-    check_info.append(
-        check_connection_status(
-            mongodb_config.URL_METRIC, 
-            mongodb_config.DATABASE_METRIC,
-            "База данных метрик"
-        )
+    
+
+    bd = mongodb_config.DATABASE_METRIC+"_mongo"
+    connection_status_bd = check_connection_status(
+        mongodb_config.URL_METRIC, 
+        mongodb_config.DATABASE_METRIC
     )
+
+    check_info = {
+        bd:connection_status_bd
+    }
+
     logger.info("Проверка завершена")
     return check_info
