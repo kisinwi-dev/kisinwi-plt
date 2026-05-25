@@ -4,7 +4,7 @@ from app.core.crews.ml_engeneer import MlEngineerResponse
 from app.core.memory import discussion_context, models_context
 from app.services.data import get_dataset_info_classes
 from app.services.ml_models import ml_models_client
-from app.services.tasker import tasker
+from app.services.tasker import tasker_client
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -58,7 +58,7 @@ def training(
     logger.info("✅ ML модель создана")
 
     logger.info("Создание задачи на обучение...")
-    task_id = tasker.task_training_create(
+    task_id = tasker_client.task_training_create(
         task_name=f"Обучение модели {training_input.model_name} версия {training_input.version_model}",
         model_id=model_id,
         discussion_id=discussion_context.get()
@@ -66,7 +66,7 @@ def training(
     logger.info("✅ Задача создана")
 
     logger.info("Ожидаем конец выполнения задачи...")
-    is_complete, task = tasker.waiting_completed(task_id)
+    is_complete, task = tasker_client.waiting_completed(task_id)
 
     if is_complete:
         # занесение модели в список обученных моделей
