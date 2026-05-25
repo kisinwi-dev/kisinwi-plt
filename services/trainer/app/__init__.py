@@ -1,13 +1,7 @@
-import os
-from dotenv import load_dotenv
+from .config import config_services
 
-load_dotenv()
-
-hf_token = os.getenv("HF_TOKEN")
-if not hf_token:
-    print("⚠️ HF_TOKEN не найден в .env")
-else:
-    print(f"✅ HF_TOKEN загружен ({hf_token[:10]}...)")
+# Проверка доступа к вспомогательным сервисам
+config_services.check_services()
 
 import httpx
 import asyncio
