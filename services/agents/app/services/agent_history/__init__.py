@@ -1,5 +1,5 @@
 from .tools import GetAgentHistoryTool
-from .post import agent_history_client
+from .client import agent_history_client
 from .utils import health
 
 __all__ = [

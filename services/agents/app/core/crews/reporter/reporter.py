@@ -9,7 +9,7 @@ from .tools import get_tools
 from ..utils import track_agent, get_agent_role_from_config
 from app.core.memory import models_context, discussion_context
 from app.services.metrics.post import add_agent_in_metrics
-from app.services.agent_history.post import agent_history_client
+from app.services.agent_history import agent_history_client
 from app.logs import get_logger
 from app.core.llm import llm
 
