@@ -1,19 +1,20 @@
 from typing import Dict, Any
 from crewai.tools import BaseTool
-from pydantic import Field
 
-from .utils import handle_errors, get_json
+from ..utils import handle_errors, get_json
+from app.config import config_url
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 
+TRAINER_URL = config_url.TRAINER['url']
 
 class GetExampleTrainingConfigTool(BaseTool):
-    """Инструмент для получения примера JSON конфигурации тренировки модели"""
+    """Инструмент для получения примера конфигурации тренировки модели"""
 
     name: str = "GetExampleTrainingConfig"
     description: str = """
-    НАЗНАЧЕНИЕ: Получить пример JSON конфигурации для запуска тренировки модели.
+    НАЗНАЧЕНИЕ: Получить пример конфигурации для запуска тренировки модели.
 
     КОГДА ИСПОЛЬЗОВАТЬ:
     - Когда нужно понять структуру конфигурационного файла для обучения
@@ -32,14 +33,12 @@ class GetExampleTrainingConfigTool(BaseTool):
     - Пример всегда актуален для текущей версии API
     """
 
-    @handle_errors
+    @handle_errors(TRAINER_URL)
     def _run(self) -> Dict[str, Any]:
-        """Выполнение инструмента"""
-        return get_json("/info/example_config")
+        return get_json(f"{TRAINER_URL}/info/example_config")
 
     async def _arun(self) -> Dict[str, Any]:
-        """Асинхронная версия"""
-        return get_json("/info/example_config")
+        return get_json(f"{TRAINER_URL}/info/example_config")
 
 
 class GetAllAvailableModelsTool(BaseTool):
@@ -65,7 +64,7 @@ class GetAllAvailableModelsTool(BaseTool):
       - "*" - все доступные модели
 
     ВОЗВРАЩАЕТ:
-    - dict с списком моделей
+    - список моделей
 
     ВАЖНЫЕ ЗАМЕЧАНИЯ:
     - Известно, что используется библиотека timm 
@@ -73,19 +72,12 @@ class GetAllAvailableModelsTool(BaseTool):
     - Если filter пустой или "*", вернутся все доступные модели
     """
 
-    filter_query: str = Field(
-        default="*",
-        description="Фильтр для поиска моделей по названию. Передавать в нижнем регистре. Пример: '*resnet*'"
-    )
-
-    @handle_errors
+    @handle_errors(TRAINER_URL)
     def _run(self, filter_query: str = "*") -> Dict[str, Any]:
-        """Выполнение инструмента"""
-        return get_json("/info/ml_models", params={"filter": filter_query})
+        return get_json(f"{TRAINER_URL}/info/ml_models", params={"filter": filter_query})
 
     async def _arun(self, filter_query: str = "*") -> Dict[str, Any]:
-        """Асинхронная версия"""
-        return get_json("/info/ml_models", params={"filter": filter_query})
+        return get_json(f"{TRAINER_URL}/info/ml_models", params={"filter": filter_query})
 
 
 class GetDeviceInfoTool(BaseTool):
@@ -112,17 +104,14 @@ class GetDeviceInfoTool(BaseTool):
     - Всегда проверяй доступное устройство перед обучением
     - На CPU обучение будет значительно медленнее
     - Подбирай batch_size исходя из доступной памяти
-    - Используй recommended_batch_size как ориентир
     """
 
-    @handle_errors
+    @handle_errors(TRAINER_URL)
     def _run(self) -> Dict[str, Any]:
-        """Выполнение инструмента"""
-        return get_json("/info/device")
+        return get_json(f"{TRAINER_URL}/info/device")
 
     async def _arun(self) -> Dict[str, Any]:
-        """Асинхронная версия"""
-        return get_json("/info/device")
+        return get_json(f"{TRAINER_URL}/info/device")
 
 
 class GetOptimizersTool(BaseTool):
@@ -134,28 +123,26 @@ class GetOptimizersTool(BaseTool):
 
     КОГДА ИСПОЛЬЗОВАТЬ:
     - При выборе оптимизатора для обучения модели
-    - Для изучения доступных опций
+    - Для изучения доступных оптимизаторов
 
     ВХОДНЫЕ ДАННЫЕ:
     - Нет входных параметров
 
     ВОЗВРАЩАЕТ:
-    - dict со списком оптимизаторов
+    - список оптимизаторов
 
     ВАЖНЫЕ ЗАМЕЧАНИЯ:
     - Все оптимизаторы совместимы с PyTorch и используют ту же конфигурацию
-    - Параметры оптимизатора передаются так же, как в torch.optim
+    - Параметры оптимизатора передаются так же, как в оптимизаторы из torch.optim
     - Названия оптимизаторов чувствительны к регистру
     """
 
-    @handle_errors
+    @handle_errors(TRAINER_URL)
     def _run(self) -> Dict[str, Any]:
-        """Выполнение инструмента"""
-        return get_json("/info/optimizers")
+        return get_json(f"{TRAINER_URL}/info/optimizers")
 
     async def _arun(self) -> Dict[str, Any]:
-        """Асинхронная версия"""
-        return get_json("/info/optimizers")
+        return get_json(f"{TRAINER_URL}/info/optimizers")
 
 
 class GetSchedulersTool(BaseTool):
@@ -175,22 +162,20 @@ class GetSchedulersTool(BaseTool):
     - Нет входных параметров
 
     ВОЗВРАЩАЕТ:
-    - dict со списком планировщиков
+    - список планировщиков
 
     ВАЖНЫЕ ЗАМЕЧАНИЯ:
     - Все планировщики совместимы с PyTorch и используют ту же конфигурацию
-    - Параметры передаются так же, как в torch.optim.lr_scheduler
+    - Параметры передаются так же, как в планировщики из torch.optim.lr_scheduler
     - Названия планировщиков чувствительны к регистру
     """
 
-    @handle_errors
+    @handle_errors(TRAINER_URL)
     def _run(self) -> Dict[str, Any]:
-        """Выполнение инструмента"""
-        return get_json("/info/schedulers")
+        return get_json(f"{TRAINER_URL}/info/schedulers")
 
     async def _arun(self) -> Dict[str, Any]:
-        """Асинхронная версия"""
-        return get_json("/info/schedulers")
+        return get_json(f"{TRAINER_URL}/info/schedulers")
 
 
 class GetMetricsForTrainerTool(BaseTool):
@@ -210,19 +195,17 @@ class GetMetricsForTrainerTool(BaseTool):
     - Нет входных параметров
 
     ВОЗВРАЩАЕТ:
-    - dict со списком доступных метрик
+    - список доступных метрик
 
     ВАЖНЫЕ ЗАМЕЧАНИЯ:
     - Метрики чувствительны к регистру (используйте точно как в ответе)
-    - loss всегда доступна во время обучения и добавляется автоматически
+    - loss всегда доступна во время обучения и добавляется автоматически(её не нужно указывать)
     - Рекомендуется использовать несколько метрик для комплексной оценки
     """
 
-    @handle_errors
+    @handle_errors(TRAINER_URL)
     def _run(self) -> Dict[str, Any]:
-        """Выполнение инструмента"""
-        return get_json("/info/metrics")
+        return get_json(f"{TRAINER_URL}/info/metrics")
 
     async def _arun(self) -> Dict[str, Any]:
-        """Асинхронная версия"""
-        return get_json("/info/metrics")
+        return get_json(f"{TRAINER_URL}/info/metrics")

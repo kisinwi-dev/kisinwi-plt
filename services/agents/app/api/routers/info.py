@@ -7,7 +7,11 @@ routers = APIRouter(
     tags=['info']
 )
 
-@routers.get("/health")
+@routers.get(
+    "/health",
+    summary="Информация о сервисе",
+    description="Вывод информации о работоспособности сервиса"
+)
 async def health():
     """Проверка работоспособности сервиса"""
     return HealthResponse(

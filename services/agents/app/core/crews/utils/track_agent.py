@@ -3,7 +3,7 @@ from pathlib import Path
 from functools import wraps
 from typing import Callable
 
-from app.services.agent_history.post import agent_history_client
+from app.services.agent_history import agent_history_client
 from app.logs import get_logger
 
 logger = get_logger(__name__)

@@ -8,12 +8,15 @@ from app.logs import get_logger
 
 logger = get_logger(__name__)
 
+METRICS_URL = config_url.METRICS['url']
+
 def add_agent_in_metrics(
         crew: Crew
 ) -> bool:
-    
+    """
+    Добавление метрик(потраченные токены)
+    """
     agent_info = {}
-
     agent_info["response_id"] = str(crew.id)
     agent_info["metrics"] = _token_metrics_to_dict(crew.usage_metrics)
 
@@ -27,7 +30,7 @@ def _post(
     """
     Синхронная отправка ответа агента
     """
-    url = f"{config_url.METRICS_URL}/agents/add"
+    url = f"{METRICS_URL}/agents/add"
     
     try:
         
@@ -62,27 +65,3 @@ def _token_metrics_to_dict(
         "completion_tokens": metrics.completion_tokens,
         "successful_requests": metrics.successful_requests
     }
-
-def health() -> dict:
-    try:
-        # Отправляем POST запрос
-        response = requests.get(
-            f"{config_url.METRICS_URL}/info/health",
-            timeout=30
-        )
-        
-        # Проверяем статус ответа
-        response.raise_for_status()
-        
-        return response.json()
-    
-    except requests.RequestException as e:
-        logger.error(f"Ошибка HTTP при обращении к сервису метрик: {e}")
-        return {
-            "status": "dead"
-        }
-    except Exception as e:
-        logger.error(f"Ошибка при обращении к сервису метрик: {e}")
-        return {
-            "status": "dead"
-        }

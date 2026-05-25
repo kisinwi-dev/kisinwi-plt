@@ -1,35 +1,28 @@
 import openai
-from openai import OpenAI
+from crewai import LLM
 from typing import List, Dict
 
 from app.logs import get_logger
-from app.config import config_base_llm
-from app.services.tasker import tasker
-from app.services.ml_models import ml_models
-from app.services.metrics.post import health as metrics_health
-from app.services.trainer import health as trainer_health
-from app.services.data import health as datasets_healt
+from app.config import config_base_llm, config_url
 
 logger = get_logger(__name__)
 
 def check_connection_llm():
         
-    client = OpenAI(
-        api_key=config_base_llm.OPENROUTER_API_KEY,
+    client = LLM(
+        model=config_base_llm.OPENAI_MODEL_NAME,
         base_url=config_base_llm.OPENAI_API_BASE,
-        timeout=10.0
+        api_key=config_base_llm.OPENROUTER_API_KEY,
+        temperature=0.7,
     )
 
     try:
-        _ = client.chat.completions.create(
-            model=config_base_llm.OPENAI_MODEL_NAME,
-            messages=[{"role": "user", "content": "ping"}],
-            max_tokens=5,
-            timeout=5.0
+        _ = client.call(
+            "Напиши Ок и всё. Я проверяю, что ты работаешь"
         )
         
         return {
-            "status": "healthy",
+            "healthy": "true",
             "details": "Готово к использованию",
             "model": config_base_llm.OPENAI_MODEL_NAME,
             "api_base": config_base_llm.OPENAI_API_BASE
@@ -87,13 +80,7 @@ def check_health_all() -> Dict[str, List]:
     }
 
     logger.info(" - подключение к внутренним сервисам...")
-    info["services"] = {
-        "datasets": datasets_healt(),
-        "ml_models": ml_models.health(),
-        "tasker": tasker.health(),
-        "trainer": trainer_health(),
-        "metrics": metrics_health()
-    }
+    info["services"] = config_url.check_services()
 
     logger.info("✅ Проверка завершена")
     return info

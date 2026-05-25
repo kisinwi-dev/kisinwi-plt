@@ -1,7 +1,7 @@
 from uuid import uuid4
 from typing import List, Dict
 from crewai.tools import BaseTool
-from app.services.agent_history.post import agent_history_client
+from app.services.agent_history import agent_history_client
 from app.logs import get_logger
 
 logger = get_logger(__name__)

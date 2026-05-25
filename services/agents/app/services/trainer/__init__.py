@@ -1,4 +1,3 @@
-from .utils import health
 from .tools import (
     GetExampleTrainingConfigTool,
     GetAllAvailableModelsTool,
@@ -9,7 +8,6 @@ from .tools import (
 )
 
 __all__ = [
-    'health',
     'GetExampleTrainingConfigTool',
     'GetAllAvailableModelsTool',
     'GetDeviceInfoTool',
