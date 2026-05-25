@@ -162,6 +162,7 @@ services:
     depends_on:
       - metrics
       - tasker
+      - ml_models
     networks:
       - network
     shm_size: 2gb
