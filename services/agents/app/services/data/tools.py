@@ -1,11 +1,10 @@
 from crewai.tools import BaseTool
-from pydantic import Field
 from typing import Dict, Any
 
-from .utils import (
-    get_json, handle_errors, 
-    get_sample_sizes_for_all_data
+from ..utils import (
+    get_json, handle_errors
 )
+from app.config import config_url
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -34,14 +33,12 @@ class GetDatasetDetailsTool(BaseTool):
     - Используй этот инструмент перед работой с конкретными версиями
     """
 
-    @handle_errors
+    @handle_errors(config_url.DMS_URL)
     def _run(self, dataset_id: str) -> Dict[str, Any]:
-        """Выполнение инструмента"""
-        return get_json(f"/api/datasets/{dataset_id}")
+        return get_json(f"{config_url.DMS_URL}/api/datasets/{dataset_id}")
 
     async def _arun(self, dataset_id: str) -> Dict[str, Any]:
-        """Асинхронная версия"""
-        return get_json(f"/api/datasets/{dataset_id}")
+        return get_json(f"{config_url.DMS_URL}/api/datasets/{dataset_id}")
 
 
 class GetDatasetVersionDetailsTool(BaseTool):
@@ -55,7 +52,6 @@ class GetDatasetVersionDetailsTool(BaseTool):
     - Когда нужно узнать детали версии датасета
     - Для получения размера версии, количества сэмплов
     - Перед обучением модели на конкретной версии
-    - Для проверки, какие классы входят в версию
 
     ВХОДНЫЕ ДАННЫЕ:
     - dataset_id (str): ID датасета.
@@ -68,26 +64,22 @@ class GetDatasetVersionDetailsTool(BaseTool):
 
     ВАЖНЫЕ ЗАМЕЧАНИЯ:
     - Всегда проверяй существование версии перед вызовом
-    - class_distribution важен для выявления дисбаланса классов
     """
 
-    @handle_errors
+    @handle_errors(config_url.DMS_URL)
     def _run(self, dataset_id: str, version_id: str) -> Dict[str, Any]:
-        """Выполнение инструмента"""
-        return get_json(f"/api/datasets/{dataset_id}/versions/{version_id}")
+        return get_json(f"{config_url.DMS_URL}/api/datasets/{dataset_id}/versions/{version_id}")
 
     async def _arun(self, dataset_id: str, version_id: str) -> Dict[str, Any]:
-        """Асинхронная версия"""
-        return get_json(f"/api/datasets/{dataset_id}/versions/{version_id}")
+        return get_json(f"{config_url.DMS_URL}/api/datasets/{dataset_id}/versions/{version_id}")
 
 
 class GetDatasetSplitSizesTool(BaseTool):
-    """Инструмент для получения информации о разбиении датасета на train/val/test"""
+    """Инструмент для получения информации о разбиении версии датасета на train/val/test"""
 
     name: str = "GetDatasetSplitSizes"
-    
     description: str = """
-    НАЗНАЧЕНИЕ: Получить информацию о разбиении датасета на train/val/test.
+    НАЗНАЧЕНИЕ: Получить информацию о разбиении версии датасета на train/val/test.
 
     КОГДА ИСПОЛЬЗОВАТЬ:
     - Перед обучением модели, чтобы понять размеры выборок
@@ -109,25 +101,22 @@ class GetDatasetSplitSizesTool(BaseTool):
     - Для задач классификации важно, чтобы распределение классов было равномерным
     """
 
-    @handle_errors
+    @handle_errors(config_url.DMS_URL)
     def _run(self, dataset_id: str, version_id: str) -> Dict[str, Any]:
-        """Выполнение инструмента"""
-        json_data = get_json(f"/api/datasets/{dataset_id}/versions/{version_id}")
+        json_data = get_json(f"{config_url.DMS_URL}/api/datasets/{dataset_id}/versions/{version_id}")
         return get_sample_sizes_for_all_data(json_data)
 
     async def _arun(self, dataset_id: str, version_id: str) -> Dict[str, Any]:
-        """Асинхронная версия"""
-        json_data = get_json(f"/api/datasets/{dataset_id}/versions/{version_id}")
+        json_data = get_json(f"{config_url.DMS_URL}/api/datasets/{dataset_id}/versions/{version_id}")
         return get_sample_sizes_for_all_data(json_data)
 
 
 class ListAllDatasetsTool(BaseTool):
-    """Инструмент для получения списка всех доступных датасетов"""
+    """Инструмент для получения всех доступных датасетов"""
 
     name: str = "ListAllDatasets"
-
     description: str = """
-    НАЗНАЧЕНИЕ: Получить список всех доступных датасетов в системе.
+    НАЗНАЧЕНИЕ: Получить всех доступных датасетов в системе.
 
     КОГДА ИСПОЛЬЗОВАТЬ:
     - Когда нужно узнать, какие датасеты доступны
@@ -139,18 +128,50 @@ class ListAllDatasetsTool(BaseTool):
     - Нет входных параметров
 
     ВОЗВРАЩАЕТ:
-    - dict с информацией о имеющихся датасетах
-
-    ВАЖНЫЕ ЗАМЕЧАНИЯ:
-    - Сначала вызови этот инструмент, чтобы узнать доступные датасеты
-    - Затем используй GetDatasetDetailsTool для конкретного датасета
+    - dict с информацией об имеющихся датасетах
     """
 
-    @handle_errors
+    @handle_errors(config_url.DMS_URL)
     def _run(self) -> Dict[str, Any]:
-        """Выполнение инструмента"""
-        return get_json("/api/datasets/")
+        return get_json(f"{config_url.DMS_URL}/api/datasets/")
 
     async def _arun(self) -> Dict[str, Any]:
-        """Асинхронная версия"""
-        return get_json("/api/datasets/")
+        return get_json(f"{config_url.DMS_URL}/api/datasets/")
+
+# __WARNING__ ТРЕБУЕТСЯ РЕАЛИЗОВАТЬ ТАКОЙ МЕТОД В СЕРВИСЕ С ДАТАСЕТАМИ
+def get_sample_sizes_for_all_data(dataset_info: dict) -> dict:
+    """
+    Извлекает информацию о размерах выборки из полной информации о датасете.
+    
+    Args:
+        dataset_info: Полный JSON с информацией о датасете
+        
+    Returns:
+        Словарь с информацией о размерах выборки
+    """
+    
+    result = {
+        "version_id": dataset_info["version_id"],
+        "total_samples": dataset_info["num_samples"],
+        "splits": {}
+    }
+    
+    # Извлекаем информацию по каждому сплиту
+    for split_name, split_data in dataset_info["splits"].items():
+        class_distribution = split_data["class_distribution"]
+        
+        # Общее количество в сплите
+        total_in_split = sum(cls.get("count", 0) for cls in class_distribution)
+        
+        # Распределение по классам
+        class_counts = {
+            cls["class_name"]: cls["count"]
+            for cls in class_distribution
+        }
+        
+        result["splits"][split_name] = {
+            "total": total_in_split,
+            "classes": class_counts
+        }
+    
+    return result

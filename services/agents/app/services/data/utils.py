@@ -1,91 +1,33 @@
 import requests
 from typing import List
-from functools import wraps
 
+from ..utils import get_json, handle_errors
 from app.config import config_url
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 
-def get_json(endpoint: str) -> dict:
-    resp = requests.get(f"{config_url.DMS_URL}{endpoint}")
-    resp.raise_for_status()
-    return resp.json()
-
-# __WARNING__ ТРЕБУЕТСЯ РЕАЛИЗОВАТЬ ТАКОЙ МЕТОД В СЕРВИСЕ С ДАТАСЕТАМИ
-def get_sample_sizes_for_all_data(dataset_info: dict) -> dict:
+@handle_errors(config_url.DMS_URL)
+def get_dataset_info_classes(dataset_id: str) -> List[str]:
     """
-    Извлекает информацию о размерах выборки из полной информации о датасете.
+    Получить всю информацию о датасете по ID
     
     Args:
-        dataset_info: Полный JSON с информацией о датасете
+        dataset_id: Id датасета
         
     Returns:
-        Словарь с информацией о размерах выборки
-    """
-    
-    result = {
-        "version_id": dataset_info["version_id"],
-        "total_samples": dataset_info["num_samples"],
-        "splits": {}
-    }
-    
-    # Извлекаем информацию по каждому сплиту
-    for split_name, split_data in dataset_info["splits"].items():
-        class_distribution = split_data["class_distribution"]
-        
-        # Общее количество в сплите
-        total_in_split = sum(cls.get("count", 0) for cls in class_distribution)
-        
-        # Распределение по классам
-        class_counts = {
-            cls["class_name"]: cls["count"]
-            for cls in class_distribution
-        }
-        
-        result["splits"][split_name] = {
-            "total": total_in_split,
-            "classes": class_counts
-        }
-    
-    return result
-
-
-def handle_errors(func):
-    """Декоратор для обработки ошибок API запросов"""
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except requests.exceptions.Timeout:
-            error_str = f"Timeout: {func.__name__} не ответил..."
-            logger.error(error_str)
-            return {"ERROR": error_str}
-        except requests.exceptions.ConnectionError:
-            error_str = f"Connection error: Не удалось подключиться к {config_url.DMS_URL}"
-            logger.error(error_str)
-            return {"ERROR": error_str}
-        except requests.exceptions.HTTPError as e:
-            error_str = f"HTTP error {e.response.status_code}: {e.response.text}"
-            logger.error(error_str)
-            return {"ERROR": error_str}
-        except Exception as e:
-            error_str = f"Ошибка в {func.__name__}: {str(e)}"
-            logger.error(error_str)
-            return {"ERROR": error_str}
-    return wrapper
+        Dict с информацией о датасете или ошибкой
+    """    
+    return get_json(f"{config_url.DMS_URL}/api/datasets/{dataset_id}")["class_names"]
 
 def health() -> dict:
     try:
-        # Отправляем POST запрос
+        # Отправляем  запрос
         response = requests.get(
             f"{config_url.DMS_URL}/info/health",
             timeout=30
-        )
-        
-        # Проверяем статус ответа
+        )        
         response.raise_for_status()
-        
         return response.json()
     
     except requests.RequestException as e:
@@ -98,15 +40,3 @@ def health() -> dict:
         return {
             "status": "dead"
         }
-
-def get_dataset_info_classes(dataset_id: str) -> List[str]:
-    """
-    Получить всю информацию о датасете по ID
-    
-    Args:
-        dataset_id: Id датасета
-        
-    Returns:
-        Dict с информацией о датасете или ошибкой
-    """    
-    return get_json(f"/api/datasets/{dataset_id}")["class_names"]

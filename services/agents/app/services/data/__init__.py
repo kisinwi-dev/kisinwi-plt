@@ -5,7 +5,7 @@ from .tools import (
 )
 
 __all__ = [
-    'health',
+    'health', 'get_dataset_info_classes',
     'GetDatasetDetailsTool', 'GetDatasetVersionDetailsTool',
     'GetDatasetSplitSizesTool', 'ListAllDatasetsTool'
 ]
