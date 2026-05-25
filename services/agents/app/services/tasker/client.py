@@ -2,9 +2,9 @@ import requests
 import time
 from typing import Tuple
 
+from ..utils import parse_in_json
 from app.logs import get_logger
 from app.config import config_url
-from app.services.tools import parse_in_json
 
 logger = get_logger(__name__)
 

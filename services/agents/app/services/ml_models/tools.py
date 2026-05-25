@@ -1,6 +1,4 @@
-import asyncio
-import aiohttp
-from typing import Dict, Any, List
+from typing import Dict, Any
 from crewai.tools import BaseTool
 
 from ..utils import get_json, handle_errors
