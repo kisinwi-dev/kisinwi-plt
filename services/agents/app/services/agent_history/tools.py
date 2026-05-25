@@ -1,9 +1,10 @@
 from typing import Dict, Any
 from crewai.tools import BaseTool
 
-from .utils import (
+from ..utils import (
     get_json, handle_errors
 )
+from app.config import config_url
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -25,11 +26,9 @@ class GetAgentHistoryTool(BaseTool):
       Пример: "8287449d-e15e-4d72-bc9b-21914ed75787"
     """
 
-    @handle_errors
+    @handle_errors(config_url.AGENT_HISTORY)
     def _run(self, discussion_id: str) -> Dict[str, Any]:
-        """Synchronous implementation."""
-        return get_json(f"/discussions/{discussion_id}")
+        return get_json(f"{config_url.AGENT_HISTORY}/discussions/{discussion_id}")
 
     async def _arun(self, discussion_id: str) -> Dict[str, Any]:
-        """Asynchronous implementation for non-blocking I/O."""
-        return get_json(f"/discussions/{discussion_id}")
+        return get_json(f"{config_url.AGENT_HISTORY}/discussions/{discussion_id}")
