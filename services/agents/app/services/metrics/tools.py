@@ -1,18 +1,19 @@
+from typing import Any, Dict
 from crewai.tools import BaseTool
-from pydantic import Field
 
-from .utils import get_json, handle_errors
+from ..utils import get_json, handle_errors
+from app.config import config_url
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 
 
 class GetMetricsForModelTool(BaseTool):
-    """Инструмент для получения метрик качества ML модели по её ID"""
+    """Инструмент для получения полного списка метрик ML модели по её ID"""
 
     name: str = "GetMetricsForModel"
     description: str = """
-    НАЗНАЧЕНИЕ: Получить метрики качества ML модели по её ID.
+    НАЗНАЧЕНИЕ: Получить полную информацию о метриках ML модели по её ID.
 
     КОГДА ИСПОЛЬЗОВАТЬ:
     - Когда нужно оценить качество конкретной модели
@@ -26,26 +27,24 @@ class GetMetricsForModelTool(BaseTool):
       Пример: "f0536964-7950-4087-aa93-91bd50d835be"
 
     ВОЗВРАЩАЕТ:
-    - Cписок метрик модели
+    - Словарь метрик и список метрик от 1 эпохи обучения к финальной
 
     ВАЖНЫЕ ЗАМЕЧАНИЯ:
-    - Если метрики отсутствуют для модели, вернётся пустой список []
+    - Перед использованием вызови инструмент DoesModelHaveMetrics, что бы проверить наличие модели
     """
 
-    @handle_errors
-    def _run(self, model_id: str):
-        """Выполнение инструмента"""
-        return get_json(f"/models/{model_id}")
+    @handle_errors(config_url.METRICS_URL)
+    def _run(self, model_id: str) -> Dict[str, Any]:
+        return get_json(f"{config_url.METRICS_URL}/models/{model_id}")
 
-    async def _arun(self, model_id: str):
-        """Асинхронная версия"""
-        return get_json(f"/models/{model_id}")
+    async def _arun(self, model_id: str) -> Dict[str, Any]:
+        return get_json(f"{config_url.METRICS_URL}/models/{model_id}")
 
 
 class DoesModelHaveMetricsTool(BaseTool):
     """Инструмент для проверки существования метрик у ML модели"""
     
-    name: str = "DoesModelHaveMetricsTool"
+    name: str = "DoesModelHaveMetrics"
     description: str = """
     НАЗНАЧЕНИЕ: Проверить, существуют ли метрики для указанной ML модели.
 
@@ -67,11 +66,11 @@ class DoesModelHaveMetricsTool(BaseTool):
     - Если модель не найдена, вернётся False
     """
 
-    @handle_errors
-    def _run(self, model_id: str):
-        """Выполнение инструмента"""
-        return get_json(f"/models/{model_id}/exists")
+    @handle_errors(config_url.METRICS_URL)
+    def _run(self, model_id: str) -> bool:
+        data = get_json(f"{config_url.METRICS_URL}/models/{model_id}/exists")
+        return data.get("exists", False)
 
-    async def _arun(self, model_id: str):
-        """Асинхронная версия"""
-        return get_json(f"/models/{model_id}/exists")
+    async def _arun(self, model_id: str) -> bool:
+        data = get_json(f"{config_url.METRICS_URL}/models/{model_id}/exists")
+        return data.get("exists", False)

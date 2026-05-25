@@ -1,4 +1,4 @@
-from .post import health, add_agent_in_metrics
+from .client import health, add_agent_in_metrics
 from .tools import (
     GetMetricsForModelTool, DoesModelHaveMetricsTool
 )

@@ -6,7 +6,7 @@ from app.logs import get_logger
 from app.config import config_base_llm
 from app.services.tasker import tasker
 from app.services.ml_models import ml_models
-from app.services.metrics.post import health as metrics_health
+from app.services.metrics import health as metrics_health
 from app.services.trainer import health as trainer_health
 from app.services.data import health as datasets_healt
 

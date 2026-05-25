@@ -11,9 +11,10 @@ logger = get_logger(__name__)
 def add_agent_in_metrics(
         crew: Crew
 ) -> bool:
-    
+    """
+    Добавление метрик(потраченные токены)
+    """
     agent_info = {}
-
     agent_info["response_id"] = str(crew.id)
     agent_info["metrics"] = _token_metrics_to_dict(crew.usage_metrics)
 
@@ -65,15 +66,11 @@ def _token_metrics_to_dict(
 
 def health() -> dict:
     try:
-        # Отправляем POST запрос
         response = requests.get(
             f"{config_url.METRICS_URL}/info/health",
             timeout=30
-        )
-        
-        # Проверяем статус ответа
+        )        
         response.raise_for_status()
-        
         return response.json()
     
     except requests.RequestException as e:
