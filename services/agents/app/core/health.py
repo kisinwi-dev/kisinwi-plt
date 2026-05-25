@@ -1,5 +1,5 @@
 import openai
-from openai import OpenAI
+from crewai import LLM
 from typing import List, Dict
 
 from app.logs import get_logger
@@ -9,22 +9,20 @@ logger = get_logger(__name__)
 
 def check_connection_llm():
         
-    client = OpenAI(
-        api_key=config_base_llm.OPENROUTER_API_KEY,
+    client = LLM(
+        model=config_base_llm.OPENAI_MODEL_NAME,
         base_url=config_base_llm.OPENAI_API_BASE,
-        timeout=10.0
+        api_key=config_base_llm.OPENROUTER_API_KEY,
+        temperature=0.7,
     )
 
     try:
-        _ = client.chat.completions.create(
-            model=config_base_llm.OPENAI_MODEL_NAME,
-            messages=[{"role": "user", "content": "ping"}],
-            max_tokens=5,
-            timeout=5.0
+        _ = client.call(
+            "Напиши Ок и всё. Я проверяю, что ты работаешь"
         )
         
         return {
-            "status": "healthy",
+            "healthy": "true",
             "details": "Готово к использованию",
             "model": config_base_llm.OPENAI_MODEL_NAME,
             "api_base": config_base_llm.OPENAI_API_BASE
