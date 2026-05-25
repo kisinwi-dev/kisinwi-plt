@@ -9,6 +9,8 @@ from app.logs import get_logger
 
 logger = get_logger(__name__)
 
+AGENT_HISTORY = config_url.AGENT_HISTORY['url']
+
 class GetAgentHistoryTool(BaseTool):
     """Инструмент для получения истории работы агентов по ID диалога"""
 
@@ -26,9 +28,9 @@ class GetAgentHistoryTool(BaseTool):
       Пример: "8287449d-e15e-4d72-bc9b-21914ed75787"
     """
 
-    @handle_errors(config_url.AGENT_HISTORY)
+    @handle_errors(AGENT_HISTORY)
     def _run(self, discussion_id: str) -> Dict[str, Any]:
-        return get_json(f"{config_url.AGENT_HISTORY}/discussions/{discussion_id}")
+        return get_json(f"{AGENT_HISTORY}/discussions/{discussion_id}")
 
     async def _arun(self, discussion_id: str) -> Dict[str, Any]:
-        return get_json(f"{config_url.AGENT_HISTORY}/discussions/{discussion_id}")
+        return get_json(f"{AGENT_HISTORY}/discussions/{discussion_id}")

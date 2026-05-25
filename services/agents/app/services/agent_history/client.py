@@ -12,7 +12,7 @@ class AgentHistoryClient:
     """Клиент для работы с историей агентов"""
 
     def __init__(self):
-        self.base_url = config_url.AGENT_HISTORY        
+        self.base_url = config_url.AGENT_HISTORY['url']
 
     def _make_discussion_request(
         self, 

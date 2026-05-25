@@ -1,5 +1,5 @@
 import requests
-from requests import Request
+from requests import Response
 from functools import wraps
 
 from app.logs import get_logger
@@ -28,7 +28,7 @@ def handle_errors(domain: str):
                 return {"ERROR": error_str}
             except requests.exceptions.HTTPError as e:
                 
-                if isinstance(e.response, Request):
+                if isinstance(e.response, Response):
                     error_str = f"HTTP error {e.response.status_code}: {e.response.text}"
                 else:
                     error_str = f"HTTP error: Неизвестная ошибка..."

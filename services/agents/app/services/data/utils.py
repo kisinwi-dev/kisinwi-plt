@@ -21,24 +21,3 @@ def get_dataset_info_classes(dataset_id: str) -> List[str]:
         Dict с информацией о датасете или ошибкой
     """    
     return get_json(f"{DATASETS_URL}/api/datasets/{dataset_id}")["class_names"]
-
-def health() -> dict:
-    try:
-        # Отправляем  запрос
-        response = requests.get(
-            f"{DATASETS_URL}/info/health",
-            timeout=30
-        )        
-        response.raise_for_status()
-        return response.json()
-    
-    except requests.RequestException as e:
-        logger.error(f"Ошибка HTTP при обращении к сервису датасетов: {e}")
-        return {
-            "status": "dead"
-        }
-    except Exception as e:
-        logger.error(f"Ошибка при обращении к сервису датасетов: {e}")
-        return {
-            "status": "dead"
-        }

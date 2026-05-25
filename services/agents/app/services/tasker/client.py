@@ -13,28 +13,6 @@ class TaskerClient():
         self.URL = config_url.TASKER['url']
         self.session = requests.Session()
 
-    def health(
-        self,
-    ) -> dict:
-        try:
-            response = self.session.get(
-                f"{self.URL}/info/health",
-                timeout=30
-            )
-            response.raise_for_status()
-            return response.json()
-
-        except requests.RequestException as e:
-            logger.error(f"Ошибка HTTP при обращении к сервисе задач: {e}")
-            return {
-                "status": "dead"
-            }
-        except Exception as e:
-            logger.error(f"Ошибка при обращении к сервисе задач: {e}")
-            return {
-                "status": "dead"
-            }
-
     def task_training_create(
         self,
         task_name: str,

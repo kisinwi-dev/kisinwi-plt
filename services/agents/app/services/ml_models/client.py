@@ -18,28 +18,6 @@ class MLModelsClient():
         self.URL = ML_MODELS_URL
         self.session = requests.Session()
 
-    def health(
-        self,
-    ) -> dict:
-        try:
-            response = self.session.get(
-                f"{self.URL}/info/health",
-                timeout=30
-            )
-            response.raise_for_status()
-            return response.json()
-        
-        except requests.RequestException as e:
-            logger.error(f"Ошибка HTTP при обращении к сервису моделей: {e}")
-            return {
-                "status": "dead"
-            }
-        except Exception as e:
-            logger.error(f"Ошибка при обращении к сервису моделей: {e}")
-            return {
-                "status": "dead"
-            }
-
     @handle_errors(ML_MODELS_URL)
     def create_model(
         self,
