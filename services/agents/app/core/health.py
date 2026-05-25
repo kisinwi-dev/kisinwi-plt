@@ -5,7 +5,7 @@ from typing import List, Dict
 from app.logs import get_logger
 from app.config import config_base_llm
 from app.services.tasker import tasker
-from app.services.ml_models import ml_models
+from app.services.ml_models import ml_models_client
 from app.services.metrics import health as metrics_health
 from app.services.trainer import health as trainer_health
 from app.services.data import health as datasets_healt
@@ -89,7 +89,7 @@ def check_health_all() -> Dict[str, List]:
     logger.info(" - подключение к внутренним сервисам...")
     info["services"] = {
         "datasets": datasets_healt(),
-        "ml_models": ml_models.health(),
+        "ml_models": ml_models_client.health(),
         "tasker": tasker.health(),
         "trainer": trainer_health(),
         "metrics": metrics_health()

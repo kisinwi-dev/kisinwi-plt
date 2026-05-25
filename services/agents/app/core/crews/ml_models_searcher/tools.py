@@ -2,11 +2,10 @@ from typing import List
 from crewai.tools import BaseTool
 
 from app.services.metrics import GetMetricsForModelTool, DoesModelHaveMetricsTool
-from app.services.ml_models import GetModelDetailsTool, GetMultipleModelsDetailsTool
+from app.services.ml_models import GetModelDetailsTool
 from ..utils import get_tools_with_tracking
 
 _tool_instances = [
-    GetMultipleModelsDetailsTool(),
     GetModelDetailsTool(),
     DoesModelHaveMetricsTool(),
     GetMetricsForModelTool()

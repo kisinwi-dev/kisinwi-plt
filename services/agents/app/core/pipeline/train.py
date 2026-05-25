@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from app.core.crews.ml_engeneer import MlEngineerResponse
 from app.core.memory import discussion_context, models_context
 from app.services.data import get_dataset_info_classes
-from app.services.ml_models import ml_models
+from app.services.ml_models import ml_models_client
 from app.services.tasker import tasker
 from app.logs import get_logger
 
@@ -43,7 +43,7 @@ def training(
         )
 
     logger.info("Создание ML модели...")
-    model_id = ml_models.create_model(
+    model_id = ml_models_client.create_model(
         # информация о модели
         name=training_input.model_name,
         version=training_input.version_model,

@@ -1,9 +1,9 @@
-from .post import ml_models
+from .client import ml_models_client
 from .tools import (
-    GetModelDetailsTool, GetMultipleModelsDetailsTool
+    GetModelDetailsTool
 )
 
 __all__ = [
-    'ml_models',
-    'GetModelDetailsTool', 'GetMultipleModelsDetailsTool'
+    'ml_models_client',
+    'GetModelDetailsTool'
 ]
