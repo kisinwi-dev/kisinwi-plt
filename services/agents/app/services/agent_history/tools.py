@@ -1,5 +1,4 @@
 from typing import Dict, Any
-from pydantic import Field
 from crewai.tools import BaseTool
 
 from .utils import (
@@ -10,14 +9,16 @@ from app.logs import get_logger
 logger = get_logger(__name__)
 
 class GetAgentHistoryTool(BaseTool):
-    """Инструмент для получения истории ответов агентов по ID диалога"""
+    """Инструмент для получения истории работы агентов по ID диалога"""
 
     name: str = "GetAgentHistory"
     description: str = """
-    НАЗНАЧЕНИЕ: Получить полную информацию об ответах агентов по ID диалога.
+    НАЗНАЧЕНИЕ: Получить полную информацию действий агентов ID диалога.
 
     КОГДА ИСПОЛЬЗОВАТЬ:
     - Когда нужно узнать историю рассуждений
+    - Когда нужно понять, какие инструменты уже вызывались
+    - Когда нужно проанализировать предыдущие ответы
 
     ВХОДНЫЕ ДАННЫЕ:
     - discussion_id (str): Уникальный идентификатор диалога.
@@ -26,19 +27,9 @@ class GetAgentHistoryTool(BaseTool):
 
     @handle_errors
     def _run(self, discussion_id: str) -> Dict[str, Any]:
-        """
-        Выполнение инструмента.
-
-        Args:
-            discussion_id: ID диалога
-
-        Returns:
-            Dict[str, Any]: Информация об ответах агентов
-        """
+        """Synchronous implementation."""
         return get_json(f"/discussions/{discussion_id}")
 
     async def _arun(self, discussion_id: str) -> Dict[str, Any]:
-        """
-        Асинхронная версия
-        """
+        """Asynchronous implementation for non-blocking I/O."""
         return get_json(f"/discussions/{discussion_id}")
