@@ -6,7 +6,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - DMS=localhost:${DATASETS_SERVICE_PORT}
+        - DATASETS_DOMAIN=localhost:${DATASETS_SERVICE_PORT}
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     networks:
@@ -159,7 +159,6 @@ services:
       - TASKER_DOMAIN=tasker:${TASKER_PORT}
       - METRICS_DOMAIN=metrics:${METRICS_SERVICE_PORT}
       - ML_MODELS_DOMAIN=ml_models:${ML_MODELS_SERVICE_PORT}
-      - ML_MODELS_HOST=ml_models:${ML_MODELS_SERVICE_PORT}
     depends_on:
       - metrics
       - tasker
@@ -228,12 +227,12 @@ services:
     ports:
       - "${AGENT_OFFICE_PORT}:${AGENT_OFFICE_PORT}"
     environment:
-      - DMS_DOMEN=datasets:${DATASETS_SERVICE_PORT}
-      - TASKER_DOMEN=tasker:${TASKER_PORT}
-      - TRAINER_DOMEN=trainer:${TRAINER_SERVICE_PORT}
-      - METRICS_DOMEN=metrics:${METRICS_SERVICE_PORT}
-      - ML_MODELS_DOMEN=ml_models:${ML_MODELS_SERVICE_PORT}
-      - AGENT_HISTORY_DOMEN=agent_history:${AGENT_MONITORING_PORT}
+      - DATASETS_DOMAIN=datasets:${DATASETS_SERVICE_PORT}
+      - TASKER_DOMAIN=tasker:${TASKER_PORT}
+      - TRAINER_DOMAIN=trainer:${TRAINER_SERVICE_PORT}
+      - METRICS_DOMAIN=metrics:${METRICS_SERVICE_PORT}
+      - ML_MODELS_DOMAIN=ml_models:${ML_MODELS_SERVICE_PORT}
+      - AGENT_HISTORY_DOMAIN=agent_history:${AGENT_MONITORING_PORT}
     networks:
       - network
 

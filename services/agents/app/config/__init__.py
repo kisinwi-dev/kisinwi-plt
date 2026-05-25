@@ -14,27 +14,27 @@ load_dotenv()
 class ConfigServices:
     DATASETS = {
         'name': 'datasets',
-        'url': f"http://{os.getenv('DMS_DOMEN', 'localhost:6500')}"
+        'url': f"http://{os.getenv('DATASETS_DOMAIN', 'localhost:6500')}"
     }
     TASKER = {
         'name': "tasker",
-        'url': f"http://{os.getenv('TASKER_DOMEN', 'localhost:6110')}"
+        'url': f"http://{os.getenv('TASKER_DOMAIN', 'localhost:6110')}"
     }
     TRAINER = {
         'name': "trainer",
-        'url': f"http://{os.getenv('TRAINER_DOMEN', 'localhost:6200')}"
+        'url': f"http://{os.getenv('TRAINER_DOMAIN', 'localhost:6200')}"
     }
     ML_MODELS = {
         'name': "ml_models",
-        'url': f"http://{os.getenv('ML_MODELS_DOMEN', 'localhost:6300')}"
+        'url': f"http://{os.getenv('ML_MODELS_DOMAIN', 'localhost:6300')}"
     }
     METRICS = {
         'name': "metrics",
-        'url': f"http://{os.getenv('METRICS_DOMEN', 'localhost:6310')}"
+        'url': f"http://{os.getenv('METRICS_DOMAIN', 'localhost:6310')}"
     }
     AGENT_HISTORY = {
         'name': "agent_history",
-        'url': f"http://{os.getenv('AGENT_HISTORY_DOMEN', 'localhost:6410')}"
+        'url': f"http://{os.getenv('AGENT_HISTORY_DOMAIN', 'localhost:6410')}"
     }
 
     ALL_SERVICES = [
