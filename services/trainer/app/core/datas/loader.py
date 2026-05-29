@@ -1,45 +1,40 @@
-from typing import Tuple, List
 import os
-import torch
+from typing import Tuple, List
 from torch.utils.data import DataLoader
-from torchvision import datasets, transforms
-from tqdm import tqdm
+from torchvision import datasets
 
 from app.api.schemas import DataLoaderParams
+from .augmentations import build_transforms
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 
-# Константы ImageNet для нормализации по умолчанию
-IMAGENET_MEAN = [0.485, 0.456, 0.406]
-IMAGENET_STD = [0.229, 0.224, 0.225]
 
+# def calculate_normalize_dataset(
+#     dataloader: DataLoader
+# ) -> Tuple[torch.Tensor, torch.Tensor]:
+#     """
+#     Вычисляет среднее и стандартное отклонение по датасету.
+#     Используется для нормализации, если is_calculate_normalize_dataset=True.
+#     """
+#     logger.debug("⚪[calculate_normalize_dataset] start")
+#     channels_sum = torch.zeros(3)
+#     channels_sq_sum = torch.zeros(3)
+#     num_batches = 0
 
-def calculate_normalize_dataset(
-    dataloader: DataLoader
-) -> Tuple[torch.Tensor, torch.Tensor]:
-    """
-    Вычисляет среднее и стандартное отклонение по датасету.
-    Используется для нормализации, если is_calculate_normalize_dataset=True.
-    """
-    logger.debug("⚪[calculate_normalize_dataset] start")
-    channels_sum = torch.zeros(3)
-    channels_sq_sum = torch.zeros(3)
-    num_batches = 0
+#     for data, _ in tqdm(dataloader, desc="Calculating normalization"):
+#         # data: (batch, channels, height, width)
+#         channels_sum += torch.mean(data, dim=[0, 2, 3])
+#         channels_sq_sum += torch.mean(data ** 2, dim=[0, 2, 3])
+#         num_batches += 1
 
-    for data, _ in tqdm(dataloader, desc="Calculating normalization"):
-        # data: (batch, channels, height, width)
-        channels_sum += torch.mean(data, dim=[0, 2, 3])
-        channels_sq_sum += torch.mean(data ** 2, dim=[0, 2, 3])
-        num_batches += 1
+#     if num_batches == 0:
+#         raise ValueError("Датасет пустой, нельзя рассчитать нормализацию")
 
-    if num_batches == 0:
-        raise ValueError("Датасет пустой, нельзя рассчитать нормализацию")
-
-    mean = channels_sum / num_batches
-    std = (channels_sq_sum / num_batches - mean ** 2) ** 0.5
-    logger.debug(f"🟢[calculate_normalize_dataset] computed mean={mean}, std={std}")
-    return mean, std
+#     mean = channels_sum / num_batches
+#     std = (channels_sq_sum / num_batches - mean ** 2) ** 0.5
+#     logger.debug(f"🟢[calculate_normalize_dataset] computed mean={mean}, std={std}")
+#     return mean, std
 
 
 def create_dataloaders(
@@ -80,44 +75,9 @@ def create_dataloaders(
                 logger.error(f"Не верная структура датасета {d} не найдена")
                 raise FileNotFoundError("Не верная структура датасета.")
 
-        # Трансформация без усложнений к определённому размеру
-        base_transform = transforms.Compose([
-            transforms.Resize(
-                (params.img_h_size, params.img_w_size)
-            ),
-            transforms.ToTensor(),
-        ])
-
-        # Временный датасет для вычисления нормализации 
-        if params.is_calculate_normalize_dataset:
-            logger.info("Вычисление нормализации конкретного набора данных...")
-            temp_train_dataset = datasets.ImageFolder(root=train_dir, transform=base_transform)
-            temp_loader = DataLoader(temp_train_dataset, batch_size=params.batch_size, shuffle=False, num_workers=2)
-            mean, std = calculate_normalize_dataset(temp_loader)
-            logger.info(f"Нормализация имеет значения mean={mean.tolist()}, std={std.tolist()}")
-        else:
-            mean, std = IMAGENET_MEAN, IMAGENET_STD
-            logger.info("Использовании нормализации из ImageNet")
-
         # Создание "трансформаторов"
-        normalize = transforms.Normalize(mean=mean, std=std)
-        train_transform = transforms.Compose([
-            transforms.RandomResizedCrop(
-                (params.img_h_size, params.img_w_size), scale=(0.7, 1.0)
-            ),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomRotation(10),
-            transforms.ToTensor(),
-            normalize,
-        ])
-
-        val_test_transform = transforms.Compose([
-            transforms.Resize(
-                (params.img_h_size, params.img_w_size)
-            ),
-            transforms.ToTensor(),
-            normalize,
-        ])
+        train_transform = build_transforms(params.train_transforms_config)
+        val_test_transform = build_transforms(params.val_and_test_transforms_config)
 
         # Создание загрузчиков
         train_dataset = datasets.ImageFolder(root=train_dir, transform=train_transform)

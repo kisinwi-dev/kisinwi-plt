@@ -7,6 +7,7 @@ from app.core.utils import get_system_info as system_info
 from app.core.utils import get_schedulers as schedulers, get_optimizers as optimizers
 from app.core.models import get_models_type_name
 from app.service.metrices.collection import METRICS_REGISTRY
+from app.core.datas.augmentations import ALLOWED_TRANSFORMS
 from app.api.schemas import TaskParams, HealthResponse
 
 logger = get_logger(__name__)
@@ -134,6 +135,24 @@ async def get_available_metrics():
         return list(METRICS_REGISTRY.keys())
     except Exception as e:
         logger.error(f"Ошибка при получении списка метрик: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Не удалось получить список доступных метрик: {e}"
+        )
+
+@routers.get(
+        "/augmentations",
+        response_model=List[str],
+        summary="Получить список доступных методов аугментации"
+)
+async def get_available_augmentations():
+    """
+    Возвращает список доступных аугментаций
+    """
+    try:
+        return list(ALLOWED_TRANSFORMS.keys())
+    except Exception as e:
+        logger.error(f"Ошибка при получении списка методов аугментации: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Не удалось получить список доступных метрик: {e}"
