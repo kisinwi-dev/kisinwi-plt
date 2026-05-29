@@ -28,11 +28,7 @@ routers = APIRouter(
 )
 async def health():
     """Проверка подключения к БД"""
-    info = check_health_all()
-    return HealthResponse(
-        status="healthy",
-        info=info
-    )
+    return check_health_all()
 
 @routers.get(
     "/models/status",
