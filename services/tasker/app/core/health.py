@@ -2,6 +2,7 @@ import psycopg2
 from psycopg2 import OperationalError
 from typing import Dict, List
 
+from app.api.schemas.info import HealthResponse, HealthStatus
 from app.config import postgresql_config
 from app.logs import get_logger
 
@@ -12,7 +13,7 @@ def check_connection_status(
     url: str,
     bd_name: str,
     bd_info: str
-) -> Dict[str, str]:
+) -> HealthStatus:
     """Проверка подключения к PostgreSQL"""
     conn = None
     try:
@@ -28,45 +29,44 @@ def check_connection_status(
             cur.fetchone()
         
         logger.info(f"🟩 PostgreSQL[{bd_name}]: готов")
-        return {
-            "bd_info": bd_info,
-            "status": "healthy"
-        }
+        return HealthStatus.HEALTHY
         
     except OperationalError as e:
         logger.error(f"Не удалось установить соединение с PostgreSQL (DB:'{bd_name}'):\n{e}")
-        return {
-            "bd_info": bd_info,
-            "status": "dead"
-        }
+        return HealthStatus.UNHEALTHY
     except Exception as e:
         logger.error(f"Неожиданная ошибка при подключении к PostgreSQL (DB:'{bd_name}'):\n{e}")
-        return {
-            "bd_info": bd_info,
-            "status": "dead"
-        }
+        return HealthStatus.UNHEALTHY
     finally:
         if conn:
             conn.close()
 
 
-def check_health_all() -> List[Dict[str, str]]:
+def check_health_all() -> HealthResponse:
     """
     Проверка подключения к базам данных
 
     Returns:
-        Возвращает список словарей с информацией по состоянию сервисов
+        Возвращает информацию по состоянию сервиса
     """
+    status = HealthStatus.HEALTHY
     logger.info("Проверяем состояние подключения к базам данных...")
-    check_info = []
-    
-    check_info.append(
-        check_connection_status(
+    HealthStatus.UNHEALTHY
+    services = {
+        "bd": check_connection_status(
             postgresql_config.URL,
             postgresql_config.DATABASE,
             "База данных задач"
         )
-    )
+    }
+
+    for service_val in services.values():
+        if service_val != status:
+          status = HealthStatus.DEGRADED
+          break  
     
     logger.info("Проверка завершена")
-    return check_info
+    return HealthResponse(
+        status=status,
+        services=services
+    )

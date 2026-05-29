@@ -23,11 +23,7 @@ routers = APIRouter(
 async def health():
     """Проверка подключения к БД"""
     try:
-        info = check_health_all()
-        return HealthResponse(
-            status="healthy",
-            info=info
-        )
+        return check_health_all()
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
