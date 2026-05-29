@@ -13,8 +13,7 @@ app = FastAPI(
 )
 
 app.include_router(
-    api_routers,
-    prefix="/api"
+    api_routers
 )
 
 app.add_middleware(
