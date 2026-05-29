@@ -1,4 +1,4 @@
-from app.api.schemes import TaskParams
+from app.api.schemas import TaskParams
 from app.service.tasker import tasker_service
 from app.service.metrices import MetricesClient
 from app.service.ml_models import upload_file_model_in_ml_models

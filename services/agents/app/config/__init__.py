@@ -2,8 +2,8 @@ import os
 import requests
 from dotenv import load_dotenv
 from dataclasses import dataclass
-from typing import Dict
 
+from app.api.schemas import HealthResponse, HealthStatus
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -42,24 +42,31 @@ class ConfigServices:
         METRICS, AGENT_HISTORY
     ]
 
-    def check_services(self) -> Dict[str, bool]:
+    def check_services(self) -> HealthResponse:
         """
-        Проверка доступа к сторонним сервисам
+        Проверка работоспособности сервиса
         
         Returns:
             Слоаварь с названием сервиса и статусом
         """
-        result = dict()
+        status = HealthStatus.HEALTHY
+        services = {}
+        logger.info(f"Проверка доступа к сервисам:")
         for service in self.ALL_SERVICES:
             service_name = service.get("name", "ERROR")
-            result[service_name] = self._health(service)
+            services[service_name] = self._health(service)
+            if services[service_name] != HealthStatus.HEALTHY:
+                status = HealthStatus.DEGRADED
 
-        return result
+        return HealthResponse(
+            status=status,
+            services=services
+        )
     
     def _health(
         self, 
         service: dict
-    ) -> bool:
+    ) -> HealthStatus:
         try:
             service_url = service.get("url", "ERROR")
             service_name = service.get("name", "ERROR")
@@ -69,14 +76,14 @@ class ConfigServices:
                 timeout=30
             )        
             response.raise_for_status()
-            
-            return True
+            logger.info(f" ✅ Сервис `{service_name}` доступен")
+            return response.json()["status"]
         except requests.RequestException as e:
-            logger.error(f"Ошибка HTTP при обращении к сервису `{service_name}`, `{service_url}`\nError:{e}")
-            return False
+            logger.error(f" 🟥 Ошибка HTTP при обращении к сервису `{service_name}`, `{service_url}`\nError:{e}")
+            return HealthStatus.UNHEALTHY
         except Exception as e:
-            logger.error(f"Ошибка при обращении к сервису `{service_name}`: {e}")
-            return False
+            logger.error(f" 🟥 Ошибка при обращении к сервису `{service_name}`: {e}")
+            return HealthStatus.UNHEALTHY
 
 @dataclass
 class ConfigBaseLLM:

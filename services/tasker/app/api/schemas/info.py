@@ -9,5 +9,5 @@ class HealthStatus(str, Enum):
 
 class HealthResponse(BaseModel):
     """Схема для выдачи информации о работе сервиса"""
-    status: HealthStatus = Field(description="Статус сервисаё")
+    status: HealthStatus = Field(description="Статус сервиса")
     services: Dict[str, HealthStatus] = Field(description="Описание информации о состоянии требуемых сервисов")

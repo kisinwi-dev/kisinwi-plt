@@ -4,7 +4,7 @@ from torch import device, Tensor
 
 from .collection import create_classification_collections
 
-from app.api.schemes import MetricesParamCollections, EarlyStop
+from app.api.schemas import MetricesParamCollections, EarlyStop
 from app.config import config_services
 from app.logs import get_logger
 

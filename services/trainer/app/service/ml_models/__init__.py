@@ -2,7 +2,7 @@ import requests
 from typing import Optional
 from pathlib import Path
 
-from app.api.schemes import TaskParams
+from app.api.schemas import TaskParams
 from app.config import config_services
 from app.logs import get_logger
 
