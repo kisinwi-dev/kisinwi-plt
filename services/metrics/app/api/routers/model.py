@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 
-from app.api.schemes import ModelMetricAdd, ModelMetricAdds, ModelMetrics
+from app.api.schemas import ModelMetricAdd, ModelMetricAdds, ModelMetrics
 from app.api.deps import get_cv_training_metrics_manager, CVMetricManager
 from app.logs import get_logger
 

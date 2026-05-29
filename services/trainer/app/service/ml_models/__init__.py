@@ -2,11 +2,13 @@ import requests
 from typing import Optional
 from pathlib import Path
 
-from app.api.schemes import TaskParams
-from app.config import config_domain
+from app.api.schemas import TaskParams
+from app.config import config_services
 from app.logs import get_logger
 
 logger = get_logger(__name__)
+
+ML_MODELS_URL = config_services.ML_MODELS['url']
 
 async def get_params(
     model_id: str
@@ -14,7 +16,7 @@ async def get_params(
     """Получение параметров обучения"""
     try:
         res = requests.get(
-            f"{config_domain.ML_MODELS}/models/{model_id}",
+            f"{ML_MODELS_URL}/models/{model_id}",
             timeout=30
         )
         res.raise_for_status()
@@ -58,7 +60,7 @@ async def path_status_model(
         }
 
         res = requests.patch(
-            f"{config_domain.ML_MODELS}/models/{model_id}",
+            f"{ML_MODELS_URL}/models/{model_id}",
             json=data,
             timeout=30
         )
@@ -105,7 +107,7 @@ async def upload_file_model_in_ml_models(
         else:
             filename = path.name
 
-        url = f"{config_domain.ML_MODELS}/models/{model_id}/files"
+        url = f"{ML_MODELS_URL}/models/{model_id}/files"
 
         with open(file_path, 'rb') as f:
             files = {'files': (filename, f, 'application/octet-stream')}

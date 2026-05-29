@@ -2,11 +2,12 @@ from typing import Dict, Any, List
 from fastapi import APIRouter, Query, HTTPException, status
 
 from app.logs import get_logger
+from app.config import config_services
 from app.core.utils import get_system_info as system_info
 from app.core.utils import get_schedulers as schedulers, get_optimizers as optimizers
 from app.core.models import get_models_type_name
 from app.service.metrices.collection import METRICS_REGISTRY
-from app.api.schemes import TaskParams, HealthResponse
+from app.api.schemas import TaskParams, HealthResponse
 
 logger = get_logger(__name__)
 
@@ -118,12 +119,7 @@ async def get_schedulers():
 )
 async def health():
     """Проверка работоспособности сервиса"""
-    return HealthResponse(
-        status="healthy",
-        info={
-            "services": "Not require"
-        }
-    )
+    return config_services.check_services()
 
 @routers.get(
         "/metrics",

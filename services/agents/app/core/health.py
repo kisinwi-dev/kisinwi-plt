@@ -1,9 +1,9 @@
 import openai
 from crewai import LLM
-from typing import List, Dict
 
 from app.logs import get_logger
 from app.config import config_base_llm, config_url
+from app.api.schemas import HealthResponse
 
 logger = get_logger(__name__)
 
@@ -64,23 +64,11 @@ def check_connection_llm():
             "api_base": config_base_llm.OPENAI_API_BASE
         }
 
-def check_health_all() -> Dict[str, List]:
+def check_health_all() -> HealthResponse:
     """
     Проверка подключения к базам данных
 
     Returns:
         Возвращает список словарей с информацией по состоянию сервисов
     """
-    logger.info("Проверяка состояния...")
-    
-    info = {}
-    logger.info(" - подключение к LLM...")
-    info["llm"] = {
-        "base_llm": check_connection_llm()
-    }
-
-    logger.info(" - подключение к внутренним сервисам...")
-    info["services"] = config_url.check_services()
-
-    logger.info("✅ Проверка завершена")
-    return info
+    return config_url.check_services()

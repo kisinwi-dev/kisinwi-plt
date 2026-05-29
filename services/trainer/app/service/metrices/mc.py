@@ -4,8 +4,8 @@ from torch import device, Tensor
 
 from .collection import create_classification_collections
 
-from app.api.schemes import MetricesParamCollections, EarlyStop
-from app.config import config_domain
+from app.api.schemas import MetricesParamCollections, EarlyStop
+from app.config import config_services
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -34,7 +34,7 @@ class MetricesClient:
     ):
         # Информация для расчёта метрик
         self._model_id = model_id
-        self._url = config_domain.METRIC
+        self._url = config_services.METRICS['url']
         self._collections = create_classification_collections(
             metrices_params,
             num_class,

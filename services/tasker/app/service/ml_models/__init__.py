@@ -1,6 +1,7 @@
 import requests
 from fastapi import HTTPException, status
 
+from app.api.schemas.info import HealthStatus
 from app.config import ml_models_config
 from app.logs import get_logger
 
@@ -31,3 +32,21 @@ def models_is_exists(model_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Ошибка проверки существования модели"
         )
+    
+def check_healt_ml_models():
+    """Проверка работоспособности сервиса ML-моделей"""
+    try:
+        response = requests.get(
+            ml_models_config.URL + '/info/health',
+            timeout=5
+        )
+        return response.json()["status"]
+    except requests.exceptions.Timeout:
+        logger.error(f"Таймаут при проверке работоспособности сервиса ML-моделей")
+        return HealthStatus.UNHEALTHY
+    except requests.exceptions.ConnectionError:
+        logger.error(f"Ошибка соединения")
+        return HealthStatus.UNHEALTHY
+    except Exception as e:
+        logger.error(f"Непредвиденная ошибка: {e}")
+        return HealthStatus.UNHEALTHY

@@ -9,7 +9,7 @@ import asyncio
 
 from app.service.metrices import MetricesClient
 from app.service.tasker import TaskerClient
-from app.api.schemes import TrainerParams, LossConfig, OptimizerConfig, ShedulerConfig
+from app.api.schemas import TrainerParams, LossConfig, OptimizerConfig, ShedulerConfig
 from app.logs import get_logger
 
 logger = get_logger(__name__)

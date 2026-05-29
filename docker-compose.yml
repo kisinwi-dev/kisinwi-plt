@@ -6,7 +6,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - DMS=localhost:${DATASETS_SERVICE_PORT}
+        - DATASETS_DOMAIN=localhost:${DATASETS_SERVICE_PORT}
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     networks:
@@ -159,10 +159,10 @@ services:
       - TASKER_DOMAIN=tasker:${TASKER_PORT}
       - METRICS_DOMAIN=metrics:${METRICS_SERVICE_PORT}
       - ML_MODELS_DOMAIN=ml_models:${ML_MODELS_SERVICE_PORT}
-      - ML_MODELS_HOST=ml_models:${ML_MODELS_SERVICE_PORT}
     depends_on:
       - metrics
       - tasker
+      - ml_models
     networks:
       - network
     shm_size: 2gb
@@ -182,7 +182,7 @@ services:
       - MONGO_PORT=${METRICS_MONGO_PORT}
       - MONGO_APP_USERNAME=${METRICS_MONGO_APP_USERNAME}
       - MONGO_APP_PASSWORD=${METRICS_MONGO_APP_PASSWORD}
-      - MONGO_METRIC_DATABASE=${METRICS_MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_METRIC_DATABASE=${METRICS_MONGO_INITDB_DATABASE}
     ports: 
       - "${METRICS_SERVICE_PORT}:${METRICS_SERVICE_PORT}"
     networks:
@@ -198,7 +198,7 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${METRICS_MONGO_INITDB_ROOT_USERNAME}
       - MONGO_INITDB_ROOT_PASSWORD=${METRICS_MONGO_INITDB_ROOT_PASSWORD}
-      - MONGO_INITDB_DATABASE=${METRICS_MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_DATABASE=${METRICS_MONGO_INITDB_DATABASE}
       - MONGO_APP_USERNAME=${METRICS_MONGO_APP_USERNAME}
       - MONGO_APP_PASSWORD=${METRICS_MONGO_APP_PASSWORD}
     ports:
@@ -228,12 +228,12 @@ services:
     ports:
       - "${AGENT_OFFICE_PORT}:${AGENT_OFFICE_PORT}"
     environment:
-      - DMS_DOMEN=datasets:${DATASETS_SERVICE_PORT}
-      - TASKER_DOMEN=tasker:${TASKER_PORT}
-      - TRAINER_DOMEN=trainer:${TRAINER_SERVICE_PORT}
-      - METRICS_DOMEN=metrics:${METRICS_SERVICE_PORT}
-      - ML_MODELS_DOMEN=ml_models:${ML_MODELS_SERVICE_PORT}
-      - AGENT_HISTORY_DOMEN=agent_history:${AGENT_MONITORING_PORT}
+      - DATASETS_DOMAIN=datasets:${DATASETS_SERVICE_PORT}
+      - TASKER_DOMAIN=tasker:${TASKER_PORT}
+      - TRAINER_DOMAIN=trainer:${TRAINER_SERVICE_PORT}
+      - METRICS_DOMAIN=metrics:${METRICS_SERVICE_PORT}
+      - ML_MODELS_DOMAIN=ml_models:${ML_MODELS_SERVICE_PORT}
+      - AGENT_HISTORY_DOMAIN=agent_history:${AGENT_MONITORING_PORT}
     networks:
       - network
 

@@ -3,43 +3,36 @@ import requests
 from dotenv import load_dotenv
 from dataclasses import dataclass
 
-from app.api.schemas import HealthResponse, HealthStatus
+from app.api.schemas.health import HealthStatus, HealthResponse
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 
 load_dotenv()
 
+hf_token = os.getenv("HF_TOKEN")
+if not hf_token:
+    logger.warning("HF_TOKEN не найден в .env")
+else:
+    logger.info(f"✅ HF_TOKEN загружен ({hf_token[:10]}...)")
+
 @dataclass
 class ConfigServices:
-    DATASETS = {
-        'name': 'datasets',
-        'url': f"http://{os.getenv('DATASETS_DOMAIN', 'localhost:6500')}"
-    }
     TASKER = {
         'name': "tasker",
         'url': f"http://{os.getenv('TASKER_DOMAIN', 'localhost:6110')}"
     }
-    TRAINER = {
-        'name': "trainer",
-        'url': f"http://{os.getenv('TRAINER_DOMAIN', 'localhost:6200')}"
-    }
     ML_MODELS = {
         'name': "ml_models",
-        'url': f"http://{os.getenv('ML_MODELS_DOMAIN', 'localhost:6300')}"
+        'url': f"http://{os.getenv("ML_MODELS_DOMAIN", "localhost:6300")}"
     }
     METRICS = {
         'name': "metrics",
-        'url': f"http://{os.getenv('METRICS_DOMAIN', 'localhost:6310')}"
-    }
-    AGENT_HISTORY = {
-        'name': "agent_history",
-        'url': f"http://{os.getenv('AGENT_HISTORY_DOMAIN', 'localhost:6410')}"
+        'url': f"http://{os.getenv("METRICS_DOMAIN", "localhost:6310")}"
     }
 
     ALL_SERVICES = [
-        DATASETS, TASKER, TRAINER, ML_MODELS,
-        METRICS, AGENT_HISTORY
+        TASKER, ML_MODELS, METRICS
     ]
 
     def check_services(self) -> HealthResponse:
@@ -85,11 +78,4 @@ class ConfigServices:
             logger.error(f" 🟥 Ошибка при обращении к сервису `{service_name}`: {e}")
             return HealthStatus.UNHEALTHY
 
-@dataclass
-class ConfigBaseLLM:
-    OPENAI_MODEL_NAME = str(os.getenv("OPENAI_MODEL_NAME"))
-    OPENAI_API_BASE = os.getenv("OPENAI_API_BASE")
-    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-
-config_url = ConfigServices()
-config_base_llm = ConfigBaseLLM()
+config_services = ConfigServices()

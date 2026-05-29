@@ -6,7 +6,7 @@ from torchmetrics.classification import (
 )
 from torch import device
 
-from app.api.schemes import MetricesParams, MetricesParamCollections
+from app.api.schemas import MetricesParams, MetricesParamCollections
 from app.logs import get_logger
 
 logger = get_logger(__name__)

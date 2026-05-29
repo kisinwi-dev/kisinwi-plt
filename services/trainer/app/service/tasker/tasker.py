@@ -1,16 +1,14 @@
 import httpx
-from typing import Optional
 
 from app.logs import get_logger
-from app.config import config_domain
-from app.api.schemes import Task, TaskStatus
+from app.config import config_services
 
 logger = get_logger(__name__)
 
 class TaskerClient():
     def __init__(self) -> None:
         """Класс для общения с сервисом задач"""
-        self._domen = config_domain.TASKER
+        self._domen = config_services.TASKER['url']
     
     def set_client(
             self,

@@ -10,12 +10,10 @@ routers = APIRouter(
 @routers.get(
     "/health",
     summary="Информация о сервисе",
-    description="Вывод информации о работоспособности сервиса"
+    description="Вывод информации о работоспособности сервиса",
+    response_model=HealthResponse
 )
 async def health():
     """Проверка работоспособности сервиса"""
-    return HealthResponse(
-        status="healthy",
-        info=check_health_all()
-    )
+    return check_health_all()
 

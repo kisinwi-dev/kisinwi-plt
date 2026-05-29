@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 
-from app.core.health import check_health_all
 from app.api.schemas import HealthResponse
+from app.core.health import check_health_all
 
 routers = APIRouter(
     prefix="/info", 
@@ -19,7 +19,6 @@ routers = APIRouter(
     }
 )
 async def health():
-    """Проверка подключения к БД"""
     try:
         return check_health_all()
     except Exception as e:

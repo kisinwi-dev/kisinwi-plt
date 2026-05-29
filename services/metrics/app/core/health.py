@@ -1,7 +1,8 @@
 import pymongo
 from pymongo.errors import ConnectionFailure
-from typing import Dict, List
+from typing import Dict
 
+from app.api.schemas.info import HealthResponse, HealthStatus
 from app.config import mongodb_config
 from app.logs import get_logger
 
@@ -9,9 +10,8 @@ logger = get_logger(__name__)
 
 def check_connection_status(
         url: str,
-        bd_name: str,
-        bd_info: str
-    ) -> Dict[str, str]:
+        bd_name: str
+    ) -> HealthStatus:
     """Проверка подключения к БД"""
     try:
         logger.debug(f"Проверка URL: {url}")
@@ -21,35 +21,38 @@ def check_connection_status(
         )
         client[bd_name].command("ping")
         logger.info(f"🟩 MongoDB[{bd_name}]: готов")
-        return {
-            "bd_info": bd_info,
-            "status": "healthy"
-        }
+        return HealthStatus.HEALTHY
     except ConnectionFailure as e:
         logger.error(f"Не удалось установить соединение с MongoDB (DB:'{bd_name}'):\n{e}")
-        return {
-            "bd_info": bd_info,
-            "status": "dead"
-        }
+        return HealthStatus.UNHEALTHY
     finally:
         if client:
             client.close()
 
-def check_health_all() -> List[Dict[str, str]]:
+def check_health_all() -> HealthResponse:
     """
     Проверка подключения к базам данных
 
     Returns:
         Возвращает словарь с информацией по состоянию сервиса
     """
+    status = HealthStatus.HEALTHY
     logger.info("Проверяем состояние подключения к базам данных...")
-    check_info = []
-    check_info.append(
-        check_connection_status(
+
+    services = {
+        "bd": check_connection_status(
             mongodb_config.URL_METRIC, 
-            mongodb_config.DATABASE_METRIC,
-            "База данных метрик"
+            mongodb_config.DATABASE_METRIC
         )
-    )
+    }
+    
+    for service_val in services.values():
+        if service_val != status:
+          status = HealthStatus.DEGRADED
+          break  
+    
     logger.info("Проверка завершена")
-    return check_info
+    return HealthResponse(
+        status=status,
+        services=services
+    )
