@@ -2,7 +2,7 @@ from typing import Optional
 from pymongo.errors import PyMongoError
 
 from .mongo import ManagerBase
-from app.api.schemes import AgentResponse
+from app.api.schemas import AgentResponse
 from app.logs import get_logger
 
 logger = get_logger(__name__)
