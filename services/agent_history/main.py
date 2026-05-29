@@ -11,7 +11,6 @@ app = FastAPI(
     version="0.1.0"
 )
 
-setup_exception_handlers(app)
 app.include_router(routers)
 
 app.add_middleware(
@@ -23,6 +22,10 @@ app.add_middleware(
 )
 
 if __name__ == "__main__":
+
+    # Настройка выкидывания ошибок
+    setup_exception_handlers(app)
+
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
