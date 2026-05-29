@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import JSONResponse
 
 from app.core.health import check_health_all
 from app.api.schemas import HealthResponse
@@ -22,11 +21,7 @@ routers = APIRouter(
 async def health():
     """Проверка подключения к БД"""
     try:
-        info = check_health_all()
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content={"status": "healthy", "info": info}
-        )
+        return check_health_all()
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
