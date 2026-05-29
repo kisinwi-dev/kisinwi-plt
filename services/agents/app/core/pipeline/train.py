@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 
 from app.core.crews.ml_engeneer import MlEngineerResponse
 from app.core.memory import discussion_context, models_context
-from app.services.data import get_dataset_info_classes
+from app.services.datasets import get_dataset_info_classes
 from app.services.ml_models import ml_models_client
 from app.services.tasker import tasker_client
 from app.logs import get_logger

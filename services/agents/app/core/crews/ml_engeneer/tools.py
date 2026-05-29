@@ -2,7 +2,7 @@ from typing import List
 from crewai.tools import BaseTool
 
 from ..utils import get_tools_with_tracking
-from app.services.data import GetDatasetDetailsTool, ListAllDatasetsTool
+from app.services.datasets import GetDatasetDetailsTool, ListAllDatasetsTool
 from app.services.trainer import (
     GetExampleTrainingConfigTool,
     GetAllAvailableModelsTool,
