@@ -4,10 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.health import check_health_all
 
-# Проверка состояния требуемых БД
-# НЕ БЛОКИРУЕТ ЗАПУСК ЕСЛИ ТРЕБУЕМЫЕ БД НЕ РАБОТАЮТ
-check_health_all()
-
 from app.api.routers import routers
 
 # Обьект приложения
@@ -27,6 +23,11 @@ app.add_middleware(
 )
 
 if __name__ == "__main__":
+
+    # Проверка состояния требуемых БД
+    # НЕ БЛОКИРУЕТ ЗАПУСК ЕСЛИ ТРЕБУЕМЫЕ БД НЕ РАБОТАЮТ
+    check_health_all()
+
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
