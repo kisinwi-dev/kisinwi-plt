@@ -1,6 +1,5 @@
 import psycopg2
 from psycopg2 import OperationalError
-from typing import Dict, List
 
 from app.api.schemas.info import HealthResponse, HealthStatus
 from app.config import postgresql_config
@@ -11,8 +10,7 @@ logger = get_logger(__name__)
 
 def check_connection_status(
     url: str,
-    bd_name: str,
-    bd_info: str
+    bd_name: str
 ) -> HealthStatus:
     """Проверка подключения к PostgreSQL"""
     conn = None
@@ -51,12 +49,10 @@ def check_health_all() -> HealthResponse:
     """
     status = HealthStatus.HEALTHY
     logger.info("Проверяем состояние подключения к базам данных...")
-    HealthStatus.UNHEALTHY
     services = {
         "bd": check_connection_status(
             postgresql_config.URL,
-            postgresql_config.DATABASE,
-            "База данных задач"
+            postgresql_config.DATABASE
         )
     }
 
