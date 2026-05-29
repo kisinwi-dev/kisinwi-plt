@@ -14,11 +14,7 @@ app = FastAPI(
     version="0.1.0"
 )
 
-logger.info("✅ app создано")
-
 app.include_router(routers)
-
-logger.info("✅ Добавлены эндпоинты")
 
 app.add_middleware(
     CORSMiddleware,
