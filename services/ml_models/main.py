@@ -9,10 +9,6 @@ from app.logs import get_logger
 
 logger = get_logger(__name__)
 
-# Проверка состояния требуемых БД
-# НЕ БЛОКИРУЕТ ЗАПУСК ЕСЛИ ТРЕБУЕМЫЕ БД НЕ РАБОТАЮТ
-check_health_all()
-
 app = FastAPI(
     title="ML Models Service",
     version="0.1.0"
@@ -20,7 +16,6 @@ app = FastAPI(
 
 logger.info("✅ app создано")
 
-setup_exception_handlers(app)
 app.include_router(routers)
 
 logger.info("✅ Добавлены эндпоинты")
@@ -34,6 +29,13 @@ app.add_middleware(
 )
 
 if __name__ == "__main__":
+    # Проверка состояния требуемых БД
+    # НЕ БЛОКИРУЕТ ЗАПУСК ЕСЛИ ТРЕБУЕМЫЕ БД НЕ РАБОТАЮТ
+    check_health_all()
+
+    # Настройка выкидывания ошибок с бд и ошибки 500
+    setup_exception_handlers(app)
+
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
