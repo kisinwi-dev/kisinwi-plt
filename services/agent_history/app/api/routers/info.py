@@ -5,6 +5,7 @@ from app.api.schemas import (
     SystemMessageType, HealthResponse, 
     ToolStatus, AgentStatus
 )
+from app.core.health import check_health_all
 
 routers = APIRouter(
     prefix="/info", 
@@ -24,10 +25,7 @@ routers = APIRouter(
 async def health():
     """Проверка подключения к БД"""
     try:
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content={"status": "healthy", "info": "No info"}
-        )
+        return check_health_all()
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
