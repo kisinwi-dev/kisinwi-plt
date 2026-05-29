@@ -28,7 +28,42 @@ class TaskParams(BaseModel):
                     "img_w_size": 224,
                     "img_h_size": 224,
                     "batch_size": 32,
-                    "is_calculate_normalize_dataset": False
+                    "train_transforms_config": [
+                        {
+                            "name": "RandomResizedCrop",
+                            "params": {"size": [224, 224], "scale": [0.7, 1.0]}
+                        },
+                        {
+                            "name": "RandomHorizontalFlip",
+                            "params": {"p": 0.5}
+                        },
+                        {
+                            "name": "RandomRotation",
+                            "params": {"degrees": 10}
+                        },
+                        {
+                            "name": "ToTensor",
+                            "params": {}
+                        },
+                        {
+                            "name": "Normalize",
+                            "params": {"mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225]}
+                        }
+                    ],
+                    "val_and_test_transforms_config": [
+                        {
+                            "name": "Resize",
+                            "params": {"size": [224, 224]}
+                        },
+                        {
+                            "name": "ToTensor",
+                            "params": {}
+                        },
+                        {
+                            "name": "Normalize",
+                            "params": {"mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225]}
+                        }
+                    ]
                 },
                 "model_params": {
                     "type": "resnet50",
