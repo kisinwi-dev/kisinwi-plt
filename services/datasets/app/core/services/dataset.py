@@ -64,8 +64,8 @@ class DatasetManager:
     
 
     def change_dataset_info(
-            self, 
-            dsm: DatasetMetadata
+        self, 
+        dsm: DatasetMetadata
     ) -> bool:
         """
         Сохранить метаданные в JSON-файл.
@@ -87,9 +87,9 @@ class DatasetManager:
 
 
     def _create_new_dataset_info(
-            self, 
-            dataset_id: str,
-            dsm: DatasetMetadata
+        self, 
+        dataset_id: str,
+        dsm: DatasetMetadata
     ) -> bool:
         self._generate_metadata_path(dataset_id, is_old_ds=False)
         return self.change_dataset_info(dsm)
@@ -97,15 +97,15 @@ class DatasetManager:
     # ================ добавление новых данных ======================
 
     def add_new_dataset(
-            self,
-            dsm_n: NewDataset
+        self,
+        dsm_n: NewDataset
     ) -> bool:
         """Создание нового датасета"""
         dsm = dvc(dsm_n)
 
-        path_dataset, _, new_path_version = self._generate_new_dataset_path(
+        path_dataset, new_path_version = self._generate_new_dataset_path(
             data_id=dsm_n.version.id_data,
-            datset_id=dsm.id,
+            dataset_id=dsm.id,
             version_id=dsm.versions[0].id
         )
         
@@ -120,19 +120,26 @@ class DatasetManager:
         return True
     
     def add_new_version(
-            self,
-            dataset_id: str,
-            new_version: NewVersion
+        self,
+        dataset_id: str,
+        new_version: NewVersion
     ) -> bool:
         """Создание новой версии для датасета"""
         logger.debug(f"Добавление версии в {dataset_id}")
+        
+        # получение данных о датасете
         dsm = self.get_dataset_info(dataset_id)
         
+        # валидация данных
         version = vvc(dsm, new_version)
-        dsm.versions.append(version)
-        self.change_dataset_info(dsm)
         
-        path_version, new_path_version = self._generate_new_version_path(dsm.id, version.id)
+        # перенос полученных данных в папку датасета
+
+        path_version, new_path_version = self._generate_new_version_path(
+            data_id=new_version.id_data,
+            dataset_id=dsm.id,
+            version_id=version.id
+        )
         
         with self._fsm.use_path(path_version):
             self._fsm.move_dir(new_path_version)
@@ -140,15 +147,19 @@ class DatasetManager:
         with self._fsm.use_path(path_version.parent):
             self._fsm.delete(new_version.id_data)
 
+        # обновление метаданных датасета
+        dsm.versions.append(version)
+        self.change_dataset_info(dsm)
+
         logger.debug(f'🟩 Создана новая версия {version.id} для датасета {dsm.id}')
         return True
     
     # ================ удаление данных ======================
     
     def drop_version(
-            self,
-            dataset_id: str,
-            version_id: str,
+        self,
+        dataset_id: str,
+        version_id: str,
     ) -> bool:
         if dataset_id not in self.get_datasets_id():
             raise DatasetNotFoundError(dataset_id)
@@ -174,8 +185,8 @@ class DatasetManager:
         return True
 
     def drop_dataset(
-            self, 
-            dataset_id: str
+        self, 
+        dataset_id: str
     ) -> bool:
         if dataset_id not in self.get_datasets_id():
             raise DatasetNotFoundError(dataset_id)
@@ -194,7 +205,11 @@ class DatasetManager:
 
     # ================ генерация path до нужных папок/файлов ======================
 
-    def _generate_metadata_path(self, dataset_id: str, is_old_ds: bool = True) -> Path:
+    def _generate_metadata_path(
+        self, 
+        dataset_id: str, 
+        is_old_ds: bool = True
+    ) -> Path:
         """
         Генерируем путь до метаданных
         
@@ -214,42 +229,52 @@ class DatasetManager:
             return path
         
     def _generate_new_dataset_path(
-            self, 
-            data_id: str,
-            datset_id: str,
-            version_id: str
-    ) -> Tuple[Path, Path, Path]:
+        self, 
+        data_id: str,
+        dataset_id: str,
+        version_id: str
+    ) -> Tuple[Path, Path]:
         """
         paths для нового dataset
 
+        Args:
+            data_id: id загруженных данных
+            dataset_id: id датасета
+            version_id: id новой версии
+
         Returns:
             * path_dataset - путь до данных из временной папки
-            * new_path_dataset - путь до датасета
             * new_path_version - путь до версии
         """
         path_dataset = (self._fsm.worker_path / 'temp' / data_id).resolve()
-        new_path_dataset = (self._fsm.worker_path / datset_id).resolve()
+        new_path_dataset = (self._fsm.worker_path / dataset_id).resolve()
         new_path_version = (new_path_dataset / version_id).resolve()
 
-        new_path_dataset.mkdir(parents=True, exist_ok=True)
+        new_path_dataset.mkdir(parents=True, exist_ok=True) 
         new_path_version.mkdir(parents=True, exist_ok=True)
         
-        return path_dataset, new_path_dataset, new_path_version
+        return path_dataset, new_path_version
 
     def _generate_new_version_path(
-            self,
-            datset_id: str,
-            version_id: str
+        self,
+        data_id: str,
+        dataset_id: str,
+        version_id: str
     ) -> Tuple[Path, Path]:
         """
         paths для новой версии datasets
+
+        Args:
+            data_id: id загруженных данных
+            dataset_id: id датасета
+            version_id: id новой версии
 
         Returns:
             * path_version - путь до данных из временной папки
             * new_path_version - путь до версии
         """
-        path_version = (self._fsm.worker_path / 'temp' / version_id).resolve()
-        new_path_version = (self._fsm.worker_path / datset_id / version_id ).resolve()
+        path_version = (self._fsm.worker_path / 'temp' / data_id).resolve()
+        new_path_version = (self._fsm.worker_path / dataset_id / version_id ).resolve()
 
         if not path_version.exists():
             raise FileNotFoundError(path_version)

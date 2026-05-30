@@ -1,6 +1,6 @@
 from uuid import uuid4
 from PIL import Image
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Optional
 
 from app.core.filesystem.fsm import FileSystemManager
 from app.api.schemas.dataset import DatasetMetadata, Version, SplitType, ClassDistribution, Split
@@ -28,16 +28,16 @@ def dataset_validation_and_create_metadata(
             raise FileNotFoundError(f"Не найден данные('{dsn.version.id_data}') для создания датасета")
        
         fsm.in_dir(dsn.version.id_data)
-        version, new_classes = version_validation_and_create_metadata(
+        version, new_classes = _version_validation_and_create_metadata(
             dsn.version,
             fsm
         )
         
         classes_info = {
-            "class_names": new_classes,
-            "dataset_id": str(uuid4()),
-            "num_classes": len(new_classes),
-            "class_to_idx": {class_: indx for indx, class_ in enumerate(sorted(new_classes))},
+            "id": str(uuid4()),
+            "classes_names": new_classes,
+            "classes_count": len(new_classes),
+            "classes_to_idx": {class_: indx for indx, class_ in enumerate(sorted(new_classes))},
         }
 
         return DatasetMetadata(
@@ -53,7 +53,24 @@ def dataset_validation_and_create_metadata(
 
 def version_validation_and_create_metadata(
     nv: NewVersion,
-    fsm: FileSystemManager
+    dsm: Optional[DatasetMetadata] = None
+) -> Version:
+    
+    fsm = FileSystemManager()
+    fsm.in_dir("temp")
+
+    if nv.id_data not in fsm.get_all_dirs():
+        logger.debug(f'🩸Path: {fsm.worker_path}')
+        raise FileNotFoundError(f"Не найден данные('{nv.id_data}') для создания датасета")
+    fsm.in_dir(nv.id_data)
+    
+    version, _ = _version_validation_and_create_metadata(nv,fsm, dsm)
+    return version
+
+def _version_validation_and_create_metadata(
+    nv: NewVersion,
+    fsm: FileSystemManager,
+    dsm: Optional[DatasetMetadata] = None
 ) -> Tuple[Version, List[str]]:
     """
     Валидация версии и вывод метаданных по версии

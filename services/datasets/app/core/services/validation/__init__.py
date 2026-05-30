@@ -24,7 +24,7 @@ def new_dataset(
         
         processor = PREPROC_LOADERS_DATASET.get((dsn.type, dsn.task))
 
-        logger.debug(f'Проверка на поддержку заданного типа данных и задачу')
+        logger.debug(f'Проверка на поддержку заданного типа данных и задачу...')
         if processor is None:
             raise UnsupportedDatasetError(
                 dsn.task,
@@ -42,7 +42,6 @@ def new_dataset(
 def new_version(
     dsm: DatasetMetadata,
     new_version: NewVersion,
-    fsm: FileSystemManager | None = None
 ) -> Version:
     """Валидация при добавлении новой версии в существующий датасет"""
     # __WARNING__ 
@@ -51,35 +50,19 @@ def new_version(
 
     logger.info('⬜ Валидация...')
 
-    
-    fsm = FileSystemManager()
-    fsm.in_dir('temp')
-    
-    # проверка на существование датасета
-    fsm_ds = FileSystemManager()
-    if dsm.dataset_id not in fsm_ds.get_all_dirs():
-        raise DatasetNotFoundError(dsm.dataset_id)
-    
-    # проверка наличия версии в temp
-    if new_version.version_id not in fsm.get_all_dirs():
-        raise VersionNotFoundError(new_version.version_id)
-    
-    fsm.in_dir(new_version.version_id)
-
     processor = PREPROC_LOADERS_VERSION.get((dsm.type, dsm.task))
 
+    logger.debug(f'Проверка на поддержку заданного типа данных и задачу...')
     if processor is None:
         raise UnsupportedDatasetError(
             dsm.task,
             dsm.type,
             type_task_supported()
         )
+    logger.debug(f'✅ Тип:    {dsm.type}')
+    logger.debug(f'✅ Задача: {dsm.task}')
 
-    logger.debug(f'| Поддержка тип и задачи')
-    logger.debug(f'| 🟩 Тип:    {dsm.type}')
-    logger.debug(f'| 🟩 Задача: {dsm.task}')
-
-    version = processor(new_version)
+    version = processor(new_version, dsm)
 
     logger.debug(f'🏁 Валидация пройдена')
     return version

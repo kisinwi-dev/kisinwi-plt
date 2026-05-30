@@ -15,7 +15,7 @@ PREPROC_LOADERS_DATASET: Dict[Tuple[str, str], PreprocLoaderDataset] = {
     ("image", "classification"): dvm,
 }
 
-PreprocLoaderVersion = Callable[[List[str], NewVersion], Version]
+PreprocLoaderVersion = Callable[[NewVersion, DatasetMetadata], Version]
 
 PREPROC_LOADERS_VERSION: Dict[Tuple[str, str], PreprocLoaderVersion] = {
     ("image", "classification"): vvm,
