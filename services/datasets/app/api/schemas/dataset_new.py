@@ -1,36 +1,20 @@
 from typing import Literal, List
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 from .dataset import Source
 
 class NewVersion(BaseModel):
-    version_id: str
-    description: str
+    id_data: str = Field(description="ID загруженных данных")
+    name: str = Field(description="Название версии")
+    description: str = Field("Нет описания", description="Описание. Особенности данных.")
+    sources: List[Source] = Field(description="Информация о ресурсах откуда брали данные.")
 
 class NewDataset(BaseModel):
-    dataset_id: str = Field(..., min_length=1)
-    name: str
-    description: str
-    class_names: List[str] = Field(..., min_length=1)
-    sources: List[Source]
-    type: Literal["image", "text", "tabular", "other"] = "other"
-    task: Literal["classification", "regression", "detection", "segmentation", "other"]
-    version: NewVersion
-
-    model_config = {
-        "validate_assignment": True
-    }
-
-    @field_validator("class_names")
-    @classmethod
-    def validate_class_names(cls, v: List[str]):
-
-        cleaned = [c.strip() for c in v]
-
-        if any(c == "" for c in cleaned):
-            raise ValueError("class_names не должен содержать путое поле")
-
-        if len(cleaned) != len(set(cleaned)):
-            raise ValueError("class_names должны быть уникальными")
-
-        return cleaned
+    name: str = Field(description="Название датасета")
+    description: str = Field(description="Описание датасета. Зачем он нужен и какие задачи должен решить датасет.")
+    type: Literal["image", "text", "tabular", "other"] = Field("image", description="Тип данных изображения/текст/таблицы")
+    task: Literal["classification", "regression", "detection", "segmentation", "other"] = Field(
+        "classification", 
+        description="Задача решаемая датасетом классификация/регрессия/детекцмя"
+    )
+    version: NewVersion = Field(description="Новая версия")

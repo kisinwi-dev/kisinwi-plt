@@ -2,10 +2,8 @@ from .registry import PREPROC_LOADERS_DATASET, PREPROC_LOADERS_VERSION, type_tas
 
 from app.core.filesystem.fsm import FileSystemManager
 from app.core.exception.dataset import (
-     DatasetAlreadyExistsError, DatasetNotFoundError,
-     UnsupportedDatasetError
+    UnsupportedDatasetError
 )
-from app.core.exception.version import VersionNotFoundError
 from app.api.schemas.dataset import DatasetMetadata, Version
 from app.api.schemas.dataset_new import NewDataset, NewVersion
 from app.logs import get_logger
@@ -13,84 +11,72 @@ from app.logs import get_logger
 logger = get_logger(__name__)
 
 def new_dataset(
-            dsn: NewDataset, 
-    ) -> DatasetMetadata:
+    dsn: NewDataset
+) -> DatasetMetadata:
         """Валидация при созданиии нового датасета данных"""
-        # __WARNING__ 
-        # рассматриваем только задачи с классификацией изображений 
-        # в будущем добавим разные задачи(регрессия/классификаия/...) и типы(текст/изображние/...) 
-
         logger.info('⬜ Валидация...')
 
-        
-        fsm = FileSystemManager()
-        fsm.in_dir('temp')
-        
-        # проверка на существование датасета
-        fsm_ds = FileSystemManager()
-        if dsn.dataset_id in fsm_ds.get_all_dirs():
-            raise DatasetAlreadyExistsError(dsn.dataset_id)
-        del fsm_ds
-        
         processor = PREPROC_LOADERS_DATASET.get((dsn.type, dsn.task))
 
+        logger.debug(f'Проверка на поддержку заданного типа данных и задачу...')
         if processor is None:
             raise UnsupportedDatasetError(
                 dsn.task,
                 dsn.type,
                 type_task_supported()
             )
+        logger.debug(f'✅ Тип:    {dsn.type}')
+        logger.debug(f'✅ Задача: {dsn.task}')
 
-        logger.debug('| Поддержка тип и задачи')
-        logger.debug(f'| 🟩 Тип:    {dsn.type}')
-        logger.debug(f'| 🟩 Задача: {dsn.task}')
+        # настройка fsm
+        fsm = _fsm_setting(dsn.version.id_data)
 
-        dsm = processor(dsn, fsm)
+        # процесс валидации
+        dsm = processor(fsm, dsn)
 
         logger.debug(f'🏁 Валидация пройдена')
         return dsm
 
 def new_version(
     dsm: DatasetMetadata,
-    new_version: NewVersion,
-    fsm: FileSystemManager | None = None
+    nv: NewVersion,
 ) -> Version:
     """Валидация при добавлении новой версии в существующий датасет"""
-    # __WARNING__ 
-    # рассматриваем только задачи с классификацией изображений 
-    # в будущем добавим разные задачи(регрессия/классификаия/...) и типы(текст/изображние/...) 
-
     logger.info('⬜ Валидация...')
-
-    
-    fsm = FileSystemManager()
-    fsm.in_dir('temp')
-    
-    # проверка на существование датасета
-    fsm_ds = FileSystemManager()
-    if dsm.dataset_id not in fsm_ds.get_all_dirs():
-        raise DatasetNotFoundError(dsm.dataset_id)
-    
-    # проверка наличия версии в temp
-    if new_version.version_id not in fsm.get_all_dirs():
-        raise VersionNotFoundError(new_version.version_id)
-    
-    fsm.in_dir(new_version.version_id)
 
     processor = PREPROC_LOADERS_VERSION.get((dsm.type, dsm.task))
 
+    logger.debug(f'Проверка на поддержку заданного типа данных и задачу...')
     if processor is None:
         raise UnsupportedDatasetError(
             dsm.task,
             dsm.type,
             type_task_supported()
         )
+    logger.debug(f'✅ Тип:    {dsm.type}')
+    logger.debug(f'✅ Задача: {dsm.task}')
 
-    logger.debug(f'| Поддержка тип и задачи')
-    logger.debug(f'| 🟩 Тип:    {dsm.type}')
-    logger.debug(f'| 🟩 Задача: {dsm.task}')
+    # настройка fsm 
+    fsm = _fsm_setting(nv.id_data)
 
-    version = processor(dsm.class_names, new_version, fsm)
+    # процесс валидации
+    version = processor(fsm, nv, dsm)
 
     logger.debug(f'🏁 Валидация пройдена')
     return version
+
+def _fsm_setting(
+    id_data: str
+) -> FileSystemManager:
+    """
+    Выдаёт настроенный файловый менеджер.
+    * Настроенный fsm находится в директории загруженных данных.
+    """
+    fsm = FileSystemManager()
+    fsm.in_dir("temp")
+
+    if id_data not in fsm.get_all_dirs():
+        logger.debug(f"🟥 Не найдены данные `{id_data}` по пути '{fsm.worker_path}'")
+        raise FileNotFoundError(f"В папке temp не найдена директория '{id_data}'")
+    fsm.in_dir(id_data)
+    return fsm
