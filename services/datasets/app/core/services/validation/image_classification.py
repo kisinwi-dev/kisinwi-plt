@@ -79,14 +79,9 @@ def _version_validation_and_create_metadata(
                 f"Полученные папки {dir_actual_selections}. Требуемые папки {dir_selections}",
                 nv.id_data
             )
-        
-        fsm.in_dir("train")
-        class_names = fsm.get_all_dirs()
-        logger.info(
-            f"Найденые классы в тренировочной выборке: {class_names}. "
-            "В дальнейшем будут использоваться как эталон для проверки"
-        )
-        fsm.out_dir()
+
+        # загрузка списка классов для проверки датасета
+        class_names = _classes_load(fsm, dsm)
 
         # Объекты для формирования метаданных
         splits: Dict[SplitType, Split] = {}
@@ -200,3 +195,20 @@ def _version_validation_and_create_metadata(
     )
 
     return version, class_names
+
+def _classes_load(
+    fsm: FileSystemManager,
+    dsm: Optional[DatasetMetadata] = None
+) -> List[str]:
+    if dsm is None:
+        fsm.in_dir("train")
+        class_names = fsm.get_all_dirs()
+        logger.info(
+            f"Найденые классы в тренировочной выборке: {class_names}. "
+            "В дальнейшем будут использоваться как эталон для проверки"
+        )
+        fsm.out_dir()
+        return class_names
+    else:
+       return dsm.classes_names 
+        
