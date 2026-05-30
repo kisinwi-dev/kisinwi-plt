@@ -1,5 +1,6 @@
+from uuid import uuid4
 from PIL import Image
-from typing import Dict, List
+from typing import Dict, Tuple, List
 
 from app.core.filesystem.fsm import FileSystemManager
 from app.api.schemas.dataset import DatasetMetadata, Version, SplitType, ClassDistribution, Split
@@ -11,8 +12,7 @@ from app.logs import get_logger
 logger = get_logger(__name__)
 
 def dataset_validation_and_create_metadata(
-        dsn: NewDataset,
-        fsm: FileSystemManager
+        dsn: NewDataset
     ) -> DatasetMetadata:
         """
         Валидация датасета и вывод метаданных по версии
@@ -20,20 +20,24 @@ def dataset_validation_and_create_metadata(
             к примеру в `temp/` и видеть папку датасета `apple`
         """
 
-        if dsn.dataset_id not in fsm.get_all_dirs():
+        fsm = FileSystemManager()
+        fsm.in_dir("temp")
+
+        if dsn.version.id_data not in fsm.get_all_dirs():
             logger.debug(f'🩸Path: {fsm.worker_path}')
-            raise FileNotFoundError(f"Не найден dataset с dataset_id = {dsn.dataset_id}")
+            raise FileNotFoundError(f"Не найден данные('{dsn.version.id_data}') для создания датасета")
        
-        fsm.in_dir(dsn.dataset_id)
-        version = version_validation_and_create_metadata(
-            dsn.class_names, 
+        fsm.in_dir(dsn.version.id_data)
+        version, new_classes = version_validation_and_create_metadata(
             dsn.version,
             fsm
         )
         
         classes_info = {
-            "num_classes": len(dsn.class_names),
-            "class_to_idx": {class_: indx for indx, class_ in enumerate(sorted(dsn.class_names))},
+            "class_names": new_classes,
+            "dataset_id": str(uuid4()),
+            "num_classes": len(new_classes),
+            "class_to_idx": {class_: indx for indx, class_ in enumerate(sorted(new_classes))},
         }
 
         return DatasetMetadata(
@@ -48,13 +52,11 @@ def dataset_validation_and_create_metadata(
 # =========================================================================
 
 def version_validation_and_create_metadata(
-    class_names: list[str],
     nv: NewVersion,
     fsm: FileSystemManager
-) -> Version:
+) -> Tuple[Version, List[str]]:
     """
     Валидация версии и вывод метаданных по версии
-    * class_names - ожидаемые классы находящиеся в версии
     * fsm - должен находиться в папке версии
         к примеру в `apple/` и видеть папки `train`, `val` и `test`
     """
@@ -67,9 +69,17 @@ def version_validation_and_create_metadata(
         if dir_actual_selections != dir_selections:
             raise VersionValidationError(
                 f"Полученные папки {dir_actual_selections}. Требуемые папки {dir_selections}",
-                nv.version_id
+                nv.id_data
             )
         
+        fsm.in_dir("train")
+        class_names = fsm.get_all_dirs()
+        logger.info(
+            f"Найденые классы в тренировочной выборке: {class_names}. "
+            "В дальнейшем будут использоваться как эталон для проверки"
+        )
+        fsm.out_dir()
+
         # Объекты для формирования метаданных
         splits: Dict[SplitType, Split] = {}
         image_format_stats: Dict[str, int] = {}
@@ -85,7 +95,7 @@ def version_validation_and_create_metadata(
                 raise VersionValidationError(
                     "Название папок должно совпадать с названием классов."+
                     f"Получено: {dir_classes}. Требуются: {class_names}",
-                    nv.version_id
+                    nv.id_data
                 )
 
             # Сбор данных по каждой выборке train/test/val
@@ -112,7 +122,7 @@ def version_validation_and_create_metadata(
                 if fsm.get_all_dirs():
                     raise VersionValidationError(
                         f"В папке {dir_selection}/{dir_class} найдены лишние папки.",
-                        nv.version_id
+                        nv.id_data
                     )
 
                 # Проверка существования каких-либо файлов
@@ -121,7 +131,7 @@ def version_validation_and_create_metadata(
                 if count_files_in_class == 0:
                     raise DatasetValidationError(
                         f"В {dir_selection}/{dir_class} отсутствуют изображения.",
-                        nv.version_id
+                        nv.id_data
                     )
                 
                 # Проверка, что все файлы изображения
@@ -171,12 +181,14 @@ def version_validation_and_create_metadata(
         fsm.reset()
 
     version = Version(
-        version_id=nv.version_id,
+        version_id=str(uuid4()),
+        name=nv.name,
         description=nv.description,
+        sources=nv.sources,
         size_bytes=size_bytes,
         num_samples=sum(split_total_files.values()),
         image_format_stats=image_format_stats,
         splits=splits
     )
 
-    return version
+    return version, class_names

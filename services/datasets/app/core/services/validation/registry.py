@@ -9,13 +9,13 @@ from .image_classification import (
     version_validation_and_create_metadata as vvm
 )
 
-PreprocLoaderDataset = Callable[[NewDataset, FileSystemManager], DatasetMetadata]
+PreprocLoaderDataset = Callable[[NewDataset], DatasetMetadata]
 
 PREPROC_LOADERS_DATASET: Dict[Tuple[str, str], PreprocLoaderDataset] = {
     ("image", "classification"): dvm,
 }
 
-PreprocLoaderVersion = Callable[[List[str], NewVersion, FileSystemManager], Version]
+PreprocLoaderVersion = Callable[[List[str], NewVersion], Version]
 
 PREPROC_LOADERS_VERSION: Dict[Tuple[str, str], PreprocLoaderVersion] = {
     ("image", "classification"): vvm,

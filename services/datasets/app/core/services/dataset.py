@@ -1,4 +1,5 @@
 import json
+from uuid import uuid4
 from typing import List, Tuple
 from pathlib import Path
 from pydantic import ValidationError
@@ -102,13 +103,17 @@ class DatasetManager:
         """Создание нового датасета"""
         dsm = dvc(dsm_n)
 
-        path_dataset, _, new_path_version = self._generate_new_dataset_path(dsm_n)
+        path_dataset, _, new_path_version = self._generate_new_dataset_path(
+            data_id=dsm_n.version.id_data,
+            datset_id=dsm.dataset_id,
+            version_id=dsm.versions[0].version_id
+        )
         
         with self._fsm.use_path(path_dataset):
             self._fsm.move_dir(new_path_version)
 
         with self._fsm.use_path(path_dataset.parent):
-            self._fsm.delete(dsm_n.dataset_id)
+            self._fsm.delete(dsm_n.version.id_data)
 
         self._create_new_dataset_info(dsm.dataset_id, dsm)
         logger.debug(f'🟩 Создан новый датасет: {dsm.dataset_id}')
@@ -133,7 +138,7 @@ class DatasetManager:
             self._fsm.move_dir(new_path_version)
 
         with self._fsm.use_path(path_version.parent):
-            self._fsm.delete(new_version.version_id)
+            self._fsm.delete(new_version.id_data)
 
         logger.debug(f'🟩 Создана новая версия {version.version_id} для датасета {dsm.dataset_id}')
         return True
@@ -210,7 +215,9 @@ class DatasetManager:
         
     def _generate_new_dataset_path(
             self, 
-            dsm: NewDataset
+            data_id: str,
+            datset_id: str,
+            version_id: str
     ) -> Tuple[Path, Path, Path]:
         """
         paths для нового dataset
@@ -220,9 +227,9 @@ class DatasetManager:
             * new_path_dataset - путь до датасета
             * new_path_version - путь до версии
         """
-        path_dataset = (self._fsm.worker_path / 'temp' / dsm.dataset_id).resolve()
-        new_path_dataset = (self._fsm.worker_path / dsm.dataset_id).resolve()
-        new_path_version = (new_path_dataset / dsm.version.version_id ).resolve()
+        path_dataset = (self._fsm.worker_path / 'temp' / data_id).resolve()
+        new_path_dataset = (self._fsm.worker_path / datset_id).resolve()
+        new_path_version = (new_path_dataset / version_id).resolve()
 
         new_path_dataset.mkdir(parents=True, exist_ok=True)
         new_path_version.mkdir(parents=True, exist_ok=True)
