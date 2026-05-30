@@ -35,7 +35,7 @@ class Source(BaseModel):
         return self
 
 class Version(BaseModel):
-    version_id: str
+    id: str
     name: str = Field(description="Название версии")
     description: str = Field(..., description="Описание версии")
     sources: List[Source] = Field(description="Ресурсы данных")
@@ -66,13 +66,13 @@ class Version(BaseModel):
         return self
 
 class DatasetMetadata(BaseModel):
-    dataset_id: str = Field(..., min_length=1, description="Id датасета")
+    id: str = Field(..., min_length=1, description="Id датасета")
     name: str = Field(description="Название датасета")
     description: str = Field(description="Описание датасета")
     
-    num_classes: int = Field(..., ge=1)
-    class_names: List[str] = Field(..., min_length=1)
-    class_to_idx: Dict[str, int] = Field(description="Словарь, где ключ название класса, а значение его индекс")
+    classes_count: int = Field(..., ge=1)
+    classes_names: List[str] = Field(..., min_length=1)
+    classes_to_idx: Dict[str, int] = Field(description="Словарь, где ключ название класса, а значение его индекс")
 
     type: Literal["image", "text", "tabular", "other"] = Field(description="Тип данных")
     task: Literal["classification", "regression", "detection", "segmentation", "other"] = Field(description="Название задачи")
@@ -93,7 +93,7 @@ class DatasetMetadata(BaseModel):
     @model_validator(mode="after")
     def validate_default_version(self):
 
-        version_ids = [v.version_id for v in self.versions]
+        version_ids = [v.id for v in self.versions]
 
         if self.default_version_id not in version_ids:
             raise ValueError(

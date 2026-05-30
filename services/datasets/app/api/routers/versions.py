@@ -37,7 +37,7 @@ def get_infp_version(
 ):
     datasets = dm.get_dataset_info(dataset_id)
     for version in datasets.versions:
-        if version.version_id == version_id:
+        if version.id == version_id:
             return version
 
 @router.delete(

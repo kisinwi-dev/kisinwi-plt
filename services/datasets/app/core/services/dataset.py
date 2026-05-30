@@ -46,7 +46,7 @@ class DatasetManager:
     
     def version_exists(self, dataset_id: str, version_id: str) -> bool:
         versions = self.get_dataset_info(dataset_id).versions
-        return any(v.version_id == version_id for v in versions)
+        return any(v.id == version_id for v in versions)
     
     def get_dataset_info(self, dataset_id) -> DatasetMetadata:
         """Загрузить метаданные из JSON-файла"""
@@ -70,7 +70,7 @@ class DatasetManager:
         """
         Сохранить метаданные в JSON-файл.
         """
-        path = self._generate_metadata_path(dsm.dataset_id)
+        path = self._generate_metadata_path(dsm.id)
 
         try:
             json_content = dsm.model_dump_json(indent=2)
@@ -83,7 +83,7 @@ class DatasetManager:
 
             return True
         except Exception as e:
-            raise DatasetValidationError("", dsm.dataset_id)
+            raise DatasetValidationError("", dsm.id)
 
 
     def _create_new_dataset_info(
@@ -105,8 +105,8 @@ class DatasetManager:
 
         path_dataset, _, new_path_version = self._generate_new_dataset_path(
             data_id=dsm_n.version.id_data,
-            datset_id=dsm.dataset_id,
-            version_id=dsm.versions[0].version_id
+            datset_id=dsm.id,
+            version_id=dsm.versions[0].id
         )
         
         with self._fsm.use_path(path_dataset):
@@ -115,8 +115,8 @@ class DatasetManager:
         with self._fsm.use_path(path_dataset.parent):
             self._fsm.delete(dsm_n.version.id_data)
 
-        self._create_new_dataset_info(dsm.dataset_id, dsm)
-        logger.debug(f'🟩 Создан новый датасет: {dsm.dataset_id}')
+        self._create_new_dataset_info(dsm.id, dsm)
+        logger.debug(f'🟩 Создан новый датасет: {dsm.id}')
         return True
     
     def add_new_version(
@@ -132,7 +132,7 @@ class DatasetManager:
         dsm.versions.append(version)
         self.change_dataset_info(dsm)
         
-        path_version, new_path_version = self._generate_new_version_path(dsm.dataset_id, version.version_id)
+        path_version, new_path_version = self._generate_new_version_path(dsm.id, version.id)
         
         with self._fsm.use_path(path_version):
             self._fsm.move_dir(new_path_version)
@@ -140,7 +140,7 @@ class DatasetManager:
         with self._fsm.use_path(path_version.parent):
             self._fsm.delete(new_version.id_data)
 
-        logger.debug(f'🟩 Создана новая версия {version.version_id} для датасета {dsm.dataset_id}')
+        logger.debug(f'🟩 Создана новая версия {version.id} для датасета {dsm.id}')
         return True
     
     # ================ удаление данных ======================
@@ -159,7 +159,7 @@ class DatasetManager:
             raise CannotDeleteDefaultVersion(dataset_id, version_id)
 
         new_list_versions = []
-        dsm.versions = [v for v in dsm.versions if v.version_id != version_id]
+        dsm.versions = [v for v in dsm.versions if v.id != version_id]
 
         path_dataset = self._fsm.worker_path / dataset_id
         with self._fsm.use_path(path_dataset):

@@ -43,7 +43,7 @@ def dataset_validation_and_create_metadata(
         return DatasetMetadata(
             **dsn.model_dump(exclude={"version"}),
             **classes_info,
-            default_version_id=version.version_id,
+            default_version_id=version.id,
             versions=[version]
         )
 
@@ -181,7 +181,7 @@ def version_validation_and_create_metadata(
         fsm.reset()
 
     version = Version(
-        version_id=str(uuid4()),
+        id=str(uuid4()),
         name=nv.name,
         description=nv.description,
         sources=nv.sources,
