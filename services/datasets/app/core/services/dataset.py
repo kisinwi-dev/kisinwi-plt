@@ -5,7 +5,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from ..filesystem import FileSystemManager
-from app.api.schemas.dataset import DatasetMetadata
+from app.api.schemas.dataset import DatasetMetadata, Version
 from app.api.schemas.dataset_new import NewDataset, NewVersion
 from app.core.exception.dataset import *
 from app.core.exception.version import VersionNotFoundError
@@ -101,28 +101,23 @@ class DatasetManager:
         dsm_n: NewDataset
     ) -> bool:
         """Создание нового датасета"""
+        logger.debug(f"Создание нового датасета")
+
+        # валидация датасета
         dsm = dvc(dsm_n)
 
-        path_dataset, new_path_version = self._generate_new_dataset_path(
-            data_id=dsm_n.version.id_data,
-            dataset_id=dsm.id,
-            version_id=dsm.versions[0].id
-        )
+        # перенос датасета из временных файлов в директорию датасетов
+        self.promote_dataset(dsm,dsm_n)
         
-        with self._fsm.use_path(path_dataset):
-            self._fsm.move_dir(new_path_version)
-
-        with self._fsm.use_path(path_dataset.parent):
-            self._fsm.delete(dsm_n.version.id_data)
-
+        # сохранение метаданных датасета
         self._create_new_dataset_info(dsm.id, dsm)
-        logger.debug(f'🟩 Создан новый датасет: {dsm.id}')
+        logger.debug(f'🟩 Создана новый датасет {dsm.id}')
         return True
     
     def add_new_version(
         self,
         dataset_id: str,
-        new_version: NewVersion
+        v_n: NewVersion
     ) -> bool:
         """Создание новой версии для датасета"""
         logger.debug(f"Добавление версии в {dataset_id}")
@@ -131,27 +126,16 @@ class DatasetManager:
         dsm = self.get_dataset_info(dataset_id)
         
         # валидация данных
-        version = vvc(dsm, new_version)
+        v = vvc(dsm, v_n)
         
         # перенос полученных данных в папку датасета
-
-        path_version, new_path_version = self._generate_new_version_path(
-            data_id=new_version.id_data,
-            dataset_id=dsm.id,
-            version_id=version.id
-        )
-        
-        with self._fsm.use_path(path_version):
-            self._fsm.move_dir(new_path_version)
-
-        with self._fsm.use_path(path_version.parent):
-            self._fsm.delete(new_version.id_data)
+        self.promote_version(v_n, dsm, v)
 
         # обновление метаданных датасета
-        dsm.versions.append(version)
+        dsm.versions.append(v)
         self.change_dataset_info(dsm)
 
-        logger.debug(f'🟩 Создана новая версия {version.id} для датасета {dsm.id}')
+        logger.debug(f'🟩 Создана новая версия {v.id} для датасета {dsm.id}')
         return True
     
     # ================ удаление данных ======================
@@ -202,6 +186,47 @@ class DatasetManager:
             for dir in self._fsm.get_all_dirs():
                 self._fsm.delete(dir)
         logger.warning('Кэш очищен')
+
+    # ================ перенос датасета/версии в основную директорию из temp ======================
+
+    def promote_dataset(
+        self,
+        dsm: DatasetMetadata,
+        dsm_n: NewDataset
+    ) -> None:
+        """Перенос датасета из временных файлов в основную директорию"""
+        path_dataset, new_path_version = self._generate_new_dataset_path(
+            data_id=dsm_n.version.id_data,
+            dataset_id=dsm.id,
+            version_id=dsm.versions[0].id
+        )
+        
+        with self._fsm.use_path(path_dataset):
+            self._fsm.move_dir(new_path_version)
+
+        with self._fsm.use_path(path_dataset.parent):
+            self._fsm.delete(dsm_n.version.id_data)
+
+
+    def promote_version(
+        self,
+        v_n: NewVersion,
+        dsm: DatasetMetadata,
+        v: Version
+    ) -> None:
+        """Перенос версии из временных файлов в датасет"""
+        path_version, new_path_version = self._generate_new_version_path(
+            data_id=v_n.id_data,
+            dataset_id=dsm.id,
+            version_id=v.id
+        )
+        
+        with self._fsm.use_path(path_version):
+            self._fsm.move_dir(new_path_version)
+
+        with self._fsm.use_path(path_version.parent):
+            self._fsm.delete(v_n.id_data)
+
 
     # ================ генерация path до нужных папок/файлов ======================
 
