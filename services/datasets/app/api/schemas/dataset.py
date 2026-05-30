@@ -23,20 +23,22 @@ class Split(BaseModel):
     class_distribution: List[ClassDistribution] = Field(default_factory=list, description="Информации про каждому классу")
 
 class Source(BaseModel):
-    type: Literal['kaggle', 'url', 'huggingface', 'other']
-    url: Optional[HttpUrl] = Field(None, description='URL страницы с информацией о датасете')
-    description: str
+    type: Literal["kaggle", "url", "huggingface", "other"]
+    url: Optional[HttpUrl] = Field(None, description="URL страницы с информацией о датасете")
+    description: str = Field("Нет описания", description="Описание ресурса")
 
     @model_validator(mode="after")
     def validate_url_for_type(self):
         """Проверяет, что url заполнен для типов, где он обязателен"""
-        if self.type in ['kaggle', 'huggingface', 'url'] and not self.url:
+        if self.type in ["kaggle", "huggingface", "url"] and not self.url:
             raise ValueError(f"Для источника типа '{self.type}' необходимо указать url")
         return self
 
 class Version(BaseModel):
     version_id: str
+    name: str = Field(description="Название версии")
     description: str = Field(..., description="Описание версии")
+    sources: List[Source] = Field(description="Ресурсы данных")
     num_samples: int = Field(..., ge=0, description="Количество изображений")
     size_bytes: int = Field(..., ge=0, description="Вес версии в байтах")
 
@@ -64,20 +66,21 @@ class Version(BaseModel):
         return self
 
 class DatasetMetadata(BaseModel):
-    dataset_id: str = Field(..., min_length=1)
-    name: str
-    description: str
+    dataset_id: str = Field(..., min_length=1, description="Id датасета")
+    name: str = Field(description="Название датасета")
+    description: str = Field(description="Описание датасета")
+    
     num_classes: int = Field(..., ge=1)
     class_names: List[str] = Field(..., min_length=1)
-    class_to_idx: Dict[str, int]
-    sources: List[Source]
-    type: Literal["image", "text", "tabular", "other"] = "image"
-    task: Literal["classification", "regression", "detection", "segmentation", "other"] = "classification"
-    default_version_id: str
-    versions: List[Version] = Field(..., min_length=1)
+    class_to_idx: Dict[str, int] = Field(description="Словарь, где ключ название класса, а значение его индекс")
 
-    created_at: datetime = Field(default_factory=datetime.now, frozen=True)
-    updated_at: datetime = Field(default_factory=datetime.now, frozen=True)
+    type: Literal["image", "text", "tabular", "other"] = Field(description="Тип данных")
+    task: Literal["classification", "regression", "detection", "segmentation", "other"] = Field(description="Название задачи")
+    default_version_id: str = Field(description="ID версим являющейся стандартным значением")
+    versions: List[Version] = Field(min_length=1, description="Список версий")
+
+    created_at: datetime = Field(default_factory=datetime.now, frozen=True, description="Время создания датасета")
+    updated_at: datetime = Field(default_factory=datetime.now, frozen=True, description="Время Изменения датасета")
 
     model_config = {
         "validate_assignment": True
@@ -86,21 +89,6 @@ class DatasetMetadata(BaseModel):
     def __setattr__(self, name: str, value) -> None:
         super().__setattr__(name, value)
         object.__setattr__(self, "updated_at", datetime.now())
-
-    @model_validator(mode="after")
-    def validate_class_mapping(self):
-
-        if set(self.class_names) != set(self.class_to_idx.keys()):
-            raise ValueError(
-                "class_to_idx ключи должны совпадать с именами классов"
-            )
-
-        if len(self.class_names) != self.num_classes:
-            raise ValueError(
-                "num_classes должно быть равно количеству class_names"
-            )
-
-        return self
     
     @model_validator(mode="after")
     def validate_default_version(self):
@@ -109,7 +97,7 @@ class DatasetMetadata(BaseModel):
 
         if self.default_version_id not in version_ids:
             raise ValueError(
-                "default_version_id должен существовать в версиях"
+                "Стандартная версия должна существовать в списке версий"
             )
 
         return self
