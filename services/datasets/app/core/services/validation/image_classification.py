@@ -12,27 +12,20 @@ from app.logs import get_logger
 logger = get_logger(__name__)
 
 def dataset_validation_and_create_metadata(
-        dsn: NewDataset
+        fsm: FileSystemManager,
+        dsn: NewDataset,
     ) -> DatasetMetadata:
         """
-        Валидация датасета и вывод метаданных по версии
-        * fsm - должен находиться в папке где лежит датасет
-            к примеру в `temp/` и видеть папку датасета `apple`
+        Валидация датасета и вывод метаданных
+
+        * fsm - должен находиться в папке версии
+        к примеру в `apple/` и видеть папки `train`, `val` и `test`
         """
-
-        fsm = FileSystemManager()
-        fsm.in_dir("temp")
-
-        if dsn.version.id_data not in fsm.get_all_dirs():
-            logger.debug(f'🩸Path: {fsm.worker_path}')
-            raise FileNotFoundError(f"Не найден данные('{dsn.version.id_data}') для создания датасета")
-       
-        fsm.in_dir(dsn.version.id_data)
         version, new_classes = _version_validation_and_create_metadata(
             dsn.version,
             fsm
         )
-        
+
         classes_info = {
             "id": str(uuid4()),
             "classes_names": new_classes,
@@ -52,19 +45,16 @@ def dataset_validation_and_create_metadata(
 # =========================================================================
 
 def version_validation_and_create_metadata(
+    fsm: FileSystemManager,
     nv: NewVersion,
-    dsm: Optional[DatasetMetadata] = None
+    dsm: DatasetMetadata
 ) -> Version:
-    
-    fsm = FileSystemManager()
-    fsm.in_dir("temp")
-
-    if nv.id_data not in fsm.get_all_dirs():
-        logger.debug(f'🩸Path: {fsm.worker_path}')
-        raise FileNotFoundError(f"Не найден данные('{nv.id_data}') для создания датасета")
-    fsm.in_dir(nv.id_data)
-    
-    version, _ = _version_validation_and_create_metadata(nv,fsm, dsm)
+    """
+    Валидация версии и вывод метаданных
+    * fsm - должен находиться в папке версии
+        к примеру в `apple/` и видеть папки `train`, `val` и `test`
+    """
+    version, _ = _version_validation_and_create_metadata(nv, fsm, dsm)
     return version
 
 def _version_validation_and_create_metadata(
@@ -73,11 +63,12 @@ def _version_validation_and_create_metadata(
     dsm: Optional[DatasetMetadata] = None
 ) -> Tuple[Version, List[str]]:
     """
-    Валидация версии и вывод метаданных по версии
+    Валидация данных
+    
     * fsm - должен находиться в папке версии
         к примеру в `apple/` и видеть папки `train`, `val` и `test`
     """
-    logger.debug('Валидация версии')
+    logger.debug("⬜Валидация данных...")
     try: 
         dir_selections = {'train', 'test', 'val'}
         dir_actual_selections = set(fsm.get_all_dirs())
