@@ -4,7 +4,7 @@ from typing import List
 from app.logs import get_logger
 from app.core.services import DatasetManager
 from app.api.deps import get_dataset_manager
-from app.api.schemas.dataset import VersionResponse
+from app.api.schemas.dataset import VersionResponse, SplitSummaryResponse
 from app.api.schemas.dataset_new import NewVersion
 
 logger = get_logger(__name__)
@@ -37,18 +37,30 @@ def get_version_all_metadata(
 ):
     return dm.get_version_info(dataset_id, version_id)
 
-# @router.get(
-#     "/{version_id}/splits", 
-#     summary="Получить полную информацию о разбиении",
-#     description="Возвращает метаданные о разбиении версии",
-#     response_description="Информация о разбиении классов",
-# )
-# def get_version_splits(
-#         dataset_id: str,
-#         version_id: str,
-#         dm: DatasetManager = Depends(get_dataset_manager)
-# ):
-#     return dm.get_version_split(dataset_id, version_id)
+@router.get(
+    "/{version_id}/splits", 
+    summary="Получить статистику по сплитам",
+    description="""
+
+    Возвращает детальную информацию о разбиении датасета на сплиты:
+
+    - Общее количество изображений
+
+    - Баланс классов в каждом сплите
+
+    - Распределение по классам
+    
+    - Статистику размеров изображений
+    """,
+    response_description="Полная информация о разбиении датасета",
+    response_model=SplitSummaryResponse
+)
+def get_version_splits(
+        dataset_id: str,
+        version_id: str,
+        dm: DatasetManager = Depends(get_dataset_manager)
+):
+    return dm.get_version_split_summary(dataset_id, version_id)
 
 @router.delete(
     "/{version_id}", 

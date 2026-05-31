@@ -4,7 +4,7 @@ from pydantic import (
     BaseModel, Field,
     HttpUrl, model_validator
 )
-from .splits import Split, SplitType
+from .splits import Split, SplitType, SplitSummaryResponse
 
 class Source(BaseModel):
     type: Literal["kaggle", "url", "huggingface", "other"]
@@ -61,6 +61,52 @@ class Version(BaseModel):
     
     def get_version_response(self) -> VersionResponse:
         return VersionResponse(**self.model_dump(exclude={'splits'}))
+    
+    def get_split_summary(self) -> SplitSummaryResponse:
+        """Возвращает сводку по сплитам"""
+
+        # статистика размеров изображений 
+        image_size_stats = {}
+        # инфо по сплиту 
+        splits_summary = {}
+
+        for split_type, split in self.splits.items():
+            image_size_stats[split_type.value] = split.to_image_size_summary()
+            splits_summary[split_type.value] = split.to_summary()
+        
+        return SplitSummaryResponse(
+            id=self.id,
+            name=self.name,
+            num_samples=self.num_samples,
+            size_bytes=self.size_bytes,
+            splits_summary=splits_summary,
+            image_size_stats=image_size_stats,
+            overall_balance=self._get_overall_balance()
+        )
+        
+    def _get_overall_balance(self) -> float:
+        """Общий баланс по всем сплитам"""
+        all_counts = {}
+        for split in self.splits.values():
+            for cd in split.class_distribution:
+                all_counts[cd.class_name] = all_counts.get(cd.class_name, 0) + cd.count
+        
+        if not all_counts:
+            return 0.0
+        
+        counts = list(all_counts.values())
+        return min(counts) / max(counts)
+    
+    def get_split(self, split_type: SplitType) -> Optional[Split]:
+        """Получить конкретный сплит"""
+        return self.splits.get(split_type)
+    
+    def get_class_distribution(self, split_type: SplitType) -> List[Dict]:
+        """Получить распределение классов для конкретного сплита"""
+        split = self.get_split(split_type)
+        if not split:
+            return []
+        return [cd.to_summary() for cd in split.class_distribution]
     
 class DatasetResponse(BaseModel):
     id: str = Field(..., min_length=1, description="Id датасета")

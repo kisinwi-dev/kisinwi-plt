@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from ..filesystem import FileSystemManager
 from app.api.schemas.dataset import DatasetMetadata, DatasetResponse, Version, VersionResponse
 from app.api.schemas.dataset_new import NewDataset, NewVersion
-from app.api.schemas.splits import Split, SplitType
+from app.api.schemas.splits import SplitSummaryResponse
 from app.core.exception.dataset import *
 from app.core.exception.version import VersionNotFoundError
 from app.core.services.validation import (
@@ -77,6 +77,17 @@ class DatasetManager:
     def version_exists(self, dataset_id: str, version_id: str) -> bool:
         versions = self._get_dataset_info(dataset_id).versions
         return any(v.id == version_id for v in versions)
+    
+    # ================ получение информации о разбиении ======================
+
+    def get_version_split_summary(
+        self,
+        dataset_id: str,
+        version_id: str
+    ) -> SplitSummaryResponse:
+        """Получение информации по распределениям"""
+        version = self._get_version_info(dataset_id, version_id)
+        return version.get_split_summary()
 
     # ================ выдача имеющейся информации о датасетах и версиях ======================
 
