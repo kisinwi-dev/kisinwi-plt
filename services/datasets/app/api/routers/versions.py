@@ -30,15 +30,12 @@ def list_versions(
     description="Возвращает метаданные указанной версии по её идентификатору",
     response_description="Метаданные версии",
 )
-def get_infp_version(
+def get_version_all_metadata(
         dataset_id: str,
         version_id: str,
         dm: DatasetManager = Depends(get_dataset_manager)
 ):
-    datasets = dm.get_dataset_info(dataset_id)
-    for version in datasets.versions:
-        if version.id == version_id:
-            return version
+    return dm.get_version_info(dataset_id, version_id)
 
 @router.delete(
     "/{version_id}", 

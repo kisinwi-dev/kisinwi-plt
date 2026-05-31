@@ -48,7 +48,10 @@ class DatasetManager:
         versions = self.get_dataset_info(dataset_id).versions
         return any(v.id == version_id for v in versions)
     
-    def get_dataset_info(self, dataset_id) -> DatasetMetadata:
+    def get_dataset_info(
+        self, 
+        dataset_id
+    ) -> DatasetMetadata:
         """Загрузить метаданные из JSON-файла"""
         
         path = self._generate_metadata_path(dataset_id)
@@ -61,7 +64,18 @@ class DatasetManager:
             raise ValueError(f"Невалидный JSON в файле {path}: {e}")
         except ValidationError as e:
             raise ValueError(f"Структура метаданных некорректна: {e}")
-    
+        
+    def get_version_info(
+        self, 
+        dataset_id: str,
+        version_id: str
+    ) -> Version:
+        """Получение информации о версии датасета"""
+        dsm = self.get_dataset_info(dataset_id)
+        for version in dsm.versions:
+            if version.id == version_id:
+                return version
+        raise ValueError(f"Версия не найдена")
 
     def change_dataset_info(
         self, 
