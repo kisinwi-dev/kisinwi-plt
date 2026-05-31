@@ -4,7 +4,7 @@ from typing import List
 from app.logs import get_logger
 from app.core.services import DatasetManager
 from app.api.deps import get_dataset_manager
-from app.api.schemas.dataset import Version
+from app.api.schemas.dataset import VersionResponse, SplitSummaryResponse
 from app.api.schemas.dataset_new import NewVersion
 
 logger = get_logger(__name__)
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/datasets/{dataset_id}/versions", tags=["Version"])
 
 @router.get(
     "/", 
-    response_model=List[Version],
+    response_model=List[VersionResponse],
     summary="Получение списка метаданных версий",
     description="Возвращает список метаданных всех доступных версий датасета",
     response_description="Список метаданных версий",
@@ -21,24 +21,46 @@ def list_versions(
         dataset_id: str,
         dm: DatasetManager = Depends(get_dataset_manager)
 ):
-    return dm.get_dataset_info(dataset_id).versions
+    return dm.get_dataset_response_info(dataset_id).versions
 
 @router.get(
     "/{version_id}", 
-    response_model=Version,
+    response_model=VersionResponse,
     summary="Получить метаданные версии",
     description="Возвращает метаданные указанной версии по её идентификатору",
     response_description="Метаданные версии",
 )
-def get_infp_version(
+def get_version_all_metadata(
         dataset_id: str,
         version_id: str,
         dm: DatasetManager = Depends(get_dataset_manager)
 ):
-    datasets = dm.get_dataset_info(dataset_id)
-    for version in datasets.versions:
-        if version.id == version_id:
-            return version
+    return dm.get_version_info(dataset_id, version_id)
+
+@router.get(
+    "/{version_id}/splits", 
+    summary="Получить статистику по сплитам",
+    description="""
+
+    Возвращает детальную информацию о разбиении датасета на сплиты:
+
+    - Общее количество изображений
+
+    - Баланс классов в каждом сплите
+
+    - Распределение по классам
+    
+    - Статистику размеров изображений
+    """,
+    response_description="Полная информация о разбиении датасета",
+    response_model=SplitSummaryResponse
+)
+def get_version_splits(
+        dataset_id: str,
+        version_id: str,
+        dm: DatasetManager = Depends(get_dataset_manager)
+):
+    return dm.get_version_split_summary(dataset_id, version_id)
 
 @router.delete(
     "/{version_id}", 

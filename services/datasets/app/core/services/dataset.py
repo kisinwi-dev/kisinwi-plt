@@ -1,12 +1,12 @@
 import json
-from uuid import uuid4
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from pathlib import Path
 from pydantic import ValidationError
 
 from ..filesystem import FileSystemManager
-from app.api.schemas.dataset import DatasetMetadata, Version
+from app.api.schemas.dataset import DatasetMetadata, DatasetResponse, Version, VersionResponse
 from app.api.schemas.dataset_new import NewDataset, NewVersion
+from app.api.schemas.splits import SplitSummaryResponse
 from app.core.exception.dataset import *
 from app.core.exception.version import VersionNotFoundError
 from app.core.services.validation import (
@@ -39,18 +39,13 @@ class DatasetManager:
             if (self._fsm.worker_path / d / METADATA_DATASETS_NAME_FILE).exists()
         ]
     
-    # ================ проверки наличия данных ======================
+    # ================ (вспомогательные функции) получение данных из json ======================
 
-    def dataset_exists(self, dataset_id: str) -> bool:
-        return dataset_id in self.get_datasets_id()
-    
-    def version_exists(self, dataset_id: str, version_id: str) -> bool:
-        versions = self.get_dataset_info(dataset_id).versions
-        return any(v.id == version_id for v in versions)
-    
-    def get_dataset_info(self, dataset_id) -> DatasetMetadata:
-        """Загрузить метаданные из JSON-файла"""
-        
+    def _get_dataset_info(
+        self, 
+        dataset_id: str
+    ) -> DatasetMetadata:
+        """Загрузить метаданные датасета из JSON-файла"""
         path = self._generate_metadata_path(dataset_id)
 
         try:
@@ -61,7 +56,57 @@ class DatasetManager:
             raise ValueError(f"Невалидный JSON в файле {path}: {e}")
         except ValidationError as e:
             raise ValueError(f"Структура метаданных некорректна: {e}")
+
+    def _get_version_info(
+        self,
+        dataset_id: str,
+        version_id: str
+    ) -> Version:
+        """Загрузить метаданные версии из JSON-файла""" 
+        dsm = self._get_dataset_info(dataset_id)
+        for version in dsm.versions:
+            if version.id == version_id:
+                return version
+        raise ValueError(f"Версия не найдена")
     
+    # ================ проверки наличия данных ======================
+
+    def dataset_exists(self, dataset_id: str) -> bool:
+        return dataset_id in self.get_datasets_id()
+
+    def version_exists(self, dataset_id: str, version_id: str) -> bool:
+        versions = self._get_dataset_info(dataset_id).versions
+        return any(v.id == version_id for v in versions)
+    
+    # ================ получение информации о разбиении ======================
+
+    def get_version_split_summary(
+        self,
+        dataset_id: str,
+        version_id: str
+    ) -> SplitSummaryResponse:
+        """Получение информации по распределениям"""
+        version = self._get_version_info(dataset_id, version_id)
+        return version.get_split_summary()
+
+    # ================ выдача имеющейся информации о датасетах и версиях ======================
+
+    def get_dataset_response_info(
+        self, 
+        dataset_id
+    ) -> DatasetResponse:
+        """Получение данных для выдачи информации по датасету"""
+        dataset = self._get_dataset_info(dataset_id)
+        return dataset.get_datasets_response()
+        
+    def get_version_info(
+        self, 
+        dataset_id: str,
+        version_id: str
+    ) -> VersionResponse:
+        """Получение информации о версии датасета"""
+        vm = self._get_version_info(dataset_id, version_id)
+        return vm.get_version_response()
 
     def change_dataset_info(
         self, 
@@ -123,7 +168,7 @@ class DatasetManager:
         logger.debug(f"Добавление версии в {dataset_id}")
         
         # получение данных о датасете
-        dsm = self.get_dataset_info(dataset_id)
+        dsm = self._get_dataset_info(dataset_id)
         
         # валидация данных
         v = vvc(dsm, v_n)
@@ -148,7 +193,7 @@ class DatasetManager:
         if dataset_id not in self.get_datasets_id():
             raise DatasetNotFoundError(dataset_id)
         
-        dsm = self.get_dataset_info(dataset_id)
+        dsm = self._get_dataset_info(dataset_id)
 
         if dsm.default_version_id == version_id:
             raise CannotDeleteDefaultVersion(dataset_id, version_id)
