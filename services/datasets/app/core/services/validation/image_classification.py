@@ -3,7 +3,8 @@ from PIL import Image
 from typing import Dict, Tuple, List, Optional
 
 from app.core.filesystem.fsm import FileSystemManager
-from app.api.schemas.dataset import DatasetMetadata, Version, SplitType, ClassDistribution, Split
+from app.api.schemas.dataset import DatasetMetadata, Version, SplitType
+from app.api.schemas.splits import ClassDistribution, Split
 from app.api.schemas.dataset_new import NewDataset, NewVersion
 from app.core.exception.dataset import DatasetValidationError
 from app.core.exception.version import VersionValidationError

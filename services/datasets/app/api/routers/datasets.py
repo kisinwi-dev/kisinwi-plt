@@ -5,7 +5,7 @@ from app.logs import get_logger
 from app.core.services import DatasetManager
 from app.core.exception.base import CoreException
 from app.api.deps import get_dataset_manager
-from app.api.schemas.dataset import DatasetMetadata
+from app.api.schemas.dataset import DatasetResponse
 from app.api.schemas.dataset_new import NewDataset
 
 logger = get_logger(__name__)
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/datasets", tags=["Datasets"])
 
 @router.get(
     "/", 
-    response_model=List[DatasetMetadata],
+    response_model=List[DatasetResponse],
     summary="Получение списка метаданных датасетов",
     description="Возвращает информацию в виде списка о всех доступных датасетах",
     response_description="Список метаданных датасетов",
@@ -22,12 +22,12 @@ def list_datasets(dm: DatasetManager = Depends(get_dataset_manager)):
     ids = dm.get_datasets_id()
     dsms = []
     for id in ids:
-        dsms.append(dm.get_dataset_info(id))
+        dsms.append(dm._get_dataset_info(id))
     return dsms
 
 @router.get(
     "/{dataset_id}", 
-    response_model=DatasetMetadata,
+    response_model=DatasetResponse,
     summary="Получить метаданные датасета",
     description="Возвращает метаданные указанного датасета по его идентификатору",
     response_description="Метаданные датасета",
@@ -36,8 +36,7 @@ def get_dataset(
     dataset_id: str,
     dm: DatasetManager = Depends(get_dataset_manager)
 ):
-    return dm.get_dataset_info(dataset_id)
-
+    return dm.get_dataset_response_info(dataset_id)
 
 @router.post(
     "/{dataset_id}/default_version",
@@ -51,10 +50,9 @@ def new_default_version(
     default_version: str,
     dm: DatasetManager = Depends(get_dataset_manager)
 ):
-    ds = dm.get_dataset_info(dataset_id)
+    ds = dm._get_dataset_info(dataset_id)
     ds.default_version_id = default_version
     dm.change_dataset_info(ds)
-    
     return True
 
 @router.delete(
