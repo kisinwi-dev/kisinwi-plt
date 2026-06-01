@@ -33,7 +33,7 @@ class Version(BaseModel):
     name: str = Field(description="Название версии")
     description: str = Field(..., description="Описание версии")
     sources: List[Source] = Field(description="Ресурсы данных")
-    num_samples: int = Field(..., ge=0, description="Количество изображений")
+    num_samples: Optional[int] = Field(default=None, ge=0, description="Количество изображений")
     size_bytes: int = Field(..., ge=0, description="Вес версии в байтах")
 
     image_format_stats: Dict[str, int] = Field(default_factory=dict, description="Формат изображений")
@@ -43,6 +43,11 @@ class Version(BaseModel):
 
     @model_validator(mode="after")
     def check_split_consistency(self):
+        if self.num_samples is None:
+            self.num_samples = 0
+            for split_name, split in self.splits.items():
+                self.num_samples += sum(class_.count for class_ in split.class_distribution)
+
         count_img = 0
         for split_name, split in self.splits.items():
             split_total = sum(class_.count for class_ in split.class_distribution)
@@ -73,7 +78,7 @@ class Version(BaseModel):
         for split_type, split in self.splits.items():
             image_size_stats[split_type.value] = split.to_image_size_summary()
             splits_summary[split_type.value] = split.to_summary()
-        
+
         return SplitSummaryResponse(
             id=self.id,
             name=self.name,
