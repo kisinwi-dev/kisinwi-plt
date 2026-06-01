@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Dict, List, Counter
+from typing import Dict, List, Counter, Optional
 from pydantic import BaseModel, Field
 
 class SplitType(str, Enum):
@@ -12,8 +12,20 @@ class ClassDistribution(BaseModel):
     class_name: str = Field(..., description="Имя класса")
     class_id: int = Field(..., description="Id класса")
     count: int = Field(..., description="Количество обьектов")
-    percentage: float = Field(..., description="Процент от общего количества в выборке")
     image_size_count: Dict[str, int] = Field(..., description="Количество изображений, с определённым размером")
+    percentage: Optional[float] = Field(default=None, description="Процент от общего количества в выборке")
+
+    def calculate_percentage(
+        self,
+        total_files: int
+    ):
+        """
+        Расчёт процента от общего количества в выборке
+        
+        Args:
+            * total_files количество файлов в выборке
+        """
+        self.percentage = (self.count / total_files * 100)
 
     def to_summary(self) -> Dict:
         """Краткая информация о классе"""
@@ -47,7 +59,7 @@ class SplitSummaryResponse(BaseModel):
     """Сводка по сплитам версии"""
     id: str = Field(description="ID версии")
     name: str = Field(description="Название версии")
-    num_samples: int = Field(description="Количество изображений")
+    num_samples: Optional[int] = Field(default=0, description="Количество изображений")
     size_bytes: float = Field(description="Вес версии в байтах")
     overall_balance: float = Field(description="Общий коэффициент баланса классов")
     splits_summary: Dict[str, Dict] = Field(description="Краткая информация по каждому сплиту")

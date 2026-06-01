@@ -1,5 +1,6 @@
 from uuid import uuid4
 from PIL import Image
+from dataclasses import dataclass, field
 from typing import Dict, Tuple, List, Optional
 
 from app.core.filesystem.fsm import FileSystemManager
@@ -12,6 +13,8 @@ from app.logs import get_logger
 
 logger = get_logger(__name__)
 
+SELECTION_NAME = {item.value for item in SplitType}
+
 def dataset_validation_and_create_metadata(
         fsm: FileSystemManager,
         dsn: NewDataset,
@@ -19,10 +22,10 @@ def dataset_validation_and_create_metadata(
         """
         Валидация датасета и вывод метаданных
 
-        * fsm - должен находиться в папке версии
-        к примеру в `apple/` и видеть папки `train`, `val` и `test`
+        * fsm - должен находиться в временной папке в новых данных.
+        К примеру в `temp/my_new_data/` и видеть папки `train`, `val` и `test`
         """
-        version, new_classes = _version_validation_and_create_metadata(
+        version, new_classes = _data_validation_and_create_metadata(
             dsn.version,
             fsm
         )
@@ -41,10 +44,6 @@ def dataset_validation_and_create_metadata(
             versions=[version]
         )
 
-# =========================================================================
-# __WARNING__ ОБЯЗАТЕЛЬНО РАЗГРУЗИТЬ ЭТУ ФУНКЦИЮ НА НЕСКОЛЬКО МЕЛКИХ
-# =========================================================================
-
 def version_validation_and_create_metadata(
     fsm: FileSystemManager,
     nv: NewVersion,
@@ -52,134 +51,38 @@ def version_validation_and_create_metadata(
 ) -> Version:
     """
     Валидация версии и вывод метаданных
-    * fsm - должен находиться в папке версии
-        к примеру в `apple/` и видеть папки `train`, `val` и `test`
+    * fsm - должен находиться в временной папке в новых данных.
+    К примеру в `temp/my_new_data/` и видеть папки `train`, `val` и `test`
     """
-    version, _ = _version_validation_and_create_metadata(nv, fsm, dsm)
+    version, _ = _data_validation_and_create_metadata(nv, fsm, dsm)
     return version
 
-def _version_validation_and_create_metadata(
+def _data_validation_and_create_metadata(
     nv: NewVersion,
     fsm: FileSystemManager,
     dsm: Optional[DatasetMetadata] = None
 ) -> Tuple[Version, List[str]]:
     """
-    Валидация данных
+    Валидация данных.
     
-    * fsm - должен находиться в папке версии
-        к примеру в `apple/` и видеть папки `train`, `val` и `test`
+    Работает в 2 итерации. Первый раз проверяет структуру данных, после чего проверяет сами данные.
+    
+    * fsm - должен находиться в временной папке в новых данных.
+    К примеру в `temp/my_new_data/` и видеть папки `train`, `val` и `test`
     """
-    logger.debug("⬜Валидация данных...")
-    try: 
-        dir_selections = {'train', 'test', 'val'}
-        dir_actual_selections = set(fsm.get_all_dirs())
-
-        # Проверка наличия требуемых выборок
-        if dir_actual_selections != dir_selections:
-            raise VersionValidationError(
-                f"Полученные папки {dir_actual_selections}. Требуемые папки {dir_selections}",
-                nv.id_data
-            )
-
+    logger.debug("⬜ Валидация данных...")
+    try:
         # загрузка списка классов для проверки датасета
         class_names = _classes_load(fsm, dsm)
 
-        # Объекты для формирования метаданных
-        splits: Dict[SplitType, Split] = {}
-        image_format_stats: Dict[str, int] = {}
-        # Словарь для хранения общего количества файлов в каждом сплите (нужно для расчета процентов)
-        split_total_files = {}
+        # проверка структуры
+        _check_cache(fsm, class_names)
 
-        logger.info('⬜ Проверка структуры:')
-        for dir_selection in dir_selections:
-            fsm.in_dir(dir_selection)
-            dir_classes = fsm.get_all_dirs()
+        # расчёт статистики
+        splits, image_format_stats = _calculate_statistics(fsm, class_names)
 
-            if set(dir_classes) != set(class_names):
-                raise VersionValidationError(
-                    "Название папок должно совпадать с названием классов."+
-                    f"Получено: {dir_classes}. Требуются: {class_names}",
-                    nv.id_data
-                )
-
-            # Сбор данных по каждой выборке train/test/val
-            count_files_in_selection = 0
-            split_type = SplitType(dir_selection)
-
-            # Сначала проходим по классам для подсчета общего количества файлов в сплите
-            for dir_class in dir_classes:
-                fsm.in_dir(dir_class)
-                count_files_in_class = len(fsm.get_all_files())
-                count_files_in_selection += count_files_in_class
-                fsm.out_dir()
-            
-            split_total_files[dir_selection] = count_files_in_selection
-            
-            # Список для сбора объектов в этом сплите
-            class_distributions = []
-
-            # Проход для сбора детальной статистики
-            for dir_class in dir_classes:
-                fsm.in_dir(dir_class)
-
-                # Проверка лишних папок
-                if fsm.get_all_dirs():
-                    raise VersionValidationError(
-                        f"В папке {dir_selection}/{dir_class} найдены лишние папки.",
-                        nv.id_data
-                    )
-
-                # Проверка существования каких-либо файлов
-                files = fsm.get_all_files()
-                count_files_in_class = len(files)
-                if count_files_in_class == 0:
-                    raise DatasetValidationError(
-                        f"В {dir_selection}/{dir_class} отсутствуют изображения.",
-                        nv.id_data
-                    )
-                
-                # Проверка, что все файлы изображения
-                image_files = fsm.all_file_is_image()
-                
-                # Сбор статистики изображений
-                size_counter = {}
-                for img_path in image_files:
-                    try:
-                        with Image.open(img_path) as img:
-                            size_str = f"{img.width}x{img.height}"
-                            size_counter[size_str] = size_counter.get(size_str, 0) + 1
-                    except Exception as e:
-                        logger.warning(f"Не удалось получить размер изображения {img_path.name}: {e}")
-                
-                # Расчет процента от общего количества в выборке
-                total_in_split = split_total_files[dir_selection]
-                percentage = (count_files_in_class / total_in_split * 100) if total_in_split > 0 else 0
-                
-                # Создаем объект ClassDistribution
-                class_dist = ClassDistribution(
-                    class_name=dir_class,
-                    class_id=class_names.index(dir_class),
-                    count=count_files_in_class,
-                    percentage=round(percentage, 2),
-                    image_size_count=size_counter
-                )
-                class_distributions.append(class_dist)
-                
-                # Сбор статистики форматов изображений
-                for img_path in image_files:
-                    ext = img_path.suffix.lower().lstrip('.')
-                    image_format_stats[ext] = image_format_stats.get(ext, 0) + 1
-
-                logger.debug(f'🟩 {dir_selection}/{dir_class} - {count_files_in_class} изображений')
-                fsm.out_dir()
-
-            # Добавляем выборку в словарь splits
-            splits[split_type] = Split(class_distribution=class_distributions)
-            logger.info(f'🟩 {dir_selection}: {count_files_in_selection} изображений')
-            fsm.out_dir()
-
+        # расчёт размера в байтах
         size_bytes = fsm.get_dir_size()
-        logger.info(f'🟩 Все папки проверены!')
     
     finally:
         fsm.reset()
@@ -190,17 +93,182 @@ def _version_validation_and_create_metadata(
         description=nv.description,
         sources=nv.sources,
         size_bytes=size_bytes,
-        num_samples=sum(split_total_files.values()),
         image_format_stats=image_format_stats,
         splits=splits
     )
 
     return version, class_names
 
+def _calculate_statistics(
+    fsm: FileSystemManager,
+    class_names: List[str]
+) -> Tuple[Dict[SplitType, Split], Dict[str, int]]:
+    """
+    Расчёт статистики данных.
+
+    Args:
+        fsm: файловый менеджер
+        class_names: список имён классов
+
+    Returns:
+        * словарь выборок, где ключ имя выборки, а значение статистика по выборке
+        * словарь разрешений, где ключ это разрешение, а значение это количество
+    """
+    # Объекты для формирования метаданных
+    splits: Dict[SplitType, Split] = {}
+    image_format_stats: Dict[str, int] = {}
+
+    # Проверка самих файлов и статистики
+    for selection in SELECTION_NAME:
+        fsm.in_dir(selection)
+        dir_classes = fsm.get_all_dirs()
+
+        # тип сплита train/val/test
+        split_type = SplitType(selection)
+        # Список для сбора объектов метаданных по распределениям классов
+        class_distributions: List[ClassDistribution] = []
+
+        # Проход для сбора детальной статистики
+        for dir_class in dir_classes:
+            fsm.in_dir(dir_class)
+
+            # Получение статистики по всем изображениям в директории fsm
+            image_statistics = _class_statistic(fsm)
+            # пополнение словаря форматов
+            image_format_stats = image_format_stats | image_statistics.format_stats
+
+            # Создаем объект ClassDistribution
+            class_dist = ClassDistribution(
+                class_name=dir_class,
+                class_id=class_names.index(dir_class),
+                count=image_statistics.image_count,
+                image_size_count=image_statistics.size_counter
+            )
+            class_distributions.append(class_dist)
+
+            logger.debug(f'🟩 `{selection}/{dir_class}` - `{image_statistics.image_count}` изображений')
+            fsm.out_dir()
+        
+        # расчёт процентного соотношения классов к всей выборке
+        _calculate_percentage_in_all(class_distributions)
+
+        # Добавляем выборку в словарь splits
+        splits[split_type] = Split(class_distribution=class_distributions)
+        logger.info(f'🟩 Файлы в `{selection}` успешно проверены')
+        fsm.out_dir()
+
+    logger.info(f'✅ Все папки проверены!')
+    return splits, image_format_stats
+
+def _check_cache(
+    fsm: FileSystemManager,
+    class_names: List[str]
+):
+    """
+    Проверка структуры полученных данных
+    
+    Args:
+        fsm: обьект файлового менеджера в директории проверки
+        class_names: список имён классов
+    """
+    logger.info('⬜ Проверка структуры:')
+    id_data = fsm.worker_path.name
+
+    # Проверка наличия требуемых выборок
+    dir_actual_selections = set(fsm.get_all_dirs())
+    if dir_actual_selections != SELECTION_NAME:
+        raise VersionValidationError(
+            f"Полученные папки `{dir_actual_selections}`. Требуемые папки `{SELECTION_NAME}`",
+            id_data
+        )
+    logger.debug(f'🟩 Существует выборка {SELECTION_NAME}')
+    
+    # проход по выборкам
+    for selection in SELECTION_NAME:
+        fsm.in_dir(selection)
+        classes_name = fsm.get_all_dirs()
+
+        if set(classes_name) != set(class_names):
+            raise VersionValidationError(
+                "Название папок должно совпадать с названием классов."+
+                f"Получено: `{classes_name}`. Требуются: `{class_names}`",
+                id_data
+            )
+        logger.debug(f'-🟩 Классы в выборке `{selection}` соответсвуют требуемым')
+
+        # проход по классам
+        for class_name in classes_name:
+            fsm.in_dir(class_name)
+
+            # Проверка мусорных файлов и наличия файлов
+            if fsm.get_all_dirs():
+                raise VersionValidationError(
+                    f"В папке `{selection}/{class_name}` найдены лишние папки.",
+                    id_data
+                )
+            
+            # Проверка существования каких-либо файлов
+            files = fsm.all_file_is_image()
+            count_files_in_class = len(files)
+            if count_files_in_class == 0:
+                raise DatasetValidationError(
+                    f"В `{selection}/{class_name}` отсутствуют изображения.",
+                    id_data
+                )
+            logger.debug(f'--🟩 Стуруктура в `{selection}/{class_name}`')
+            fsm.out_dir()
+        fsm.out_dir()
+    logger.info("✅ Структура проверена")
+
+def _calculate_percentage_in_all(
+    class_distributions: List[ClassDistribution]
+):
+    """Расчёт процентного отношения между классами"""
+    total_files = sum(cd.count for cd in class_distributions)
+    for cd in class_distributions:
+        cd.calculate_percentage(total_files)
+
+@dataclass
+class ImageStatistics():
+    image_count: int = 0
+    size_counter: Dict[str, int] = field(default_factory=dict)
+    format_stats: Dict[str, int] = field(default_factory=dict)
+
+def _class_statistic(
+    fsm: FileSystemManager,
+) -> ImageStatistics:
+    """
+    Сбор статистики по всем изображениям
+    
+    Args:
+        fsm: файловый менеджер
+    """
+    # Получение path всех изображений
+    image_files = fsm.all_file_is_image()
+    
+    image_statistics = ImageStatistics(
+        image_count=len(image_files)
+    )
+
+    for img_path in image_files:
+        try:
+            # Статистика разрешений
+            with Image.open(img_path) as img:
+                size_str = f"{img.width}x{img.height}"
+                image_statistics.size_counter[size_str] = image_statistics.size_counter.get(size_str, 0) + 1
+
+            # Статистика форматов
+            ext = img_path.suffix.lower().lstrip('.')
+            image_statistics.format_stats[ext] = image_statistics.format_stats.get(ext, 0) + 1
+        except Exception as e:
+            logger.warning(f"Не удалось получить размер изображения {img_path.name}: {e}")
+    return image_statistics
+
 def _classes_load(
     fsm: FileSystemManager,
     dsm: Optional[DatasetMetadata] = None
 ) -> List[str]:
+    """Загрузка списка классов"""
     if dsm is None:
         fsm.in_dir("train")
         class_names = fsm.get_all_dirs()
@@ -212,4 +280,3 @@ def _classes_load(
         return class_names
     else:
        return dsm.classes_names 
-        
