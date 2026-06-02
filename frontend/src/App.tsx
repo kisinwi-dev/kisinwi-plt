@@ -10,8 +10,8 @@ import NotificationToast from './components/notification/NotificationToast';
 // Компонент, который отображает всплывающие уведомления (тосты) в правом верхнем углу.
 // Он подписывается на контекст уведомлений и рисует все активные уведомления.
 
-import Header from './components/Header';
-import Footer from './components/Footer';
+import Header from './components/layout/Header';
+import Footer from './components/layout/Footer';
 
 import Home from './pages/Home';
 import Datasets from './pages/Datasets';
