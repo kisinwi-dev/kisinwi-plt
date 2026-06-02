@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { datasetService } from '../services/datasetService';
-import type { Dataset, NewDataset, SourceItem } from '../types/dataset';
+import type { Dataset, NewDataset, SourceItem, VersionSplitsResponse } from '../types/dataset';
 import FileUploader from '../components/FileUploader';
 import './Datasets.css';
 import { useNotification } from '../contexts/NotificationContext';
 import { formatBytes } from '../utils/format';
+import VersionSplitsStats from '../components/datasets/VersionSplitsStats';
 
 const EMPTY_SOURCE = (): SourceItem => ({ type: 'kaggle', url: null, description: '' });
 
@@ -38,6 +39,7 @@ const Datasets: React.FC = () => {
 
   const [newDataset, setNewDataset] = useState(EMPTY_DATASET);
   const [newVersion, setNewVersion] = useState(EMPTY_VERSION);
+  const [versionStats, setVersionStats] = useState<Record<string, VersionSplitsResponse | 'loading' | 'error'>>({});
 
   useEffect(() => {
     const fetchDatasets = async () => {
@@ -205,6 +207,21 @@ const Datasets: React.FC = () => {
       showNotification(err instanceof Error ? err.message : 'Ошибка добавления версии', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleShowVersionStats = async (datasetId: string, versionId: string) => {
+    const key = `${datasetId}:${versionId}`;
+    if (versionStats[key]) {
+      setVersionStats(prev => { const next = { ...prev }; delete next[key]; return next; });
+      return;
+    }
+    setVersionStats(prev => ({ ...prev, [key]: 'loading' }));
+    try {
+      const data = await datasetService.getVersionSplits(datasetId, versionId);
+      setVersionStats(prev => ({ ...prev, [key]: data }));
+    } catch {
+      setVersionStats(prev => ({ ...prev, [key]: 'error' }));
     }
   };
 
@@ -471,13 +488,13 @@ const Datasets: React.FC = () => {
                 </div>
               </div>
 
-              <p className="dataset-description">{dataset.description}</p>
-
               <div className="dataset-meta">
                 <span><i className="fas fa-tag"></i> {dataset.type} / {dataset.task}</span>
                 <span><i className="fas fa-calendar-alt"></i> Создан: {new Date(dataset.created_at).toLocaleDateString()}</span>
                 <span><i className="fas fa-sync-alt"></i> Обновлён: {new Date(dataset.updated_at).toLocaleDateString()}</span>
               </div>
+
+              <p className="dataset-description">{dataset.description}</p>
 
               {dataset.classes_names.length > 0 && (
                 <div className="dataset-classes">
@@ -549,8 +566,15 @@ const Datasets: React.FC = () => {
                               <span className="default-badge-inline"> (по умолчанию)</span>
                             )}
                           </span>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <div className="version-actions">
                             <span className="version-size">{formatBytes(ver.size_bytes)}</span>
+                            <button
+                              className="icon-button small"
+                              onClick={() => handleShowVersionStats(dataset.id, ver.id)}
+                              title="Статистика"
+                            >
+                              <i className="fas fa-chart-bar"></i>
+                            </button>
                             <button
                               className="icon-button small"
                               onClick={() => handleDeleteVersion(dataset.id, ver.id)}
@@ -570,16 +594,29 @@ const Datasets: React.FC = () => {
                           <div className="dataset-sources">
                             {ver.sources.map((src, idx) => (
                               <div key={idx} className="source-item">
-                                <span className="source-type-badge">{src.type}</span>
-                                {src.url && (
-                                  <a href={src.url} target="_blank" rel="noopener noreferrer" className="source-link">
-                                    {src.url}
+                                {src.url ? (
+                                  <a href={src.url} target="_blank" rel="noopener noreferrer" className="source-type-badge source-type-badge--link">
+                                    {src.type}
                                   </a>
+                                ) : (
+                                  <span className="source-type-badge">{src.type}</span>
                                 )}
                                 {src.description && <span className="source-description">{src.description}</span>}
                               </div>
                             ))}
                           </div>
+                        )}
+                        {versionStats[`${dataset.id}:${ver.id}`] === 'loading' && (
+                          <p className="stats-loading">Загрузка статистики...</p>
+                        )}
+                        {versionStats[`${dataset.id}:${ver.id}`] === 'error' && (
+                          <p className="stats-error">Не удалось загрузить статистику</p>
+                        )}
+                        {typeof versionStats[`${dataset.id}:${ver.id}`] === 'object' && (
+                          <VersionSplitsStats
+                            stats={versionStats[`${dataset.id}:${ver.id}`] as VersionSplitsResponse}
+                            onClose={() => handleShowVersionStats(dataset.id, ver.id)}
+                          />
                         )}
                       </div>
                     ))}

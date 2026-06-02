@@ -38,6 +38,33 @@ export interface NewVersion {
   sources: Source;
 }
 
+export interface SplitStats {
+  total_samples: number;
+  num_classes: number;
+  balance_ratio: number;
+  is_balanced: boolean;
+  class_distribution: { class_name: string; count: number; percentage: number }[];
+}
+
+export interface ImageSizeStats {
+  unique_sizes: number;
+  total_images: number;
+  most_common_size: string;
+  most_common_count: number;
+  size_consistency: number;
+  top_10_sizes: Record<string, number>;
+}
+
+export interface VersionSplitsResponse {
+  id: string;
+  name: string;
+  num_samples: number;
+  size_bytes: number;
+  overall_balance: number;
+  splits_summary: Record<string, SplitStats>;
+  image_size_stats: Record<string, ImageSizeStats>;
+}
+
 export interface NewDataset {
   name: string;
   description: string;

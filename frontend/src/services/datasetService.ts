@@ -1,5 +1,5 @@
 // Импортируем типы для датасетов, новых датасетов, новых версий и существующих версий.
-import type { Dataset, NewDataset, NewVersion, Version } from '../types/dataset';
+import type { Dataset, NewDataset, NewVersion, Version, VersionSplitsResponse } from '../types/dataset';
 
 // Базовый URL API берётся из переменной окружения VITE_API_URL, если её нет – localhost:8000/api.
 const DMS_URL = `http://${import.meta.env.VITE_DMS ?? 'localhost:6500'}`;
@@ -135,6 +135,15 @@ export const datasetService = {
       method: 'DELETE',
     });
     return handleResponse<boolean>(response);
+  },
+
+  /**
+   * Получить статистику по сплитам версии.
+   * GET /datasets/{datasetId}/versions/{versionId}/splits
+   */
+  async getVersionSplits(datasetId: string, versionId: string): Promise<VersionSplitsResponse> {
+    const response = await fetch(`${DMS_URL}/datasets/${datasetId}/versions/${versionId}/splits`);
+    return handleResponse<VersionSplitsResponse>(response);
   },
 
   // ==================== Загрузка файлов ====================

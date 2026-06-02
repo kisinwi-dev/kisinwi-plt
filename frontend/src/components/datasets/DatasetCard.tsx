@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { formatBytes } from '../../utils/format';
-import type { Dataset } from '../../types/dataset';
+import type { Dataset, VersionSplitsResponse } from '../../types/dataset';
+import { datasetService } from '../../services/datasetService';
+import VersionSplitsStats from './VersionSplitsStats';
 
 interface DatasetCardProps {
   dataset: Dataset;
@@ -21,6 +23,22 @@ const DatasetCard: React.FC<DatasetCardProps> = ({
   onDeleteVersion,
   versionForm,
 }) => {
+  const [versionStats, setVersionStats] = useState<Record<string, VersionSplitsResponse | 'loading' | 'error'>>({});
+
+  const handleShowVersionStats = async (versionId: string) => {
+    if (versionStats[versionId]) {
+      setVersionStats(prev => { const next = { ...prev }; delete next[versionId]; return next; });
+      return;
+    }
+    setVersionStats(prev => ({ ...prev, [versionId]: 'loading' }));
+    try {
+      const data = await datasetService.getVersionSplits(dataset.id, versionId);
+      setVersionStats(prev => ({ ...prev, [versionId]: data }));
+    } catch {
+      setVersionStats(prev => ({ ...prev, [versionId]: 'error' }));
+    }
+  };
+
   return (
     <div className="dataset-card">
       <div className="dataset-header">
@@ -86,6 +104,13 @@ const DatasetCard: React.FC<DatasetCardProps> = ({
                     <span className="version-size">{formatBytes(ver.size_bytes)}</span>
                     <button
                       className="icon-button small"
+                      onClick={() => handleShowVersionStats(ver.id)}
+                      title="Статистика"
+                    >
+                      <i className="fas fa-chart-bar"></i>
+                    </button>
+                    <button
+                      className="icon-button small"
                       onClick={() => onDeleteVersion(ver.id)}
                       title="Удалить версию"
                       disabled={loading}
@@ -103,16 +128,29 @@ const DatasetCard: React.FC<DatasetCardProps> = ({
                   <div className="dataset-sources">
                     {ver.sources.map((src, idx) => (
                       <div key={idx} className="source-item">
-                        <span className="source-type-badge">{src.type}</span>
-                        {src.url && (
-                          <a href={src.url} target="_blank" rel="noopener noreferrer" className="source-link">
-                            {src.url}
+                        {src.url ? (
+                          <a href={src.url} target="_blank" rel="noopener noreferrer" className="source-type-badge source-type-badge--link">
+                            {src.type}
                           </a>
+                        ) : (
+                          <span className="source-type-badge">{src.type}</span>
                         )}
                         {src.description && <span className="source-description">{src.description}</span>}
                       </div>
                     ))}
                   </div>
+                )}
+                {versionStats[ver.id] === 'loading' && (
+                  <p className="stats-loading">Загрузка статистики...</p>
+                )}
+                {versionStats[ver.id] === 'error' && (
+                  <p className="stats-error">Не удалось загрузить статистику</p>
+                )}
+                {typeof versionStats[ver.id] === 'object' && (
+                  <VersionSplitsStats
+                    stats={versionStats[ver.id] as VersionSplitsResponse}
+                    onClose={() => handleShowVersionStats(ver.id)}
+                  />
                 )}
               </div>
             ))}
