@@ -2,8 +2,7 @@
 import type { Dataset, NewDataset, NewVersion, Version } from '../types/dataset';
 
 // Базовый URL API берётся из переменной окружения VITE_API_URL, если её нет – localhost:8000/api.
-const DMS_URL = `http://${import.meta.env.VITE_DMS}`;
-console.log('🚀 DMS_URL:', DMS_URL);
+const DMS_URL = `http://${import.meta.env.VITE_DMS ?? 'localhost:8000'}`;
 
 /**
  * Универсальная функция обработки HTTP-ответа.

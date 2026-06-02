@@ -6,7 +6,7 @@ interface DatasetFormProps {
   newDataset: NewDataset & { file: File | null };
   newClassName: string;
   classInputRef: React.RefObject<HTMLInputElement | null>; // допускаем null
-  onNewDatasetChange: (field: keyof Omit<NewDataset & { file: File | null }, 'file' | 'sources' | 'class_names'>, value: any) => void;
+  onNewDatasetChange: (field: keyof Omit<NewDataset & { file: File | null }, 'file' | 'sources' | 'class_names' | 'version'>, value: string) => void;
   loading: boolean;
   onVersionChange: (field: keyof NewVersion, value: string) => void;
   onAddClass: () => void;

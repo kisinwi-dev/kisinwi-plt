@@ -23,7 +23,7 @@ const Footer: React.FC = () => {
           <h4 className="footer-title">Связь</h4>
           <div className="social-links">
             <a 
-              href="https://telegram.me/andrySin#" 
+              href="https://t.me/andrySin"
               target="_blank" 
               rel="noopener noreferrer" 
               className="social-link"

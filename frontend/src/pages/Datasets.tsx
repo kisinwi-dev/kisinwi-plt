@@ -104,14 +104,14 @@ const Datasets: React.FC = () => {
     }));
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleAddClass();
     }
   };
 
-  const handleNewDatasetChange = (field: keyof Omit<typeof newDataset, 'file' | 'sources' | 'class_names'>, value: any) => {
+  const handleNewDatasetChange = (field: keyof Omit<typeof newDataset, 'file' | 'sources' | 'class_names' | 'version'>, value: string) => {
     setNewDataset(prev => ({ ...prev, [field]: value }));
   };
 
@@ -330,7 +330,7 @@ const Datasets: React.FC = () => {
                   placeholder="Введите название класса"
                   value={newClassName}
                   onChange={(e) => setNewClassName(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyDown}
                   disabled={loading}
                 />
                 <button type="button" className="add-class-btn" onClick={handleAddClass} disabled={loading}>
@@ -641,8 +641,8 @@ const Datasets: React.FC = () => {
                             </button>
                           </div>
                         </div>
-                        <span className="version-date">{'Дата загрузки: ' + new Date(ver.created_at).toLocaleDateString()}</span>
-                        <p className="version-description">{'Описание: ' + ver.description}</p>
+                        <span className="version-date">Дата загрузки: {new Date(ver.created_at).toLocaleDateString()}</span>
+                        <p className="version-description">Описание: {ver.description}</p>
                         <div className="version-stats">
                           <span>Всего: {ver.num_samples.toLocaleString()}</span>
                           <span>Train: {ver.num_train.toLocaleString()}</span>
