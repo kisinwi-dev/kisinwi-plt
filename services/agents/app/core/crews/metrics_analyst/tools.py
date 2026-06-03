@@ -11,12 +11,10 @@ _tool_instances = [
     DoesModelHaveMetricsTool()
 ]
 
-tools = {tool.name: tool for tool in _tool_instances}
-
 def get_tools(
-    agent_role:str
+    agent_role: str
 ) -> List[BaseTool]:
     return get_tools_with_tracking(
         agent_role=agent_role,
-        tools=tools
+        tools=_tool_instances
     )

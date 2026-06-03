@@ -8,16 +8,16 @@ from crewai_tools import (
 
 from ..utils import get_tools_with_tracking
 
-tools = {
-    "Search the internet with Serper": SerperDevTool(),
-    "ScrapeWebsiteTool": ScrapeWebsiteTool(),
-    "Arxiv Paper Fetcher and Download": ArxivPaperTool()
-}
+_tool_instances = [
+    SerperDevTool(),
+    ScrapeWebsiteTool(),
+    ArxivPaperTool(),
+]
 
 def get_tools(
-    agent_role:str
+    agent_role: str
 ) -> List[BaseTool]:
     return get_tools_with_tracking(
         agent_role=agent_role,
-        tools=tools
+        tools=_tool_instances
     )
