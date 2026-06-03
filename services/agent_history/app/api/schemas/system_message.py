@@ -9,6 +9,6 @@ class SystemMessageType(Enum):
 
 class SystemMessage(BaseModel):
     """Схема для создания сообщения от системы"""
-    type_: SystemMessageType = Field(default_factory=SystemMessageType, description="Тип сообщения")
+    type_: SystemMessageType = Field(default=SystemMessageType.INFO, description="Тип сообщения")
     message: str = Field(..., description="Сообщение от системы")
     timestamp: datetime = Field(default_factory=datetime.now, description="Время события")

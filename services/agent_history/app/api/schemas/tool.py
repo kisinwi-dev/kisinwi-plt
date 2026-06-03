@@ -5,7 +5,7 @@ from enum import Enum
 
 class ToolStatus(Enum):
     IN_PROGRESS = "IN PROGRESS"
-    SUCCED = "SUCCEED"
+    SUCCEEDED = "SUCCEED"
     ERROR = "ERROR"
 
 class Tool(BaseModel):

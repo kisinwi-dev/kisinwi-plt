@@ -13,7 +13,7 @@ def check_health_all() -> HealthResponse:
     status = HealthStatus.HEALTHY
     logger.info("Проверяем состояние подключения к базам данных...")
     services = {
-        "bd": HealthStatus.HEALTHY
+        "db": HealthStatus.HEALTHY
     }
 
     for service_val in services.values():

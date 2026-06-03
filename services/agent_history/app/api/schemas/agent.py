@@ -6,7 +6,7 @@ from enum import Enum
 
 class AgentStatus(Enum):
     IN_PROGRESS = "IN PROGRESS"
-    SUCCED = "SUCCEED"
+    SUCCEEDED = "SUCCEED"
     ERROR = "ERROR"
 
 

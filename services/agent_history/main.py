@@ -5,13 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routers import routers
 from app.api.exceptions import setup_exception_handlers
 
-# Обьект приложения
 app = FastAPI(
     title="Agents Monitoring",
     version="0.1.0"
 )
-
-app.include_router(routers)
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,11 +18,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(routers)
+
+setup_exception_handlers(app)
+
 if __name__ == "__main__":
-
-    # Настройка выкидывания ошибок
-    setup_exception_handlers(app)
-
     uvicorn.run(
         "main:app",
         host="0.0.0.0",

@@ -1,7 +1,9 @@
+import asyncio
 import json
 import shutil
 import aiofiles
 from datetime import datetime
+from pathlib import Path
 from typing import List, Optional
 from uuid import uuid4
 from pydantic import ValidationError
@@ -73,17 +75,21 @@ class DiscussionStorage(BaseStorage):
         if not discussion_dir.exists():
             return None
 
-        events = []
+        filepaths: list[Path] = []
         for pattern in ["system/*.json", "responses/*.json", "tools/**/*.json"]:
-            for filepath in discussion_dir.glob(pattern):
-                try:
-                    async with aiofiles.open(filepath, 'r', encoding='utf-8') as f:
-                        events.append(json.loads(await f.read()))
-                except (json.JSONDecodeError, ValidationError, KeyError) as e:
-                    logger.error(f"Ошибка при чтении файла {filepath}: {e}")
-                    continue
+            filepaths.extend(discussion_dir.glob(pattern))
 
-        events.sort(key=lambda x: x["timestamp"])
+        async def _read(filepath: Path) -> dict | None:
+            try:
+                async with aiofiles.open(filepath, 'r', encoding='utf-8') as f:
+                    return json.loads(await f.read())
+            except (json.JSONDecodeError, ValidationError, KeyError) as e:
+                logger.error(f"Ошибка при чтении файла {filepath}: {e}")
+                return None
+
+        results = await asyncio.gather(*[_read(fp) for fp in filepaths])
+        events = [r for r in results if r is not None]
+        events.sort(key=lambda x: x.get("timestamp", ""))
         return events
 
     async def get_all(self) -> List[DiscussionMeta]:
