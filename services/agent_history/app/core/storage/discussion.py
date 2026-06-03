@@ -27,6 +27,7 @@ class DiscussionStorage(BaseStorage):
             title=data.title,
             tags=data.tags,
             pipeline=data.pipeline,
+            agent_roles=data.agent_roles,
         )
 
         await self._write_meta(discussion_id, meta)
@@ -59,6 +60,8 @@ class DiscussionStorage(BaseStorage):
             meta.tags = update.tags
         if update.pipeline is not None:
             meta.pipeline = update.pipeline
+        if update.agent_roles is not None:
+            meta.agent_roles = update.agent_roles
 
         meta.updated_at = datetime.now()
         await self._write_meta(discussion_id, meta)

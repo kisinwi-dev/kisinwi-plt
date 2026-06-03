@@ -16,6 +16,7 @@ class DiscussionMeta(BaseModel):
     status: DiscussionStatus = Field(DiscussionStatus.ACTIVE, description="Статус дискуссии")
     tags: list[str] = Field(default_factory=list, description="Теги")
     pipeline: Optional[str] = Field(None, description="Название pipeline")
+    agent_roles: list[str] = Field(default_factory=list, description="Роли агентов в дискуссии")
     created_at: datetime = Field(default_factory=datetime.now, description="Время создания")
     updated_at: datetime = Field(default_factory=datetime.now, description="Время последнего изменения")
 
@@ -25,6 +26,7 @@ class DiscussionMetaUpdate(BaseModel):
     status: Optional[DiscussionStatus] = None
     tags: Optional[list[str]] = None
     pipeline: Optional[str] = None
+    agent_roles: Optional[list[str]] = None
 
 
 class CreateDiscussion(BaseModel):
@@ -32,3 +34,4 @@ class CreateDiscussion(BaseModel):
     title: Optional[str] = None
     tags: list[str] = Field(default_factory=list)
     pipeline: Optional[str] = None
+    agent_roles: list[str] = Field(default_factory=list)
