@@ -83,6 +83,7 @@ def get_agent_role_from_config(
         if agent_config and isinstance(agent_config, dict):
             role = agent_config.get('role')
             if role:
+                role = role.strip()
                 logger.debug(f"Загружена роль '{role}' для агента '{agent_key}' из {config_file}")
                 return role
 
