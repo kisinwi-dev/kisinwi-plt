@@ -1,5 +1,5 @@
 import requests
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from app.config import config_url
 from app.logs import get_logger
@@ -109,82 +109,99 @@ class AgentHistoryClient:
         )
 
     def _add_tool(
-        self, 
-        id: str, 
+        self,
+        id: str,
         agent_role: str,
         name: str,
         message: str,
-        status: str
+        status: str,
+        input_args: Optional[Dict[str, Any]] = None,
+        output: Optional[Any] = None,
+        duration_ms: Optional[float] = None,
+        error_traceback: Optional[str] = None,
     ) -> bool:
         """Добавить вызов инструмента"""
 
-        data = {
+        data: Dict[str, Any] = {
             "id": id,
             "agent_role": agent_role,
             "name": name,
             "status": status,
-            "message": message
+            "message": message,
         }
+
+        if input_args is not None:
+            data["input_args"] = input_args
+        if output is not None:
+            data["output"] = output
+        if duration_ms is not None:
+            data["duration_ms"] = duration_ms
+        if error_traceback is not None:
+            data["error_traceback"] = error_traceback
 
         return self._make_discussion_request("tool", data)
 
     def tool_start(
         self,
-        id: str, 
+        id: str,
         agent_role: str,
         name: str,
         message: str | None,
+        input_args: Optional[Dict[str, Any]] = None,
     ) -> bool:
-        """
-        Добавить историю инструмента
-        """
+        """Добавить историю инструмента"""
 
         message = message if message else "Нет информации"
 
         return self._add_tool(
-            id, 
+            id,
             agent_role,
             name,
             message,
-            status= "IN PROGRESS"
+            status="IN PROGRESS",
+            input_args=input_args,
         )
 
     def tool_succed(
         self,
-        id: str, 
+        id: str,
         agent_role: str,
         name: str,
         message: str,
+        output: Optional[Any] = None,
+        duration_ms: Optional[float] = None,
     ) -> bool:
-        """
-        Вывести результат работы агента
-        """
+        """Вывести результат работы инструмента"""
 
         return self._add_tool(
-            id, 
+            id,
             agent_role,
             name,
             message,
-            status= "SUCCEED"
+            status="SUCCEED",
+            output=output,
+            duration_ms=duration_ms,
         )
 
     def tool_error(
         self,
-        id: str, 
+        id: str,
         agent_role: str,
         name: str,
         message: str,
+        error_traceback: Optional[str] = None,
+        duration_ms: Optional[float] = None,
     ) -> bool:
-        """
-        Вывести результат работы агента
-        """
+        """Вывести ошибку инструмента"""
 
         return self._add_tool(
-            id, 
+            id,
             agent_role,
             name,
             message,
-            status= "ERROR"
+            status="ERROR",
+            error_traceback=error_traceback,
+            duration_ms=duration_ms,
         )
 
 
