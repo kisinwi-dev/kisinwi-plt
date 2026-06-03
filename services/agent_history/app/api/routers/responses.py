@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Response, status
 
 from app.api.schemas import AgentResponse
-from app.api.deps import agent_response_manager
+from app.api.deps import response_storage
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -23,14 +23,12 @@ async def save_response(
     """Сохранить новый ответ агента"""
     try:
 
-        agent_response_manager.save_response(
+        await response_storage.save(
             discussion_id=discussion_id,
             response=response
         )
 
-        return Response(
-            status_code=status.HTTP_201_CREATED
-        )
+        return Response(status_code=status.HTTP_201_CREATED)
     except Exception as e:
         logger.error(f"Ошибка при сохранении ответа агента: {e}")
         raise HTTPException(status_code=500, detail=f"Ошибка при сохранении ответа агента: {str(e)}")

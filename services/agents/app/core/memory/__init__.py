@@ -78,5 +78,23 @@ class ModelsContext:
         """Автоматическая очистка при выходе из контекста"""
         self.clear()
 
+class AgentResponseContext:
+    def __init__(self):
+        self._response_id: ContextVar[Optional[str]] = ContextVar('agent_response_id', default=None)
+
+    def set(self, response_id: str) -> None:
+        self._response_id.set(response_id)
+
+    def get(self) -> Optional[str]:
+        return self._response_id.get()
+
+    def clear(self) -> None:
+        self._response_id.set(None)
+
+    def is_set(self) -> bool:
+        return self._response_id.get() is not None
+
+
 models_context = ModelsContext()
 discussion_context = Discussion()
+agent_response_context = AgentResponseContext()

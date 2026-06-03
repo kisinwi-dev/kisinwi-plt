@@ -1,74 +1,64 @@
+import time
+import traceback
 from uuid import uuid4
-from typing import List, Dict
+from typing import List
 from crewai.tools import BaseTool
 from app.services.agent_history import agent_history_client
+from app.core.memory import agent_response_context
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 
 
-def track_tool(
-    agent_role: str, 
-    tool: BaseTool, 
-    tool_name: str
-):
-    """
-    Обработчик: оборачивает инструмент для отслеживания вызовов.
-    
-    Args:
-        agent_role: Роль агента
-        tool: Инструмент для обертки
-        tool_name: Название инструмента для логов
-    """
+def track_tool(agent_role: str, tool: BaseTool) -> BaseTool:
     original_run = tool._run
-    
+
     def wrapped_run(*args, **kwargs):
         id_tool = str(uuid4())
+        start_time = time.time()
+        response_id = agent_response_context.get()
+
         agent_history_client.tool_start(
             id=id_tool,
             agent_role=agent_role,
-            name=tool_name,
-            message=getattr(tool, 'description', None)
+            name=tool.name,
+            message=getattr(tool, 'description', None),
+            input_args=kwargs if kwargs else None,
+            response_id=response_id,
         )
-        
+
         try:
             result = original_run(*args, **kwargs)
+            duration_ms = (time.time() - start_time) * 1000
             agent_history_client.tool_succed(
                 id=id_tool,
                 agent_role=agent_role,
-                name=tool_name,
-                message=f"Инструмент {tool_name} завершил работу"
+                name=tool.name,
+                message=f"Инструмент {tool.name} завершил работу",
+                output=result,
+                duration_ms=duration_ms,
+                response_id=response_id,
             )
             return result
         except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
             agent_history_client.tool_error(
                 id=id_tool,
                 agent_role=agent_role,
-                name=tool_name,
-                message=f"Ошибка: {str(e)}"
+                name=tool.name,
+                message=f"Ошибка: {str(e)}",
+                error_traceback=traceback.format_exc(),
+                duration_ms=duration_ms,
+                response_id=response_id,
             )
             raise
-    
+
     tool._run = wrapped_run
     return tool
 
 
 def get_tools_with_tracking(
     agent_role: str,
-    tools: Dict[str, BaseTool],
+    tools: List[BaseTool],
 ) -> List[BaseTool]:
-    """
-    Возвращает список инструментов с обработчиком.
-    
-    Args:
-        agent_role: Роль агента
-        tools: Инструменты, где ключ - название инструмента, а значение инструмент
-    
-    Returns:
-        List[BaseTool]: Список обернутых инструментов
-    """    
-    
-    for name, tool in tools.items():
-        tools[name]=track_tool(agent_role, tool, name)
-    
-    return list(tools.values())
+    return [track_tool(agent_role, tool) for tool in tools]
