@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Response, status
 
 from app.api.schemas import Discussion
-from app.api.deps import agent_response_manager
+from app.api.deps import discussion_storage
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -24,7 +24,7 @@ async def get_full_discussion_messages(
     """Получить историю дискусии"""
     try:
 
-        events = agent_response_manager.get_discussion_history(
+        events = discussion_storage.get_history(
             discussion_id=discussion_id
         )
 
@@ -61,7 +61,7 @@ async def delete_discussion(
     """Удалить дискуссию"""
     try:
 
-        success = agent_response_manager.delete_discussion(
+        success = discussion_storage.delete(
             discussion_id=discussion_id,
         )
 

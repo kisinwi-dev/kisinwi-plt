@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Response, status
 
 from app.api.schemas import SystemMessage
-from app.api.deps import agent_response_manager
+from app.api.deps import system_storage
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -23,14 +23,12 @@ async def post_system_message(
     """Сохранить сообщение системы"""
     try:
 
-        agent_response_manager.save_system_mes(
+        system_storage.save(
             discussion_id=discussion_id,
             message=message
         )
 
-        return Response(
-            status_code=status.HTTP_201_CREATED
-        )
+        return Response(status_code=status.HTTP_201_CREATED)
     except Exception as e:
         logger.error(f"Ошибка при сохранении сообщения от системы: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Ошибка при сохранении сообщения от системы: {str(e)}")

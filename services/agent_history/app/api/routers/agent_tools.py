@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Response, status
 
 from app.api.schemas import Tool
-from app.api.deps import agent_response_manager
+from app.api.deps import tool_storage
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -23,9 +23,9 @@ async def post_tool(
 ):
     """Сохранить информацию об инструменте"""
     try:
-        agent_response_manager.save_tool_info(
+        tool_storage.save(
             discussion_id=discussion_id,
-            tool_info=tool_info
+            tool=tool_info
         )
 
         return Response(status_code=status.HTTP_201_CREATED)
@@ -50,7 +50,7 @@ async def get_tools_by_response(
 ):
     """Получить все инструменты, вызванные в рамках конкретного запуска агента (по response_id)"""
     try:
-        tools = agent_response_manager.get_tools_by_response_id(
+        tools = tool_storage.get_by_response(
             discussion_id=discussion_id,
             response_id=response_id,
         )
