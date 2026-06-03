@@ -22,19 +22,19 @@ const Footer: React.FC = () => {
         <div className="footer-section">
           <h4 className="footer-title">Связь</h4>
           <div className="social-links">
-            <a 
-              href="https://telegram.me/andrySin#" 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href="https://t.me/andrySin"
+              target="_blank"
+              rel="noopener noreferrer"
               className="social-link"
               title="Telegram"
             >
               <i className="fab fa-telegram"></i>
             </a>
-            <a 
-              href="https://github.com/kisinwi-dev/kisinwi-plt" 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href="https://github.com/kisinwi-dev/kisinwi-plt"
+              target="_blank"
+              rel="noopener noreferrer"
               className="social-link"
               title="GitHub"
             >

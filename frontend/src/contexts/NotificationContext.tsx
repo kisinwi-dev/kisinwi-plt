@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 
 // Определяем возможные типы уведомлений. Это union строковых литералов.
@@ -38,24 +38,15 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   // Функция для показа уведомления.
   // Принимает текст и необязательный тип (по умолчанию 'error').
-  const showNotification = (message: string, type: NotificationType = 'error') => {
-    // Генерируем уникальный идентификатор:
-    // - Date.now() даёт миллисекунды
-    // - случайная строка из Math.random (36-ричная система, удаляем первые 2 символа)
-    const id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
-
-    // Добавляем новое уведомление в конец массива.
-    setNotifications(prev => [...prev, { id, message, type }]);
-
-    // Автоматически удаляем уведомление через 5 секунд.
-    setTimeout(() => removeNotification(id), 5000);
-  };
-
-  // Функция удаления уведомления по id.
-  // Фильтрует массив, оставляя все элементы, кроме того, чей id совпадает.
-  const removeNotification = (id: string) => {
+  const removeNotification = useCallback((id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
-  };
+  }, []);
+
+  const showNotification = useCallback((message: string, type: NotificationType = 'error') => {
+    const id = Date.now().toString() + Math.random().toString(36).slice(2, 7);
+    setNotifications(prev => [...prev, { id, message, type }]);
+    setTimeout(() => removeNotification(id), 5000);
+  }, [removeNotification]);
 
   // Провайдер передаёт дочерним компонентам объект с текущими уведомлениями и функциями.
   return (
@@ -65,8 +56,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   );
 };
 
-// Хук для удобного доступа к контексту уведомлений.
-// Должен использоваться только внутри компонентов, обёрнутых в NotificationProvider.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useNotification = () => {
   const context = useContext(NotificationContext);
   // Если контекст undefined – значит, хук вызвали вне провайдера. Выбрасываем ошибку.

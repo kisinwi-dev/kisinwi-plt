@@ -2,20 +2,16 @@ import React from 'react';
 import FileUploader from '../FileUploader';
 import type { NewDataset, NewVersion, SourceItem } from '../../types/dataset';
 
+type VersionFormData = Omit<NewVersion, 'id_data'>;
+
 interface DatasetFormProps {
-  newDataset: NewDataset & { file: File | null };
-  newClassName: string;
-  classInputRef: React.RefObject<HTMLInputElement | null>; // допускаем null
-  onNewDatasetChange: (field: keyof Omit<NewDataset & { file: File | null }, 'file' | 'sources' | 'class_names'>, value: any) => void;
+  newDataset: Omit<NewDataset, 'version'> & { version: VersionFormData; file: File | null };
   loading: boolean;
-  onVersionChange: (field: keyof NewVersion, value: string) => void;
-  onAddClass: () => void;
-  onRemoveClass: (className: string) => void;
-  onClassInputChange: (value: string) => void;
-  onKeyPress: (e: React.KeyboardEvent) => void;
-  onAddSource: () => void;
-  onRemoveSource: (index: number) => void;
-  onSourceChange: (index: number, field: keyof SourceItem, value: string) => void;
+  onNewDatasetChange: (field: keyof Omit<NewDataset, 'version'>, value: string) => void;
+  onVersionChange: (field: keyof VersionFormData, value: string) => void;
+  onVersionSourceAdd: () => void;
+  onVersionSourceRemove: (index: number) => void;
+  onVersionSourceChange: (index: number, field: keyof SourceItem, value: string) => void;
   onFileSelect: (file: File | null) => void;
   onSubmit: () => void;
   onCancel: () => void;
@@ -23,18 +19,12 @@ interface DatasetFormProps {
 
 const DatasetForm: React.FC<DatasetFormProps> = ({
   newDataset,
-  newClassName,
-  classInputRef,
   loading,
   onNewDatasetChange,
   onVersionChange,
-  onAddClass,
-  onRemoveClass,
-  onClassInputChange,
-  onKeyPress,
-  onAddSource,
-  onRemoveSource,
-  onSourceChange,
+  onVersionSourceAdd,
+  onVersionSourceRemove,
+  onVersionSourceChange,
   onFileSelect,
   onSubmit,
   onCancel,
@@ -46,18 +36,6 @@ const DatasetForm: React.FC<DatasetFormProps> = ({
       <div className="form-section">
         <h3>Основная информация</h3>
         <div className="form-grid">
-          <div className="form-field">
-            <label htmlFor="dataset-id">ID датасета <span className="required-star">*</span></label>
-            <input
-              id="dataset-id"
-              type="text"
-              placeholder="например: cifar10"
-              value={newDataset.dataset_id}
-              onChange={(e) => onNewDatasetChange('dataset_id', e.target.value)}
-              disabled={loading}
-            />
-            <span className="field-hint">Уникальный идентификатор, только латиница и цифры</span>
-          </div>
           <div className="form-field">
             <label htmlFor="dataset-name">Название <span className="required-star">*</span></label>
             <input
@@ -83,114 +61,6 @@ const DatasetForm: React.FC<DatasetFormProps> = ({
         </div>
       </div>
 
-      {/* Блок классов */}
-      <div className="form-section">
-        <h3>Классы <span className="required-star">*</span></h3>
-        <div className="classes-section">
-          <div className="class-input-group">
-            <input
-              ref={classInputRef}
-              type="text"
-              placeholder="Введите название класса"
-              value={newClassName}
-              onChange={(e) => onClassInputChange(e.target.value)}
-              onKeyPress={onKeyPress}
-              disabled={loading}
-            />
-            <button type="button" className="add-class-btn" onClick={onAddClass} disabled={loading}>
-              <i className="fas fa-plus-circle"></i> Добавить класс
-            </button>
-          </div>
-          <span className="field-hint">Каждый класс добавляется отдельно, можно использовать Enter</span>
-
-          {newDataset.class_names.length > 0 ? (
-            <div className="class-tags-container">
-              {newDataset.class_names.map((className) => (
-                <span key={className} className="class-tag">
-                  {className}
-                  <button
-                    type="button"
-                    className="remove-class-btn"
-                    onClick={() => onRemoveClass(className)}
-                    title="Удалить класс"
-                    disabled={loading}
-                  >
-                    <i className="fas fa-times"></i>
-                  </button>
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="field-error">Добавьте хотя бы один класс</p>
-          )}
-        </div>
-      </div>
-
-      {/* Источники данных */}
-      <div className="form-section">
-        <h3>Источники данных <span className="required-star">*</span></h3>
-        <div className="sources-container">
-          {newDataset.sources.map((source, index) => (
-            <div key={index} className="source-card">
-              <div className="source-header">
-                <div className="source-type-wrapper">
-                  <select
-                    value={source.type}
-                    onChange={(e) => onSourceChange(index, 'type', e.target.value)}
-                    className="source-type-select"
-                    disabled={loading}
-                  >
-                    <option value="kaggle">📊 Kaggle</option>
-                    <option value="url">🌐 URL</option>
-                    <option value="huggingface">🤗 Hugging Face</option>
-                    <option value="other">📁 Другой</option>
-                  </select>
-                </div>
-                {newDataset.sources.length > 1 && (
-                  <button
-                    type="button"
-                    className="source-remove-btn"
-                    onClick={() => onRemoveSource(index)}
-                    title="Удалить источник"
-                    disabled={loading}
-                  >
-                    <i className="fas fa-trash-alt"></i>
-                  </button>
-                )}
-              </div>
-              <div className="source-fields">
-                <div className="form-field">
-                  <label>URL источника</label>
-                  <input
-                    type="url"
-                    placeholder="https://..."
-                    value={source.url}
-                    onChange={(e) => onSourceChange(index, 'url', e.target.value)}
-                    className="source-input"
-                    disabled={loading}
-                  />
-                </div>
-                <div className="form-field">
-                  <label>Описание</label>
-                  <input
-                    type="text"
-                    placeholder="например: оригинальный источник"
-                    value={source.description}
-                    onChange={(e) => onSourceChange(index, 'description', e.target.value)}
-                    className="source-input"
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-          <button type="button" className="add-source-btn" onClick={onAddSource} disabled={loading}>
-            <i className="fas fa-plus-circle"></i> Добавить ещё источник
-          </button>
-        </div>
-      </div>
-
-      {/* Тип и задача */}
       <div className="form-section">
         <h3>Тип и задача</h3>
         <div className="form-row">
@@ -226,18 +96,17 @@ const DatasetForm: React.FC<DatasetFormProps> = ({
         </div>
       </div>
 
-      {/* Начальная версия */}
       <div className="form-section">
         <h3>Начальная версия <span className="required-star">*</span></h3>
         <div className="form-grid">
           <div className="form-field">
-            <label htmlFor="version-id">ID версии</label>
+            <label htmlFor="version-name">Название версии <span className="required-star">*</span></label>
             <input
-              id="version-id"
+              id="version-name"
               type="text"
               placeholder="например: v1.0"
-              value={newDataset.version.version_id}
-              onChange={(e) => onVersionChange('version_id', e.target.value)}
+              value={newDataset.version.name}
+              onChange={(e) => onVersionChange('name', e.target.value)}
               disabled={loading}
             />
           </div>
@@ -253,9 +122,66 @@ const DatasetForm: React.FC<DatasetFormProps> = ({
             />
           </div>
         </div>
+
+        <h4>Источники данных</h4>
+        <div className="sources-container">
+          {newDataset.version.sources.map((source, index) => (
+            <div key={index} className="source-card">
+              <div className="source-header">
+                <select
+                  value={source.type}
+                  onChange={(e) => onVersionSourceChange(index, 'type', e.target.value)}
+                  className="source-type-select"
+                  disabled={loading}
+                >
+                  <option value="kaggle">📊 Kaggle</option>
+                  <option value="url">🌐 URL</option>
+                  <option value="huggingface">🤗 Hugging Face</option>
+                  <option value="other">📁 Другой</option>
+                </select>
+                {newDataset.version.sources.length > 1 && (
+                  <button
+                    type="button"
+                    className="source-remove-btn"
+                    onClick={() => onVersionSourceRemove(index)}
+                    disabled={loading}
+                  >
+                    <i className="fas fa-trash-alt"></i>
+                  </button>
+                )}
+              </div>
+              <div className="source-fields">
+                <div className="form-field">
+                  <label>URL источника</label>
+                  <input
+                    type="url"
+                    placeholder="https://..."
+                    value={source.url ?? ''}
+                    onChange={(e) => onVersionSourceChange(index, 'url', e.target.value)}
+                    className="source-input"
+                    disabled={loading}
+                  />
+                </div>
+                <div className="form-field">
+                  <label>Описание</label>
+                  <input
+                    type="text"
+                    placeholder="например: оригинальный источник"
+                    value={source.description}
+                    onChange={(e) => onVersionSourceChange(index, 'description', e.target.value)}
+                    className="source-input"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+          <button type="button" className="add-source-btn" onClick={onVersionSourceAdd} disabled={loading}>
+            <i className="fas fa-plus-circle"></i> Добавить ещё источник
+          </button>
+        </div>
       </div>
 
-      {/* Файл датасета */}
       <div className="form-section">
         <h3>Файл датасета</h3>
         <FileUploader
@@ -263,7 +189,7 @@ const DatasetForm: React.FC<DatasetFormProps> = ({
           accept=".zip"
           currentFile={newDataset.file}
         />
-        <span className="field-hint">Загрузите архив с данными</span>
+        <span className="field-hint">Загрузите архив с данными. Классы определяются автоматически.</span>
       </div>
 
       <div className="form-actions">
