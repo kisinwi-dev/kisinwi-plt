@@ -15,4 +15,4 @@ RUN uv sync --frozen --no-dev
 
 COPY . . 
 
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "6300"]
+CMD ["sh", "-c", "uv run uvicorn main:app --host 0.0.0.0 --port ${ML_MODELS_SERVICE_PORT:-6300}"]

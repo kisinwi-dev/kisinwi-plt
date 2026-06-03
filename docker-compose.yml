@@ -28,6 +28,8 @@ services:
       - ./db/datasets_storage:/app/datasets
     ports:
       - "${DATASETS_SERVICE_PORT}:${DATASETS_SERVICE_PORT}"
+    environment:
+      - DATASETS_SERVICE_PORT=${DATASETS_SERVICE_PORT}
     networks:
       - network
 
@@ -42,6 +44,7 @@ services:
       context: ./services/tasker
       dockerfile: Dockerfile
     environment:
+      - TASKER_PORT=${TASKER_PORT}
       - POSTGRES_HOST=tasker_postgres
       - POSTGRES_PORT=${TASKER_POSTGRES_PORT}
       - POSTGRES_DB=${TASKER_POSTGRES_DB}
@@ -93,6 +96,7 @@ services:
       context: ./services/ml_models
       dockerfile: Dockerfile
     environment:
+      - ML_MODELS_SERVICE_PORT=${ML_MODELS_SERVICE_PORT}
       - POSTGRES_HOST=ml_models_postgres
       - POSTGRES_PORT=${ML_MODELS_POSTGRES_PORT}
       - POSTGRES_DB=${ML_MODELS_POSTGRES_DB}
@@ -156,6 +160,7 @@ services:
     ports:
       - "${TRAINER_SERVICE_PORT}:${TRAINER_SERVICE_PORT}"
     environment:
+      - TRAINER_SERVICE_PORT=${TRAINER_SERVICE_PORT}
       - TASKER_DOMAIN=tasker:${TASKER_PORT}
       - METRICS_DOMAIN=metrics:${METRICS_SERVICE_PORT}
       - ML_MODELS_DOMAIN=ml_models:${ML_MODELS_SERVICE_PORT}
@@ -178,6 +183,7 @@ services:
       context: ./services/metrics
       dockerfile: Dockerfile
     environment:
+      - METRICS_SERVICE_PORT=${METRICS_SERVICE_PORT}
       - MONGO_HOST=metrics_mongo
       - MONGO_PORT=${METRICS_MONGO_PORT}
       - MONGO_APP_USERNAME=${METRICS_MONGO_APP_USERNAME}
@@ -228,6 +234,7 @@ services:
     ports:
       - "${AGENT_OFFICE_PORT}:${AGENT_OFFICE_PORT}"
     environment:
+      - AGENT_OFFICE_PORT=${AGENT_OFFICE_PORT}
       - DATASETS_DOMAIN=datasets:${DATASETS_SERVICE_PORT}
       - TASKER_DOMAIN=tasker:${TASKER_PORT}
       - TRAINER_DOMAIN=trainer:${TRAINER_SERVICE_PORT}
@@ -249,6 +256,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "${AGENT_MONITORING_PORT}:${AGENT_MONITORING_PORT}"
+    environment:
+      - AGENT_MONITORING_PORT=${AGENT_MONITORING_PORT}
     volumes:
       - ./db/agent_history/discussion:/app/discussion
     networks:
