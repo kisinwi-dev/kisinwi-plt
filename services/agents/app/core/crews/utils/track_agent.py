@@ -1,9 +1,11 @@
 import yaml
+from uuid import uuid4
 from pathlib import Path
 from functools import wraps
 from typing import Callable
 
 from app.services.agent_history import agent_history_client
+from app.core.memory import agent_response_context
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -11,7 +13,7 @@ logger = get_logger(__name__)
 def track_agent(agent_role: str):
     """
     Декоратор для отслеживания запуска и завершения работы агента.
-    
+
     Args:
         agent_role: роль агента
 
@@ -25,25 +27,36 @@ def track_agent(agent_role: str):
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
+            response_id = str(uuid4())
+            agent_response_context.set(response_id)
 
-            # Логируем начало работы
-            agent_history_client.info(f"🚀 Агент '{agent_role}' начал работу")
-            logger.info(f"🚀 Агент '{agent_role}' начал работу")
+            agent_history_client.agent_start(
+                response_id=response_id,
+                agent_role=agent_role,
+                text=f"Агент '{agent_role}' начал работу",
+            )
+            logger.info(f"🚀 Агент '{agent_role}' начал работу (response_id={response_id})")
 
             try:
                 result = func(*args, **kwargs)
 
-                # Логируем успешное завершение
+                agent_history_client.agent_succeed(
+                    response_id=response_id,
+                    agent_role=agent_role,
+                    text=str(result) if result else f"Агент '{agent_role}' завершил работу",
+                )
                 logger.info(f"✅ Агент '{agent_role}' завершил работу")
 
                 return result
-                
+
             except Exception as e:
-                # Логируем ошибку
                 error_msg = f"Агент '{agent_role}' завершился с ошибкой: {str(e)}"
                 agent_history_client.error(error_msg)
                 logger.error(f"❌ {error_msg}")
                 raise
+
+            finally:
+                agent_response_context.clear()
 
         return wrapper
     return decorator

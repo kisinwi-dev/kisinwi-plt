@@ -135,6 +135,31 @@ class Storage:
 
         return response
 
+    def get_tools_by_response_id(
+        self,
+        discussion_id: str,
+        response_id: str,
+    ) -> List[dict] | None:
+        """Получить все инструменты, вызванные в рамках конкретного запуска агента"""
+        discussion_dir = self.base_path / discussion_id
+
+        if not discussion_dir.exists():
+            return None
+
+        tools = []
+        for filepath in discussion_dir.glob("tool_*.json"):
+            try:
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                if data.get("response_id") == response_id:
+                    tools.append(data)
+            except (json.JSONDecodeError, KeyError) as e:
+                logger.error(f"Ошибка при чтении файла {filepath}: {e}")
+                continue
+
+        tools.sort(key=lambda x: x["timestamp"])
+        return tools
+
     def get_all_discussions(self) -> List[str]:
         """Получить список всех ID дискуссий"""
         return [d.name for d in self.base_path.iterdir() if d.is_dir()]

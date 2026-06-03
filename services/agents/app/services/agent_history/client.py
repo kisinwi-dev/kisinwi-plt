@@ -119,6 +119,7 @@ class AgentHistoryClient:
         output: Optional[Any] = None,
         duration_ms: Optional[float] = None,
         error_traceback: Optional[str] = None,
+        response_id: Optional[str] = None,
     ) -> bool:
         """Добавить вызов инструмента"""
 
@@ -138,6 +139,8 @@ class AgentHistoryClient:
             data["duration_ms"] = duration_ms
         if error_traceback is not None:
             data["error_traceback"] = error_traceback
+        if response_id is not None:
+            data["response_id"] = response_id
 
         return self._make_discussion_request("tool", data)
 
@@ -148,6 +151,7 @@ class AgentHistoryClient:
         name: str,
         message: str | None,
         input_args: Optional[Dict[str, Any]] = None,
+        response_id: Optional[str] = None,
     ) -> bool:
         """Добавить историю инструмента"""
 
@@ -160,6 +164,7 @@ class AgentHistoryClient:
             message,
             status="IN PROGRESS",
             input_args=input_args,
+            response_id=response_id,
         )
 
     def tool_succed(
@@ -170,6 +175,7 @@ class AgentHistoryClient:
         message: str,
         output: Optional[Any] = None,
         duration_ms: Optional[float] = None,
+        response_id: Optional[str] = None,
     ) -> bool:
         """Вывести результат работы инструмента"""
 
@@ -181,6 +187,7 @@ class AgentHistoryClient:
             status="SUCCEED",
             output=output,
             duration_ms=duration_ms,
+            response_id=response_id,
         )
 
     def tool_error(
@@ -191,6 +198,7 @@ class AgentHistoryClient:
         message: str,
         error_traceback: Optional[str] = None,
         duration_ms: Optional[float] = None,
+        response_id: Optional[str] = None,
     ) -> bool:
         """Вывести ошибку инструмента"""
 
@@ -202,6 +210,7 @@ class AgentHistoryClient:
             status="ERROR",
             error_traceback=error_traceback,
             duration_ms=duration_ms,
+            response_id=response_id,
         )
 
 

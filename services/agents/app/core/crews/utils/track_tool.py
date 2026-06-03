@@ -4,6 +4,7 @@ from uuid import uuid4
 from typing import List
 from crewai.tools import BaseTool
 from app.services.agent_history import agent_history_client
+from app.core.memory import agent_response_context
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -15,6 +16,7 @@ def track_tool(agent_role: str, tool: BaseTool) -> BaseTool:
     def wrapped_run(*args, **kwargs):
         id_tool = str(uuid4())
         start_time = time.time()
+        response_id = agent_response_context.get()
 
         agent_history_client.tool_start(
             id=id_tool,
@@ -22,6 +24,7 @@ def track_tool(agent_role: str, tool: BaseTool) -> BaseTool:
             name=tool.name,
             message=getattr(tool, 'description', None),
             input_args=kwargs if kwargs else None,
+            response_id=response_id,
         )
 
         try:
@@ -34,6 +37,7 @@ def track_tool(agent_role: str, tool: BaseTool) -> BaseTool:
                 message=f"Инструмент {tool.name} завершил работу",
                 output=result,
                 duration_ms=duration_ms,
+                response_id=response_id,
             )
             return result
         except Exception as e:
@@ -45,6 +49,7 @@ def track_tool(agent_role: str, tool: BaseTool) -> BaseTool:
                 message=f"Ошибка: {str(e)}",
                 error_traceback=traceback.format_exc(),
                 duration_ms=duration_ms,
+                response_id=response_id,
             )
             raise
 

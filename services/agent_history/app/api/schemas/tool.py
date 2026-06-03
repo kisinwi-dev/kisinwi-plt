@@ -19,3 +19,4 @@ class Tool(BaseModel):
     output: Optional[Any] = Field(None, description="Результат выполнения инструмента")
     duration_ms: Optional[float] = Field(None, description="Время выполнения в миллисекундах")
     error_traceback: Optional[str] = Field(None, description="Полный стектрейс ошибки")
+    response_id: Optional[str] = Field(None, description="ID ответа агента, которому принадлежит вызов")
