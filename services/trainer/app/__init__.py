@@ -3,6 +3,7 @@ from .config import config_services
 # Проверка доступа к вспомогательным сервисам
 config_services.check_services()
 
+import os
 import httpx
 import asyncio
 import uvicorn
@@ -28,9 +29,9 @@ app.include_router(api_routers)
 
 # Настройка конфига для запуска uvicorn
 uv_conf = uvicorn.Config(
-    app, 
-    host="0.0.0.0", 
-    port=6200, 
+    app,
+    host="0.0.0.0",
+    port=int(os.getenv("TRAINER_SERVICE_PORT", 6200)),
 )
 
 # Создание объекта сервера uvicorn

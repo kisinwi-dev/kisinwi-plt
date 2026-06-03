@@ -1,12 +1,15 @@
 services:
   frontend:
-    container_name: 
+    container_name:
       frontend
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
         - DATASETS_DOMAIN=localhost:${DATASETS_SERVICE_PORT}
+        - FRONTEND_PORT=${FRONTEND_PORT}
+    environment:
+      - FRONTEND_PORT=${FRONTEND_PORT}
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     networks:
@@ -28,6 +31,8 @@ services:
       - ./db/datasets_storage:/app/datasets
     ports:
       - "${DATASETS_SERVICE_PORT}:${DATASETS_SERVICE_PORT}"
+    environment:
+      - DATASETS_SERVICE_PORT=${DATASETS_SERVICE_PORT}
     networks:
       - network
 
@@ -42,6 +47,7 @@ services:
       context: ./services/tasker
       dockerfile: Dockerfile
     environment:
+      - TASKER_PORT=${TASKER_PORT}
       - POSTGRES_HOST=tasker_postgres
       - POSTGRES_PORT=${TASKER_POSTGRES_PORT}
       - POSTGRES_DB=${TASKER_POSTGRES_DB}
@@ -51,6 +57,12 @@ services:
       - ML_MODELS_PORT=${ML_MODELS_SERVICE_PORT}
     ports:
       - "${TASKER_PORT}:${TASKER_PORT}"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:${TASKER_PORT}/info/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     networks:
       - network
     depends_on:
@@ -93,6 +105,7 @@ services:
       context: ./services/ml_models
       dockerfile: Dockerfile
     environment:
+      - ML_MODELS_SERVICE_PORT=${ML_MODELS_SERVICE_PORT}
       - POSTGRES_HOST=ml_models_postgres
       - POSTGRES_PORT=${ML_MODELS_POSTGRES_PORT}
       - POSTGRES_DB=${ML_MODELS_POSTGRES_DB}
@@ -102,6 +115,12 @@ services:
       - "${ML_MODELS_SERVICE_PORT}:${ML_MODELS_SERVICE_PORT}"
     volumes:
       - ./db/model_files:/app/model_files
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:${ML_MODELS_SERVICE_PORT}/info/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     networks:
       - network
     depends_on:
@@ -139,11 +158,13 @@ services:
   # =============================================================
     
   trainer:
-    container_name: 
+    container_name:
       trainer
-    build: 
+    build:
       context: ./services/trainer
       dockerfile: Dockerfile
+      args:
+        - TRAINER_SERVICE_PORT=${TRAINER_SERVICE_PORT}
     deploy:
       resources:
         reservations:
@@ -156,13 +177,17 @@ services:
     ports:
       - "${TRAINER_SERVICE_PORT}:${TRAINER_SERVICE_PORT}"
     environment:
+      - TRAINER_SERVICE_PORT=${TRAINER_SERVICE_PORT}
       - TASKER_DOMAIN=tasker:${TASKER_PORT}
       - METRICS_DOMAIN=metrics:${METRICS_SERVICE_PORT}
       - ML_MODELS_DOMAIN=ml_models:${ML_MODELS_SERVICE_PORT}
     depends_on:
-      - metrics
-      - tasker
-      - ml_models
+      metrics:
+        condition: service_healthy
+      tasker:
+        condition: service_healthy
+      ml_models:
+        condition: service_healthy
     networks:
       - network
     shm_size: 2gb
@@ -178,13 +203,20 @@ services:
       context: ./services/metrics
       dockerfile: Dockerfile
     environment:
+      - METRICS_SERVICE_PORT=${METRICS_SERVICE_PORT}
       - MONGO_HOST=metrics_mongo
       - MONGO_PORT=${METRICS_MONGO_PORT}
       - MONGO_APP_USERNAME=${METRICS_MONGO_APP_USERNAME}
       - MONGO_APP_PASSWORD=${METRICS_MONGO_APP_PASSWORD}
       - MONGO_METRIC_DATABASE=${METRICS_MONGO_INITDB_DATABASE}
-    ports: 
+    ports:
       - "${METRICS_SERVICE_PORT}:${METRICS_SERVICE_PORT}"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:${METRICS_SERVICE_PORT}/info/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     networks:
       - network
     depends_on:
@@ -228,12 +260,26 @@ services:
     ports:
       - "${AGENT_OFFICE_PORT}:${AGENT_OFFICE_PORT}"
     environment:
+      - AGENT_OFFICE_PORT=${AGENT_OFFICE_PORT}
       - DATASETS_DOMAIN=datasets:${DATASETS_SERVICE_PORT}
       - TASKER_DOMAIN=tasker:${TASKER_PORT}
       - TRAINER_DOMAIN=trainer:${TRAINER_SERVICE_PORT}
       - METRICS_DOMAIN=metrics:${METRICS_SERVICE_PORT}
       - ML_MODELS_DOMAIN=ml_models:${ML_MODELS_SERVICE_PORT}
       - AGENT_HISTORY_DOMAIN=agent_history:${AGENT_MONITORING_PORT}
+    depends_on:
+      datasets:
+        condition: service_started
+      tasker:
+        condition: service_healthy
+      trainer:
+        condition: service_started
+      metrics:
+        condition: service_healthy
+      ml_models:
+        condition: service_healthy
+      agent_history:
+        condition: service_started
     networks:
       - network
 
@@ -249,6 +295,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "${AGENT_MONITORING_PORT}:${AGENT_MONITORING_PORT}"
+    environment:
+      - AGENT_MONITORING_PORT=${AGENT_MONITORING_PORT}
     volumes:
       - ./db/agent_history/discussion:/app/discussion
     networks:

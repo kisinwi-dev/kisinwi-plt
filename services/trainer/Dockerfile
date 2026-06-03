@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir --break-system-packages torchvision \
 # Копируем код проекта
 COPY . /app
 
-# Сервис использует порт 6200
-EXPOSE 6200
+ARG TRAINER_SERVICE_PORT
+EXPOSE ${TRAINER_SERVICE_PORT}
 
 CMD ["python", "main.py"]

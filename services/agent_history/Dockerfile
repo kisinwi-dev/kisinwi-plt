@@ -10,4 +10,4 @@ RUN uv sync --frozen --no-dev
 
 COPY . /app
 
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "6410"]
+CMD ["sh", "-c", "uv run uvicorn main:app --host 0.0.0.0 --port ${AGENT_MONITORING_PORT:-6410}"]
