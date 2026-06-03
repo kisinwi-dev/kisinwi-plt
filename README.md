@@ -12,6 +12,37 @@
 |------------|-------------|-----------|
 | Загружай, удаляй и версионируй датасеты | Выбирай модель и параметры. Прозрачно и настраиваемо | Агенты сами подбирают гиперпараметры, анализируют результаты и предлагают улучшения |
 
+## 🐳 Запуск
+
+```bash
+docker compose up --build
+```
+
+Docker выстраивает порядок запуска автоматически по `depends_on`:
+
+```
+Шаг 1 — стартуют сразу, параллельно:
+  tasker_postgres, ml_models_postgres, metrics_mongo
+  datasets, agent_history
+
+Шаг 2 — ждут healthcheck своей БД:
+  tasker      (← tasker_postgres)
+  ml_models   (← ml_models_postgres)
+  metrics     (← metrics_mongo)
+
+Шаг 3 — ждёт healthcheck трёх сервисов выше:
+  trainer     (← tasker, ml_models, metrics)
+
+Шаг 4 — ждёт всех предыдущих:
+  agents      (← tasker, ml_models, metrics [healthy]
+                  trainer, datasets, agent_history [started])
+
+Шаг 5 — последним:
+  frontend    (← datasets)
+```
+
+> Healthcheck у tasker, ml_models, metrics — GET `/info/health`. Сервисы без healthcheck ждутся по `service_started`.
+
 ## ✅ Статус разработки
 
 Платформа разрабатывается с микросервисной архитектурой.
