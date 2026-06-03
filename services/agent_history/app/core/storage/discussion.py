@@ -1,5 +1,6 @@
 import json
 import shutil
+import aiofiles
 from datetime import datetime
 from typing import List, Optional
 from uuid import uuid4
@@ -16,7 +17,7 @@ _META_FILE = "meta.json"
 
 class DiscussionStorage(BaseStorage):
 
-    def create(self, data: CreateDiscussion) -> DiscussionMeta:
+    async def create(self, data: CreateDiscussion) -> DiscussionMeta:
         discussion_id = data.discussion_id or str(uuid4())
         discussion_dir = self.base_path / discussion_id
         discussion_dir.mkdir(parents=True, exist_ok=True)
@@ -28,24 +29,24 @@ class DiscussionStorage(BaseStorage):
             pipeline=data.pipeline,
         )
 
-        self._write_meta(discussion_id, meta)
+        await self._write_meta(discussion_id, meta)
         return meta
 
-    def get_meta(self, discussion_id: str) -> Optional[DiscussionMeta]:
+    async def get_meta(self, discussion_id: str) -> Optional[DiscussionMeta]:
         meta_path = self.base_path / discussion_id / _META_FILE
 
         if not meta_path.exists():
             return None
 
         try:
-            with open(meta_path, 'r', encoding='utf-8') as f:
-                return DiscussionMeta(**json.load(f))
+            async with aiofiles.open(meta_path, 'r', encoding='utf-8') as f:
+                return DiscussionMeta(**json.loads(await f.read()))
         except (json.JSONDecodeError, ValidationError, KeyError) as e:
             logger.error(f"Ошибка при чтении {meta_path}: {e}")
             return None
 
-    def update_meta(self, discussion_id: str, update: DiscussionMetaUpdate) -> Optional[DiscussionMeta]:
-        meta = self.get_meta(discussion_id)
+    async def update_meta(self, discussion_id: str, update: DiscussionMetaUpdate) -> Optional[DiscussionMeta]:
+        meta = await self.get_meta(discussion_id)
 
         if meta is None:
             return None
@@ -60,10 +61,10 @@ class DiscussionStorage(BaseStorage):
             meta.pipeline = update.pipeline
 
         meta.updated_at = datetime.now()
-        self._write_meta(discussion_id, meta)
+        await self._write_meta(discussion_id, meta)
         return meta
 
-    def get_history(self, discussion_id: str) -> List[dict] | None:
+    async def get_history(self, discussion_id: str) -> List[dict] | None:
         discussion_dir = self.base_path / discussion_id
 
         if not discussion_dir.exists():
@@ -73,8 +74,8 @@ class DiscussionStorage(BaseStorage):
         for pattern in ["system/*.json", "responses/*.json", "tools/**/*.json"]:
             for filepath in discussion_dir.glob(pattern):
                 try:
-                    with open(filepath, 'r', encoding='utf-8') as f:
-                        events.append(json.load(f))
+                    async with aiofiles.open(filepath, 'r', encoding='utf-8') as f:
+                        events.append(json.loads(await f.read()))
                 except (json.JSONDecodeError, ValidationError, KeyError) as e:
                     logger.error(f"Ошибка при чтении файла {filepath}: {e}")
                     continue
@@ -82,12 +83,12 @@ class DiscussionStorage(BaseStorage):
         events.sort(key=lambda x: x["timestamp"])
         return events
 
-    def get_all(self) -> List[DiscussionMeta]:
+    async def get_all(self) -> List[DiscussionMeta]:
         result = []
         for d in self.base_path.iterdir():
             if not d.is_dir():
                 continue
-            meta = self.get_meta(d.name)
+            meta = await self.get_meta(d.name)
             if meta is None:
                 meta = DiscussionMeta(discussion_id=d.name)
             result.append(meta)
@@ -101,7 +102,7 @@ class DiscussionStorage(BaseStorage):
             return True
         return False
 
-    def _write_meta(self, discussion_id: str, meta: DiscussionMeta) -> None:
+    async def _write_meta(self, discussion_id: str, meta: DiscussionMeta) -> None:
         meta_path = self.base_path / discussion_id / _META_FILE
-        with open(meta_path, 'w', encoding='utf-8') as f:
-            f.write(meta.model_dump_json(indent=2, ensure_ascii=False))
+        async with aiofiles.open(meta_path, 'w', encoding='utf-8') as f:
+            await f.write(meta.model_dump_json(indent=2, ensure_ascii=False))

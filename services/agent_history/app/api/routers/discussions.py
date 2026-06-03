@@ -21,7 +21,7 @@ router = APIRouter(tags=["discussion"])
 async def create_discussion(data: CreateDiscussion):
     """Создать новую дискуссию с метаданными"""
     try:
-        meta = discussion_storage.create(data)
+        meta = await discussion_storage.create(data)
         return meta
     except Exception as e:
         logger.error(f"Ошибка при создании дискуссии: {e}")
@@ -40,7 +40,7 @@ async def create_discussion(data: CreateDiscussion):
 async def list_discussions():
     """Получить список всех дискуссий"""
     try:
-        return discussion_storage.get_all()
+        return await discussion_storage.get_all()
     except Exception as e:
         logger.error(f"Ошибка при получении списка дискуссий: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -59,7 +59,7 @@ async def list_discussions():
 async def get_full_discussion_messages(discussion_id: str):
     """Получить историю дискуссии"""
     try:
-        events = discussion_storage.get_history(discussion_id=discussion_id)
+        events = await discussion_storage.get_history(discussion_id=discussion_id)
 
         if events is None:
             raise HTTPException(
@@ -67,7 +67,7 @@ async def get_full_discussion_messages(discussion_id: str):
                 detail=f"Дискуссия '{discussion_id}' не найдена"
             )
 
-        meta = discussion_storage.get_meta(discussion_id)
+        meta = await discussion_storage.get_meta(discussion_id)
 
         return Discussion(
             discussion_id=discussion_id,
@@ -94,7 +94,7 @@ async def get_full_discussion_messages(discussion_id: str):
 async def update_discussion_meta(discussion_id: str, update: DiscussionMetaUpdate):
     """Обновить метаданные дискуссии"""
     try:
-        meta = discussion_storage.update_meta(discussion_id=discussion_id, update=update)
+        meta = await discussion_storage.update_meta(discussion_id=discussion_id, update=update)
 
         if meta is None:
             raise HTTPException(

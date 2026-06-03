@@ -23,7 +23,7 @@ async def save_response(
     """Сохранить новый ответ агента"""
     try:
 
-        response_storage.save(
+        await response_storage.save(
             discussion_id=discussion_id,
             response=response
         )

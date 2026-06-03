@@ -23,7 +23,7 @@ async def post_tool(
 ):
     """Сохранить информацию об инструменте"""
     try:
-        tool_storage.save(
+        await tool_storage.save(
             discussion_id=discussion_id,
             tool=tool_info
         )
@@ -50,7 +50,7 @@ async def get_tools_by_response(
 ):
     """Получить все инструменты, вызванные в рамках конкретного запуска агента (по response_id)"""
     try:
-        tools = tool_storage.get_by_response(
+        tools = await tool_storage.get_by_response(
             discussion_id=discussion_id,
             response_id=response_id,
         )

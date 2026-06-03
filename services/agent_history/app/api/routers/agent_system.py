@@ -23,7 +23,7 @@ async def post_system_message(
     """Сохранить сообщение системы"""
     try:
 
-        system_storage.save(
+        await system_storage.save(
             discussion_id=discussion_id,
             message=message
         )
