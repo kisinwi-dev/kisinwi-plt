@@ -7,8 +7,8 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-ARG DMS
-ENV VITE_DMS=$DMS
+ARG DATASETS_DOMAIN
+ENV VITE_DMS=$DATASETS_DOMAIN
 
 RUN npm run build
 

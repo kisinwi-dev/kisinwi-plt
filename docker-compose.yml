@@ -19,9 +19,9 @@ services:
   # =============================================================
   
   datasets:
-    container_name: 
+    container_name:
       datasets
-    build: 
+    build:
       context: ./services/datasets
       dockerfile: Dockerfile
     volumes:
