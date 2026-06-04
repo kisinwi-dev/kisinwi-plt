@@ -8,7 +8,14 @@ from typing import List, Optional
 from uuid import uuid4
 from pydantic import ValidationError
 
-from app.api.schemas import DiscussionMeta, DiscussionMetaRead, DiscussionMetaUpdate, CreateDiscussion, DiscussionStatus
+from app.api.schemas import (
+    DiscussionMeta,
+    DiscussionMetaRead,
+    DiscussionMetaUpdate,
+    CreateDiscussion,
+    DiscussionStatus,
+    AgentModelInfo,
+)
 from app.logs import get_logger
 from .base import BaseStorage
 
@@ -93,13 +100,12 @@ class DiscussionStorage(BaseStorage):
         events.sort(key=lambda x: x.get("timestamp", ""))
         return events
 
-    async def _aggregate(self, discussion_id: str) -> tuple[int, int, list[str]]:
-        """Подсчитать число ответов, вызовов инструментов и список моделей дискуссии."""
+    async def _aggregate(self, discussion_id: str) -> tuple[int, int, dict[str, list[str]]]:
+        """Подсчитать число ответов, вызовов инструментов и модели по ролям агентов."""
         discussion_dir = self.base_path / discussion_id
 
         responses_count = 0
-        models: list[str] = []
-        seen_models: set[str] = set()
+        role_models: dict[str, list[str]] = {}
 
         responses_dir = discussion_dir / "responses"
         if responses_dir.exists():
@@ -111,15 +117,18 @@ class DiscussionStorage(BaseStorage):
                 except (json.JSONDecodeError, OSError) as e:
                     logger.error(f"Ошибка при чтении {filepath}: {e}")
                     continue
+                role = data.get("agent_role")
+                if role is None:
+                    continue
+                models = role_models.setdefault(role, [])
                 model = data.get("model")
-                if model and model not in seen_models:
-                    seen_models.add(model)
+                if model and model not in models:
                     models.append(model)
 
         tools_dir = discussion_dir / "tools"
         tool_calls_count = sum(1 for _ in tools_dir.glob("**/*.json")) if tools_dir.exists() else 0
 
-        return responses_count, tool_calls_count, models
+        return responses_count, tool_calls_count, role_models
 
     async def get_all(
         self,
@@ -139,12 +148,24 @@ class DiscussionStorage(BaseStorage):
                 continue
             if pipeline is not None and meta.pipeline != pipeline:
                 continue
-            responses_count, tool_calls_count, models = await self._aggregate(d.name)
+            responses_count, tool_calls_count, role_models = await self._aggregate(d.name)
+
+            # Заявленные роли (из meta) идут первыми, дополняются моделями из ответов;
+            # затем добавляются роли, реально отвечавшие, но не объявленные в meta.
+            agents: list[AgentModelInfo] = []
+            seen_roles: set[str] = set()
+            for role in meta.agent_roles:
+                agents.append(AgentModelInfo(role=role, models=role_models.get(role, [])))
+                seen_roles.add(role)
+            for role, models in role_models.items():
+                if role not in seen_roles:
+                    agents.append(AgentModelInfo(role=role, models=models))
+
             result.append(DiscussionMetaRead(
                 **meta.model_dump(),
                 responses_count=responses_count,
                 tool_calls_count=tool_calls_count,
-                models=models,
+                agents=agents,
             ))
         result.sort(key=lambda x: x.created_at, reverse=True)
         return result[skip : skip + limit]
