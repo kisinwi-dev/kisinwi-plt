@@ -96,6 +96,9 @@ class AgentHistoryClient:
         text: str,
         status: str,
         duration_ms: Optional[float] = None,
+        model: Optional[str] = None,
+        task_name: Optional[str] = None,
+        iteration: Optional[int] = None,
     ) -> bool:
         """Добавление ответа агента в историю"""
         data: Dict[str, Any] = {
@@ -106,6 +109,12 @@ class AgentHistoryClient:
         }
         if duration_ms is not None:
             data["duration_ms"] = duration_ms
+        if model is not None:
+            data["model"] = model
+        if task_name is not None:
+            data["task_name"] = task_name
+        if iteration is not None:
+            data["iteration"] = iteration
         return self._make_discussion_request("responses", data)
 
     def agent_start(
@@ -113,8 +122,14 @@ class AgentHistoryClient:
         response_id: str,
         agent_role: str,
         text: str,
+        model: Optional[str] = None,
+        task_name: Optional[str] = None,
+        iteration: Optional[int] = None,
     ) -> bool:
-        return self._add_agent(response_id, agent_role, text, status="IN PROGRESS")
+        return self._add_agent(
+            response_id, agent_role, text, status="IN PROGRESS",
+            model=model, task_name=task_name, iteration=iteration,
+        )
 
     def agent_succeed(
         self,
@@ -122,8 +137,14 @@ class AgentHistoryClient:
         agent_role: str,
         text: str,
         duration_ms: Optional[float] = None,
+        model: Optional[str] = None,
+        task_name: Optional[str] = None,
+        iteration: Optional[int] = None,
     ) -> bool:
-        return self._add_agent(response_id, agent_role, text, status="SUCCEED", duration_ms=duration_ms)
+        return self._add_agent(
+            response_id, agent_role, text, status="SUCCEED",
+            duration_ms=duration_ms, model=model, task_name=task_name, iteration=iteration,
+        )
 
     def _add_tool(
         self,

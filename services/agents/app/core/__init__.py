@@ -3,7 +3,7 @@ from typing import List
 from app.logs import get_logger
 from app.core.crews.dataset_analyst import run_dataset_analyst
 from app.core.crews.reporter import run_reporter
-from app.core.memory import discussion_context
+from app.core.memory import discussion_context, iteration_context
 from app.services.agent_history import agent_history_client
 from .pipeline import (
     train_and_debug, reasoning,
@@ -51,6 +51,7 @@ def development_models(
     version_model=0
 
     for iter in range(1, max_iter+1):
+        iteration_context.set(iter)
         version_model+=1
 
         info_start_iter = f"Полный цикл обучения №{iter} из {max_iter}"
@@ -122,6 +123,7 @@ def development_models(
         verbose=verbose
     )
 
+    iteration_context.clear()
     agent_history_client.update_discussion_meta(discussion_context.get(), status="completed")
     return result
 

@@ -95,6 +95,21 @@ class AgentResponseContext:
         return self._response_id.get() is not None
 
 
+class IterationContext:
+    def __init__(self):
+        self._iteration: ContextVar[Optional[int]] = ContextVar('iteration', default=None)
+
+    def set(self, iteration: int) -> None:
+        self._iteration.set(iteration)
+
+    def get(self) -> Optional[int]:
+        return self._iteration.get()
+
+    def clear(self) -> None:
+        self._iteration.set(None)
+
+
 models_context = ModelsContext()
 discussion_context = Discussion()
 agent_response_context = AgentResponseContext()
+iteration_context = IterationContext()
