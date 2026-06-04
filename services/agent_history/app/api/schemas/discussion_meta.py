@@ -17,8 +17,8 @@ class DiscussionMeta(BaseModel):
     tags: list[str] = Field(default_factory=list, description="Теги")
     pipeline: Optional[str] = Field(None, description="Название pipeline")
     agent_roles: list[str] = Field(default_factory=list, description="Роли агентов в дискуссии")
-    created_at: datetime = Field(default_factory=datetime.now, description="Время создания")
-    updated_at: datetime = Field(default_factory=datetime.now, description="Время последнего изменения")
+    created_at: datetime = Field(default_factory=datetime.now, description="Время старта дискуссии")
+    finished_at: Optional[datetime] = Field(None, description="Время завершения дискуссии")
 
 
 class DiscussionMetaUpdate(BaseModel):

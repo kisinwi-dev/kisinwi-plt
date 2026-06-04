@@ -8,7 +8,7 @@ from typing import List, Optional
 from uuid import uuid4
 from pydantic import ValidationError
 
-from app.api.schemas import DiscussionMeta, DiscussionMetaUpdate, CreateDiscussion
+from app.api.schemas import DiscussionMeta, DiscussionMetaUpdate, CreateDiscussion, DiscussionStatus
 from app.logs import get_logger
 from .base import BaseStorage
 
@@ -65,7 +65,8 @@ class DiscussionStorage(BaseStorage):
         if update.agent_roles is not None:
             meta.agent_roles = update.agent_roles
 
-        meta.updated_at = datetime.now()
+        if meta.status in (DiscussionStatus.COMPLETED, DiscussionStatus.FAILED):
+            meta.finished_at = datetime.now()
         await self._write_meta(discussion_id, meta)
         return meta
 
