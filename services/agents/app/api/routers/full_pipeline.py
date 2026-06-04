@@ -4,10 +4,24 @@ from fastapi import APIRouter, Query, HTTPException
 
 from app.core import development_models
 from app.core.memory import discussion_context, models_context
+from app.services.agent_history import agent_history_client
+from app.core.crews.dataset_analyst import AGENT_ROLE as DATASET_ANALYST_ROLE
+from app.core.crews.researcher import AGENT_ROLE as RESEARCHER_ROLE
+from app.core.crews.ml_engeneer import AGENT_ROLE as ML_ENGINEER_ROLE
+from app.core.crews.ml_debuger import AGENT_ROLE as ML_DEBUGER_ROLE
+from app.core.crews.reporter import AGENT_ROLE as REPORTER_ROLE
 
 routers = APIRouter(
     tags=['pipeline']
 )
+
+_DEVELOPMENT_AGENT_ROLES = [
+    DATASET_ANALYST_ROLE,
+    RESEARCHER_ROLE,
+    ML_ENGINEER_ROLE,
+    ML_DEBUGER_ROLE,
+    REPORTER_ROLE,
+]
 
 @routers.get(
         "/development",
@@ -23,7 +37,14 @@ def development(
     max_iter: int = Query("", description="Количество попыток обучения")
 ):
     try:
-        discussion_context.set(str(uuid4()))
+        discussion_id = str(uuid4())
+        discussion_context.set(discussion_id)
+
+        agent_history_client.create_discussion(
+            discussion_id=discussion_id,
+            pipeline="development",
+            agent_roles=_DEVELOPMENT_AGENT_ROLES,
+        )
 
         return development_models(
             dataset_id=dataset_id,

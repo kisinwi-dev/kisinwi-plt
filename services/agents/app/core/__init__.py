@@ -3,8 +3,10 @@ from typing import List
 from app.logs import get_logger
 from app.core.crews.dataset_analyst import run_dataset_analyst
 from app.core.crews.reporter import run_reporter
+from app.core.memory import discussion_context
+from app.services.agent_history import agent_history_client
 from .pipeline import (
-    train_and_debug, reasoning, 
+    train_and_debug, reasoning,
     TrainingInput
 )
 
@@ -42,6 +44,7 @@ def development_models(
     )
     if not dataset_analyst_out.readiness_assessment:
         logger.info("🟥 Анализ датасета показал, что данные не готовы к обучению")
+        agent_history_client.update_discussion_meta(discussion_context.get(), status="failed")
         return None
 
     logger.info("✅ Анализ датасета")
@@ -69,6 +72,7 @@ def development_models(
         if not ml_engin_out.decision:
             logger.info("🟥 МЛ инженер и исследователь не смогли придти к общему мнению.")
             logger.warning("🟥 Обучение остановлено")
+            agent_history_client.update_discussion_meta(discussion_context.get(), status="failed")
             return None
         logger.info("✅ Конец рассуждений.")
 
@@ -118,5 +122,6 @@ def development_models(
         verbose=verbose
     )
 
+    agent_history_client.update_discussion_meta(discussion_context.get(), status="completed")
     return result
 

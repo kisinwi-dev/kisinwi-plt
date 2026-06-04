@@ -2,8 +2,8 @@ import requests
 from typing import Any, Dict, Optional
 
 from app.config import config_url
-from app.logs import get_logger
 from app.core.memory import discussion_context
+from app.logs import get_logger
 
 logger = get_logger(__name__)
 
@@ -14,9 +14,50 @@ class AgentHistoryClient:
     def __init__(self):
         self.base_url = config_url.AGENT_HISTORY['url']
 
+    def create_discussion(
+        self,
+        discussion_id: str,
+        pipeline: str,
+        agent_roles: list[str],
+    ) -> bool:
+        """Создать дискуссию в agent_history"""
+        url = f"{self.base_url}/discussions"
+        try:
+            response = requests.post(url, json={
+                "discussion_id": discussion_id,
+                "pipeline": pipeline,
+                "agent_roles": agent_roles,
+            })
+            if response.status_code == 201:
+                logger.debug(f"✅ Дискуссия создана discussion_id=`{discussion_id}`")
+                return True
+            logger.error(f"Ошибка создания дискуссии: {response.status_code} - {response.text}")
+            return False
+        except Exception as e:
+            logger.error(f"Непредвиденная ошибка при создании дискуссии: {e}")
+            return False
+
+    def update_discussion_meta(
+        self,
+        discussion_id: str,
+        status: str,
+    ) -> bool:
+        """Обновить метаданные дискуссии (например, статус)"""
+        url = f"{self.base_url}/discussions/{discussion_id}/meta"
+        try:
+            response = requests.patch(url, json={"status": status})
+            if response.status_code == 200:
+                logger.debug(f"✅ Статус дискуссии обновлён: {status}")
+                return True
+            logger.error(f"Ошибка обновления мета: {response.status_code} - {response.text}")
+            return False
+        except Exception as e:
+            logger.error(f"Непредвиденная ошибка при обновлении мета: {e}")
+            return False
+
     def _make_discussion_request(
-        self, 
-        endpoint: str, 
+        self,
+        endpoint: str,
         data: Dict[str, Any]
     ) -> bool:
         """
@@ -49,64 +90,40 @@ class AgentHistoryClient:
             return False
 
     def _add_agent(
-        self, 
+        self,
         response_id: str,
         agent_role: str,
         text: str,
-        status: str
+        status: str,
+        duration_ms: Optional[float] = None,
     ) -> bool:
-        """
-        Добавление ответа агента в историю
-        """
-        data = {
+        """Добавление ответа агента в историю"""
+        data: Dict[str, Any] = {
             "response_id": response_id,
             "status": status,
             "agent_role": agent_role,
-            "text": text
+            "text": text,
         }
+        if duration_ms is not None:
+            data["duration_ms"] = duration_ms
         return self._make_discussion_request("responses", data)
 
     def agent_start(
-        self, 
+        self,
         response_id: str,
         agent_role: str,
         text: str,
     ) -> bool:
-        """
-        Добавление агента при инциализации первого
-
-        Args:
-            response_id: Id ответа,
-            agent_role: Роль агента,
-            text: Текст от агента,
-        """
-        return self._add_agent(
-            response_id,
-            agent_role,
-            text,
-            status="IN PROGRESS"
-        )
+        return self._add_agent(response_id, agent_role, text, status="IN PROGRESS")
 
     def agent_succeed(
-        self, 
+        self,
         response_id: str,
         agent_role: str,
         text: str,
+        duration_ms: Optional[float] = None,
     ) -> bool:
-        """
-        Добавление результатов работы агента
-
-        Args:
-            response_id: Id ответа,
-            agent_role: Роль агента,
-            text: Текст от агента,
-        """
-        return self._add_agent(
-            response_id,
-            agent_role,
-            text,
-            status="SUCCEED"
-        )
+        return self._add_agent(response_id, agent_role, text, status="SUCCEED", duration_ms=duration_ms)
 
     def _add_tool(
         self,

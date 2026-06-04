@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Query, HTTPException
 
-from app.core.crews.ml_engeneer import run_ml_engineering
-from app.core.crews.ml_debuger import run_ml_debug
+from app.core.crews.ml_engeneer import run_ml_engineering, AGENT_ROLE as ML_ENGINEER_ROLE
+from app.core.crews.ml_debuger import run_ml_debug, AGENT_ROLE as ML_DEBUGER_ROLE
 from app.core.memory import discussion_context
+from app.services.agent_history import agent_history_client
 
 routers = APIRouter(
     tags=['engineering']
@@ -22,6 +23,7 @@ def run_etp(
     try:
         
         discussion_context.set(discussion_id)
+        agent_history_client.create_discussion(discussion_id, pipeline="ml_engineer", agent_roles=[ML_ENGINEER_ROLE])
 
         result = run_ml_engineering(
             dataset_info=dataset_info,
@@ -52,6 +54,7 @@ def run_ed(
     try:
     
         discussion_context.set(discussion_id)
+        agent_history_client.create_discussion(discussion_id, pipeline="ml_debuger", agent_roles=[ML_DEBUGER_ROLE])
 
         result = run_ml_debug(
             error=error,

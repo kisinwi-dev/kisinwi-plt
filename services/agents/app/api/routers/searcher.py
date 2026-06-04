@@ -1,9 +1,10 @@
 from typing import List
 from fastapi import APIRouter, Query, HTTPException
 
-from app.core.crews.praxis_searcher import run_praxis_searcher, PraxisSearchOutput
-from app.core.crews.ml_models_searcher import run_ml_models_searcher, MLModelsSearcherOutput
+from app.core.crews.praxis_searcher import run_praxis_searcher, PraxisSearchOutput, AGENT_ROLE as PRAXIS_SEARCHER_ROLE
+from app.core.crews.ml_models_searcher import run_ml_models_searcher, MLModelsSearcherOutput, AGENT_ROLE as ML_MODELS_SEARCHER_ROLE
 from app.core.memory import discussion_context
+from app.services.agent_history import agent_history_client
 
 routers = APIRouter(
     prefix='/searcher',
@@ -23,6 +24,7 @@ def praxis_in_internet(
     try:
 
         discussion_context.set(discussion_id)
+        agent_history_client.create_discussion(discussion_id, pipeline="praxis_searcher", agent_roles=[PRAXIS_SEARCHER_ROLE])
 
         result = run_praxis_searcher(
             search_query=search_query,
@@ -52,6 +54,7 @@ def get_info_ml_models(
     try:
 
         discussion_context.set(discussion_id)
+        agent_history_client.create_discussion(discussion_id, pipeline="ml_models_searcher", agent_roles=[ML_MODELS_SEARCHER_ROLE])
 
         result = run_ml_models_searcher(
             model_ids=model_ids,

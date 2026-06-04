@@ -6,9 +6,7 @@ from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
 from .tools import get_tools
-from ..utils import track_agent, get_agent_role_from_config
-from app.services.metrics import add_agent_in_metrics
-from app.services.agent_history import agent_history_client
+from ..utils import get_agent_role_from_config, run_crew_with_tracking
 from app.logs import get_logger
 from app.core.llm import llm
 
@@ -57,7 +55,6 @@ class MetricAnalystCrew:
             verbose=verbose
         )
 
-@track_agent(agent_role=AGENT_ROLE)
 def run_metrics_analyst(
         model_id: str,
         business_goal: str,
@@ -70,32 +67,16 @@ def run_metrics_analyst(
         model_id: Id модели для анализа
         business_goal: Требования бизнеса
         verbose: Логирование в консоли
-
-    * Автоматически записывает метрики использования агента, а так же
-    записывает в историю дискусии.
     """
     crew = MetricAnalystCrew().crew(verbose=verbose)
 
-    crew_output = crew.kickoff(
-        inputs={
-            "model_id": model_id,
-            "business_goal": business_goal
-        }
-    )
-
-    result = extract_result(crew_output)
-
-    add_agent_in_metrics(
-        crew=crew
-    )
-
-    agent_history_client.agent_succeed(
-        response_id=str(crew.id),
+    crew_output = run_crew_with_tracking(
+        crew=crew,
         agent_role=AGENT_ROLE,
-        text=result
+        inputs={"model_id": model_id, "business_goal": business_goal},
     )
 
-    return result
+    return extract_result(crew_output) if crew_output is not None else ""
 
 
 def extract_result(crew_output):

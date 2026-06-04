@@ -1,15 +1,13 @@
 from pathlib import Path
 from typing import List
 from pydantic import BaseModel, Field
-from crewai import Agent, Crew, Task, CrewOutput
+from crewai import Agent, Crew, Task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
 from .tools import get_tools
-from ..utils import track_agent, get_agent_role_from_config
-from app.services.metrics import add_agent_in_metrics
-from app.services.agent_history import agent_history_client
+from ..utils import get_agent_role_from_config, run_crew_with_tracking
 from app.core.memory import models_context
 from app.logs import get_logger
 from app.core.llm import llm
@@ -66,32 +64,31 @@ class MLModelsSearcherCrew:
             verbose=verbose
         )
 
-@track_agent(agent_role=AGENT_ROLE)
 def run_ml_models_searcher(
     model_ids: List[str],
     context: str,
     verbose: bool = False
 ) -> MLModelsSearcherOutput:
     """
-    Запускает агента-поисковика лучших практик.
-    
+    Запускает агента-поисковика по обученным моделям.
+
     Args:
-        discussion_id: ID дискуссии
-        model_ids: Конкретный запрос для поиска
+        model_ids: Список ID моделей для анализа
         context: Дополнительный контекст
         verbose: Логирование
     """
     crew = MLModelsSearcherCrew().crew(verbose=verbose)
 
-    crew_output = crew.kickoff(
+    crew_output = run_crew_with_tracking(
+        crew=crew,
+        agent_role=AGENT_ROLE,
         inputs={
-            "model_ids": ",".join(id for id in model_ids),
-            "context": context 
-        }
+            "model_ids": ",".join(model_ids),
+            "context": context,
+        },
     )
-    result: MLModelsSearcherOutput
 
-    if not isinstance(crew_output, CrewOutput):
+    if crew_output is None:
         return MLModelsSearcherOutput(
             text="В процессе работы была получена ошибка с типизацией",
             summary="",
@@ -99,27 +96,14 @@ def run_ml_models_searcher(
         )
 
     try:
-
-        task_output = crew_output.tasks_output[0]
-        result = task_output.pydantic # type: ignore[index]
-
+        result = crew_output.tasks_output[0].pydantic  # type: ignore[index]
     except Exception as e:
         logger.warning(f"Не удалось получить pydantic output: {e}. Используем fallback.")
-        raw_text = extract_result(crew_output)
         result = MLModelsSearcherOutput(
-            text=raw_text,
+            text=extract_result(crew_output),
             summary="",
             metrics_summary=[]
         )
-
-    # Сохраняем метрики и историю
-    add_agent_in_metrics(crew=crew)
-
-    agent_history_client.agent_succeed(
-        response_id=str(crew.id),
-        agent_role=AGENT_ROLE,
-        text=result.text  # сохраняем основной текст
-    )
 
     logger.info(f"ML Models Searcher завершён | Моделей разобрано: {len(model_ids)}")
     return result

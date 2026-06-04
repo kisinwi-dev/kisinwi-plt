@@ -1,10 +1,11 @@
 from typing import List
 from fastapi import APIRouter, Query, HTTPException
 
-from app.core.crews.metrics_analyst import run_metrics_analyst
-from app.core.crews.dataset_analyst import run_dataset_analyst
-from app.core.crews.reporter import run_reporter
+from app.core.crews.metrics_analyst import run_metrics_analyst, AGENT_ROLE as METRICS_ANALYST_ROLE
+from app.core.crews.dataset_analyst import run_dataset_analyst, AGENT_ROLE as DATASET_ANALYST_ROLE
+from app.core.crews.reporter import run_reporter, AGENT_ROLE as REPORTER_ROLE
 from app.core.memory import discussion_context, models_context
+from app.services.agent_history import agent_history_client
 
 routers = APIRouter(
     prefix='/analytics',
@@ -23,6 +24,7 @@ def analyze_datasets(
     try:
 
         discussion_context.set(discussion_id)
+        agent_history_client.create_discussion(discussion_id, pipeline="dataset_analyst", agent_roles=[DATASET_ANALYST_ROLE])
 
         result = run_dataset_analyst(
             dataset_id=dataset_id,
@@ -52,6 +54,7 @@ def analyze_ml_metric(
     try:
         
         discussion_context.set(discussion_id)
+        agent_history_client.create_discussion(discussion_id, pipeline="metrics_analyst", agent_roles=[METRICS_ANALYST_ROLE])
 
         result = run_metrics_analyst(
             business_goal=business_goal,
@@ -81,7 +84,8 @@ def reporter(
     try:
         
         discussion_context.set(discussion_id)
-        for model_id in models_id: 
+        agent_history_client.create_discussion(discussion_id, pipeline="reporter", agent_roles=[REPORTER_ROLE])
+        for model_id in models_id:
             models_context.add_model(model_id)
 
         result = run_reporter(
