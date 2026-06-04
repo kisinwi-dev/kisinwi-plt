@@ -8,7 +8,7 @@ from typing import List, Optional
 from uuid import uuid4
 from pydantic import ValidationError
 
-from app.api.schemas import DiscussionMeta, DiscussionMetaUpdate, CreateDiscussion
+from app.api.schemas import DiscussionMeta, DiscussionMetaUpdate, CreateDiscussion, DiscussionStatus
 from app.logs import get_logger
 from .base import BaseStorage
 
@@ -65,7 +65,8 @@ class DiscussionStorage(BaseStorage):
         if update.agent_roles is not None:
             meta.agent_roles = update.agent_roles
 
-        meta.updated_at = datetime.now()
+        if meta.finished_at is None and meta.status in (DiscussionStatus.COMPLETED, DiscussionStatus.FAILED):
+            meta.finished_at = datetime.now()
         await self._write_meta(discussion_id, meta)
         return meta
 
@@ -92,7 +93,13 @@ class DiscussionStorage(BaseStorage):
         events.sort(key=lambda x: x.get("timestamp", ""))
         return events
 
-    async def get_all(self) -> List[DiscussionMeta]:
+    async def get_all(
+        self,
+        status: Optional[DiscussionStatus] = None,
+        pipeline: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 50,
+    ) -> List[DiscussionMeta]:
         result = []
         for d in self.base_path.iterdir():
             if not d.is_dir():
@@ -100,14 +107,19 @@ class DiscussionStorage(BaseStorage):
             meta = await self.get_meta(d.name)
             if meta is None:
                 meta = DiscussionMeta(discussion_id=d.name)
+            if status is not None and meta.status != status:
+                continue
+            if pipeline is not None and meta.pipeline != pipeline:
+                continue
             result.append(meta)
-        return result
+        result.sort(key=lambda x: x.created_at, reverse=True)
+        return result[skip : skip + limit]
 
-    def delete(self, discussion_id: str) -> bool:
+    async def delete(self, discussion_id: str) -> bool:
         discussion_dir = self.base_path / discussion_id
 
         if discussion_dir.exists():
-            shutil.rmtree(discussion_dir)
+            await asyncio.to_thread(shutil.rmtree, discussion_dir)
             return True
         return False
 
