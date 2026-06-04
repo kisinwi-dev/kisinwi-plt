@@ -20,6 +20,7 @@ class AgentHistoryClient:
         pipeline: str,
         agent_roles: list[str],
         title: Optional[str] = None,
+        tags: Optional[list[str]] = None,
     ) -> bool:
         """Создать дискуссию в agent_history"""
         url = f"{self.base_url}/discussions"
@@ -30,6 +31,8 @@ class AgentHistoryClient:
         }
         if title is not None:
             data["title"] = title
+        if tags is not None:
+            data["tags"] = tags
         try:
             response = requests.post(url, json=data)
             if response.status_code == 201:
