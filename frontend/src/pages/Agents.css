@@ -136,6 +136,18 @@
   word-break: break-word;
 }
 
+.discussion-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.discussion-card-actions .icon-button:hover {
+  background: rgba(255, 107, 107, 0.15);
+  color: #ff6b6b;
+}
+
 .discussion-meta {
   display: flex;
   flex-wrap: wrap;

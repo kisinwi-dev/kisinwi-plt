@@ -67,6 +67,17 @@ export const agentHistoryService = {
   },
 
   /**
+   * Удалить дискуссию.
+   * DELETE /discussions/{discussionId}
+   */
+  async deleteDiscussion(discussionId: string): Promise<boolean> {
+    const response = await fetch(`${AGENT_HISTORY_URL}/discussions/${discussionId}`, {
+      method: 'DELETE',
+    });
+    return handleResponse<boolean>(response);
+  },
+
+  /**
    * Получить все ответы агентов в рамках дискуссии (отсортированы по времени).
    * GET /discussions/{discussionId}/responses
    */

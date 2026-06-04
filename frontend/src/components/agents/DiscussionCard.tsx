@@ -5,6 +5,7 @@ import { formatDateTime } from '../../utils/format';
 interface Props {
   discussion: DiscussionMeta;
   onSelect: (discussionId: string) => void;
+  onDelete: (discussionId: string) => void;
 }
 
 // Человекочитаемые подписи статусов дискуссии.
@@ -14,7 +15,7 @@ const STATUS_LABELS: Record<DiscussionStatus, string> = {
   failed: 'Ошибка',
 };
 
-const DiscussionCard: React.FC<Props> = ({ discussion, onSelect }) => {
+const DiscussionCard: React.FC<Props> = ({ discussion, onSelect, onDelete }) => {
   const title = discussion.title ?? discussion.discussion_id;
 
   return (
@@ -32,9 +33,21 @@ const DiscussionCard: React.FC<Props> = ({ discussion, onSelect }) => {
     >
       <div className="discussion-card-header">
         <h2>{title}</h2>
-        <span className={`status-badge status-${discussion.status}`}>
-          {STATUS_LABELS[discussion.status]}
-        </span>
+        <div className="discussion-card-actions">
+          <span className={`status-badge status-${discussion.status}`}>
+            {STATUS_LABELS[discussion.status]}
+          </span>
+          <button
+            className="icon-button"
+            title="Удалить диалог"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(discussion.discussion_id);
+            }}
+          >
+            <i className="fas fa-trash"></i>
+          </button>
+        </div>
       </div>
 
       <div className="discussion-meta">
