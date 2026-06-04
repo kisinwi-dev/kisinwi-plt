@@ -8,7 +8,7 @@ from typing import List, Optional
 from uuid import uuid4
 from pydantic import ValidationError
 
-from app.api.schemas import DiscussionMeta, DiscussionMetaUpdate, CreateDiscussion, DiscussionStatus
+from app.api.schemas import DiscussionMeta, DiscussionMetaRead, DiscussionMetaUpdate, CreateDiscussion, DiscussionStatus
 from app.logs import get_logger
 from .base import BaseStorage
 
@@ -93,13 +93,41 @@ class DiscussionStorage(BaseStorage):
         events.sort(key=lambda x: x.get("timestamp", ""))
         return events
 
+    async def _aggregate(self, discussion_id: str) -> tuple[int, int, list[str]]:
+        """Подсчитать число ответов, вызовов инструментов и список моделей дискуссии."""
+        discussion_dir = self.base_path / discussion_id
+
+        responses_count = 0
+        models: list[str] = []
+        seen_models: set[str] = set()
+
+        responses_dir = discussion_dir / "responses"
+        if responses_dir.exists():
+            for filepath in responses_dir.glob("*.json"):
+                responses_count += 1
+                try:
+                    async with aiofiles.open(filepath, 'r', encoding='utf-8') as f:
+                        data = json.loads(await f.read())
+                except (json.JSONDecodeError, OSError) as e:
+                    logger.error(f"Ошибка при чтении {filepath}: {e}")
+                    continue
+                model = data.get("model")
+                if model and model not in seen_models:
+                    seen_models.add(model)
+                    models.append(model)
+
+        tools_dir = discussion_dir / "tools"
+        tool_calls_count = sum(1 for _ in tools_dir.glob("**/*.json")) if tools_dir.exists() else 0
+
+        return responses_count, tool_calls_count, models
+
     async def get_all(
         self,
         status: Optional[DiscussionStatus] = None,
         pipeline: Optional[str] = None,
         skip: int = 0,
         limit: int = 50,
-    ) -> List[DiscussionMeta]:
+    ) -> List[DiscussionMetaRead]:
         result = []
         for d in self.base_path.iterdir():
             if not d.is_dir():
@@ -111,7 +139,13 @@ class DiscussionStorage(BaseStorage):
                 continue
             if pipeline is not None and meta.pipeline != pipeline:
                 continue
-            result.append(meta)
+            responses_count, tool_calls_count, models = await self._aggregate(d.name)
+            result.append(DiscussionMetaRead(
+                **meta.model_dump(),
+                responses_count=responses_count,
+                tool_calls_count=tool_calls_count,
+                models=models,
+            ))
         result.sort(key=lambda x: x.created_at, reverse=True)
         return result[skip : skip + limit]
 

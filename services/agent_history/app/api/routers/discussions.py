@@ -1,7 +1,7 @@
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, Response, status
 
-from app.api.schemas import DiscussionMeta, DiscussionMetaUpdate, CreateDiscussion, DiscussionStatus
+from app.api.schemas import DiscussionMeta, DiscussionMetaRead, DiscussionMetaUpdate, CreateDiscussion, DiscussionStatus
 from app.api.deps import discussion_storage
 from app.logs import get_logger
 
@@ -32,7 +32,7 @@ async def create_discussion(data: CreateDiscussion):
 @router.get(
     "/discussions",
     summary="Список всех дискуссий",
-    response_model=list[DiscussionMeta],
+    response_model=list[DiscussionMetaRead],
     status_code=200,
     responses={
         200: {"description": "Список дискуссий с метаданными"},
