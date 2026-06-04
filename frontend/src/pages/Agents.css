@@ -158,10 +158,6 @@
   font-size: 0.7rem;
 }
 
-.discussion-detail-id {
-  display: inline-flex;
-  margin-bottom: 1.5rem;
-}
 
 .discussion-card-actions {
   display: flex;
@@ -331,8 +327,40 @@
 
 .discussion-detail-title {
   font-size: 1.8rem;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0;
   word-break: break-word;
+}
+
+/* ── Инфо-панель дискуссии (детальный просмотр) ──────────────────────────────── */
+.discussion-info {
+  background: var(--color-bg-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.discussion-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.discussion-info-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.discussion-info-meta i {
+  margin-right: 0.3rem;
 }
 
 /* ── Лента диалога ───────────────────────────────────────────────────────────── */

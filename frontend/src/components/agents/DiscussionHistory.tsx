@@ -1,18 +1,30 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { agentHistoryService } from '../../services/agentHistoryService';
 import type { DiscussionMeta } from '../../types/agentHistory';
 import { useNotification } from '../../contexts/NotificationContext';
 import ConfirmModal from '../common/ConfirmModal';
 import DiscussionCard from './DiscussionCard';
+import DiscussionInfo from './DiscussionInfo';
 import DiscussionView from './DiscussionView';
 
 const DiscussionHistory: React.FC = () => {
   const { showNotification } = useNotification();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Выбранная дискуссия хранится в URL (?discussion=<id>), чтобы работала
+  // нативная кнопка «Назад» браузера.
+  const selectedId = searchParams.get('discussion');
+
   const [discussions, setDiscussions] = useState<DiscussionMeta[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   // Дискуссия, ожидающая подтверждения удаления.
   const [pendingDelete, setPendingDelete] = useState<DiscussionMeta | null>(null);
+
+  // Открыть дискуссию — добавляем запись в историю браузера.
+  const openDiscussion = (discussionId: string) => {
+    setSearchParams({ discussion: discussionId });
+  };
 
   useEffect(() => {
     const fetchDiscussions = async () => {
@@ -44,7 +56,8 @@ const DiscussionHistory: React.FC = () => {
     try {
       await agentHistoryService.deleteDiscussion(discussionId);
       setDiscussions(prev => prev.filter(d => d.discussion_id !== discussionId));
-      if (selectedId === discussionId) setSelectedId(null);
+      // Если удаляем открытую дискуссию — убираем её из URL без новой записи в истории.
+      if (selectedId === discussionId) setSearchParams({}, { replace: true });
       showNotification('Диалог удалён', 'success');
     } catch (err) {
       showNotification(err instanceof Error ? err.message : 'Ошибка удаления диалога', 'error');
@@ -59,15 +72,10 @@ const DiscussionHistory: React.FC = () => {
   if (selectedId) {
     return (
       <div className="discussion-detail">
-        <button className="button secondary small back-button" onClick={() => setSelectedId(null)}>
+        <button className="button secondary small back-button" onClick={() => navigate(-1)}>
           <i className="fas fa-arrow-left"></i> Назад к списку
         </button>
-        <h2 className="discussion-detail-title">
-          {selected?.title ?? selected?.pipeline ?? 'Без названия'}
-        </h2>
-        <span className="discussion-id discussion-detail-id" title={selectedId}>
-          <i className="fas fa-hashtag"></i>{selectedId}
-        </span>
+        <DiscussionInfo discussion={selected ?? null} discussionId={selectedId} />
         <DiscussionView discussionId={selectedId} />
       </div>
     );
@@ -88,7 +96,7 @@ const DiscussionHistory: React.FC = () => {
             <DiscussionCard
               key={discussion.discussion_id}
               discussion={discussion}
-              onSelect={setSelectedId}
+              onSelect={openDiscussion}
               onDelete={handleDeleteRequest}
             />
           ))
