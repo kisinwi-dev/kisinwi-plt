@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, Response, status
+from typing import Optional
+from fastapi import APIRouter, HTTPException, Query, Response, status
 
-from app.api.schemas import DiscussionMeta, DiscussionMetaUpdate, CreateDiscussion
+from app.api.schemas import DiscussionMeta, DiscussionMetaUpdate, CreateDiscussion, DiscussionStatus
 from app.api.deps import discussion_storage
 from app.logs import get_logger
 
@@ -37,10 +38,20 @@ async def create_discussion(data: CreateDiscussion):
         200: {"description": "Список дискуссий с метаданными"},
     }
 )
-async def list_discussions():
+async def list_discussions(
+    status_filter: Optional[DiscussionStatus] = Query(None, alias="status"),
+    pipeline: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+):
     """Получить список всех дискуссий"""
     try:
-        return await discussion_storage.get_all()
+        return await discussion_storage.get_all(
+            status=status_filter,
+            pipeline=pipeline,
+            skip=skip,
+            limit=limit,
+        )
     except Exception as e:
         logger.error(f"Ошибка при получении списка дискуссий: {e}")
         raise HTTPException(status_code=500, detail=str(e))
