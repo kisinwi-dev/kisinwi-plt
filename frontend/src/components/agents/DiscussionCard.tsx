@@ -16,7 +16,7 @@ const STATUS_LABELS: Record<DiscussionStatus, string> = {
 };
 
 const DiscussionCard: React.FC<Props> = ({ discussion, onSelect, onDelete }) => {
-  const title = discussion.title ?? discussion.discussion_id;
+  const title = discussion.title ?? discussion.pipeline ?? 'Без названия';
 
   return (
     <div
@@ -32,7 +32,12 @@ const DiscussionCard: React.FC<Props> = ({ discussion, onSelect, onDelete }) => 
       }}
     >
       <div className="discussion-card-header">
-        <h2>{title}</h2>
+        <div className="discussion-title-group">
+          <h2>{title}</h2>
+          <span className="discussion-id" title={discussion.discussion_id}>
+            <i className="fas fa-hashtag"></i>{discussion.discussion_id}
+          </span>
+        </div>
         <div className="discussion-card-actions">
           <span className={`status-badge status-${discussion.status}`}>
             {STATUS_LABELS[discussion.status]}

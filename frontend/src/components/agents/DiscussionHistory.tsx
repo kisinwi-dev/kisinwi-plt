@@ -63,8 +63,11 @@ const DiscussionHistory: React.FC = () => {
           <i className="fas fa-arrow-left"></i> Назад к списку
         </button>
         <h2 className="discussion-detail-title">
-          {selected?.title ?? selectedId}
+          {selected?.title ?? selected?.pipeline ?? 'Без названия'}
         </h2>
+        <span className="discussion-id discussion-detail-id" title={selectedId}>
+          <i className="fas fa-hashtag"></i>{selectedId}
+        </span>
         <DiscussionView discussionId={selectedId} />
       </div>
     );

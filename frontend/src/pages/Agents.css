@@ -130,10 +130,37 @@
   gap: 1rem;
 }
 
+.discussion-title-group {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
 .discussion-card-header h2 {
   font-size: 1.4rem;
   margin: 0;
   word-break: break-word;
+}
+
+.discussion-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+  word-break: break-all;
+}
+
+.discussion-id i {
+  font-size: 0.7rem;
+}
+
+.discussion-detail-id {
+  display: inline-flex;
+  margin-bottom: 1.5rem;
 }
 
 .discussion-card-actions {
@@ -225,7 +252,7 @@
 
 .discussion-detail-title {
   font-size: 1.8rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.2rem;
   word-break: break-word;
 }
 
