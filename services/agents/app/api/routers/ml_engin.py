@@ -2,8 +2,7 @@ from fastapi import APIRouter, Query, HTTPException
 
 from app.core.crews.ml_engeneer import run_ml_engineering, AGENT_ROLE as ML_ENGINEER_ROLE
 from app.core.crews.ml_debuger import run_ml_debug, AGENT_ROLE as ML_DEBUGER_ROLE
-from app.core.memory import discussion_context
-from app.services.agent_history import agent_history_client
+from app.services.agent_history import track_discussion
 
 routers = APIRouter(
     tags=['engineering']
@@ -21,26 +20,20 @@ def run_etp(
     researcher_proposals: str = Query(description="Рекомендации от исследователя")
 ):
     try:
-        
-        discussion_context.set(discussion_id)
-        agent_history_client.create_discussion(discussion_id, pipeline="ml_engineer", agent_roles=[ML_ENGINEER_ROLE])
-
-        result = run_ml_engineering(
-            dataset_info=dataset_info,
-            business_requirements=business_requirements,
-            deployment_constraints=deployment_constraints,
-            researcher_proposals=researcher_proposals,
-            verbose=True
-        )
-
+        with track_discussion(discussion_id, "ml_engineer", "Подбор конфигурации обучения", [ML_ENGINEER_ROLE]):
+            result = run_ml_engineering(
+                dataset_info=dataset_info,
+                business_requirements=business_requirements,
+                deployment_constraints=deployment_constraints,
+                researcher_proposals=researcher_proposals,
+                verbose=True
+            )
         return result
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"Ошибка при выполнении: {str(e)}"
         )
-    finally:
-        discussion_context.clear()
 
 @routers.get(
         "/ml_debug",
@@ -52,21 +45,15 @@ def run_ed(
     config: str = Query(description="Конфигурации обучения")
 ):
     try:
-    
-        discussion_context.set(discussion_id)
-        agent_history_client.create_discussion(discussion_id, pipeline="ml_debuger", agent_roles=[ML_DEBUGER_ROLE])
-
-        result = run_ml_debug(
-            error=error,
-            config=config,
-            verbose=True
-        )
-
+        with track_discussion(discussion_id, "ml_debuger", "Отладка обучения", [ML_DEBUGER_ROLE]):
+            result = run_ml_debug(
+                error=error,
+                config=config,
+                verbose=True
+            )
         return result
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"Ошибка при выполнении: {str(e)}"
         )
-    finally:
-        discussion_context.clear()

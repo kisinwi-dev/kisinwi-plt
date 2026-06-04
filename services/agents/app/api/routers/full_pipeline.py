@@ -3,8 +3,8 @@ from typing import List
 from fastapi import APIRouter, Query, HTTPException
 
 from app.core import development_models
-from app.core.memory import discussion_context, models_context
-from app.services.agent_history import agent_history_client
+from app.core.memory import models_context
+from app.services.agent_history import track_discussion
 from app.core.crews.dataset_analyst import AGENT_ROLE as DATASET_ANALYST_ROLE
 from app.core.crews.researcher import AGENT_ROLE as RESEARCHER_ROLE
 from app.core.crews.ml_engeneer import AGENT_ROLE as ML_ENGINEER_ROLE
@@ -36,27 +36,20 @@ def development(
     denied_hypotheses_info: List[str] = Query(default_factory=list, description="Гипотезы и практики, которые нужно избегать"),
     max_iter: int = Query(2, description="Количество попыток обучения")
 ):
+    discussion_id = str(uuid4())
     try:
-        discussion_id = str(uuid4())
-        discussion_context.set(discussion_id)
-
-        agent_history_client.create_discussion(
-            discussion_id=discussion_id,
-            pipeline="development",
-            agent_roles=_DEVELOPMENT_AGENT_ROLES,
-        )
-
-        result = development_models(
-            dataset_id=dataset_id,
-            dataset_version_id=version_id,
-            model_name=model_name,
-            deployment_constraints=deployment_constraints,
-            business_requirements=business_requirements,
-            denied_hypotheses_info=denied_hypotheses_info,
-            max_iter=max_iter,
-        )
-        if result is None:
-            raise HTTPException(status_code=422, detail="Пайплайн завершился без результата")
+        with track_discussion(discussion_id, "development", "Разработка модели", _DEVELOPMENT_AGENT_ROLES):
+            result = development_models(
+                dataset_id=dataset_id,
+                dataset_version_id=version_id,
+                model_name=model_name,
+                deployment_constraints=deployment_constraints,
+                business_requirements=business_requirements,
+                denied_hypotheses_info=denied_hypotheses_info,
+                max_iter=max_iter,
+            )
+            if result is None:
+                raise HTTPException(status_code=422, detail="Пайплайн завершился без результата")
         return result
 
     except HTTPException:
@@ -67,5 +60,4 @@ def development(
             detail=f"Ошибка при выполнении: {str(e)}"
         )
     finally:
-        discussion_context.clear()
         models_context.clear()

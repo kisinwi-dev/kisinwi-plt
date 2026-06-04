@@ -19,15 +19,19 @@ class AgentHistoryClient:
         discussion_id: str,
         pipeline: str,
         agent_roles: list[str],
+        title: Optional[str] = None,
     ) -> bool:
         """Создать дискуссию в agent_history"""
         url = f"{self.base_url}/discussions"
+        data: Dict[str, Any] = {
+            "discussion_id": discussion_id,
+            "pipeline": pipeline,
+            "agent_roles": agent_roles,
+        }
+        if title is not None:
+            data["title"] = title
         try:
-            response = requests.post(url, json={
-                "discussion_id": discussion_id,
-                "pipeline": pipeline,
-                "agent_roles": agent_roles,
-            })
+            response = requests.post(url, json=data)
             if response.status_code == 201:
                 logger.debug(f"✅ Дискуссия создана discussion_id=`{discussion_id}`")
                 return True
