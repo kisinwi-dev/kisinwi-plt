@@ -12,7 +12,7 @@ routers = APIRouter(
         "/ml_engineer",
         description="Рассуждения агентов ML-инженеров"
 )
-def run_etp(
+def run_ml_engineer(
     discussion_id: str = Query(description="ID дискуссии"),
     business_requirements: str = Query(description="Бизнес требования к модели"),
     deployment_constraints: str = Query(description="Технические требования к модели"),
@@ -39,7 +39,7 @@ def run_etp(
         "/ml_debug",
         description="Агент исправляет ошибку в конфиге запуска обучения мл моделей"
 )
-def run_ed(
+def run_ml_debugger(
     discussion_id: str = Query(description="ID дискуссии"),
     error: str = Query(description="Ошибка полученная при обучении"),
     config: str = Query(description="Конфигурации обучения")

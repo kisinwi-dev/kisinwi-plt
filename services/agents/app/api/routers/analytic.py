@@ -84,3 +84,5 @@ def reporter(
             status_code=500,
             detail=f"Ошибка при выполнении: {str(e)}"
         )
+    finally:
+        models_context.clear()
