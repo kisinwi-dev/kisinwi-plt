@@ -34,7 +34,7 @@ def development(
     deployment_constraints: str = Query(..., description="Технические возможности прода"),
     business_requirements: str = Query(..., description="Описание бизнес требований"),
     denied_hypotheses_info: List[str] = Query(default_factory=list, description="Гипотезы и практики, которые нужно избегать"),
-    max_iter: int = Query("", description="Количество попыток обучения")
+    max_iter: int = Query(2, description="Количество попыток обучения")
 ):
     try:
         discussion_id = str(uuid4())
@@ -46,7 +46,7 @@ def development(
             agent_roles=_DEVELOPMENT_AGENT_ROLES,
         )
 
-        return development_models(
+        result = development_models(
             dataset_id=dataset_id,
             dataset_version_id=version_id,
             model_name=model_name,
@@ -55,7 +55,12 @@ def development(
             denied_hypotheses_info=denied_hypotheses_info,
             max_iter=max_iter,
         )
+        if result is None:
+            raise HTTPException(status_code=422, detail="Пайплайн завершился без результата")
+        return result
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,

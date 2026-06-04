@@ -70,7 +70,7 @@ def debugging(
             return TrainingOut(
                 is_completed_successfully=False,
                 error=f"Дебагер не может исправить: {training_res.error}"+
-                    "\n\nПояснения от дебагера: {ml_debuger_out.reason}"
+                    f"\n\nПояснения от дебагера: {ml_debuger_out.reason}"
             ), train_input.version_model
         
         logger.info("[ДЕБАГ] ✅ Агент-дебагер нашёл решение")        

@@ -41,18 +41,20 @@ class Discussion:
 
 class ModelsContext:
     def __init__(self):
-        self._models: ContextVar[List[str]] = ContextVar('models_context', default=[])
+        self._models: ContextVar[Optional[List[str]]] = ContextVar('models_context', default=None)
 
     def add_model(self, model_id: str) -> None:
         """Добавить ID модели"""
         models = self._models.get()
+        if models is None:
+            models = []
         models.append(model_id)
         self._models.set(models)
         logger.debug(f"ModelsContext: добавлен model_id={model_id}, всего: {len(models)}")
-    
+
     def get_models(self) -> List[str]:
         """Получить список всех ID моделей"""
-        return self._models.get()
+        return self._models.get() or []
     
     def clear(self) -> None:
         """Очистить контекст моделей"""
