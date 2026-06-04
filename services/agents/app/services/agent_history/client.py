@@ -19,15 +19,22 @@ class AgentHistoryClient:
         discussion_id: str,
         pipeline: str,
         agent_roles: list[str],
+        title: Optional[str] = None,
+        tags: Optional[list[str]] = None,
     ) -> bool:
         """Создать дискуссию в agent_history"""
         url = f"{self.base_url}/discussions"
+        data: Dict[str, Any] = {
+            "discussion_id": discussion_id,
+            "pipeline": pipeline,
+            "agent_roles": agent_roles,
+        }
+        if title is not None:
+            data["title"] = title
+        if tags is not None:
+            data["tags"] = tags
         try:
-            response = requests.post(url, json={
-                "discussion_id": discussion_id,
-                "pipeline": pipeline,
-                "agent_roles": agent_roles,
-            })
+            response = requests.post(url, json=data)
             if response.status_code == 201:
                 logger.debug(f"✅ Дискуссия создана discussion_id=`{discussion_id}`")
                 return True
@@ -146,6 +153,22 @@ class AgentHistoryClient:
             duration_ms=duration_ms, model=model, task_name=task_name, iteration=iteration,
         )
 
+    def agent_error(
+        self,
+        response_id: str,
+        agent_role: str,
+        text: str,
+        duration_ms: Optional[float] = None,
+        model: Optional[str] = None,
+        task_name: Optional[str] = None,
+        iteration: Optional[int] = None,
+    ) -> bool:
+        """Отметить ответ агента как завершившийся с ошибкой (перезаписывает IN PROGRESS)."""
+        return self._add_agent(
+            response_id, agent_role, text, status="ERROR",
+            duration_ms=duration_ms, model=model, task_name=task_name, iteration=iteration,
+        )
+
     def _add_tool(
         self,
         id: str,
@@ -205,7 +228,7 @@ class AgentHistoryClient:
             response_id=response_id,
         )
 
-    def tool_succed(
+    def tool_succeeded(
         self,
         id: str,
         agent_role: str,
