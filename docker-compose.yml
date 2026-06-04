@@ -7,6 +7,7 @@ services:
       dockerfile: Dockerfile
       args:
         - DATASETS_DOMAIN=localhost:${DATASETS_SERVICE_PORT}
+        - AGENT_HISTORY_DOMAIN=localhost:${AGENT_MONITORING_PORT}
         - FRONTEND_PORT=${FRONTEND_PORT}
     environment:
       - FRONTEND_PORT=${FRONTEND_PORT}
@@ -16,6 +17,7 @@ services:
       - network
     depends_on:
       - datasets
+      - agent_history
 
   # =============================================================
   # Сервис для работы с датасетами
