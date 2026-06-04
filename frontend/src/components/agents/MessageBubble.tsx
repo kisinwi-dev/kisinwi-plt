@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { agentHistoryService } from '../../services/agentHistoryService';
 import type { AgentResponse, AgentStatus, Tool, ToolStatus } from '../../types/agentHistory';
+import { formatDateTime } from '../../utils/format';
 
 interface Props {
   discussionId: string;
@@ -112,7 +113,7 @@ const MessageBubble: React.FC<Props> = ({ discussionId, response }) => {
       <p className="message-text">{response.text}</p>
 
       <div className="message-footer">
-        <span className="message-time">{new Date(response.timestamp).toLocaleString()}</span>
+        <span className="message-time">{formatDateTime(response.timestamp)}</span>
         <button className="tools-toggle" onClick={handleToggleTools}>
           <i className={`fas ${tools !== null ? 'fa-chevron-up' : 'fa-wrench'}`}></i>
           {tools !== null ? ' Скрыть инструменты' : ' Инструменты'}

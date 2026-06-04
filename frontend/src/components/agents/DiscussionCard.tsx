@@ -1,5 +1,6 @@
 import React from 'react';
 import type { DiscussionMeta, DiscussionStatus } from '../../types/agentHistory';
+import { formatDateTime } from '../../utils/format';
 
 interface Props {
   discussion: DiscussionMeta;
@@ -40,9 +41,9 @@ const DiscussionCard: React.FC<Props> = ({ discussion, onSelect }) => {
         {discussion.pipeline && (
           <span><i className="fas fa-diagram-project"></i> {discussion.pipeline}</span>
         )}
-        <span><i className="fas fa-calendar-alt"></i> {new Date(discussion.created_at).toLocaleString()}</span>
+        <span><i className="fas fa-calendar-alt"></i> {formatDateTime(discussion.created_at)}</span>
         {discussion.finished_at && (
-          <span><i className="fas fa-flag-checkered"></i> {new Date(discussion.finished_at).toLocaleString()}</span>
+          <span><i className="fas fa-flag-checkered"></i> {formatDateTime(discussion.finished_at)}</span>
         )}
       </div>
 

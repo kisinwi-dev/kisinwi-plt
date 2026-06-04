@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { agentHistoryService } from '../../services/agentHistoryService';
 import type { AgentResponse, SystemMessage, SystemMessageType } from '../../types/agentHistory';
 import { useNotification } from '../../contexts/NotificationContext';
+import { formatDateTime } from '../../utils/format';
 import MessageBubble from './MessageBubble';
 
 interface Props {
@@ -66,7 +67,7 @@ const DiscussionView: React.FC<Props> = ({ discussionId }) => {
           <div key={`sys-${index}`} className={`system-message msg-${item.data.type_.toLowerCase()}`}>
             <i className={`fas ${SYSTEM_ICONS[item.data.type_]}`}></i>
             <span className="system-message-text">{item.data.message}</span>
-            <span className="system-message-time">{new Date(item.data.timestamp).toLocaleString()}</span>
+            <span className="system-message-time">{formatDateTime(item.data.timestamp)}</span>
           </div>
         ),
       )}

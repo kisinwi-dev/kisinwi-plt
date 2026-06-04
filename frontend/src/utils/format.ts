@@ -6,3 +6,19 @@ export const formatBytes = (bytes: number, decimals = 2): string => {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
+
+// Проверяет, содержит ли ISO-строка обозначение часового пояса (Z или ±hh:mm).
+const hasTimezone = (value: string): boolean => /[zZ]$|[+-]\d{2}:?\d{2}$/.test(value);
+
+/**
+ * Преобразует ISO-время от бэкенда в строку в часовом поясе пользователя.
+ * Бэкенд отдаёт наивное UTC-время без обозначения зоны (datetime.now() в UTC-контейнере),
+ * поэтому при отсутствии таймзоны строка трактуется как UTC.
+ */
+export const formatDateTime = (value: string | null | undefined): string => {
+  if (!value) return '—';
+  const normalized = hasTimezone(value) ? value : `${value}Z`;
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+};
