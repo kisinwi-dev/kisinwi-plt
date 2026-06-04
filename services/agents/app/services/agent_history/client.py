@@ -146,6 +146,22 @@ class AgentHistoryClient:
             duration_ms=duration_ms, model=model, task_name=task_name, iteration=iteration,
         )
 
+    def agent_error(
+        self,
+        response_id: str,
+        agent_role: str,
+        text: str,
+        duration_ms: Optional[float] = None,
+        model: Optional[str] = None,
+        task_name: Optional[str] = None,
+        iteration: Optional[int] = None,
+    ) -> bool:
+        """Отметить ответ агента как завершившийся с ошибкой (перезаписывает IN PROGRESS)."""
+        return self._add_agent(
+            response_id, agent_role, text, status="ERROR",
+            duration_ms=duration_ms, model=model, task_name=task_name, iteration=iteration,
+        )
+
     def _add_tool(
         self,
         id: str,
