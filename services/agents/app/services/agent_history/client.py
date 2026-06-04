@@ -205,7 +205,7 @@ class AgentHistoryClient:
             response_id=response_id,
         )
 
-    def tool_succed(
+    def tool_succeeded(
         self,
         id: str,
         agent_role: str,

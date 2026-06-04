@@ -30,7 +30,7 @@ def track_tool(agent_role: str, tool: BaseTool) -> BaseTool:
         try:
             result = original_run(*args, **kwargs)
             duration_ms = (time.time() - start_time) * 1000
-            agent_history_client.tool_succed(
+            agent_history_client.tool_succeeded(
                 id=id_tool,
                 agent_role=agent_role,
                 name=tool.name,
