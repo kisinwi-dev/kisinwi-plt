@@ -122,7 +122,7 @@ async def update_discussion_meta(discussion_id: str, update: DiscussionMetaUpdat
 async def delete_discussion(discussion_id: str):
     """Удалить дискуссию"""
     try:
-        success = discussion_storage.delete(discussion_id=discussion_id)
+        success = await discussion_storage.delete(discussion_id=discussion_id)
 
         if not success:
             raise HTTPException(

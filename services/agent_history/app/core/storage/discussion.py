@@ -65,7 +65,7 @@ class DiscussionStorage(BaseStorage):
         if update.agent_roles is not None:
             meta.agent_roles = update.agent_roles
 
-        if meta.status in (DiscussionStatus.COMPLETED, DiscussionStatus.FAILED):
+        if meta.finished_at is None and meta.status in (DiscussionStatus.COMPLETED, DiscussionStatus.FAILED):
             meta.finished_at = datetime.now()
         await self._write_meta(discussion_id, meta)
         return meta
@@ -104,11 +104,11 @@ class DiscussionStorage(BaseStorage):
             result.append(meta)
         return result
 
-    def delete(self, discussion_id: str) -> bool:
+    async def delete(self, discussion_id: str) -> bool:
         discussion_dir = self.base_path / discussion_id
 
         if discussion_dir.exists():
-            shutil.rmtree(discussion_dir)
+            await asyncio.to_thread(shutil.rmtree, discussion_dir)
             return True
         return False
 

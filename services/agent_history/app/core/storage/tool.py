@@ -45,5 +45,5 @@ class ToolStorage(BaseStorage):
                 logger.error(f"Ошибка при чтении файла {filepath}: {e}")
                 continue
 
-        tools.sort(key=lambda x: x["timestamp"])
+        tools.sort(key=lambda x: x.get("timestamp", ""))
         return tools
