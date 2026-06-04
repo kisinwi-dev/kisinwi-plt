@@ -21,6 +21,19 @@ class DiscussionMeta(BaseModel):
     finished_at: Optional[datetime] = Field(None, description="Время завершения дискуссии")
 
 
+class AgentModelInfo(BaseModel):
+    """Агент дискуссии и использованные им модели LLM."""
+    role: str = Field(..., description="Роль агента")
+    models: list[str] = Field(default_factory=list, description="Модели LLM, которыми отвечал агент")
+
+
+class DiscussionMetaRead(DiscussionMeta):
+    """Метаданные дискуссии с вычисляемыми агрегатами для списка."""
+    responses_count: int = Field(0, description="Количество ответов агентов (длина диалога)")
+    tool_calls_count: int = Field(0, description="Количество вызовов инструментов")
+    agents: list[AgentModelInfo] = Field(default_factory=list, description="Агенты дискуссии и их модели LLM")
+
+
 class DiscussionMetaUpdate(BaseModel):
     title: Optional[str] = None
     status: Optional[DiscussionStatus] = None
