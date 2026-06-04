@@ -85,12 +85,32 @@
 }
 
 .run-pipeline-form .form-section {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--color-bg-primary);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 12px;
+}
+
+.run-pipeline-form .form-section-head {
+  margin-bottom: 1.25rem;
 }
 
 .run-pipeline-form .form-section h3 {
-  margin: 0 0 1rem;
+  margin: 0;
   font-size: 1.1rem;
+  color: var(--color-text-primary);
+}
+
+.run-pipeline-form .form-section h3 i {
+  color: var(--color-accent-light);
+  margin-right: 0.5rem;
+}
+
+.run-pipeline-form .form-section-hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
   color: var(--color-text-secondary);
 }
 
@@ -123,7 +143,7 @@
 .run-pipeline-form textarea {
   width: 100%;
   padding: 0.8rem;
-  background: var(--color-bg-primary);
+  background: var(--color-bg-secondary);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   color: var(--color-text-primary);
@@ -140,6 +160,139 @@
 
 .run-pipeline-form textarea {
   resize: vertical;
+}
+
+.run-pipeline-form .field-hint {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  opacity: 0.8;
+}
+
+/* Поле добавления запрещённых гипотез */
+.denied-input-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.denied-input-row input {
+  flex: 1;
+}
+
+.denied-input-row .button {
+  white-space: nowrap;
+}
+
+.denied-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.denied-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.8rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.denied-item-text {
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+  word-break: break-word;
+}
+
+.denied-item-remove {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  transition: var(--transition);
+}
+
+.denied-item-remove:hover:not(:disabled) {
+  color: var(--color-accent-light);
+  background: var(--color-accent-soft);
+}
+
+/* Предложенные теги (заглушка) */
+.tag-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tag-suggestions-label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.tag-suggestion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.85rem;
+  background: transparent;
+  border: 1px dashed var(--color-accent);
+  color: var(--color-accent-light);
+  border-radius: 40px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.tag-suggestion:hover:not(:disabled) {
+  background: var(--color-accent-soft);
+}
+
+/* Добавленные теги */
+.tag-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.4rem 0.3rem 0.8rem;
+  background: var(--color-accent-soft);
+  border: 1px solid var(--color-accent);
+  border-radius: 40px;
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+}
+
+.tag-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0.1rem 0.3rem;
+  border-radius: 50%;
+  transition: var(--transition);
+}
+
+.tag-chip-remove:hover:not(:disabled) {
+  color: var(--color-accent-light);
 }
 
 .run-pipeline-actions {

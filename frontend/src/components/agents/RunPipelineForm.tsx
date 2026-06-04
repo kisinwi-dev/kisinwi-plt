@@ -9,13 +9,9 @@ interface Props {
   onStarted: (discussionId: string) => void;
 }
 
-// Разбить строку с тегами по запятой: trim, без пустых.
-const parseTags = (raw: string): string[] =>
-  raw.split(',').map(t => t.trim()).filter(Boolean);
-
-// Разбить многострочный текст по строкам: trim, без пустых.
-const parseLines = (raw: string): string[] =>
-  raw.split('\n').map(t => t.trim()).filter(Boolean);
+// Заглушка предустановленных тегов. Позже будем подтягивать жёстко заданные
+// теги из сервиса истории агентов вместо этого хардкода.
+const SUGGESTED_TAGS = ['эксперимент', 'baseline', 'продакшн-кандидат', 'быстрый прогон'];
 
 const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
   const { showNotification } = useNotification();
@@ -30,11 +26,37 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
   const [businessRequirements, setBusinessRequirements] = useState('');
   const [deploymentConstraints, setDeploymentConstraints] = useState('');
   const [title, setTitle] = useState('');
-  const [tags, setTags] = useState('');
-  const [deniedHypotheses, setDeniedHypotheses] = useState('');
+  // Теги добавляются по одному в список.
+  const [tagList, setTagList] = useState<string[]>([]);
+  const [tagDraft, setTagDraft] = useState('');
+  // Запрещённые гипотезы добавляются по одной в список.
+  const [deniedList, setDeniedList] = useState<string[]>([]);
+  const [deniedDraft, setDeniedDraft] = useState('');
   const [maxIter, setMaxIter] = useState(2);
 
   const [submitting, setSubmitting] = useState(false);
+
+  // Добавить тег (из черновика или переданный из предложенных), без дублей.
+  const addTag = (raw?: string) => {
+    const value = (raw ?? tagDraft).trim();
+    if (!value) return;
+    setTagList(prev => (prev.includes(value) ? prev : [...prev, value]));
+    setTagDraft('');
+  };
+  const removeTag = (index: number) => {
+    setTagList(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Добавить запрещённую гипотезу из черновика в список (без дублей).
+  const addDenied = () => {
+    const value = deniedDraft.trim();
+    if (!value) return;
+    setDeniedList(prev => (prev.includes(value) ? prev : [...prev, value]));
+    setDeniedDraft('');
+  };
+  const removeDenied = (index: number) => {
+    setDeniedList(prev => prev.filter((_, i) => i !== index));
+  };
 
   useEffect(() => {
     const fetchDatasets = async () => {
@@ -95,10 +117,10 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
         model_name: modelName.trim(),
         business_requirements: businessRequirements.trim(),
         deployment_constraints: deploymentConstraints.trim(),
-        denied_hypotheses_info: parseLines(deniedHypotheses),
+        denied_hypotheses_info: deniedList,
         max_iter: maxIter,
         title: title.trim() || undefined,
-        tags: parseTags(tags),
+        tags: tagList,
       });
       showNotification('Пайплайн запущен', 'success');
       onStarted(result.discussion_id);
@@ -117,7 +139,10 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
       <h2>Запуск пайплайна разработки</h2>
 
       <div className="form-section">
-        <h3>Данные</h3>
+        <div className="form-section-head">
+          <h3><i className="fas fa-database"></i> Данные и модель</h3>
+          <p className="form-section-hint">Что обучаем и на каких данных.</p>
+        </div>
         <div className="form-grid">
           <div className="form-field">
             <label htmlFor="run-dataset">Имя датасета <span className="required-star">*</span></label>
@@ -149,22 +174,17 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
               {matchedDataset?.versions.map(v => <option key={v.id} value={v.name} />)}
             </datalist>
           </div>
-        </div>
-      </div>
-
-      <div className="form-section">
-        <h3>Параметры модели</h3>
-        <div className="form-grid">
           <div className="form-field">
             <label htmlFor="run-model">Имя модели <span className="required-star">*</span></label>
             <input
               id="run-model"
               type="text"
-              placeholder="например: resnet50"
+              placeholder="придумайте сами, например: my-model"
               value={modelName}
               onChange={(e) => setModelName(e.target.value)}
               disabled={submitting}
             />
+            <span className="field-hint">Произвольное имя — под ним сохранится обученная модель.</span>
           </div>
           <div className="form-field">
             <label htmlFor="run-max-iter">Попыток обучения</label>
@@ -177,6 +197,15 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
               disabled={submitting}
             />
           </div>
+        </div>
+      </div>
+
+      <div className="form-section">
+        <div className="form-section-head">
+          <h3><i className="fas fa-circle-info"></i> Контекст для агентов</h3>
+          <p className="form-section-hint">Эту информацию агенты используют при подборе решения.</p>
+        </div>
+        <div className="form-grid">
           <div className="form-field full-width">
             <label htmlFor="run-business">Бизнес-требования <span className="required-star">*</span></label>
             <textarea
@@ -201,20 +230,55 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
           </div>
           <div className="form-field full-width">
             <label htmlFor="run-denied">Запрещённые гипотезы и практики</label>
-            <textarea
-              id="run-denied"
-              placeholder="По одной на строку (необязательно)"
-              value={deniedHypotheses}
-              onChange={(e) => setDeniedHypotheses(e.target.value)}
-              rows={2}
-              disabled={submitting}
-            />
+            <div className="denied-input-row">
+              <input
+                id="run-denied"
+                type="text"
+                placeholder="Например: не использовать аугментацию поворотом"
+                value={deniedDraft}
+                onChange={(e) => setDeniedDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); addDenied(); }
+                }}
+                disabled={submitting}
+              />
+              <button
+                type="button"
+                className="button secondary small"
+                onClick={addDenied}
+                disabled={submitting || !deniedDraft.trim()}
+              >
+                <i className="fas fa-plus"></i> Добавить
+              </button>
+            </div>
+            {deniedList.length > 0 && (
+              <ul className="denied-list">
+                {deniedList.map((item, index) => (
+                  <li key={item} className="denied-item">
+                    <span className="denied-item-text">{item}</span>
+                    <button
+                      type="button"
+                      className="denied-item-remove"
+                      onClick={() => removeDenied(index)}
+                      disabled={submitting}
+                      aria-label="Удалить"
+                      title="Удалить"
+                    >
+                      <i className="fas fa-xmark"></i>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </div>
 
       <div className="form-section">
-        <h3>Оформление запуска</h3>
+        <div className="form-section-head">
+          <h3><i className="fas fa-tag"></i> Параметры запуска</h3>
+          <p className="form-section-hint">Как этот запуск будет назван в истории.</p>
+        </div>
         <div className="form-grid">
           <div className="form-field">
             <label htmlFor="run-title">Название запуска</label>
@@ -227,16 +291,64 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
               disabled={submitting}
             />
           </div>
-          <div className="form-field">
+          <div className="form-field full-width">
             <label htmlFor="run-tags">Теги</label>
-            <input
-              id="run-tags"
-              type="text"
-              placeholder="через запятую"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              disabled={submitting}
-            />
+            <div className="denied-input-row">
+              <input
+                id="run-tags"
+                type="text"
+                placeholder="Например: эксперимент"
+                value={tagDraft}
+                onChange={(e) => setTagDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); addTag(); }
+                }}
+                disabled={submitting}
+              />
+              <button
+                type="button"
+                className="button secondary small"
+                onClick={() => addTag()}
+                disabled={submitting || !tagDraft.trim()}
+              >
+                <i className="fas fa-plus"></i> Добавить
+              </button>
+            </div>
+            {SUGGESTED_TAGS.filter(t => !tagList.includes(t)).length > 0 && (
+              <div className="tag-suggestions">
+                <span className="tag-suggestions-label">Предложенные:</span>
+                {SUGGESTED_TAGS.filter(t => !tagList.includes(t)).map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    className="tag-suggestion"
+                    onClick={() => addTag(t)}
+                    disabled={submitting}
+                  >
+                    <i className="fas fa-plus"></i> {t}
+                  </button>
+                ))}
+              </div>
+            )}
+            {tagList.length > 0 && (
+              <ul className="tag-list">
+                {tagList.map((tag, index) => (
+                  <li key={tag} className="tag-chip">
+                    <span className="tag-chip-text">{tag}</span>
+                    <button
+                      type="button"
+                      className="tag-chip-remove"
+                      onClick={() => removeTag(index)}
+                      disabled={submitting}
+                      aria-label="Удалить тег"
+                      title="Удалить"
+                    >
+                      <i className="fas fa-xmark"></i>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </div>

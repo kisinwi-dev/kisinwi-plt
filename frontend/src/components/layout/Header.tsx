@@ -11,8 +11,8 @@ const Header: React.FC = () => {
       <nav className="nav">
         <NavLink to="/" className={({ isActive }) => isActive ? 'active' : ''}>Главная</NavLink>
         <NavLink to="/datasets" className={({ isActive }) => isActive ? 'active' : ''}>Датасеты</NavLink>
-        <NavLink to="/models" className={({ isActive }) => isActive ? 'active' : ''}>Модели</NavLink>
         <NavLink to="/agents" className={({ isActive }) => isActive ? 'active' : ''}>Агенты</NavLink>
+        <NavLink to="/models" className={({ isActive }) => isActive ? 'active' : ''}>Модели</NavLink>
       </nav>
     </header>
   );
