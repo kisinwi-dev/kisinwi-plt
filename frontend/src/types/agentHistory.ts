@@ -21,6 +21,10 @@ export interface DiscussionMeta {
   agent_roles: string[];
   created_at: string;
   finished_at: string | null;
+  // Вычисляемые агрегаты (присутствуют в ответе списка дискуссий).
+  responses_count?: number;
+  tool_calls_count?: number;
+  models?: string[];
 }
 
 // Ответ (запуск) агента.

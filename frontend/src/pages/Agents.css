@@ -188,6 +188,7 @@
 }
 
 .discussion-roles,
+.discussion-models,
 .discussion-tags {
   display: flex;
   flex-wrap: wrap;
@@ -201,6 +202,19 @@
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 600;
+}
+
+.model-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(111, 176, 230, 0.14);
+  color: #6fb0e6;
+  padding: 0.25rem 0.7rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
 }
 
 .class-tag {

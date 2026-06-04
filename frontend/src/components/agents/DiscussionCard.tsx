@@ -63,12 +63,26 @@ const DiscussionCard: React.FC<Props> = ({ discussion, onSelect, onDelete }) => 
         {discussion.finished_at && (
           <span><i className="fas fa-flag-checkered"></i> {formatDateTime(discussion.finished_at)}</span>
         )}
+        {discussion.responses_count != null && (
+          <span><i className="fas fa-comments"></i> {discussion.responses_count} ответов</span>
+        )}
+        {discussion.tool_calls_count != null && discussion.tool_calls_count > 0 && (
+          <span><i className="fas fa-wrench"></i> {discussion.tool_calls_count} вызовов</span>
+        )}
       </div>
 
       {discussion.agent_roles.length > 0 && (
         <div className="discussion-roles">
           {discussion.agent_roles.map(role => (
             <span key={role} className="role-tag"><i className="fas fa-robot"></i> {role}</span>
+          ))}
+        </div>
+      )}
+
+      {discussion.models && discussion.models.length > 0 && (
+        <div className="discussion-models">
+          {discussion.models.map(model => (
+            <span key={model} className="model-tag"><i className="fas fa-microchip"></i> {model}</span>
           ))}
         </div>
       )}
