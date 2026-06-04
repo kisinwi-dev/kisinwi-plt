@@ -8,6 +8,7 @@ logger = get_logger(__name__)
 
 router = APIRouter(tags=["agent response"])
 
+
 @router.post(
     "/discussions/{discussion_id}/responses",
     summary="Сохранить ответ агента",
@@ -22,7 +23,6 @@ async def save_response(
 ):
     """Сохранить новый ответ агента"""
     try:
-
         await response_storage.save(
             discussion_id=discussion_id,
             response=response
@@ -32,3 +32,32 @@ async def save_response(
     except Exception as e:
         logger.error(f"Ошибка при сохранении ответа агента: {e}")
         raise HTTPException(status_code=500, detail=f"Ошибка при сохранении ответа агента: {str(e)}")
+
+
+@router.get(
+    "/discussions/{discussion_id}/responses",
+    summary="Получить ответы агентов по дискуссии",
+    response_model=list[AgentResponse],
+    status_code=200,
+    responses={
+        200: {"description": "Список ответов агентов, отсортированный по времени"},
+        404: {"description": "Дискуссия не найдена"},
+    }
+)
+async def get_responses(discussion_id: str):
+    """Получить все ответы агентов в рамках дискуссии"""
+    try:
+        responses = await response_storage.get_all(discussion_id=discussion_id)
+
+        if responses is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Дискуссия '{discussion_id}' не найдена"
+            )
+
+        return responses
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Ошибка при получении ответов агентов: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

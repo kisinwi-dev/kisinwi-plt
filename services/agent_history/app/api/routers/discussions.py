@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Response, status
 
-from app.api.schemas import Discussion, DiscussionMeta, DiscussionMetaUpdate, CreateDiscussion
+from app.api.schemas import DiscussionMeta, DiscussionMetaUpdate, CreateDiscussion
 from app.api.deps import discussion_storage
 from app.logs import get_logger
 
@@ -47,37 +47,31 @@ async def list_discussions():
 
 
 @router.get(
-    "/discussions/{discussion_id}",
-    summary="Получить всю историю дискуссии",
-    response_model=Discussion,
+    "/discussions/{discussion_id}/meta",
+    summary="Получить метаданные дискуссии",
+    response_model=DiscussionMeta,
     status_code=200,
     responses={
-        200: {"description": "Информация дискуссии"},
-        404: {"description": "Дискуссия не найдена"}
+        200: {"description": "Метаданные дискуссии"},
+        404: {"description": "Дискуссия не найдена"},
     }
 )
-async def get_full_discussion_messages(discussion_id: str):
-    """Получить историю дискуссии"""
+async def get_discussion_meta(discussion_id: str):
+    """Получить метаданные одной дискуссии"""
     try:
-        events = await discussion_storage.get_history(discussion_id=discussion_id)
+        meta = await discussion_storage.get_meta(discussion_id=discussion_id)
 
-        if events is None:
+        if meta is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Дискуссия '{discussion_id}' не найдена"
             )
 
-        meta = await discussion_storage.get_meta(discussion_id)
-
-        return Discussion(
-            discussion_id=discussion_id,
-            meta=meta,
-            events=events
-        )
+        return meta
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Ошибка при получении всей информации о дискуссии: {e}")
+        logger.error(f"Ошибка при получении метаданных дискуссии: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
