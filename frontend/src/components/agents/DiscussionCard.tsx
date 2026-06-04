@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { DiscussionMeta, DiscussionStatus } from '../../types/agentHistory';
 import { formatDateTime } from '../../utils/format';
 
@@ -15,8 +15,18 @@ const STATUS_LABELS: Record<DiscussionStatus, string> = {
   failed: 'Ошибка',
 };
 
+// Сколько агентов показывать до сворачивания.
+const AGENTS_LIMIT = 3;
+
 const DiscussionCard: React.FC<Props> = ({ discussion, onSelect, onDelete }) => {
   const title = discussion.title ?? discussion.pipeline ?? 'Без названия';
+  const [agentsExpanded, setAgentsExpanded] = useState(false);
+
+  // Список агентов берём из агрегата; если его нет — из заявленных ролей meta.
+  const agents = discussion.agents
+    ?? discussion.agent_roles.map(role => ({ role, models: [] }));
+  const visibleAgents = agentsExpanded ? agents : agents.slice(0, AGENTS_LIMIT);
+  const hiddenCount = agents.length - visibleAgents.length;
 
   return (
     <div
@@ -71,19 +81,42 @@ const DiscussionCard: React.FC<Props> = ({ discussion, onSelect, onDelete }) => 
         )}
       </div>
 
-      {discussion.agent_roles.length > 0 && (
-        <div className="discussion-roles">
-          {discussion.agent_roles.map(role => (
-            <span key={role} className="role-tag"><i className="fas fa-robot"></i> {role}</span>
-          ))}
-        </div>
-      )}
-
-      {discussion.models && discussion.models.length > 0 && (
-        <div className="discussion-models">
-          {discussion.models.map(model => (
-            <span key={model} className="model-tag"><i className="fas fa-microchip"></i> {model}</span>
-          ))}
+      {agents.length > 0 && (
+        <div className="discussion-agents-section">
+          <h4 className="discussion-section-title">
+            <i className="fas fa-users"></i> Агенты ({agents.length})
+          </h4>
+          <div className="discussion-agents">
+            {visibleAgents.map(agent => (
+              <span key={agent.role} className="agent-chip" title={agent.role}>
+                <span className="agent-chip-role">
+                  <i className="fas fa-robot"></i>
+                  <span className="agent-role-text">{agent.role}</span>
+                </span>
+                {agent.models.length > 0 && (
+                  <span className="agent-chip-model">
+                    <i className="fas fa-brain"></i> {agent.models.join(', ')}
+                  </span>
+                )}
+              </span>
+            ))}
+            {hiddenCount > 0 && (
+              <button
+                className="agents-more"
+                onClick={(e) => { e.stopPropagation(); setAgentsExpanded(true); }}
+              >
+                +{hiddenCount} ещё
+              </button>
+            )}
+            {agentsExpanded && agents.length > AGENTS_LIMIT && (
+              <button
+                className="agents-more"
+                onClick={(e) => { e.stopPropagation(); setAgentsExpanded(false); }}
+              >
+                свернуть
+              </button>
+            )}
+          </div>
         </div>
       )}
 

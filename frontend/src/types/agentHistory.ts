@@ -11,6 +11,12 @@ export type ToolStatus = 'IN PROGRESS' | 'SUCCEED' | 'ERROR';
 // Тип системного сообщения.
 export type SystemMessageType = 'INFO' | 'WARNING' | 'ERROR';
 
+// Агент дискуссии и использованные им модели LLM.
+export interface AgentModelInfo {
+  role: string;
+  models: string[];
+}
+
 // Метаданные дискуссии.
 export interface DiscussionMeta {
   discussion_id: string;
@@ -24,7 +30,7 @@ export interface DiscussionMeta {
   // Вычисляемые агрегаты (присутствуют в ответе списка дискуссий).
   responses_count?: number;
   tool_calls_count?: number;
-  models?: string[];
+  agents?: AgentModelInfo[];
 }
 
 // Ответ (запуск) агента.

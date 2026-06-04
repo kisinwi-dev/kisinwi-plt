@@ -187,34 +187,99 @@
   margin-right: 0.3rem;
 }
 
-.discussion-roles,
-.discussion-models,
+.discussion-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-primary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+  margin: 0 0 0.5rem;
+}
+
+.discussion-section-title i {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.discussion-agents,
 .discussion-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  align-items: center;
 }
 
-.role-tag {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
-  padding: 0.25rem 0.7rem;
+.agent-chip {
+  display: inline-flex;
+  align-items: stretch;
+  max-width: 100%;
+  border: 1px solid var(--color-accent-soft);
   border-radius: 20px;
+  overflow: hidden;
   font-size: 0.8rem;
   font-weight: 600;
 }
 
-.model-tag {
+.agent-chip-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  padding: 0.25rem 0.7rem;
+}
+
+.agent-chip-role i {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+}
+
+.agent-role-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 240px;
+}
+
+.agent-chip-model {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  background: rgba(111, 176, 230, 0.14);
+  background: rgba(111, 176, 230, 0.16);
   color: #6fb0e6;
   padding: 0.25rem 0.7rem;
-  border-radius: 20px;
+  font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+.agent-chip-model i {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+
+.agents-more {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: var(--color-text-secondary);
+  padding: 0.25rem 0.5rem;
   font-size: 0.78rem;
   font-weight: 600;
-  font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+  cursor: pointer;
+}
+
+.agents-more:hover {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  transform: none;
+  box-shadow: none;
 }
 
 .class-tag {
