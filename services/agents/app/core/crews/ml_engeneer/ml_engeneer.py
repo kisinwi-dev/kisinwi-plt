@@ -1,15 +1,13 @@
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
-from crewai import Agent, Crew, Process, Task, CrewOutput
+from crewai import Agent, Crew, Process, Task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
 from .tools import get_tools
-from ..utils import track_agent, get_agent_role_from_config
-from app.services.metrics import add_agent_in_metrics
-from app.services.agent_history import agent_history_client
+from ..utils import get_agent_role_from_config, run_crew_with_tracking
 from app.logs import get_logger
 from app.core.llm import llm
 
@@ -73,7 +71,6 @@ class MLEngineerCrew:
             verbose=verbose
         )
 
-@track_agent(agent_role=AGENT_ROLE)
 def run_ml_engineering(
         dataset_info: str,
         business_requirements: str,
@@ -90,24 +87,21 @@ def run_ml_engineering(
         deployment_constraints: Технические требования
         researcher_proposals: Предложение от ресерчера
         verbose: логирование в консоли
-
-    * Автоматически записывает метрики использования агента, а так же
-    записывает в историю дискусии.
     """
     crew = MLEngineerCrew().crew(verbose=verbose)
 
-    crew_output = crew.kickoff(
+    crew_output = run_crew_with_tracking(
+        crew=crew,
+        agent_role=AGENT_ROLE,
         inputs={
             "dataset_info": dataset_info,
             "business_requirements": business_requirements,
             "deployment_constraints": deployment_constraints,
-            "researcher_proposals": researcher_proposals
-        }
+            "researcher_proposals": researcher_proposals,
+        },
     )
 
-    result: MlEngineerResponse
-
-    if not isinstance(crew_output, CrewOutput):
+    if crew_output is None:
         return MlEngineerResponse(
             decision=False,
             reason="",
@@ -115,27 +109,14 @@ def run_ml_engineering(
         )
 
     try:
-
-        task_output = crew_output.tasks_output[0]
-        result = task_output.pydantic # type: ignore[index]
-
+        result = crew_output.tasks_output[0].pydantic  # type: ignore[index]
     except Exception as e:
         logger.warning(f"Не удалось получить pydantic output: {e}. Используем fallback.")
-        raw_text = extract_result(crew_output)
         result = MlEngineerResponse(
             decision=False,
-            reason=raw_text,
+            reason=extract_result(crew_output),
             recommendations="Ошибка при обработке ответа ML Enginner, предупреди пользователя"
         )
-
-    # Сохраняем метрики и историю
-    add_agent_in_metrics(crew=crew)
-
-    agent_history_client.agent_succeed(
-        response_id=str(crew.id),
-        agent_role=AGENT_ROLE,
-        text=result.reason  # сохраняем основной текст
-    )
 
     logger.info(f"ML Engineer отработал | Задача принята в обработку: {result.decision}")
     return result

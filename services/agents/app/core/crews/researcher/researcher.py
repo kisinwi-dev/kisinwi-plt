@@ -1,14 +1,12 @@
 from pathlib import Path
 from typing import List
 from pydantic import BaseModel, Field
-from crewai import Agent, Crew, Task, CrewOutput
+from crewai import Agent, Crew, Task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 
 from .tools import get_tools
-from ..utils import track_agent, get_agent_role_from_config
-from app.services.metrics import add_agent_in_metrics
-from app.services.agent_history import agent_history_client
+from ..utils import get_agent_role_from_config, run_crew_with_tracking
 from app.logs import get_logger
 from app.core.llm import llm
 
@@ -70,7 +68,6 @@ class ResearcherCrew:
             verbose=verbose
         )
 
-@track_agent(agent_role=AGENT_ROLE)
 def run_researcher(
     business_requirements: str,
     dataset_info: str,
@@ -79,7 +76,7 @@ def run_researcher(
 ) -> ResearcherOutput:
     """
     Запускает агента-поисковика лучших практик.
-    
+
     Args:
         business_requirements: Требования бизнеса
         dataset_info: Информация о датасете
@@ -91,17 +88,18 @@ def run_researcher(
     for denied_hypothesis in denied_hypotheses_info:
         denied_hypotheses_info_str += f"\nОтвергнутая гипотеза:\n{denied_hypothesis}"
 
-    inputs = {
-        "business_requirements": business_requirements,
-        "dataset_info": dataset_info,
-        "denied_hypotheses_info": denied_hypotheses_info_str
-    }
-
     logger.debug('Запуск ResearcherCrew')
-    crew_output = crew.kickoff(inputs=inputs)
-    result: ResearcherOutput
+    crew_output = run_crew_with_tracking(
+        crew=crew,
+        agent_role=AGENT_ROLE,
+        inputs={
+            "business_requirements": business_requirements,
+            "dataset_info": dataset_info,
+            "denied_hypotheses_info": denied_hypotheses_info_str,
+        },
+    )
 
-    if not isinstance(crew_output, CrewOutput):
+    if crew_output is None:
         return ResearcherOutput(
             analysis_summary="В процессе работы была получена ошибка с типизацией",
             hypotheses_1="",
@@ -110,30 +108,17 @@ def run_researcher(
         )
 
     try:
-
-        task_output = crew_output.tasks_output[0]
-        result = task_output.pydantic # type: ignore[index]
-
+        result = crew_output.tasks_output[0].pydantic  # type: ignore[index]
     except Exception as e:
         logger.warning(f"Не удалось получить pydantic output: {e}. Используем fallback.")
-        raw_text = extract_result(crew_output)
         result = ResearcherOutput(
-            analysis_summary=raw_text,
+            analysis_summary=extract_result(crew_output),
             hypotheses_1="",
             hypotheses_2="",
             hypotheses_3=""
         )
 
-    # Сохраняем метрики и историю
-    add_agent_in_metrics(crew=crew)
-
-    agent_history_client.agent_succeed(
-        response_id=str(crew.id),
-        agent_role=AGENT_ROLE,
-        text=result.get_full_info()
-    )
-
-    logger.info(f"Researcher завершён")
+    logger.info("Researcher завершён")
     return result
 
 def extract_result(crew_output):

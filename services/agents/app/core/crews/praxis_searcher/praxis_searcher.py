@@ -1,14 +1,12 @@
 from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel, Field
-from crewai import Agent, Crew, Task, CrewOutput
+from crewai import Agent, Crew, Task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
-from ..utils import track_agent, get_agent_role_from_config
-from app.services.metrics import add_agent_in_metrics
-from app.services.agent_history import agent_history_client
+from ..utils import get_agent_role_from_config, run_crew_with_tracking
 from app.logs import get_logger
 from app.core.llm import llm
 from .tools import get_tools
@@ -68,7 +66,6 @@ class PraxisSearcherCrew:
             verbose=verbose
         )
 
-@track_agent(agent_role=AGENT_ROLE)
 def run_praxis_searcher(
     search_query: str,
     context: str = "",
@@ -84,15 +81,13 @@ def run_praxis_searcher(
     """
     crew = PraxisSearcherCrew().crew(verbose=verbose)
 
-    inputs = {
-        "search_query": search_query,
-        "context": context
-    }
+    crew_output = run_crew_with_tracking(
+        crew=crew,
+        agent_role=AGENT_ROLE,
+        inputs={"search_query": search_query, "context": context},
+    )
 
-    crew_output = crew.kickoff(inputs=inputs)
-    result: PraxisSearchOutput
-
-    if not isinstance(crew_output, CrewOutput):
+    if crew_output is None:
         return PraxisSearchOutput(
             text="В процессе работы была получена ошибка с типизацией",
             sources=[],
@@ -100,27 +95,14 @@ def run_praxis_searcher(
         )
 
     try:
-
-        task_output = crew_output.tasks_output[0]
-        result = task_output.pydantic # type: ignore[index]
-
+        result = crew_output.tasks_output[0].pydantic  # type: ignore[index]
     except Exception as e:
         logger.warning(f"Не удалось получить pydantic output: {e}. Используем fallback.")
-        raw_text = extract_result(crew_output)
         result = PraxisSearchOutput(
-            text=raw_text,
+            text=extract_result(crew_output),
             sources=[],
             summary="Не удалось структурировать вывод. Используйте сырой текст выше."
         )
-
-    # Сохраняем метрики и историю
-    add_agent_in_metrics(crew=crew)
-
-    agent_history_client.agent_succeed(
-        response_id=str(crew.id),
-        agent_role=AGENT_ROLE,
-        text=result.text
-    )
 
     return result
 
