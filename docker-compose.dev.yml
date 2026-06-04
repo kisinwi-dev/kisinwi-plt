@@ -1,0 +1,101 @@
+# =============================================================
+# Override для режима разработки (hot-reload)
+# =============================================================
+#
+# Запуск:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Что делает:
+#   - монтирует исходный код сервисов внутрь контейнеров (правки без пересборки);
+#   - FastAPI-сервисы запускаются c uvicorn --reload (watchfiles подтягивается
+#     на лету через `uv run --with`);
+#   - фронтенд работает через vite dev-сервер с HMR вместо nginx;
+#   - trainer монтирует код, но без авто-reload (тяжёлый, грузит torch) —
+#     после правок перезапускать вручную: docker compose ... restart trainer.
+#
+# Анонимные тома (/app/.venv, /app/node_modules) сохраняют окружение из образа,
+# не давая bind-mount'у кода перекрыть его.
+
+services:
+
+  # =============================================================
+  # Фронтенд (vite dev-сервер с HMR)
+  # =============================================================
+
+  frontend:
+    build:
+      target: dev
+    command: npm run dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+  # =============================================================
+  # Сервис для работы с датасетами
+  # =============================================================
+
+  datasets:
+    volumes:
+      - ./services/datasets:/app
+      - /app/.venv
+    command: sh -c "uv run --with watchfiles uvicorn main:app --host 0.0.0.0 --port ${DATASETS_SERVICE_PORT:-6500} --reload"
+
+  # =============================================================
+  # Сервис задач
+  # =============================================================
+
+  tasker:
+    volumes:
+      - ./services/tasker:/app
+      - /app/.venv
+    command: sh -c "uv run --with watchfiles uvicorn main:app --host 0.0.0.0 --port ${TASKER_PORT:-6110} --reload"
+
+  # =============================================================
+  # Сервис ML моделей
+  # =============================================================
+
+  ml_models:
+    volumes:
+      - ./services/ml_models:/app
+      - /app/.venv
+    command: sh -c "uv run --with watchfiles uvicorn main:app --host 0.0.0.0 --port ${ML_MODELS_SERVICE_PORT:-6300} --reload"
+
+  # =============================================================
+  # Сервис тренировок (без авто-reload — перезапуск вручную)
+  # =============================================================
+
+  trainer:
+    volumes:
+      # ./db/datasets_storage:/app/datasets наследуется из базового файла
+      - ./services/trainer:/app
+
+  # =============================================================
+  # Сервис метрик
+  # =============================================================
+
+  metrics:
+    volumes:
+      - ./services/metrics:/app
+      - /app/.venv
+    command: sh -c "uv run --with watchfiles uvicorn main:app --host 0.0.0.0 --port ${METRICS_SERVICE_PORT:-6310} --reload"
+
+  # =============================================================
+  # Сервис агентов
+  # =============================================================
+
+  agents:
+    volumes:
+      - ./services/agents:/app
+      - /app/.venv
+    command: sh -c "uv run --with watchfiles uvicorn main:app --host 0.0.0.0 --port ${AGENT_OFFICE_PORT:-6400} --reload"
+
+  # =============================================================
+  # Сервис истории использования агентов
+  # =============================================================
+
+  agent_history:
+    volumes:
+      # ./db/agent_history/discussion:/app/discussion наследуется из базового файла
+      - ./services/agent_history:/app
+      - /app/.venv
+    command: sh -c "uv run --with watchfiles uvicorn main:app --host 0.0.0.0 --port ${AGENT_MONITORING_PORT:-6410} --reload"

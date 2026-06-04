@@ -1,3 +1,19 @@
+# Стадия для разработки: vite dev-сервер с hot-reload.
+# Код монтируется volume'ом в docker-compose.dev.yml, образ нужен лишь для
+# node-окружения и установленных зависимостей.
+FROM node:20-alpine AS dev
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm ci
+
+COPY . .
+
+CMD ["npm", "run", "dev"]
+
+
 FROM node:20-alpine AS builder
 
 WORKDIR /app
