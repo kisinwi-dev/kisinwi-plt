@@ -20,4 +20,4 @@ def get_dataset_info_classes(dataset_id: str) -> List[str]:
     Returns:
         Dict с информацией о датасете или ошибкой
     """    
-    return get_json(f"{DATASETS_URL}/api/datasets/{dataset_id}")["class_names"]
+    return get_json(f"{DATASETS_URL}/datasets/{dataset_id}")["classes_names"]

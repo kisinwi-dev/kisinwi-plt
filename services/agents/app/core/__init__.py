@@ -62,12 +62,14 @@ def development_models(
         # Старт рассуждений агентов над задачей
         # Получаем ответ ML инженера и список не верных гипотезы
         ml_engin_out, denied_hypotheses_info = reasoning(
-            dataset_info=dataset_analyst_out.get_short_info(),
+            dataset_info=dataset_analyst_out.to_history_text(),
             business_requirements=business_requirements,
             denied_hypotheses_info=denied_hypotheses_info,
             verbose=verbose,
-            deployment_constraints=deployment_constraints
-        ) 
+            deployment_constraints=deployment_constraints,
+            dataset_id=dataset_id,
+            dataset_version_id=dataset_version_id
+        )
         if not ml_engin_out.decision:
             logger.info("🟥 МЛ инженер и исследователь не смогли придти к общему мнению.")
             logger.warning("🟥 Обучение остановлено")
@@ -111,6 +113,16 @@ def development_models(
                 f"\n{'🟥 Не удалось обучить модель':^100}"
                 f"\nОписание: {training_res.error}"
                 f"\n{'='*100}"
+            )
+            # Сообщаем следующей итерации о провале обучения, чтобы исследователь и
+            # ML инженер не повторили то же решение.
+            ml_model = ml_engin_out.ml_model
+            what_trained = f"{ml_model.type} — {ml_model.description_model}" if ml_model else "модель"
+            denied_hypotheses_info.append(
+                "Предыдущая попытка обучения провалилась и не была исправлена дебагером.\n"
+                f"Что обучали: {what_trained}\n"
+                f"Ошибка обучения: {training_res.error}\n"
+                "Учти это и предложи другое решение."
             )
 
     # Подводим итоги обучений

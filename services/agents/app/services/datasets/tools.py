@@ -1,8 +1,9 @@
+import asyncio
 from crewai.tools import BaseTool
 from typing import Dict, Any
 
 from ..utils import (
-    get_json, handle_errors
+    get_json, tool_response
 )
 from app.config import config_url
 from app.logs import get_logger
@@ -35,12 +36,13 @@ class GetDatasetDetailsTool(BaseTool):
     - Используй этот инструмент перед работой с конкретными версиями
     """
 
-    @handle_errors(DATASETS_URL)
-    def _run(self, dataset_id: str) -> Dict[str, Any]:
-        return get_json(f"{DATASETS_URL}/datasets/{dataset_id}")
+    @tool_response(DATASETS_URL)
+    def _run(self, dataset_id: str) -> str:
+        url = f"{DATASETS_URL}/datasets/{dataset_id}"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self, dataset_id: str) -> Dict[str, Any]:
-        return get_json(f"{DATASETS_URL}/datasets/{dataset_id}")
+    async def _arun(self, dataset_id: str) -> str:
+        return await asyncio.to_thread(self._run, dataset_id)
 
 
 class GetDatasetVersionDetailsTool(BaseTool):
@@ -68,12 +70,13 @@ class GetDatasetVersionDetailsTool(BaseTool):
     - Всегда проверяй существование версии перед вызовом
     """
 
-    @handle_errors(DATASETS_URL)
-    def _run(self, dataset_id: str, version_id: str) -> Dict[str, Any]:
-        return get_json(f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}")
+    @tool_response(DATASETS_URL)
+    def _run(self, dataset_id: str, version_id: str) -> str:
+        url = f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self, dataset_id: str, version_id: str) -> Dict[str, Any]:
-        return get_json(f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}")
+    async def _arun(self, dataset_id: str, version_id: str) -> str:
+        return await asyncio.to_thread(self._run, dataset_id, version_id)
 
 
 class GetDatasetSplitSizesTool(BaseTool):
@@ -103,14 +106,13 @@ class GetDatasetSplitSizesTool(BaseTool):
     - Для задач классификации важно, чтобы распределение классов было равномерным
     """
 
-    @handle_errors(DATASETS_URL)
-    def _run(self, dataset_id: str, version_id: str) -> Dict[str, Any]:
-        json_data = get_json(f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}")
-        return get_sample_sizes_for_all_data(json_data)
+    @tool_response(DATASETS_URL)
+    def _run(self, dataset_id: str, version_id: str) -> str:
+        url = f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}/splits"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self, dataset_id: str, version_id: str) -> Dict[str, Any]:
-        json_data = get_json(f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}")
-        return get_sample_sizes_for_all_data(json_data)
+    async def _arun(self, dataset_id: str, version_id: str) -> str:
+        return await asyncio.to_thread(self._run, dataset_id, version_id)
 
 
 class ListAllDatasetsTool(BaseTool):
@@ -133,47 +135,10 @@ class ListAllDatasetsTool(BaseTool):
     - dict с информацией об имеющихся датасетах
     """
 
-    @handle_errors(DATASETS_URL)
-    def _run(self) -> Dict[str, Any]:
-        return get_json(f"{DATASETS_URL}/datasets/")
+    @tool_response(DATASETS_URL)
+    def _run(self) -> str:
+        url = f"{DATASETS_URL}/datasets/"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self) -> Dict[str, Any]:
-        return get_json(f"{DATASETS_URL}/datasets/")
-
-# __WARNING__ ТРЕБУЕТСЯ РЕАЛИЗОВАТЬ ТАКОЙ МЕТОД В СЕРВИСЕ С ДАТАСЕТАМИ
-def get_sample_sizes_for_all_data(dataset_info: dict) -> dict:
-    """
-    Извлекает информацию о размерах выборки из полной информации о датасете.
-    
-    Args:
-        dataset_info: Полный JSON с информацией о датасете
-        
-    Returns:
-        Словарь с информацией о размерах выборки
-    """
-    
-    result = {
-        "version_id": dataset_info["version_id"],
-        "total_samples": dataset_info["num_samples"],
-        "splits": {}
-    }
-    
-    # Извлекаем информацию по каждому сплиту
-    for split_name, split_data in dataset_info["splits"].items():
-        class_distribution = split_data["class_distribution"]
-        
-        # Общее количество в сплите
-        total_in_split = sum(cls.get("count", 0) for cls in class_distribution)
-        
-        # Распределение по классам
-        class_counts = {
-            cls["class_name"]: cls["count"]
-            for cls in class_distribution
-        }
-        
-        result["splits"][split_name] = {
-            "total": total_in_split,
-            "classes": class_counts
-        }
-    
-    return result
+    async def _arun(self) -> str:
+        return await asyncio.to_thread(self._run)

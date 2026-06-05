@@ -1,5 +1,5 @@
 import time
-from typing import Callable, Optional
+from typing import Optional
 
 from crewai import Crew, CrewOutput
 
@@ -28,11 +28,26 @@ def _extract_crew_meta(crew: Crew) -> tuple[Optional[str], Optional[str]]:
     return model, task_name
 
 
+def _default_result_text(o: CrewOutput) -> str:
+    """
+    Текст ответа агента для истории.
+
+    Если у задачи есть pydantic-вывод с методом to_history_text() — берём его
+    человекочитаемый markdown-нарратив. Иначе откатываемся на сырой вывод LLM.
+    """
+    try:
+        pyd = o.tasks_output[0].pydantic
+        if pyd is not None and hasattr(pyd, "to_history_text"):
+            return pyd.to_history_text()
+    except Exception:
+        pass
+    return o.raw if hasattr(o, "raw") else str(o)
+
+
 def run_crew_with_tracking(
     crew: Crew,
     agent_role: str,
     inputs: dict,
-    get_result_text: Callable[[CrewOutput], str] = lambda o: o.raw if hasattr(o, "raw") else str(o),
 ) -> CrewOutput | None:
     """
     Запускает crew.kickoff с полным жизненным циклом трекинга.
@@ -68,7 +83,7 @@ def run_crew_with_tracking(
         agent_history_client.agent_succeed(
             response_id=response_id,
             agent_role=agent_role,
-            text=get_result_text(crew_output),
+            text=_default_result_text(crew_output),
             duration_ms=duration_ms,
             model=model,
             task_name=task_name,

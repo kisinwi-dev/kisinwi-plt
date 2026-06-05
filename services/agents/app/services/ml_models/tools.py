@@ -1,7 +1,8 @@
+import asyncio
 from typing import Dict, Any
 from crewai.tools import BaseTool
 
-from ..utils import get_json, handle_errors
+from ..utils import get_json, tool_response
 from app.config import config_url
 from app.logs import get_logger
 
@@ -28,9 +29,10 @@ class GetModelDetailsTool(BaseTool):
     - dict с информацией о модели
     """
 
-    @handle_errors(ML_MODELS_URL)
-    def _run(self, model_id: str) -> Dict[str, Any]:
-        return get_json(f"{ML_MODELS_URL}/models/{model_id}")
+    @tool_response(ML_MODELS_URL)
+    def _run(self, model_id: str) -> str:
+        url = f"{ML_MODELS_URL}/models/{model_id}"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self, model_id: str) -> Dict[str, Any]:
-        return get_json(f"{ML_MODELS_URL}/models/{model_id}")
+    async def _arun(self, model_id: str) -> str:
+        return await asyncio.to_thread(self._run, model_id)

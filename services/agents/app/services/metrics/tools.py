@@ -1,7 +1,8 @@
+import asyncio
 from typing import Any, Dict
 from crewai.tools import BaseTool
 
-from ..utils import get_json, handle_errors
+from ..utils import get_json, tool_response
 from app.config import config_url
 from app.logs import get_logger
 
@@ -34,12 +35,13 @@ class GetMetricsForModelTool(BaseTool):
     - Перед использованием вызови инструмент DoesModelHaveMetrics, что бы проверить наличие модели
     """
 
-    @handle_errors(METRICS_URL)
-    def _run(self, model_id: str) -> Dict[str, Any]:
-        return get_json(f"{METRICS_URL}/models/{model_id}")
+    @tool_response(METRICS_URL)
+    def _run(self, model_id: str) -> str:
+        url = f"{METRICS_URL}/models/{model_id}"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self, model_id: str) -> Dict[str, Any]:
-        return get_json(f"{METRICS_URL}/models/{model_id}")
+    async def _arun(self, model_id: str) -> str:
+        return await asyncio.to_thread(self._run, model_id)
 
 
 class DoesModelHaveMetricsTool(BaseTool):
@@ -67,11 +69,10 @@ class DoesModelHaveMetricsTool(BaseTool):
     - Если модель не найдена, вернётся False
     """
 
-    @handle_errors(METRICS_URL)
-    def _run(self, model_id: str) -> bool:
+    @tool_response(METRICS_URL)
+    def _run(self, model_id: str) -> str:
         data = get_json(f"{METRICS_URL}/models/{model_id}/exists")
         return data.get("exists", False)
 
-    async def _arun(self, model_id: str) -> bool:
-        data = get_json(f"{METRICS_URL}/models/{model_id}/exists")
-        return data.get("exists", False)
+    async def _arun(self, model_id: str) -> str:
+        return await asyncio.to_thread(self._run, model_id)

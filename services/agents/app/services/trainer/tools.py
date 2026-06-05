@@ -1,7 +1,8 @@
+import asyncio
 from typing import Dict, Any
 from crewai.tools import BaseTool
 
-from ..utils import handle_errors, get_json
+from ..utils import tool_response, get_json
 from app.config import config_url
 from app.logs import get_logger
 
@@ -33,12 +34,13 @@ class GetExampleTrainingConfigTool(BaseTool):
     - Пример всегда актуален для текущей версии API
     """
 
-    @handle_errors(TRAINER_URL)
-    def _run(self) -> Dict[str, Any]:
-        return get_json(f"{TRAINER_URL}/info/example_config")
+    @tool_response(TRAINER_URL)
+    def _run(self) -> str:
+        url = f"{TRAINER_URL}/info/example_config"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self) -> Dict[str, Any]:
-        return get_json(f"{TRAINER_URL}/info/example_config")
+    async def _arun(self) -> str:
+        return await asyncio.to_thread(self._run)
 
 
 class GetAllAvailableModelsTool(BaseTool):
@@ -55,7 +57,7 @@ class GetAllAvailableModelsTool(BaseTool):
     - Для изучения доступных опций нейросетевых архитектур
 
     ВХОДНЫЕ ДАННЫЕ:
-    - filter (str): Фильтр для поиска моделей по названию.
+    - filter_query (str): Фильтр для поиска моделей по названию.
       Поддерживает wildcard паттерны. ПЕРЕДАВАТЬ ФИЛЬТР В НИЖНЕМ РЕГИСТРЕ!!
       Примеры:
       - "*resnet*" - все модели, содержащие "resnet"
@@ -72,12 +74,13 @@ class GetAllAvailableModelsTool(BaseTool):
     - Если filter пустой или "*", вернутся все доступные модели
     """
 
-    @handle_errors(TRAINER_URL)
-    def _run(self, filter_query: str = "*") -> Dict[str, Any]:
-        return get_json(f"{TRAINER_URL}/info/ml_models", params={"filter": filter_query})
+    @tool_response(TRAINER_URL)
+    def _run(self, filter_query: str = "*") -> str:
+        url = f"{TRAINER_URL}/info/ml_models"
+        return get_json(url, params={"filter": filter_query}) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self, filter_query: str = "*") -> Dict[str, Any]:
-        return get_json(f"{TRAINER_URL}/info/ml_models", params={"filter": filter_query})
+    async def _arun(self, filter_query: str = "*") -> str:
+        return await asyncio.to_thread(self._run, filter_query)
 
 
 class GetDeviceInfoTool(BaseTool):
@@ -106,12 +109,13 @@ class GetDeviceInfoTool(BaseTool):
     - Подбирай batch_size исходя из доступной памяти
     """
 
-    @handle_errors(TRAINER_URL)
-    def _run(self) -> Dict[str, Any]:
-        return get_json(f"{TRAINER_URL}/info/device")
+    @tool_response(TRAINER_URL)
+    def _run(self) -> str:
+        url = f"{TRAINER_URL}/info/device"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self) -> Dict[str, Any]:
-        return get_json(f"{TRAINER_URL}/info/device")
+    async def _arun(self) -> str:
+        return await asyncio.to_thread(self._run)
 
 
 class GetOptimizersTool(BaseTool):
@@ -137,12 +141,13 @@ class GetOptimizersTool(BaseTool):
     - Названия оптимизаторов чувствительны к регистру
     """
 
-    @handle_errors(TRAINER_URL)
-    def _run(self) -> Dict[str, Any]:
-        return get_json(f"{TRAINER_URL}/info/optimizers")
+    @tool_response(TRAINER_URL)
+    def _run(self) -> str:
+        url = f"{TRAINER_URL}/info/optimizers"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self) -> Dict[str, Any]:
-        return get_json(f"{TRAINER_URL}/info/optimizers")
+    async def _arun(self) -> str:
+        return await asyncio.to_thread(self._run)
 
 
 class GetSchedulersTool(BaseTool):
@@ -170,12 +175,13 @@ class GetSchedulersTool(BaseTool):
     - Названия планировщиков чувствительны к регистру
     """
 
-    @handle_errors(TRAINER_URL)
-    def _run(self) -> Dict[str, Any]:
-        return get_json(f"{TRAINER_URL}/info/schedulers")
+    @tool_response(TRAINER_URL)
+    def _run(self) -> str:
+        url = f"{TRAINER_URL}/info/schedulers"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self) -> Dict[str, Any]:
-        return get_json(f"{TRAINER_URL}/info/schedulers")
+    async def _arun(self) -> str:
+        return await asyncio.to_thread(self._run)
 
 
 class GetMetricsForTrainerTool(BaseTool):
@@ -203,9 +209,10 @@ class GetMetricsForTrainerTool(BaseTool):
     - Рекомендуется использовать несколько метрик для комплексной оценки
     """
 
-    @handle_errors(TRAINER_URL)
-    def _run(self) -> Dict[str, Any]:
-        return get_json(f"{TRAINER_URL}/info/metrics")
+    @tool_response(TRAINER_URL)
+    def _run(self) -> str: 
+        url = f"{TRAINER_URL}/info/metrics"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self) -> Dict[str, Any]:
-        return get_json(f"{TRAINER_URL}/info/metrics")
+    async def _arun(self) -> str:
+        return await asyncio.to_thread(self._run)

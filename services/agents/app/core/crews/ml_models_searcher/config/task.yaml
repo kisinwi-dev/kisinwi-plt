@@ -15,7 +15,7 @@ ml_models_searcher_task:
     3. Заполни MLModelsSearcherOutput
 
     ЗАПРЕТЫ:
-    - Не отвечай без вызова GetALLMLModelsInfo и GetMetricsForModel
+    - Не отвечай без вызова GetModelDetails и GetMetricsForModel
     - Не придумывай модели
     - Не выдумывай метрики
     - Если моделей нет, то не придумывай их
@@ -28,8 +28,12 @@ ml_models_searcher_task:
     {
         "text": "Подробный анализ каждой модели с метриками, сравнением и выводами",
         "summary": "Краткий вывод о лучшей модели и рекомендация",
-        "metrics_summary": {
-            "model_id_1": "На тестовых данных достигнуты такие метрики...", # Указывай самые значимые метрики
-            "model_id_2": "..."
-        }
+        "metrics_summary": [
+            {
+                "model_name": "Имя модели и её версия",
+                "summary_metric_info": "Краткая информация о самых значимых метриках модели на тестовых данных"
+            }
+        ]
     }
+    ВАЖНО: metrics_summary — это СПИСОК объектов с полями model_name и
+    summary_metric_info (по одному объекту на модель), а не словарь.

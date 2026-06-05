@@ -7,7 +7,7 @@ from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
 from .tools import get_tools
-from ..utils import get_agent_role_from_config, run_crew_with_tracking
+from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput
 from app.core.memory import models_context
 from app.logs import get_logger
 from app.core.llm import llm
@@ -23,11 +23,25 @@ class MetricSummary(BaseModel):
     model_name: str = Field(..., description="Имя модели и её версия")
     summary_metric_info: str = Field(..., description="Краткая информация о метриках модели")
 
-class MLModelsSearcherOutput(BaseModel):
+class MLModelsSearcherOutput(AgentOutput):
     """Формат выхода агента"""
     text: str = Field(..., description="Подробное описание всех моделей и их метрик")
     summary: str = Field(..., description="Краткий вывод о лучшей модели и общем качестве")
     metrics_summary: List[MetricSummary] = Field(description="Сводка метрик где ключ это версия модели, а значение это описание")
+
+    def to_history_text(self) -> str:
+        parts = [
+            "## 🔎 Поиск обученных моделей",
+            self.text,
+            f"**Вывод:** {self.summary}",
+        ]
+        if self.metrics_summary:
+            metrics = "\n".join(
+                f"- **{m.model_name}:** {m.summary_metric_info}"
+                for m in self.metrics_summary
+            )
+            parts.append(f"**Метрики по моделям:**\n{metrics}")
+        return "\n\n".join(parts)
 
 @CrewBase
 class MLModelsSearcherCrew:
@@ -141,11 +155,4 @@ def tool_run_ml_models_searcher(
         context=context
     )
 
-    result_str = "# Ответ Поисковика моделей"
-    result_str += f"\n## Подробное описание всех моделей:\n{result.text}"
-    result_str += f"\n## Краткий вывод о лучшей модели:\n{result.summary}"
-    
-    for metric_summary in result.metrics_summary:
-        result_str += f"\n## Модель: {metric_summary.model_name}\n{metric_summary.summary_metric_info}"
-
-    return result_str
+    return result.to_history_text()
