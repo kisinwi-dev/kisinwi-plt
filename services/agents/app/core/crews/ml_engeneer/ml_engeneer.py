@@ -76,6 +76,8 @@ def run_ml_engineering(
         business_requirements: str,
         deployment_constraints: str,
         researcher_proposals: str,
+        dataset_id: str,
+        dataset_version_id: str,
         verbose: bool = False
     ) -> MlEngineerResponse:
     """
@@ -86,6 +88,8 @@ def run_ml_engineering(
         business_requirements: Требования бизнеса
         deployment_constraints: Технические требования
         researcher_proposals: Предложение от ресерчера
+        dataset_id: ID датасета
+        dataset_version_id: ID версии датасета
         verbose: логирование в консоли
     """
     crew = MLEngineerCrew().crew(verbose=verbose)
@@ -98,6 +102,8 @@ def run_ml_engineering(
             "business_requirements": business_requirements,
             "deployment_constraints": deployment_constraints,
             "researcher_proposals": researcher_proposals,
+            "dataset_id": dataset_id,
+            "dataset_version_id": dataset_version_id,
         },
     )
 

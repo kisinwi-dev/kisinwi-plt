@@ -11,6 +11,8 @@ def reasoning(
     business_requirements: str,
     denied_hypotheses_info: List[str],
     deployment_constraints: str,
+    dataset_id: str,
+    dataset_version_id: str,
     verbose: bool = False,
     max_iterations: int = 3
 ) -> Tuple[MlEngineerResponse, List[str]]:
@@ -19,9 +21,10 @@ def reasoning(
 
     Args:
         dataset_info: Информация о датасете
-        model_name: Как будет называться модель
         business_requirements: Требования бизнеса к модели
         deployment_constraints: Наши технические возможности для модели в проде
+        dataset_id: ID датасета
+        dataset_version_id: ID версии датасета
         max_iterations: Количество попыток исследователя создать предложения удовлетворяющие ML инженера
         verbose: Логирование
 
@@ -50,6 +53,8 @@ def reasoning(
             business_requirements=business_requirements,
             deployment_constraints=deployment_constraints,
             researcher_proposals=researcher_output.get_full_info(),
+            dataset_id=dataset_id,
+            dataset_version_id=dataset_version_id,
             verbose=verbose
         )
         logger.info(f"💾 Решение ML инженера: {'✅ Обучаем' if ml_engineer_output.decision else '🟥 Отказ'}")

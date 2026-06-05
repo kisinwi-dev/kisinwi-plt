@@ -68,8 +68,10 @@ def development_models(
             business_requirements=business_requirements,
             denied_hypotheses_info=denied_hypotheses_info,
             verbose=verbose,
-            deployment_constraints=deployment_constraints
-        ) 
+            deployment_constraints=deployment_constraints,
+            dataset_id=dataset_id,
+            dataset_version_id=dataset_version_id
+        )
         if not ml_engin_out.decision:
             logger.info("🟥 МЛ инженер и исследователь не смогли придти к общему мнению.")
             logger.warning("🟥 Обучение остановлено")

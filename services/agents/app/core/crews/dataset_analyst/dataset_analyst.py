@@ -23,7 +23,7 @@ class DatasetAnalystOut(BaseModel):
     quality_assessment: str = Field(description="Оценка качества данных: чистота, полнота, консистентность")
     found_issues: str = Field(description="Список найденных проблем")
     recommendations: str = Field(description="Список рекомендаций по обработке данных и улучшению качества")
-    readiness_assessment: bool = Field(description="Оценка готовности к обучению: 'Готов', 'Не готов'")
+    readiness_assessment: bool = Field(description="Оценка готовности к обучению: true — готов к обучению, false — не готов")
 
     def get_summary(self) -> str:
         """Получить краткую сводку для передачи другим агентам"""
