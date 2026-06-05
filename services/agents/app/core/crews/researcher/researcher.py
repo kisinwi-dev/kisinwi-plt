@@ -1,12 +1,12 @@
 from pathlib import Path
 from typing import List
-from pydantic import BaseModel, Field
+from pydantic import Field
 from crewai import Agent, Crew, Task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 
 from .tools import get_tools
-from ..utils import get_agent_role_from_config, run_crew_with_tracking
+from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput
 from app.logs import get_logger
 from app.core.llm import llm
 
@@ -17,19 +17,20 @@ AGENT_ROLE = get_agent_role_from_config(
     Path(__file__)
 )
 
-class ResearcherOutput(BaseModel):
+class ResearcherOutput(AgentOutput):
     analysis_summary: str = Field(..., description="Краткий анализ текущей ситуации")
     hypotheses_1: str = Field(..., description="Гипотеза 1 с описанием, обоснованием и ожидаемым приростом")
     hypotheses_2: str = Field(..., description="Гипотеза 2 с описанием, обоснованием и ожидаемым приростом")
     hypotheses_3: str = Field(..., description="Гипотеза 3 с описанием, обоснованием и ожидаемым приростом")
 
-    def get_full_info(self) -> str:
-        text = "📊 Краткий анализ текущей ситуации"
-        text = f"\n{self.analysis_summary}"
-        text += f"\n🔬 Гипотеза 1:\n{self.hypotheses_1}"
-        text += f"\n🔬 Гипотеза 2:\n{self.hypotheses_2}"
-        text += f"\n🔬 Гипотеза 3:\n{self.hypotheses_3}"
-        return text
+    def to_history_text(self) -> str:
+        return "\n\n".join([
+            "## 🔬 Генерация гипотез",
+            f"**Анализ текущей ситуации:**\n{self.analysis_summary}",
+            f"**Гипотеза 1:**\n{self.hypotheses_1}",
+            f"**Гипотеза 2:**\n{self.hypotheses_2}",
+            f"**Гипотеза 3:**\n{self.hypotheses_3}",
+        ])
 
 
 @CrewBase

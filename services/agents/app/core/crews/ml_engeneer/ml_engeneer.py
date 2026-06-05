@@ -7,7 +7,7 @@ from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
 from .tools import get_tools
-from ..utils import get_agent_role_from_config, run_crew_with_tracking
+from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput
 from app.logs import get_logger
 from app.core.llm import llm
 
@@ -25,12 +25,26 @@ class MlModel(BaseModel):
         description="Конфигурация для сервиса обучения"
     )
 
-class MlEngineerResponse(BaseModel):
+class MlEngineerResponse(AgentOutput):
     """Формат ответа ML Инженера"""
     decision: bool = Field(description="Решение. Обучать(True) или нет(False).")
     reason: str = Field(description="Развёрнутое обоснование решения.")
     ml_model: MlModel | None = Field(default=None, description="Информация о разработываемой модели (только если decision==True)")
     recommendations: str = Field(description="Рекомендации по улучшению или альтернативные варианты")
+
+    def to_history_text(self) -> str:
+        decision = "✅ Запускаем обучение" if self.decision else "🟥 Отказ от обучения"
+        parts = [
+            "## 🛠️ Решение ML-инженера",
+            f"**Решение:** {decision}",
+            f"**Обоснование:**\n{self.reason}",
+        ]
+        if self.ml_model is not None:
+            parts.append(f"**Модель:** {self.ml_model.type} — {self.ml_model.description_model}")
+            parts.append(f"**Конфигурация обучения:**\n```\n{self.ml_model.configuration}\n```")
+        if self.recommendations:
+            parts.append(f"**Рекомендации:**\n{self.recommendations}")
+        return "\n\n".join(parts)
 
 @CrewBase
 class MLEngineerCrew:

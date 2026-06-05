@@ -1,12 +1,12 @@
 from pathlib import Path
 from typing import List
-from pydantic import BaseModel, Field
+from pydantic import Field
 from crewai import Agent, Crew, Process, Task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 
 from .tools import get_tools
-from ..utils import get_agent_role_from_config, run_crew_with_tracking
+from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput
 from app.core.memory import models_context, discussion_context
 from app.logs import get_logger
 from app.core.llm import llm
@@ -18,15 +18,16 @@ AGENT_ROLE = get_agent_role_from_config(
     Path(__file__)
 )
 
-class ReporterOut(BaseModel):
+class ReporterOut(AgentOutput):
     result: str = Field(description="Готова ли модель к обучению")
     description: str = Field(description="Описание работы агентов и результаты обученных ими моделей")
 
-    def get_summary(self) -> str:
-        """Получить краткую сводку для передачи другим агентам"""
-        summary = f"Результат обучения: {self.result}\n"
-        summary += f"\n{self.description}"
-        return summary
+    def to_history_text(self) -> str:
+        return "\n\n".join([
+            "## 📋 Итоговый отчёт",
+            f"**Готовность модели:** {self.result}",
+            self.description,
+        ])
 
 @CrewBase
 class ReporterCrew:

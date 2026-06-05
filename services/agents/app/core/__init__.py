@@ -64,7 +64,7 @@ def development_models(
         # Старт рассуждений агентов над задачей
         # Получаем ответ ML инженера и список не верных гипотезы
         ml_engin_out, denied_hypotheses_info = reasoning(
-            dataset_info=dataset_analyst_out.get_short_info(),
+            dataset_info=dataset_analyst_out.to_history_text(),
             business_requirements=business_requirements,
             denied_hypotheses_info=denied_hypotheses_info,
             verbose=verbose,

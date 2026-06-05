@@ -1,12 +1,12 @@
 from pathlib import Path
 from typing import List
-from pydantic import BaseModel, Field
+from pydantic import Field
 from crewai import Agent, Crew, Process, Task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 
 from .tools import get_tools
-from ..utils import get_agent_role_from_config, run_crew_with_tracking
+from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput
 from app.logs import get_logger
 from app.core.llm import llm
 
@@ -17,7 +17,7 @@ AGENT_ROLE = get_agent_role_from_config(
     Path(__file__)
 )
 
-class MlDebugerOut(BaseModel):
+class MlDebugerOut(AgentOutput):
     """Формат ответа ML Инженера"""
     decision: bool = Field(description="Решение. Можем исправить(True) или нет(False).")
     reason: str = Field(description="Развёрнутое обоснование решения.")
@@ -25,6 +25,17 @@ class MlDebugerOut(BaseModel):
         default=None,
         description="Конфигурация для сервиса обучения"
     )
+
+    def to_history_text(self) -> str:
+        decision = "✅ Ошибка исправлена" if self.decision else "🟥 Исправить не удалось"
+        parts = [
+            "## 🐞 Отладка обучения",
+            f"**Решение:** {decision}",
+            f"**Обоснование:**\n{self.reason}",
+        ]
+        if self.configuration:
+            parts.append(f"**Исправленная конфигурация:**\n```\n{self.configuration}\n```")
+        return "\n\n".join(parts)
 
 @CrewBase
 class MLDebugerCrew:

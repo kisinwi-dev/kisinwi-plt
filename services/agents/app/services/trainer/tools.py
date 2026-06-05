@@ -39,7 +39,7 @@ class GetExampleTrainingConfigTool(BaseTool):
         url = f"{TRAINER_URL}/info/example_config"
         return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self) -> Any:
+    async def _arun(self) -> str:
         return await asyncio.to_thread(self._run)
 
 

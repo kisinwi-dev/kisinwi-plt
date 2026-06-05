@@ -52,7 +52,7 @@ def reasoning(
             dataset_info=dataset_info,
             business_requirements=business_requirements,
             deployment_constraints=deployment_constraints,
-            researcher_proposals=researcher_output.get_full_info(),
+            researcher_proposals=researcher_output.to_history_text(),
             dataset_id=dataset_id,
             dataset_version_id=dataset_version_id,
             verbose=verbose

@@ -1,13 +1,13 @@
 from pathlib import Path
 from typing import List
-from pydantic import BaseModel, Field
+from pydantic import Field
 from crewai import Agent, Crew, Process, Task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
 from .tools import get_tools
-from ..utils import get_agent_role_from_config, run_crew_with_tracking
+from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput
 from app.logs import get_logger
 from app.core.llm import llm
 
@@ -18,49 +18,23 @@ AGENT_ROLE = get_agent_role_from_config(
     Path(__file__)
 )
 
-class DatasetAnalystOut(BaseModel):
+class DatasetAnalystOut(AgentOutput):
     brief_description: str = Field(description="Краткое описание датасета")
     quality_assessment: str = Field(description="Оценка качества данных: чистота, полнота, консистентность")
     found_issues: str = Field(description="Список найденных проблем")
     recommendations: str = Field(description="Список рекомендаций по обработке данных и улучшению качества")
     readiness_assessment: bool = Field(description="Оценка готовности к обучению: true — готов к обучению, false — не готов")
 
-    def get_summary(self) -> str:
-        """Получить краткую сводку для передачи другим агентам"""
-        summary = f"""
-📊 ОТЧЕТ ПО ДАТАСЕТУ:
-
-Краткое описание: 
-{self.brief_description}
-
-Качество: 
-{self.quality_assessment}
-
-Проблемы: 
-{self.found_issues}
-
-Рекомендации:
-{self.recommendations}:
-
-Готовность к обучению: {'✅ Готов' if self.readiness_assessment else '🟥 Не готов'}
-""".strip()
-        return summary
-    
-    def get_short_info(self) -> str:
-        """Получить краткую сводку для передачи другим агентам"""
-        summary = f"""
-📊 ОТЧЕТ ПО ДАТАСЕТУ:
-
-Краткое описание: 
-{self.brief_description}
-
-Качество: 
-{self.quality_assessment}
-
-Проблемы: 
-{self.found_issues}
-""".strip()
-        return summary
+    def to_history_text(self) -> str:
+        readiness = "✅ Готов к обучению" if self.readiness_assessment else "🟥 Не готов к обучению"
+        return "\n\n".join([
+            "## 🧪 Анализ датасета",
+            f"**Готовность:** {readiness}",
+            f"**Что в датасете:**\n{self.brief_description}",
+            f"**Качество данных:**\n{self.quality_assessment}",
+            f"**Найденные проблемы:**\n{self.found_issues}",
+            f"**Рекомендации:**\n{self.recommendations}",
+        ])
 
 
 @CrewBase
@@ -184,4 +158,4 @@ def tool_run_dataset_analyst(
         dataset_id,
         dataset_version_id,
         verbose
-    ).get_summary()
+    ).to_history_text()

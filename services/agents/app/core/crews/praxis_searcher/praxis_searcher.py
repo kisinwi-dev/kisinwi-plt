@@ -6,7 +6,7 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
-from ..utils import get_agent_role_from_config, run_crew_with_tracking
+from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput
 from app.logs import get_logger
 from app.core.llm import llm
 from .tools import get_tools
@@ -24,11 +24,25 @@ class SearchSource(BaseModel):
     short_description: str = Field(..., description="Краткое описание, почему этот источник полезен")
     relevance_score: Optional[int] = Field(None, ge=1, le=10, description="Оценка релевантности от 1 до 10")
 
-class PraxisSearchOutput(BaseModel):
+class PraxisSearchOutput(AgentOutput):
     """Стандартизированный вывод Praxis Searcher"""
     text: str = Field(..., description="Основной текст с найденными лучшими практиками и рекомендациями")
     sources: List[SearchSource] = Field(default_factory=list, description="Список источников с ссылками")
     summary: str = Field(..., description="Краткий summary ключевых практик")
+
+    def to_history_text(self) -> str:
+        parts = [
+            "## 🌐 Поиск лучших практик",
+            self.text,
+            f"**Краткий обзор:** {self.summary}",
+        ]
+        if self.sources:
+            links = "\n".join(
+                f"- [{s.title or s.url}]({s.url}) — {s.short_description}"
+                for s in self.sources
+            )
+            parts.append(f"**Источники:**\n{links}")
+        return "\n\n".join(parts)
 
 @CrewBase
 class PraxisSearcherCrew:
@@ -138,11 +152,6 @@ def tool_run_praxis_searcher(
     result = run_praxis_searcher(
         search_query=search_query,
         context=context
-    ) 
+    )
 
-    result_str = "# 🌐 Результаты поиска лучших практик"
-    result_str += f"\n## Запрос: {search_query}"
-    result_str += f"\n## Найденные практики\n{result.text}"
-    result_str += f"\n## Краткий обзор\n{result.summary}"
-
-    return result_str
+    return f"**Запрос:** {search_query}\n\n{result.to_history_text()}"
