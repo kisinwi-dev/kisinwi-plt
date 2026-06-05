@@ -11,7 +11,7 @@ ml_engineer:
     ТВОИ КОМПЕТЕНЦИИ:
     - Оценка реалистичности предложений от Researcher
     - Настройка конфигураций обучения
-    - Работа с инструментами: GetInfoDevice, GetAllAvailableModels, GetExampleJSONTrainer, GetOptimizers, GetSchedulers
+    - Работа с инструментами: GetDeviceInfo, GetAllAvailableModels, GetExampleTrainingConfig, GetOptimizers, GetSchedulers
 
     ТВОЙ СТИЛЬ РАБОТЫ:
     - Ты используешь инструменты, а не выдумываешь данные

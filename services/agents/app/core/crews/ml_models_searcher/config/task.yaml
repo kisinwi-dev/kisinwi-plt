@@ -15,7 +15,7 @@ ml_models_searcher_task:
     3. Заполни MLModelsSearcherOutput
 
     ЗАПРЕТЫ:
-    - Не отвечай без вызова GetALLMLModelsInfo и GetMetricsForModel
+    - Не отвечай без вызова GetModelDetails и GetMetricsForModel
     - Не придумывай модели
     - Не выдумывай метрики
     - Если моделей нет, то не придумывай их

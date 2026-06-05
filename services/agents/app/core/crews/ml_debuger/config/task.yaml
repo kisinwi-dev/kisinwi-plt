@@ -14,10 +14,10 @@ ml_debuger_task:
       - Найди конкретный параметр, который вызывает проблему
 
     2. СОБЕРИ НЕОБХОДИМУЮ ИНФОРМАЦИЮ (вызови инструменты):
-      - GetDatasetInfo и ListDatasets — чтобы просмотреть наличие датасета и его id
-      - GetInfoDevice — чтобы знать, на чём будем обучать
+      - GetDatasetDetails и ListAllDatasets — чтобы просмотреть наличие датасета и его id
+      - GetDeviceInfo — чтобы знать, на чём будем обучать
       - GetAllAvailableModels — чтобы проверить существование модели
-      - GetExampleJSONTrainer — чтобы получить правильную структуру JSON
+      - GetExampleTrainingConfig — чтобы получить правильную структуру JSON
        
     3. ПРИМИ РЕШЕНИЕ:
        
