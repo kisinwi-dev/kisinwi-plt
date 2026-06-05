@@ -1,3 +1,4 @@
+import asyncio
 from typing import Dict, Any
 from crewai.tools import BaseTool
 
@@ -34,10 +35,10 @@ class GetAgentHistoryTool(BaseTool):
 
     @tool_response(AGENT_HISTORY)
     def _run(self, discussion_id: str) -> str:
-        return self._collect_history(discussion_id)
+        return self._collect_history(discussion_id) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self, discussion_id: str) -> Dict[str, Any]:
-        return self._collect_history(discussion_id)
+    async def _arun(self, discussion_id: str) -> str:
+        return await asyncio.to_thread(self._run, discussion_id)
 
     def _collect_history(self, discussion_id: str) -> Dict[str, Any]:
         # Единого GET /discussions/{id} в сервисе истории нет — собираем диалог

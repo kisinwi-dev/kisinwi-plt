@@ -1,3 +1,4 @@
+import asyncio
 from crewai.tools import BaseTool
 from typing import Dict, Any
 
@@ -37,10 +38,11 @@ class GetDatasetDetailsTool(BaseTool):
 
     @tool_response(DATASETS_URL)
     def _run(self, dataset_id: str) -> str:
-        return get_json(f"{DATASETS_URL}/datasets/{dataset_id}")
+        url = f"{DATASETS_URL}/datasets/{dataset_id}"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self, dataset_id: str) -> Dict[str, Any]:
-        return get_json(f"{DATASETS_URL}/datasets/{dataset_id}")
+    async def _arun(self, dataset_id: str) -> str:
+        return await asyncio.to_thread(self._run, dataset_id)
 
 
 class GetDatasetVersionDetailsTool(BaseTool):
@@ -70,10 +72,11 @@ class GetDatasetVersionDetailsTool(BaseTool):
 
     @tool_response(DATASETS_URL)
     def _run(self, dataset_id: str, version_id: str) -> str:
-        return get_json(f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}")
+        url = f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self, dataset_id: str, version_id: str) -> Dict[str, Any]:
-        return get_json(f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}")
+    async def _arun(self, dataset_id: str, version_id: str) -> str:
+        return await asyncio.to_thread(self._run, dataset_id, version_id)
 
 
 class GetDatasetSplitSizesTool(BaseTool):
@@ -105,10 +108,11 @@ class GetDatasetSplitSizesTool(BaseTool):
 
     @tool_response(DATASETS_URL)
     def _run(self, dataset_id: str, version_id: str) -> str:
-        return get_json(f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}/splits")
+        url = f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}/splits"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self, dataset_id: str, version_id: str) -> Dict[str, Any]:
-        return get_json(f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}/splits")
+    async def _arun(self, dataset_id: str, version_id: str) -> str:
+        return await asyncio.to_thread(self._run, dataset_id, version_id)
 
 
 class ListAllDatasetsTool(BaseTool):
@@ -133,7 +137,8 @@ class ListAllDatasetsTool(BaseTool):
 
     @tool_response(DATASETS_URL)
     def _run(self) -> str:
-        return get_json(f"{DATASETS_URL}/datasets/")
+        url = f"{DATASETS_URL}/datasets/"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self) -> Dict[str, Any]:
-        return get_json(f"{DATASETS_URL}/datasets/")
+    async def _arun(self) -> str:
+        return await asyncio.to_thread(self._run)

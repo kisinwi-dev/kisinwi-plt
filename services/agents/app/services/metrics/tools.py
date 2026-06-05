@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any, Dict
 from crewai.tools import BaseTool
 
@@ -36,10 +37,11 @@ class GetMetricsForModelTool(BaseTool):
 
     @tool_response(METRICS_URL)
     def _run(self, model_id: str) -> str:
-        return get_json(f"{METRICS_URL}/models/{model_id}")
+        url = f"{METRICS_URL}/models/{model_id}"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self, model_id: str) -> Dict[str, Any]:
-        return get_json(f"{METRICS_URL}/models/{model_id}")
+    async def _arun(self, model_id: str) -> str:
+        return await asyncio.to_thread(self._run, model_id)
 
 
 class DoesModelHaveMetricsTool(BaseTool):
@@ -72,6 +74,5 @@ class DoesModelHaveMetricsTool(BaseTool):
         data = get_json(f"{METRICS_URL}/models/{model_id}/exists")
         return data.get("exists", False)
 
-    async def _arun(self, model_id: str) -> bool:
-        data = get_json(f"{METRICS_URL}/models/{model_id}/exists")
-        return data.get("exists", False)
+    async def _arun(self, model_id: str) -> str:
+        return await asyncio.to_thread(self._run, model_id)

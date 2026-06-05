@@ -1,3 +1,4 @@
+import asyncio
 from typing import Dict, Any
 from crewai.tools import BaseTool
 
@@ -35,10 +36,11 @@ class GetExampleTrainingConfigTool(BaseTool):
 
     @tool_response(TRAINER_URL)
     def _run(self) -> str:
-        return get_json(f"{TRAINER_URL}/info/example_config")
+        url = f"{TRAINER_URL}/info/example_config"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self) -> Dict[str, Any]:
-        return get_json(f"{TRAINER_URL}/info/example_config")
+    async def _arun(self) -> Any:
+        return await asyncio.to_thread(self._run)
 
 
 class GetAllAvailableModelsTool(BaseTool):
@@ -74,10 +76,11 @@ class GetAllAvailableModelsTool(BaseTool):
 
     @tool_response(TRAINER_URL)
     def _run(self, filter_query: str = "*") -> str:
-        return get_json(f"{TRAINER_URL}/info/ml_models", params={"filter": filter_query})
+        url = f"{TRAINER_URL}/info/ml_models"
+        return get_json(url, params={"filter": filter_query}) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self, filter_query: str = "*") -> Dict[str, Any]:
-        return get_json(f"{TRAINER_URL}/info/ml_models", params={"filter": filter_query})
+    async def _arun(self, filter_query: str = "*") -> str:
+        return await asyncio.to_thread(self._run, filter_query)
 
 
 class GetDeviceInfoTool(BaseTool):
@@ -108,10 +111,11 @@ class GetDeviceInfoTool(BaseTool):
 
     @tool_response(TRAINER_URL)
     def _run(self) -> str:
-        return get_json(f"{TRAINER_URL}/info/device")
+        url = f"{TRAINER_URL}/info/device"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self) -> Dict[str, Any]:
-        return get_json(f"{TRAINER_URL}/info/device")
+    async def _arun(self) -> str:
+        return await asyncio.to_thread(self._run)
 
 
 class GetOptimizersTool(BaseTool):
@@ -139,10 +143,11 @@ class GetOptimizersTool(BaseTool):
 
     @tool_response(TRAINER_URL)
     def _run(self) -> str:
-        return get_json(f"{TRAINER_URL}/info/optimizers")
+        url = f"{TRAINER_URL}/info/optimizers"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self) -> Dict[str, Any]:
-        return get_json(f"{TRAINER_URL}/info/optimizers")
+    async def _arun(self) -> str:
+        return await asyncio.to_thread(self._run)
 
 
 class GetSchedulersTool(BaseTool):
@@ -172,10 +177,11 @@ class GetSchedulersTool(BaseTool):
 
     @tool_response(TRAINER_URL)
     def _run(self) -> str:
-        return get_json(f"{TRAINER_URL}/info/schedulers")
+        url = f"{TRAINER_URL}/info/schedulers"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self) -> Dict[str, Any]:
-        return get_json(f"{TRAINER_URL}/info/schedulers")
+    async def _arun(self) -> str:
+        return await asyncio.to_thread(self._run)
 
 
 class GetMetricsForTrainerTool(BaseTool):
@@ -204,8 +210,9 @@ class GetMetricsForTrainerTool(BaseTool):
     """
 
     @tool_response(TRAINER_URL)
-    def _run(self) -> str:
-        return get_json(f"{TRAINER_URL}/info/metrics")
+    def _run(self) -> str: 
+        url = f"{TRAINER_URL}/info/metrics"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self) -> Dict[str, Any]:
-        return get_json(f"{TRAINER_URL}/info/metrics")
+    async def _arun(self) -> str:
+        return await asyncio.to_thread(self._run)

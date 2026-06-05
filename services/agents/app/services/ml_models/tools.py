@@ -1,3 +1,4 @@
+import asyncio
 from typing import Dict, Any
 from crewai.tools import BaseTool
 
@@ -30,7 +31,8 @@ class GetModelDetailsTool(BaseTool):
 
     @tool_response(ML_MODELS_URL)
     def _run(self, model_id: str) -> str:
-        return get_json(f"{ML_MODELS_URL}/models/{model_id}")
+        url = f"{ML_MODELS_URL}/models/{model_id}"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
-    async def _arun(self, model_id: str) -> Dict[str, Any]:
-        return get_json(f"{ML_MODELS_URL}/models/{model_id}")
+    async def _arun(self, model_id: str) -> str:
+        return await asyncio.to_thread(self._run, model_id)
