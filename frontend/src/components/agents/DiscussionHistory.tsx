@@ -5,8 +5,7 @@ import type { DiscussionMeta } from '../../types/agentHistory';
 import { useNotification } from '../../contexts/NotificationContext';
 import ConfirmModal from '../common/ConfirmModal';
 import DiscussionCard from './DiscussionCard';
-import DiscussionInfo from './DiscussionInfo';
-import DiscussionView from './DiscussionView';
+import DiscussionDetail from './DiscussionDetail';
 
 const DiscussionHistory: React.FC = () => {
   const { showNotification } = useNotification();
@@ -64,21 +63,9 @@ const DiscussionHistory: React.FC = () => {
     }
   };
 
-  const selected = selectedId
-    ? discussions.find(d => d.discussion_id === selectedId)
-    : null;
-
   // ── Детальный просмотр выбранной дискуссии ──────────────────────────────────
   if (selectedId) {
-    return (
-      <div className="discussion-detail">
-        <button className="button secondary small back-button" onClick={() => navigate(-1)}>
-          <i className="fas fa-arrow-left"></i> Назад к списку
-        </button>
-        <DiscussionInfo discussion={selected ?? null} discussionId={selectedId} />
-        <DiscussionView discussionId={selectedId} />
-      </div>
-    );
+    return <DiscussionDetail discussionId={selectedId} onBack={() => navigate(-1)} />;
   }
 
   // ── Список дискуссий ────────────────────────────────────────────────────────

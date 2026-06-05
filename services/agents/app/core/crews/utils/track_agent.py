@@ -51,7 +51,11 @@ def track_agent(agent_role: str):
 
             except Exception as e:
                 error_msg = f"Агент '{agent_role}' завершился с ошибкой: {str(e)}"
-                agent_history_client.error(error_msg)
+                agent_history_client.agent_error(
+                    response_id=response_id,
+                    agent_role=agent_role,
+                    text=error_msg,
+                )
                 logger.error(f"❌ {error_msg}")
                 raise
 

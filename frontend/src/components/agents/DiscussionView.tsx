@@ -7,6 +7,8 @@ import MessageBubble from './MessageBubble';
 
 interface Props {
   discussionId: string;
+  // Если дискуссия активна — лента периодически обновляется (polling прогресса).
+  active?: boolean;
 }
 
 // Элемент единой ленты: ответ агента или системное сообщение.
@@ -21,19 +23,25 @@ const SYSTEM_ICONS: Record<SystemMessageType, string> = {
   ERROR: 'fa-circle-exclamation',
 };
 
-const DiscussionView: React.FC<Props> = ({ discussionId }) => {
+const DiscussionView: React.FC<Props> = ({ discussionId, active = false }) => {
   const { showNotification } = useNotification();
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // Спиннер показываем только при первой загрузке, фоновые рефетчи — тихо.
+    let firstLoad = true;
+
     const fetchFeed = async () => {
       try {
-        setLoading(true);
+        if (firstLoad) setLoading(true);
         const [responses, systemMessages] = await Promise.all([
           agentHistoryService.getResponses(discussionId),
           agentHistoryService.getSystemMessages(discussionId),
         ]);
+        if (cancelled) return;
 
         const items: FeedItem[] = [
           ...responses.map((data): FeedItem => ({ kind: 'response', timestamp: data.timestamp, data })),
@@ -42,13 +50,21 @@ const DiscussionView: React.FC<Props> = ({ discussionId }) => {
         items.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         setFeed(items);
       } catch (err) {
+        if (cancelled) return;
         showNotification(err instanceof Error ? err.message : 'Ошибка загрузки диалога', 'error');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
+        firstLoad = false;
+        // Пока дискуссия активна — продолжаем опрашивать ленту.
+        if (!cancelled && active) timer = setTimeout(fetchFeed, 3000);
       }
     };
     fetchFeed();
-  }, [discussionId, showNotification]);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [discussionId, active, showNotification]);
 
   if (loading) {
     return <div className="loading">Загрузка диалога...</div>;

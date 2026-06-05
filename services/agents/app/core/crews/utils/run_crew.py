@@ -92,7 +92,16 @@ def run_crew_with_tracking(
         return crew_output
 
     except Exception as e:
-        agent_history_client.error(f"Агент '{agent_role}' завершился с ошибкой: {str(e)}")
+        duration_ms = (time.time() - start_time) * 1000
+        agent_history_client.agent_error(
+            response_id=response_id,
+            agent_role=agent_role,
+            text=f"Агент '{agent_role}' завершился с ошибкой: {str(e)}",
+            duration_ms=duration_ms,
+            model=model,
+            task_name=task_name,
+            iteration=iteration,
+        )
         raise
 
     finally:

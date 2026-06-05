@@ -2,8 +2,7 @@ from fastapi import APIRouter, Query, HTTPException
 
 from app.core.crews.ml_engeneer import run_ml_engineering, AGENT_ROLE as ML_ENGINEER_ROLE
 from app.core.crews.ml_debuger import run_ml_debug, AGENT_ROLE as ML_DEBUGER_ROLE
-from app.core.memory import discussion_context
-from app.services.agent_history import agent_history_client
+from app.services.agent_history import track_discussion
 
 routers = APIRouter(
     tags=['engineering']
@@ -13,7 +12,7 @@ routers = APIRouter(
         "/ml_engineer",
         description="Рассуждения агентов ML-инженеров"
 )
-def run_etp(
+def run_ml_engineer(
     discussion_id: str = Query(description="ID дискуссии"),
     business_requirements: str = Query(description="Бизнес требования к модели"),
     deployment_constraints: str = Query(description="Технические требования к модели"),
@@ -43,34 +42,26 @@ def run_etp(
             status_code=500,
             detail=f"Ошибка при выполнении: {str(e)}"
         )
-    finally:
-        discussion_context.clear()
 
 @routers.get(
         "/ml_debug",
         description="Агент исправляет ошибку в конфиге запуска обучения мл моделей"
 )
-def run_ed(
+def run_ml_debugger(
     discussion_id: str = Query(description="ID дискуссии"),
     error: str = Query(description="Ошибка полученная при обучении"),
     config: str = Query(description="Конфигурации обучения")
 ):
     try:
-    
-        discussion_context.set(discussion_id)
-        agent_history_client.create_discussion(discussion_id, pipeline="ml_debuger", agent_roles=[ML_DEBUGER_ROLE])
-
-        result = run_ml_debug(
-            error=error,
-            config=config,
-            verbose=True
-        )
-
+        with track_discussion(discussion_id, "ml_debuger", "Отладка обучения", [ML_DEBUGER_ROLE]):
+            result = run_ml_debug(
+                error=error,
+                config=config,
+                verbose=True
+            )
         return result
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"Ошибка при выполнении: {str(e)}"
         )
-    finally:
-        discussion_context.clear()
