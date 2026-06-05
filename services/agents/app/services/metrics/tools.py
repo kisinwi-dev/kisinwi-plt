@@ -1,7 +1,7 @@
 from typing import Any, Dict
 from crewai.tools import BaseTool
 
-from ..utils import get_json, handle_errors
+from ..utils import get_json, tool_response
 from app.config import config_url
 from app.logs import get_logger
 
@@ -34,8 +34,8 @@ class GetMetricsForModelTool(BaseTool):
     - Перед использованием вызови инструмент DoesModelHaveMetrics, что бы проверить наличие модели
     """
 
-    @handle_errors(METRICS_URL)
-    def _run(self, model_id: str) -> Dict[str, Any]:
+    @tool_response(METRICS_URL)
+    def _run(self, model_id: str) -> str:
         return get_json(f"{METRICS_URL}/models/{model_id}")
 
     async def _arun(self, model_id: str) -> Dict[str, Any]:
@@ -67,8 +67,8 @@ class DoesModelHaveMetricsTool(BaseTool):
     - Если модель не найдена, вернётся False
     """
 
-    @handle_errors(METRICS_URL)
-    def _run(self, model_id: str) -> bool:
+    @tool_response(METRICS_URL)
+    def _run(self, model_id: str) -> str:
         data = get_json(f"{METRICS_URL}/models/{model_id}/exists")
         return data.get("exists", False)
 

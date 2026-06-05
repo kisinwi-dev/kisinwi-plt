@@ -2,7 +2,7 @@ from typing import Dict, Any
 from crewai.tools import BaseTool
 
 from ..utils import (
-    get_json, handle_errors
+    get_json, tool_response
 )
 from app.config import config_url
 from app.logs import get_logger
@@ -32,8 +32,8 @@ class GetAgentHistoryTool(BaseTool):
       и system_messages (системные сообщения)
     """
 
-    @handle_errors(AGENT_HISTORY)
-    def _run(self, discussion_id: str) -> Dict[str, Any]:
+    @tool_response(AGENT_HISTORY)
+    def _run(self, discussion_id: str) -> str:
         return self._collect_history(discussion_id)
 
     async def _arun(self, discussion_id: str) -> Dict[str, Any]:

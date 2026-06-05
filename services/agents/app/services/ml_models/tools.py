@@ -1,7 +1,7 @@
 from typing import Dict, Any
 from crewai.tools import BaseTool
 
-from ..utils import get_json, handle_errors
+from ..utils import get_json, tool_response
 from app.config import config_url
 from app.logs import get_logger
 
@@ -28,8 +28,8 @@ class GetModelDetailsTool(BaseTool):
     - dict с информацией о модели
     """
 
-    @handle_errors(ML_MODELS_URL)
-    def _run(self, model_id: str) -> Dict[str, Any]:
+    @tool_response(ML_MODELS_URL)
+    def _run(self, model_id: str) -> str:
         return get_json(f"{ML_MODELS_URL}/models/{model_id}")
 
     async def _arun(self, model_id: str) -> Dict[str, Any]:

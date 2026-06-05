@@ -2,7 +2,7 @@ from crewai.tools import BaseTool
 from typing import Dict, Any
 
 from ..utils import (
-    get_json, handle_errors
+    get_json, tool_response
 )
 from app.config import config_url
 from app.logs import get_logger
@@ -35,8 +35,8 @@ class GetDatasetDetailsTool(BaseTool):
     - Используй этот инструмент перед работой с конкретными версиями
     """
 
-    @handle_errors(DATASETS_URL)
-    def _run(self, dataset_id: str) -> Dict[str, Any]:
+    @tool_response(DATASETS_URL)
+    def _run(self, dataset_id: str) -> str:
         return get_json(f"{DATASETS_URL}/datasets/{dataset_id}")
 
     async def _arun(self, dataset_id: str) -> Dict[str, Any]:
@@ -68,8 +68,8 @@ class GetDatasetVersionDetailsTool(BaseTool):
     - Всегда проверяй существование версии перед вызовом
     """
 
-    @handle_errors(DATASETS_URL)
-    def _run(self, dataset_id: str, version_id: str) -> Dict[str, Any]:
+    @tool_response(DATASETS_URL)
+    def _run(self, dataset_id: str, version_id: str) -> str:
         return get_json(f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}")
 
     async def _arun(self, dataset_id: str, version_id: str) -> Dict[str, Any]:
@@ -103,8 +103,8 @@ class GetDatasetSplitSizesTool(BaseTool):
     - Для задач классификации важно, чтобы распределение классов было равномерным
     """
 
-    @handle_errors(DATASETS_URL)
-    def _run(self, dataset_id: str, version_id: str) -> Dict[str, Any]:
+    @tool_response(DATASETS_URL)
+    def _run(self, dataset_id: str, version_id: str) -> str:
         return get_json(f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}/splits")
 
     async def _arun(self, dataset_id: str, version_id: str) -> Dict[str, Any]:
@@ -131,8 +131,8 @@ class ListAllDatasetsTool(BaseTool):
     - dict с информацией об имеющихся датасетах
     """
 
-    @handle_errors(DATASETS_URL)
-    def _run(self) -> Dict[str, Any]:
+    @tool_response(DATASETS_URL)
+    def _run(self) -> str:
         return get_json(f"{DATASETS_URL}/datasets/")
 
     async def _arun(self) -> Dict[str, Any]:

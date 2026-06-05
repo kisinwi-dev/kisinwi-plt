@@ -1,7 +1,7 @@
 from typing import Dict, Any
 from crewai.tools import BaseTool
 
-from ..utils import handle_errors, get_json
+from ..utils import tool_response, get_json
 from app.config import config_url
 from app.logs import get_logger
 
@@ -33,8 +33,8 @@ class GetExampleTrainingConfigTool(BaseTool):
     - Пример всегда актуален для текущей версии API
     """
 
-    @handle_errors(TRAINER_URL)
-    def _run(self) -> Dict[str, Any]:
+    @tool_response(TRAINER_URL)
+    def _run(self) -> str:
         return get_json(f"{TRAINER_URL}/info/example_config")
 
     async def _arun(self) -> Dict[str, Any]:
@@ -72,8 +72,8 @@ class GetAllAvailableModelsTool(BaseTool):
     - Если filter пустой или "*", вернутся все доступные модели
     """
 
-    @handle_errors(TRAINER_URL)
-    def _run(self, filter_query: str = "*") -> Dict[str, Any]:
+    @tool_response(TRAINER_URL)
+    def _run(self, filter_query: str = "*") -> str:
         return get_json(f"{TRAINER_URL}/info/ml_models", params={"filter": filter_query})
 
     async def _arun(self, filter_query: str = "*") -> Dict[str, Any]:
@@ -106,8 +106,8 @@ class GetDeviceInfoTool(BaseTool):
     - Подбирай batch_size исходя из доступной памяти
     """
 
-    @handle_errors(TRAINER_URL)
-    def _run(self) -> Dict[str, Any]:
+    @tool_response(TRAINER_URL)
+    def _run(self) -> str:
         return get_json(f"{TRAINER_URL}/info/device")
 
     async def _arun(self) -> Dict[str, Any]:
@@ -137,8 +137,8 @@ class GetOptimizersTool(BaseTool):
     - Названия оптимизаторов чувствительны к регистру
     """
 
-    @handle_errors(TRAINER_URL)
-    def _run(self) -> Dict[str, Any]:
+    @tool_response(TRAINER_URL)
+    def _run(self) -> str:
         return get_json(f"{TRAINER_URL}/info/optimizers")
 
     async def _arun(self) -> Dict[str, Any]:
@@ -170,8 +170,8 @@ class GetSchedulersTool(BaseTool):
     - Названия планировщиков чувствительны к регистру
     """
 
-    @handle_errors(TRAINER_URL)
-    def _run(self) -> Dict[str, Any]:
+    @tool_response(TRAINER_URL)
+    def _run(self) -> str:
         return get_json(f"{TRAINER_URL}/info/schedulers")
 
     async def _arun(self) -> Dict[str, Any]:
@@ -203,8 +203,8 @@ class GetMetricsForTrainerTool(BaseTool):
     - Рекомендуется использовать несколько метрик для комплексной оценки
     """
 
-    @handle_errors(TRAINER_URL)
-    def _run(self) -> Dict[str, Any]:
+    @tool_response(TRAINER_URL)
+    def _run(self) -> str:
         return get_json(f"{TRAINER_URL}/info/metrics")
 
     async def _arun(self) -> Dict[str, Any]:
