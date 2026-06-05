@@ -117,6 +117,16 @@ def development_models(
                 f"\nОписание: {training_res.error}"
                 f"\n{'='*100}"
             )
+            # Сообщаем следующей итерации о провале обучения, чтобы исследователь и
+            # ML инженер не повторили то же решение.
+            ml_model = ml_engin_out.ml_model
+            what_trained = f"{ml_model.type} — {ml_model.description_model}" if ml_model else "модель"
+            denied_hypotheses_info.append(
+                "Предыдущая попытка обучения провалилась и не была исправлена дебагером.\n"
+                f"Что обучали: {what_trained}\n"
+                f"Ошибка обучения: {training_res.error}\n"
+                "Учти это и предложи другое решение."
+            )
 
     # Подводим итоги обучений
     result = run_reporter(
