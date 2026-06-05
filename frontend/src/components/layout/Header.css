@@ -54,7 +54,7 @@
 /* Навигация */
 .nav {
   display: flex;
-  gap: 2.5rem;
+  gap: 2rem;
 }
 
 .nav a {
@@ -62,42 +62,39 @@
   font-family: 'Inter', sans-serif;
   font-weight: 500;
   text-decoration: none !important;
-  font-size: 1rem;
-  padding: 0.5rem 0;
+  font-size: 0.95rem;
+  padding: 0.5rem 0.2rem;
   position: relative;
   transition: var(--transition);
-  border: none; /* убедимся, что нет подчёркивания */
+  border: none;
 }
 
 .nav a:hover {
-  color: var(--color-accent);
+  color: var(--color-text-primary);
 }
 
 /* Активная ссылка */
 .nav a.active {
-  color: var(--color-accent);
+  color: var(--color-accent-light);
   font-weight: 600;
 }
 
-/* Лёгкий фон при наведении (опционально) */
+/* Акцентная линия под активной ссылкой */
 .nav a::after {
   content: '';
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100%;
-  height: 100%;
-  background: var(--color-accent-soft);
-  border-radius: 30px;
-  transform: translate(-50%, -50%) scale(0.8);
-  opacity: 0;
+  left: 0.2rem;
+  right: 0.2rem;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-accent);
+  transform: scaleX(0);
   transition: var(--transition);
-  z-index: -1;
 }
 
-.nav a:hover::after {
-  transform: translate(-50%, -50%) scale(1);
-  opacity: 1;
+.nav a.active::after {
+  transform: scaleX(1);
 }
 
 /* Адаптивность */
@@ -108,7 +105,6 @@
     gap: 0.8rem;
   }
   .nav {
-    gap: 1.5rem;
     flex-wrap: wrap;
     justify-content: center;
   }

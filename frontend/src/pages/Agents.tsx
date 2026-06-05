@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
-import { DiscussionHistory } from '../components/agents';
+import { useSearchParams } from 'react-router-dom';
+import { DiscussionHistory, RunPipelineForm } from '../components/agents';
 import './Agents.css';
 
 type AgentsTab = 'run' | 'history';
 
 const Agents: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AgentsTab>('history');
+  const [, setSearchParams] = useSearchParams();
+
+  // После старта пайплайна — переключаемся на историю и открываем дискуссию.
+  const handleStarted = (discussionId: string) => {
+    setActiveTab('history');
+    setSearchParams({ discussion: discussionId });
+  };
 
   return (
     <div className="agents-page">
@@ -35,11 +43,7 @@ const Agents: React.FC = () => {
       {/* Содержимое вкладки */}
       <div className="agents-content">
         {activeTab === 'run' ? (
-          <div className="agents-run-placeholder">
-            <i className="fas fa-flask"></i>
-            <h3>Запуск пайплайнов</h3>
-            <p>Здесь появится возможность запускать пайплайны обучения с агентами.</p>
-          </div>
+          <RunPipelineForm onStarted={handleStarted} />
         ) : (
           <DiscussionHistory />
         )}
