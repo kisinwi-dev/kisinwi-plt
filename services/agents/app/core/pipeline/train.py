@@ -55,6 +55,17 @@ def training(
         train_params=ml_model.configuration,
         classes=get_dataset_info_classes(training_input.dataset_id)
     )
+
+    # При ошибке create_model возвращает не id, а {"ERROR": ...}. Не отправляем
+    # обучение с битым model_id — сразу сообщаем о провале.
+    if not isinstance(model_id, str):
+        error = model_id.get("ERROR") if isinstance(model_id, dict) else str(model_id)
+        logger.error(f"🟥 Не удалось создать ML модель: {error}")
+        return TrainingOut(
+            is_completed_successfully=False,
+            error=f"Не удалось создать ML модель: {error}"
+        )
+
     logger.info("✅ ML модель создана")
 
     logger.info("Создание задачи на обучение...")

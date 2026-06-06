@@ -25,9 +25,9 @@ CREATE TABLE IF NOT EXISTS ml_models (
     classes JSONB NOT NULL DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    -- Датасет для которого создана модель
-    dataset_id VARCHAR(20) NOT NULL, 
-    dataset_version_id VARCHAR(20) NOT NULL, 
+    -- Датасет для которого создана модель (UUID, 36 символов)
+    dataset_id VARCHAR(36) NOT NULL,
+    dataset_version_id VARCHAR(36) NOT NULL,
 
     -- Framework для работы с моделью
     framework VARCHAR(50),
