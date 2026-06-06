@@ -1,5 +1,5 @@
 import requests
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from crewai import Crew
 from crewai.types.usage_metrics import UsageMetrics
 
@@ -11,13 +11,19 @@ logger = get_logger(__name__)
 METRICS_URL = config_url.METRICS['url']
 
 def add_agent_in_metrics(
-        crew: Crew
+        crew: Crew,
+        discussion_id: Optional[str] = None
 ) -> bool:
     """
     Добавление метрик(потраченные токены)
+
+    Args:
+        crew: crew, чьи метрики использования сохраняем
+        discussion_id: дискуссия, к которой относится запуск (для агрегации)
     """
     agent_info = {}
     agent_info["response_id"] = str(crew.id)
+    agent_info["discussion_id"] = discussion_id
     agent_info["metrics"] = _token_metrics_to_dict(crew.usage_metrics)
 
     _post(agent_info)

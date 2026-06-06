@@ -27,7 +27,7 @@ class CVMetricManager(ManagerBase):
                     },
                     {
                         '$push': {
-                            f'metrics.$.values': metric.metric.values,
+                            f'metrics.$.values': {'$each': metric.metric.values}
                         }
                     }
                 )
@@ -36,7 +36,7 @@ class CVMetricManager(ManagerBase):
                 if result.matched_count == 0:
                     new_metric = {
                         'metric': metric.metric.name,
-                        'values': [metric.metric.values],
+                        'values': metric.metric.values,
                     }
                     self.collection.update_one(
                         {'model_id': metric.model_id},
@@ -51,7 +51,7 @@ class CVMetricManager(ManagerBase):
                     'model_id': metric.model_id,
                     'metrics': [{
                         'metric': metric.metric.name,
-                        'values': [metric.metric.values],
+                        'values': metric.metric.values,
                     }]
                 }
                 self.collection.insert_one(new_task)
@@ -145,6 +145,27 @@ class CVMetricManager(ManagerBase):
         except PyMongoError as e:
             logger.error(f"Ошибка получения метрик модели(id={model_id}): {e}")
             return None
+
+    def get_models_metrics(
+        self,
+        model_ids: list
+    ) -> list:
+        """Получение метрик сразу нескольких моделей одним запросом"""
+        try:
+            docs = self.collection.find({'model_id': {'$in': model_ids}})
+            return [
+                ModelMetrics(
+                    model_id=doc['model_id'],
+                    metrics=[
+                        ModelMetricData(name=m['metric'], values=m['values'])
+                        for m in doc['metrics']
+                    ],
+                )
+                for doc in docs
+            ]
+        except PyMongoError as e:
+            logger.error(f"Ошибка получения метрик моделей: {e}")
+            return []
 
     def model_metrics_exists(
             self,

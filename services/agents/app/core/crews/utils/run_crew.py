@@ -5,7 +5,7 @@ from crewai import Crew, CrewOutput
 
 from app.services.agent_history import agent_history_client
 from app.services.metrics import add_agent_in_metrics
-from app.core.memory import agent_response_context, iteration_context
+from app.core.memory import agent_response_context, iteration_context, discussion_context
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -79,7 +79,8 @@ def run_crew_with_tracking(
             return None
 
         duration_ms = (time.time() - start_time) * 1000
-        add_agent_in_metrics(crew=crew)
+        discussion_id = discussion_context.get() if discussion_context.is_set() else None
+        add_agent_in_metrics(crew=crew, discussion_id=discussion_id)
         agent_history_client.agent_succeed(
             response_id=response_id,
             agent_role=agent_role,
