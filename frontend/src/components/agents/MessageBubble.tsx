@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 import { agentHistoryService } from '../../services/agentHistoryService';
 import type { AgentResponse, AgentStatus, Tool, ToolStatus } from '../../types/agentHistory';
 import { formatDateTime } from '../../utils/format';
@@ -110,7 +113,9 @@ const MessageBubble: React.FC<Props> = ({ discussionId, response }) => {
         {response.duration_ms != null && <span><i className="fas fa-clock"></i> {formatDuration(response.duration_ms)}</span>}
       </div>
 
-      <p className="message-text">{response.text}</p>
+      <div className="message-text markdown-body">
+        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{response.text}</ReactMarkdown>
+      </div>
 
       <div className="message-footer">
         <span className="message-time">{formatDateTime(response.timestamp)}</span>

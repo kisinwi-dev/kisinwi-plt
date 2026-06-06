@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from typing import List
 from pydantic import Field
@@ -24,12 +25,17 @@ class ResearcherOutput(AgentOutput):
     hypotheses_3: str = Field(..., description="Гипотеза 3 с описанием, обоснованием и ожидаемым приростом")
 
     def to_history_text(self) -> str:
+        def strip_prefix(text: str) -> str:
+            # LLM иногда сам дублирует "Гипотеза N:" в начале значения — убираем,
+            # чтобы нумерация из заголовка не задваивалась.
+            return re.sub(r"^\s*Гипотеза\s*\d+\s*[:.)\-]?\s*", "", text)
+
         return "\n\n".join([
             "## 🔬 Генерация гипотез",
             f"**Анализ текущей ситуации:**\n{self.analysis_summary}",
-            f"**Гипотеза 1:**\n{self.hypotheses_1}",
-            f"**Гипотеза 2:**\n{self.hypotheses_2}",
-            f"**Гипотеза 3:**\n{self.hypotheses_3}",
+            f"**Гипотеза 1:**\n{strip_prefix(self.hypotheses_1)}",
+            f"**Гипотеза 2:**\n{strip_prefix(self.hypotheses_2)}",
+            f"**Гипотеза 3:**\n{strip_prefix(self.hypotheses_3)}",
         ])
 
 

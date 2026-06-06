@@ -21,19 +21,23 @@ AGENT_ROLE = get_agent_role_from_config(
 class DatasetAnalystOut(AgentOutput):
     brief_description: str = Field(description="Краткое описание датасета")
     quality_assessment: str = Field(description="Оценка качества данных: чистота, полнота, консистентность")
-    found_issues: str = Field(description="Список найденных проблем")
-    recommendations: str = Field(description="Список рекомендаций по обработке данных и улучшению качества")
+    found_issues: List[str] = Field(default_factory=list, description="Найденные проблемы, по одной на элемент списка")
+    recommendations: List[str] = Field(default_factory=list, description="Рекомендации по обработке данных, по одной на элемент списка")
     readiness_assessment: bool = Field(description="Оценка готовности к обучению: true — готов к обучению, false — не готов")
 
     def to_history_text(self) -> str:
         readiness = "✅ Готов к обучению" if self.readiness_assessment else "🟥 Не готов к обучению"
+
+        def bullets(items: List[str]) -> str:
+            return "\n".join(f"- {item}" for item in items) if items else "—"
+
         return "\n\n".join([
             "## 🧪 Анализ датасета",
             f"**Готовность:** {readiness}",
             f"**Что в датасете:**\n{self.brief_description}",
             f"**Качество данных:**\n{self.quality_assessment}",
-            f"**Найденные проблемы:**\n{self.found_issues}",
-            f"**Рекомендации:**\n{self.recommendations}",
+            f"**Найденные проблемы:**\n\n{bullets(self.found_issues)}",
+            f"**Рекомендации:**\n\n{bullets(self.recommendations)}",
         ])
 
 
@@ -104,8 +108,8 @@ def run_dataset_analyst(
         return DatasetAnalystOut(
             brief_description="Не получилось обработать результат ответа агента.",
             quality_assessment="",
-            found_issues="",
-            recommendations="Попробуйте перезагрузить систему",
+            found_issues=[],
+            recommendations=["Попробуйте перезагрузить систему"],
             readiness_assessment=False
         )
 
@@ -116,8 +120,8 @@ def run_dataset_analyst(
         result = DatasetAnalystOut(
             brief_description=extract_result(crew_output),
             quality_assessment="",
-            found_issues="",
-            recommendations="Не удалось обработать ответ агента в 'pydantic' схему",
+            found_issues=[],
+            recommendations=["Не удалось обработать ответ агента в 'pydantic' схему"],
             readiness_assessment=False
         )
 
