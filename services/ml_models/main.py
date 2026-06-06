@@ -24,13 +24,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Настройка обработчиков ошибок БД (503) и неизвестных ошибок (500).
+# Должна выполняться на уровне модуля: при reload uvicorn импортирует "main:app"
+# в воркере, где __name__ != "__main__".
+setup_exception_handlers(app)
+
 if __name__ == "__main__":
     # Проверка состояния требуемых БД
     # НЕ БЛОКИРУЕТ ЗАПУСК ЕСЛИ ТРЕБУЕМЫЕ БД НЕ РАБОТАЮТ
     check_health_all()
-
-    # Настройка выкидывания ошибок с бд и ошибки 500
-    setup_exception_handlers(app)
 
     uvicorn.run(
         "main:app",

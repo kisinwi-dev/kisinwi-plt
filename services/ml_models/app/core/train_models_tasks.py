@@ -209,13 +209,20 @@ class MlModelsManager:
                 raise RuntimeError(f"Не удалось обновить модель: {e}")
 
     def get_model(
-        self, 
-        model_id: str | None = None
+        self,
+        model_id: str | None = None,
+        dataset_id: str | None = None,
+        status: str | None = None
     ) -> List[Dict[str, Any]] | None:
-        """Получить полную информацию о модели по ID"""
-        
+        """
+        Получить полную информацию о моделях.
+
+        Без фильтров возвращает все модели (свежие сверху). Опционально
+        фильтрует по model_id, dataset_id и/или статусу модели.
+        """
+
         query = f"""
-            SELECT 
+            SELECT
                 m.id,
                 m.name,
                 m.version,
@@ -233,22 +240,36 @@ class MlModelsManager:
             FROM {self._models_table} m
             LEFT JOIN {self._statuses_models_table} s ON m.status_id = s.id
         """
-        
+
+        conditions = []
+        params: list = []
         if model_id:
-            query += "WHERE m.id = %s\n"
-        
+            conditions.append("m.id = %s")
+            params.append(model_id)
+        if dataset_id:
+            conditions.append("m.dataset_id = %s")
+            params.append(dataset_id)
+        if status:
+            conditions.append("s.status = %s")
+            params.append(status)
+
+        if conditions:
+            query += "WHERE " + " AND ".join(conditions) + "\n"
+
+        query += "ORDER BY m.created_at DESC\n"
+
         with self.db as db:
-            rows = db.fetch_all(query, (model_id,))
-            
+            rows = db.fetch_all(query, tuple(params) if params else None)
+
             if len(rows) == 0:
                 return None
-                    
-            models = [
-                self._row_full_info_model_in_dict(row) 
-                for row in rows
-            ] 
 
-            return models 
+            models = [
+                self._row_full_info_model_in_dict(row)
+                for row in rows
+            ]
+
+            return models
     
     def _row_full_info_model_in_dict(self, row: tuple):
         """Преобразовать всю строчку из соединённой таблицы  """

@@ -1,5 +1,7 @@
+from typing import Optional
+
 from psycopg2 import OperationalError, InterfaceError
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
 
 from app.logs import get_logger
 from app.api.schemas import *
@@ -18,26 +20,29 @@ logger = get_logger(__name__)
     summary="Получить информацию о всех моделях",
     response_model=MLModels,
     responses={
-        200: {"description": "Модели успешно найдены"},
-        204: {"description": "Нет моделей в базе данных"},
+        200: {"description": "Список моделей (возможно пустой)"},
         503: {"description": "Ошибка подключения к БД"}
     }
 )
 async def get_models(
+    dataset_id: Optional[str] = Query(None, description="Фильтр по ID датасета"),
+    model_status: Optional[str] = Query(None, alias="status", description="Фильтр по статусу модели"),
     manager: MlModelsManager = Depends(get_ml_models_manager)
 ):
-    """Получить полную информацию о моделях"""
+    """
+    Получить полную информацию о моделях (свежие сверху).
+
+    Опционально фильтрует по датасету и/или статусу. Всегда возвращает 200 с
+    JSON-списком; при отсутствии моделей список пустой.
+    """
 
     # Получение моделей
-    models = manager.get_model()
+    models = manager.get_model(dataset_id=dataset_id, status=model_status)
 
     if models is None:
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
+        return MLModels(models=[])
 
-    models = [MLModel(**model) for model in models]
-    model = MLModels(models=models)
-
-    return model
+    return MLModels(models=[MLModel(**model) for model in models])
 
 @routers.post(
     "",
@@ -159,27 +164,35 @@ async def update_model(
             detail=f"Модель с ID {model_id} не найдена"
         )
 
-    try:
-        # Получаем словарь без None значений
-        update_dict = update_data.model_dump(exclude_none=True)
-        
-        if not update_dict:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Нет данных для обновления"
-            )
+    # Получаем словарь без None значений
+    update_dict = update_data.model_dump(exclude_none=True)
 
+    if not update_dict:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Нет данных для обновления"
+        )
+
+    # Проверка существования модели до обновления
+    if manager.get_model(model_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Модель с ID {model_id} не найдена"
+        )
+
+    try:
         # Выполняем обновление
         updated_model = manager.update_model(model_id, update_dict)
-        
-        if updated_model:
-            return Response(
-                status_code=200
-            )
-        else:
-            raise
     except ValueError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=str(e)
-            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+    if not updated_model:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Модель с ID {model_id} не найдена"
+        )
+
+    return Response(status_code=200)
