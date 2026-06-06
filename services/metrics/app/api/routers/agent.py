@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 
-from app.api.schemas import AgentResponse
+from app.api.schemas import AgentResponse, AgentDiscussionMetrics
 from app.api.deps import get_agent_metrics_manager, AgentsResponseManager
 from app.logs import get_logger
 
@@ -17,9 +17,28 @@ async def add_agent_response(
     Добавление нового ответа агента
     """
     try:
-        manager.add_response(response)
-        return True
-        
+        added = manager.add_response(response)
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+    if not added:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Метрики ответа {response.response_id} уже существуют"
+        )
+    return {"response_id": response.response_id, "added": True}
+
+@router.get("/discussions/{discussion_id}", response_model=AgentDiscussionMetrics)
+async def get_discussion_metrics(
+    discussion_id: str,
+    manager: AgentsResponseManager = Depends(get_agent_metrics_manager)
+):
+    """
+    Метрики всех агентов дискуссии и суммарная сводка (токены и т.п.)
+    """
+    try:
+        return manager.get_discussion_metrics(discussion_id)
     except Exception as e:
         logger.error(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -34,11 +53,13 @@ async def get_agent_response(
     """
     try:
         response = manager.get_response_by_id(response_id)
-        
-        return response
     except Exception as e:
         logger.error(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+    if response is None:
+        raise HTTPException(status_code=404, detail=f"Метрики ответа {response_id} не найдены")
+    return response
 
 @router.delete("/{response_id}")
 async def delete_agent_response(
@@ -49,9 +70,11 @@ async def delete_agent_response(
     Удаление ответа агента
     """
     try:
-        manager.delete_response(response_id)
-        
-        return True
+        deleted = manager.delete_response(response_id)
     except Exception as e:
         logger.error(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"Метрики ответа {response_id} не найдены")
+    return {"response_id": response_id, "deleted": True}

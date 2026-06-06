@@ -25,3 +25,7 @@ class SearchMetric(BaseModel):
     """Запрос на поиск требуемой метрики"""
     model_id: str = Field(..., description="ID модели")
     name: str = Field(..., description="Название метрики")
+
+class ModelMetricsBatchRequest(BaseModel):
+    """Запрос метрик сразу нескольких моделей"""
+    model_ids: List[str] = Field(default_factory=list, description="Список ID моделей")

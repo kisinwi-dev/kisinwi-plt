@@ -1,8 +1,8 @@
-from typing import Optional
+from typing import List, Optional
 from pymongo.errors import PyMongoError
 
 from .mongo import ManagerBase
-from app.api.schemas import AgentResponse
+from app.api.schemas import AgentResponse, AgentDiscussionMetrics
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -47,14 +47,42 @@ class AgentsResponseManager(ManagerBase):
             if doc:
                 doc.pop('_id', None)
                 return AgentResponse(**doc)
-            raise ValueError(f"Не найдены метрики ответа(id:'{response_id}')")
-            
+
+            logger.warning(f"Не найдены метрики ответа(id:'{response_id}')")
+            return None
+
         except PyMongoError as e:
             logger.error(f"Ошибка получения ответа(id:'{response_id}'): {e}")
             return None
 
+    def get_discussion_metrics(
+            self,
+            discussion_id: str
+    ) -> AgentDiscussionMetrics:
+        """Метрики всех агентов дискуссии и суммарная сводка по числовым полям"""
+        responses: List[AgentResponse] = []
+        try:
+            for doc in self.collection.find({'discussion_id': discussion_id}):
+                doc.pop('_id', None)
+                responses.append(AgentResponse(**doc))
+        except PyMongoError as e:
+            logger.error(f"Ошибка получения метрик дискуссии(id:'{discussion_id}'): {e}")
+
+        summary: dict = {"responses_count": len(responses)}
+        for response in responses:
+            for key, value in response.metrics.items():
+                if isinstance(value, bool) or not isinstance(value, (int, float)):
+                    continue
+                summary[key] = summary.get(key, 0) + value
+
+        return AgentDiscussionMetrics(
+            discussion_id=discussion_id,
+            responses=responses,
+            summary=summary,
+        )
+
     def delete_response(
-            self, 
+            self,
             response_id: str
     ) -> bool:
         """Удаление ответа"""
