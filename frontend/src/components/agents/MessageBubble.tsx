@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 import { agentHistoryService } from '../../services/agentHistoryService';
 import type { AgentResponse, AgentStatus, Tool, ToolStatus } from '../../types/agentHistory';
 import { formatDateTime } from '../../utils/format';
@@ -112,7 +114,7 @@ const MessageBubble: React.FC<Props> = ({ discussionId, response }) => {
       </div>
 
       <div className="message-text markdown-body">
-        <ReactMarkdown>{response.text}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{response.text}</ReactMarkdown>
       </div>
 
       <div className="message-footer">
