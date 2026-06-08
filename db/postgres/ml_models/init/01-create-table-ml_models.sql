@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS ml_models (
     model_type VARCHAR(100) NOT NULL,
     status_id INTEGER NOT NULL DEFAULT 1,
     description TEXT,
-    metrics_result TEXT DEFAULT 'No info',
+    metrics_report TEXT DEFAULT 'No info',
     classes JSONB NOT NULL DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 

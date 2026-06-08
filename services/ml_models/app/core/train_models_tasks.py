@@ -46,11 +46,71 @@ class MlModelsManager:
         """Выводит количество имеющихся моделей"""
         query = f"""
             SELECT COUNT(id)
-            FROM {self._models_table} 
+            FROM {self._models_table}
         """
         with self.db as db:
             result = db.fetch_one(query)
             return result[0] if result else 0
+
+    def count_model(
+        self,
+        dataset_id: str | None = None,
+        status: str | None = None,
+        name: str | None = None
+    ) -> int:
+        """Количество моделей с учётом тех же фильтров, что и get_model (для пагинации)"""
+        query = f"""
+            SELECT COUNT(m.id)
+            FROM {self._models_table} m
+            LEFT JOIN {self._statuses_models_table} s ON m.status_id = s.id
+        """
+
+        conditions = []
+        params: list = []
+        if dataset_id:
+            conditions.append("m.dataset_id = %s")
+            params.append(dataset_id)
+        if status:
+            conditions.append("s.status = %s")
+            params.append(status)
+        if name:
+            conditions.append("m.name = %s")
+            params.append(name)
+
+        if conditions:
+            query += "WHERE " + " AND ".join(conditions) + "\n"
+
+        with self.db as db:
+            result = db.fetch_one(query, tuple(params) if params else None)
+            return result[0] if result else 0
+
+    def get_statistics(self) -> Dict[str, Any]:
+        """
+        Статистика по моделям: общее количество и распределение по статусам.
+
+        Один запрос с группировкой по статусам (LEFT JOIN, чтобы статусы без
+        моделей тоже попадали с count=0).
+        """
+        query = f"""
+            SELECT s.id, s.status, s.description, COUNT(m.id)
+            FROM {self._statuses_models_table} s
+            LEFT JOIN {self._models_table} m ON m.status_id = s.id
+            GROUP BY s.id, s.status, s.description
+            ORDER BY s.id
+        """
+        with self.db as db:
+            rows = db.fetch_all(query)
+
+        by_status = [
+            {
+                "status": {"id": row[0], "status": row[1], "description": row[2]},
+                "count": row[3],
+            }
+            for row in rows
+        ]
+        total = sum(item["count"] for item in by_status)
+
+        return {"total": total, "by_status": by_status}
 
     def create(
             self, 
@@ -149,10 +209,6 @@ class MlModelsManager:
             if v is not None
         }
 
-        # Проверка существования модели
-        if self.get_model(str(model_id)) is None:
-            raise ValueError("")
-
         # Обработка статуса
         if data.get("status"):
             statuses = self.get_statuses_info()
@@ -209,20 +265,32 @@ class MlModelsManager:
                 raise RuntimeError(f"Не удалось обновить модель: {e}")
 
     def get_model(
-        self, 
-        model_id: str | None = None
+        self,
+        model_id: str | None = None,
+        dataset_id: str | None = None,
+        status: str | None = None,
+        name: str | None = None,
+        limit: int | None = None,
+        offset: int = 0
     ) -> List[Dict[str, Any]] | None:
-        """Получить полную информацию о модели по ID"""
-        
+        """
+        Получить полную информацию о моделях.
+
+        Без фильтров возвращает все модели (свежие сверху). Опционально
+        фильтрует по model_id, dataset_id, статусу и/или имени модели (name —
+        для получения всех версий модели). Если задан limit — применяется
+        пагинация (LIMIT/OFFSET).
+        """
+
         query = f"""
-            SELECT 
+            SELECT
                 m.id,
                 m.name,
                 m.version,
                 m.model_type,
                 s.status as status,
                 m.description,
-                m.metrics_result,
+                m.metrics_report,
                 m.classes,
                 m.train_params,
                 m.created_at,
@@ -233,22 +301,44 @@ class MlModelsManager:
             FROM {self._models_table} m
             LEFT JOIN {self._statuses_models_table} s ON m.status_id = s.id
         """
-        
+
+        conditions = []
+        params: list = []
         if model_id:
-            query += "WHERE m.id = %s\n"
-        
+            conditions.append("m.id = %s")
+            params.append(model_id)
+        if dataset_id:
+            conditions.append("m.dataset_id = %s")
+            params.append(dataset_id)
+        if status:
+            conditions.append("s.status = %s")
+            params.append(status)
+        if name:
+            conditions.append("m.name = %s")
+            params.append(name)
+
+        if conditions:
+            query += "WHERE " + " AND ".join(conditions) + "\n"
+
+        query += "ORDER BY m.created_at DESC\n"
+
+        if limit is not None:
+            query += "LIMIT %s OFFSET %s\n"
+            params.append(limit)
+            params.append(offset)
+
         with self.db as db:
-            rows = db.fetch_all(query, (model_id,))
-            
+            rows = db.fetch_all(query, tuple(params) if params else None)
+
             if len(rows) == 0:
                 return None
-                    
-            models = [
-                self._row_full_info_model_in_dict(row) 
-                for row in rows
-            ] 
 
-            return models 
+            models = [
+                self._row_full_info_model_in_dict(row)
+                for row in rows
+            ]
+
+            return models
     
     def _row_full_info_model_in_dict(self, row: tuple):
         """Преобразовать всю строчку из соединённой таблицы  """
@@ -259,7 +349,7 @@ class MlModelsManager:
             'model_type': row[3],
             'status': row[4],
             'description': row[5],
-            'metrics_result': row[6],
+            'metrics_report': row[6],
             'classes': row[7],
             'train_params': row[8],
             'created_at': row[9],
