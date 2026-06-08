@@ -16,7 +16,6 @@ const STATUS_LABELS: Record<DiscussionStatus, string> = {
 
 const DiscussionInfo: React.FC<Props> = ({ discussion, discussionId }) => {
   const title = discussion?.title ?? discussion?.pipeline ?? 'Без названия';
-  // Агенты из агрегата; если его нет — из заявленных ролей meta.
   const agents = discussion?.agents
     ?? discussion?.agent_roles.map(role => ({ role, models: [] }))
     ?? [];

@@ -82,10 +82,11 @@ const ToolItem: React.FC<{ tool: Tool }> = ({ tool }) => {
 };
 
 const MessageBubble: React.FC<Props> = ({ discussionId, response }) => {
-  // null — инструменты не загружались; иначе toggle с состоянием загрузки.
   const [tools, setTools] = useState<Tool[] | 'loading' | 'error' | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
 
-  const handleToggleTools = async () => {
+  const handleToggleTools = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (tools !== null) {
       setTools(null);
       return;
@@ -100,37 +101,50 @@ const MessageBubble: React.FC<Props> = ({ discussionId, response }) => {
   };
 
   return (
-    <div className={`message-bubble ${statusClass(response.status)}`}>
-      <div className="message-header">
+    <div className={`message-bubble ${statusClass(response.status)}${collapsed ? ' message-bubble--collapsed' : ''}`}>
+      <div
+        className="message-header message-header--clickable"
+        onClick={() => setCollapsed(prev => !prev)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCollapsed(prev => !prev); } }}
+      >
         <span className="message-role"><i className="fas fa-robot"></i> {response.agent_role}</span>
-        <span className={`status-badge ${statusClass(response.status)}`}>{STATUS_LABELS[response.status]}</span>
+        <div className="message-header-right">
+          <span className={`status-badge ${statusClass(response.status)}`}>{STATUS_LABELS[response.status]}</span>
+          <span className="message-chevron-btn"><i className="fas fa-chevron-down message-chevron"></i></span>
+        </div>
       </div>
 
-      <div className="message-meta">
-        {response.model && <span><i className="fas fa-microchip"></i> {response.model}</span>}
-        {response.task_name && <span><i className="fas fa-list-check"></i> {response.task_name}</span>}
-        {response.iteration != null && <span><i className="fas fa-rotate"></i> итерация {response.iteration}</span>}
-        {response.duration_ms != null && <span><i className="fas fa-clock"></i> {formatDuration(response.duration_ms)}</span>}
-      </div>
+      {!collapsed && (
+        <>
+          <div className="message-meta">
+            {response.model && <span><i className="fas fa-microchip"></i> {response.model}</span>}
+            {response.task_name && <span><i className="fas fa-list-check"></i> {response.task_name}</span>}
+            {response.iteration != null && <span><i className="fas fa-rotate"></i> итерация {response.iteration}</span>}
+            {response.duration_ms != null && <span><i className="fas fa-clock"></i> {formatDuration(response.duration_ms)}</span>}
+          </div>
 
-      <div className="message-text markdown-body">
-        <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{response.text}</ReactMarkdown>
-      </div>
+          <div className="message-text markdown-body">
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{response.text}</ReactMarkdown>
+          </div>
 
-      <div className="message-footer">
-        <span className="message-time">{formatDateTime(response.timestamp)}</span>
-        <button className="tools-toggle" onClick={handleToggleTools}>
-          <i className={`fas ${tools !== null ? 'fa-chevron-up' : 'fa-wrench'}`}></i>
-          {tools !== null ? ' Скрыть инструменты' : ' Инструменты'}
-        </button>
-      </div>
+          <div className="message-footer">
+            <span className="message-time">{formatDateTime(response.timestamp)}</span>
+            <button className="tools-toggle" onClick={handleToggleTools}>
+              <i className={`fas ${tools !== null ? 'fa-chevron-up' : 'fa-wrench'}`}></i>
+              {tools !== null ? ' Скрыть инструменты' : ' Инструменты'}
+            </button>
+          </div>
 
-      {tools === 'loading' && <p className="tools-status">Загрузка инструментов...</p>}
-      {tools === 'error' && <p className="tools-status tools-status--error">Не удалось загрузить инструменты</p>}
-      {Array.isArray(tools) && (
-        tools.length === 0
-          ? <p className="tools-status">Инструменты не вызывались</p>
-          : <div className="tools-list">{tools.map(tool => <ToolItem key={tool.id} tool={tool} />)}</div>
+          {tools === 'loading' && <p className="tools-status">Загрузка инструментов...</p>}
+          {tools === 'error' && <p className="tools-status tools-status--error">Не удалось загрузить инструменты</p>}
+          {Array.isArray(tools) && (
+            tools.length === 0
+              ? <p className="tools-status">Инструменты не вызывались</p>
+              : <div className="tools-list">{tools.map(tool => <ToolItem key={tool.id} tool={tool} />)}</div>
+          )}
+        </>
       )}
     </div>
   );

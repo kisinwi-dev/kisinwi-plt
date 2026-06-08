@@ -562,6 +562,10 @@
 .message-bubble.status-error { border-left-color: var(--color-danger); }
 .message-bubble.status-in-progress { border-left-color: var(--color-info); }
 
+.message-bubble--collapsed {
+  padding-bottom: 1.2rem;
+}
+
 .message-header {
   display: flex;
   justify-content: space-between;
@@ -569,6 +573,54 @@
   gap: 1rem;
   margin-bottom: 0.5rem;
 }
+
+.message-header--clickable {
+  cursor: pointer;
+}
+
+.message-chevron-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.message-header--clickable:hover .message-chevron-btn {
+  background: var(--color-accent-soft);
+}
+
+.message-chevron {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  transition: transform 0.2s ease, color 0.15s;
+}
+
+.message-bubble--collapsed .message-chevron {
+  transform: rotate(-90deg);
+}
+
+.message-header--clickable:hover .message-chevron {
+  color: var(--color-accent);
+}
+
+.message-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.message-chevron {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  transition: transform 0.2s ease;
+}
+
+
 
 .message-role {
   font-weight: 600;
