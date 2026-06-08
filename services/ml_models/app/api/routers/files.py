@@ -3,8 +3,14 @@ from fastapi.responses import FileResponse
 
 from app.logs import get_logger
 from app.api.schemas import Files, File, FileDeletes
-from app.api.deps import get_files_manager, FilesManager
-from app.core.utils import valid_uuid
+from app.api.deps import (
+    get_files_manager,
+    FilesManager,
+    get_ml_models_manager,
+    MlModelsManager,
+    validate_model_id,
+    validate_file_id,
+)
 
 routers = APIRouter(
     prefix='/models',
@@ -16,6 +22,8 @@ logger = get_logger(__name__)
 @routers.get(
     "/{model_id}/files",
     summary="Получение информации о файлах модели",
+    description="Возвращает список файлов, связанных с указанной моделью",
+    response_description="Список файлов модели",
     responses={
         200: {"description": "Информация о файлах модели успешно получена"},
         204: {"description": "Модель не имеет файлов"},
@@ -24,31 +32,28 @@ logger = get_logger(__name__)
     }
 )
 async def get_files(
-    model_id: str,
-    manager: FilesManager = Depends(get_files_manager)
+    model_id: str = Depends(validate_model_id),
+    manager: FilesManager = Depends(get_files_manager),
+    models_manager: MlModelsManager = Depends(get_ml_models_manager),
 ):
-    try:
-        valid_uuid(model_id, True)
-        files = manager.get_info_files(model_id)
-        if files:
-            return Files(
-                files=[
-                    File(**file)
-                    for file in files
-                ]
-            )
-        else:
-            return Response(status_code=status.HTTP_204_NO_CONTENT)
-    except ValueError as e:
-        logger.error(f"Получен не валидный model_id('{model_id}')")
+    # Модель должна существовать — иначе 404 (а не «нет файлов»)
+    if models_manager.get_model(model_id) is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Модель с ID {model_id} не найдена"
         )
 
+    files = manager.get_info_files(model_id)
+    if files:
+        return Files(files=[File(**file) for file in files])
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 @routers.post(
     "/{model_id}/files",
     summary="Загрузить файл модели",
+    description="Загружает и сохраняет файл, связанный с указанной моделью",
+    response_description="Пустой ответ при успешной загрузке",
     responses={
         200: {"description": "Файл успешно загружен"},
         404: {"description": "Модель не найдена"},
@@ -57,28 +62,38 @@ async def get_files(
     }
 )
 async def add_file(
-    model_id: str,
     files: UploadFile,
-    manager: FilesManager = Depends(get_files_manager)
+    model_id: str = Depends(validate_model_id),
+    manager: FilesManager = Depends(get_files_manager),
+    models_manager: MlModelsManager = Depends(get_ml_models_manager)
 ):
-    try:
-        valid_uuid(model_id, True)
-        manager.add_file(model_id, files)
-    except ValueError as e:
-        logger.error(f"Получен не валидный model_id('{model_id}')")
+    # Модель должна существовать — иначе 404 (а не 500 + директория-мусор)
+    if models_manager.get_model(model_id) is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Модель с ID {model_id} не найдена"
         )
+
+    try:
+        manager.add_file(model_id, files)
     except FileExistsError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Файл уже существует"
         )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+    return {"model_id": model_id, "filename": files.filename, "status": "ok"}
 
 @routers.delete(
     "/{model_id}/files",
     summary="Удаление файлов модели",
+    description="Удаляет указанные файлы модели, либо все файлы модели, если идентификаторы не переданы",
+    response_description="Пустой ответ при успешном удалении",
     responses={
         200: {"description": "Операция удалёния выполнена"},
         204: {"description": "Нет файлов для удаления"},
@@ -87,34 +102,34 @@ async def add_file(
     }
 )
 async def del_file(
-    model_id: str,
     files: FileDeletes,
-    manager: FilesManager = Depends(get_files_manager)
+    model_id: str = Depends(validate_model_id),
+    manager: FilesManager = Depends(get_files_manager),
+    models_manager: MlModelsManager = Depends(get_ml_models_manager)
 ):
-    try:
-        valid_uuid(model_id, True)
-
-        if files.ids is None:
-            result = manager.drop(model_id)
-        else:
-            result = manager.drop(model_id, files.ids)
-
-        if result == 0:
-            return Response(
-                status_code=status.HTTP_204_NO_CONTENT,
-                content="Нет файлов для удаления"
-            )
-
-    except ValueError as e:
-        logger.error(f"Получен не валидный model_id('{model_id}')")
+    # Модель должна существовать — иначе 404 (а не 204 + директория-мусор)
+    if models_manager.get_model(model_id) is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Модель с ID {model_id} не найдена"
         )
 
+    if files.ids is None:
+        result = manager.drop(model_id)
+    else:
+        result = manager.drop(model_id, files.ids)
+
+    if result == 0:
+        return Response(
+            status_code=status.HTTP_204_NO_CONTENT,
+            content="Нет файлов для удаления"
+        )
+
 @routers.get(
     "/files/{file_id}/download",
     summary="Скачать конкретный файл по ID",
+    description="Возвращает содержимое файла модели для скачивания по его идентификатору",
+    response_description="Содержимое файла",
     responses={
         200: {"description": "Файл успешно скачан"},
         404: {"description": "Файл не найден"},
@@ -122,17 +137,15 @@ async def del_file(
     }
 )
 async def download_file(
-    file_id: str,
+    file_id: str = Depends(validate_file_id),
     manager: FilesManager = Depends(get_files_manager)
 ):
     """
     Скачать конкретный файл по его ID.
     """
     try:
-        valid_uuid(file_id, True)
-        
         file_path, filename = manager.get_file_path(file_id)
-        
+
         return FileResponse(
             path=str(file_path),
             filename=filename,

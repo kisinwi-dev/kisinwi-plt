@@ -23,25 +23,35 @@ class FilesManager:
     ):
         """Сохранение файла"""
         try:
+            # Санитизация имени: только basename, без обхода директорий
+            safe_name = Path(file.filename or "").name
+            if not safe_name or safe_name in (".", ".."):
+                raise ValueError(f"Некорректное имя файла: {file.filename!r}")
+
             # переходим в папку по id модели и загружаем новые файлы
             model_dir = self._get_model_dir(model_id)
 
-            file_path = model_dir / str(file.filename)
+            file_path = model_dir / safe_name
             if file_path.exists():
                 raise FileExistsError("Файл уже сущестует")
-            
+
             # Сохраняем новые файлы
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
-            
+
+            # В БД храним путь относительно storage_dir (устойчив к переезду);
+            # размер считаем из абсолютного пути
+            rel_path = file_path.relative_to(self.storage_dir)
+            file_size = file_path.stat().st_size
             self._add_info_file(
-                model_id, 
-                str(file.filename), 
-                file_path
+                model_id,
+                safe_name,
+                str(rel_path),
+                file_size
             )
 
-            logger.info(f"Сохранён файл: {file.filename} для модели '{model_id}'")
-        except FileExistsError as e:
+            logger.info(f"Сохранён файл: {safe_name} для модели '{model_id}'")
+        except (FileExistsError, ValueError) as e:
             logger.error(f"Ошибка при сохранении нового файла '{file.filename}' для '{model_id}': {e}")
             raise e
         except Exception as e:
@@ -92,12 +102,12 @@ class FilesManager:
             file_ids: Список ID файлов для удаления (если не указывать, удаляет все файлы
         """
         model_dir = self._get_model_dir(model_id)
-        
+
         if id_files:
-            
+
             pl = ', '.join(['%s::uuid' for _ in id_files])
             query = f"""
-                SELECT file_path
+                SELECT filename
                 FROM ml_model_files
                 WHERE model_id = %s AND id IN ({pl})
             """
@@ -105,7 +115,7 @@ class FilesManager:
                 files = db.fetch_all(query, (model_id, *id_files))
         else:
             query = """
-                SELECT file_path
+                SELECT filename
                 FROM ml_model_files
                 WHERE model_id = %s
             """
@@ -113,7 +123,8 @@ class FilesManager:
                 files = db.fetch_all(query, (model_id,))
 
         for file_row in files:
-            file_path = Path(file_row[0])
+            # путь реконструируем из storage_dir/model_id/filename
+            file_path = model_dir / file_row[0]
             if file_path.exists():
                 file_path.unlink()
                 logger.info(f"Удалён файл: {file_path}")
@@ -173,6 +184,18 @@ class FilesManager:
                 logger.info(f"Удалено {deleted_count} записей о файлах для модели {model_id}")
                 return deleted_count
 
+    def drop_model_dir(self, model_id: str) -> None:
+        """
+        Полностью удалить директорию модели с диска.
+
+        Вызывается при удалении модели: FK CASCADE убирает записи о файлах из БД,
+        а физические файлы и директорию нужно удалить отдельно.
+        """
+        model_dir = self.storage_dir / str(model_id)
+        if model_dir.exists():
+            shutil.rmtree(model_dir, ignore_errors=True)
+            logger.info(f"Удалена директория файлов модели {model_id}")
+
     def _get_model_dir(self, model_id: str) -> Path:
         """Получить путь к папке модели"""
         model_dir = self.storage_dir / model_id
@@ -180,19 +203,18 @@ class FilesManager:
         return model_dir
     
     def _add_info_file(
-        self, 
+        self,
         model_id: str,
         filename: str,
-        file_path: Path
+        file_path: str,
+        file_size: int
     ):
-        """Добавляем в БД информацию о файле"""
+        """Добавляем в БД информацию о файле (file_path — относительно storage_dir)"""
         query = """
             INSERT INTO ml_model_files (model_id, filename, file_path, file_size)
             VALUES (%s, %s, %s, %s)
             RETURNING id
         """
-
-        file_size = file_path.stat().st_size
 
         with self.db as db:
             result = db.fetch_one(
@@ -220,21 +242,22 @@ class FilesManager:
         """Получить путь к файлу по его ID и его имя"""
 
         query = """
-            SELECT file_path, filename
+            SELECT model_id, filename
             FROM ml_model_files
             WHERE id = %s
         """
-        
+
         with self.db as db:
             result = db.fetch_one(query, (file_id,))
-            
+
             if not result:
                 raise ValueError(f"Файл с ID {file_id} не найден")
-            
-            file_path_str, filename = result
-            file_path = Path(file_path_str)
-            
+
+            model_id, filename = result
+            # путь реконструируем из storage_dir/model_id/filename
+            file_path = self.storage_dir / str(model_id) / filename
+
             if not file_path.exists():
                 raise ValueError(f"Физический файл не найден: {filename}")
-            
+
             return file_path, filename

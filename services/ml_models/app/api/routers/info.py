@@ -17,9 +17,10 @@ routers = APIRouter(
     "/health",
     summary="Проверка работоспособности сервиса",
     description="""
-Проверяет работу сервиса и зависимостей. 
+Проверяет работу сервиса и зависимостей.
 Выводит полную информацию о работоспособности сервиса
 """,
+    response_description="Информация о состоянии сервиса и его зависимостей",
     response_model=HealthResponse,
     responses={
         200: {"description": "Выдаёт информацию о состояниях"},
@@ -33,6 +34,8 @@ async def health():
 @routers.get(
     "/models/status",
     summary="Получение информации о статусах моделей",
+    description="Возвращает справочник всех возможных статусов моделей с их описаниями",
+    response_description="Список статусов моделей",
     response_model=MLModelsStatusesResponse,
     responses={
         200: {"description": "Выдаёт информацию о состояниях"},

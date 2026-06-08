@@ -3,21 +3,25 @@ from typing import Optional
 from psycopg2 import OperationalError, InterfaceError
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
 
-from app.logs import get_logger
 from app.api.schemas import *
-from app.api.deps import get_ml_models_manager, MlModelsManager
-from app.core.utils import valid_uuid
+from app.api.deps import (
+    get_ml_models_manager,
+    MlModelsManager,
+    get_files_manager,
+    FilesManager,
+    validate_model_id,
+)
 
 routers = APIRouter(
     prefix='/models',
     tags=['models']
 )
 
-logger = get_logger(__name__)
-
 @routers.get(
     "",
     summary="Получить информацию о всех моделях",
+    description="Возвращает список моделей (свежие сверху) с опциональной фильтрацией по датасету и статусу",
+    response_description="Список метаданных моделей",
     response_model=MLModels,
     responses={
         200: {"description": "Список моделей (возможно пустой)"},
@@ -27,26 +31,38 @@ logger = get_logger(__name__)
 async def get_models(
     dataset_id: Optional[str] = Query(None, description="Фильтр по ID датасета"),
     model_status: Optional[str] = Query(None, alias="status", description="Фильтр по статусу модели"),
+    name: Optional[str] = Query(None, description="Фильтр по имени модели (все версии модели)"),
+    limit: Optional[int] = Query(None, ge=1, description="Размер страницы (без параметра — все модели)"),
+    offset: int = Query(0, ge=0, description="Смещение для пагинации"),
     manager: MlModelsManager = Depends(get_ml_models_manager)
 ):
     """
     Получить полную информацию о моделях (свежие сверху).
 
-    Опционально фильтрует по датасету и/или статусу. Всегда возвращает 200 с
-    JSON-списком; при отсутствии моделей список пустой.
+    Опционально фильтрует по датасету, статусу и/или имени (все версии модели).
+    Пагинация необязательна: без `limit` возвращаются все модели. Всегда
+    возвращает 200 с JSON-списком и общим количеством `total` (с учётом фильтров).
     """
 
-    # Получение моделей
-    models = manager.get_model(dataset_id=dataset_id, status=model_status)
+    # Получение моделей и общего количества с учётом фильтров
+    models = manager.get_model(
+        dataset_id=dataset_id,
+        status=model_status,
+        name=name,
+        limit=limit,
+        offset=offset
+    )
+    total = manager.count_model(dataset_id=dataset_id, status=model_status, name=name)
 
-    if models is None:
-        return MLModels(models=[])
+    items = [MLModel(**model) for model in models] if models else []
 
-    return MLModels(models=[MLModel(**model) for model in models])
+    return MLModels(models=items, total=total, limit=limit, offset=offset)
 
 @routers.post(
     "",
-    summary="Создание модели",
+    summary="Создать модель",
+    description="Создаёт новую ML модель с её параметрами обучения и привязкой к датасету",
+    response_description="Идентификатор созданной модели",
     status_code=201,
     responses={
         201: {"description": "Модель успешно создана"},
@@ -70,9 +86,28 @@ async def create_model(
             detail=f"Ошибка в запросе: {e}"
         )
 
+@routers.get(
+    "/statistics",
+    summary="Получить статистику по моделям",
+    description="Возвращает общее количество моделей и распределение по статусам",
+    response_description="Общее количество и счётчики моделей по статусам",
+    response_model=MLModelsStatistics,
+    responses={
+        200: {"description": "Статистика успешно собрана"},
+        503: {"description": "Ошибка подключения к БД"}
+    }
+)
+async def get_models_statistics(
+    manager: MlModelsManager = Depends(get_ml_models_manager)
+):
+    """Статистика моделей: всего и по статусам (для дашборда)"""
+    return manager.get_statistics()
+
 @routers.delete(
     "/{model_id}",
-    summary="Удаление модели",
+    summary="Удалить модель",
+    description="Удаляет указанную модель по её идентификатору вместе со связанными данными",
+    response_description="Пустой ответ при успешном удалении",
     status_code=status.HTTP_200_OK,
     responses={
         204: {"description": "Модель успешно удалена"},
@@ -80,28 +115,28 @@ async def create_model(
     }
 )
 async def delete_task(
-    model_id: str,
-    manager: MlModelsManager = Depends(get_ml_models_manager)
+    model_id: str = Depends(validate_model_id),
+    manager: MlModelsManager = Depends(get_ml_models_manager),
+    files_manager: FilesManager = Depends(get_files_manager)
 ):
-    try:
-        deleted = manager.delete(model_id)
+    deleted = manager.delete(model_id)
 
-        if not deleted:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Модель с ID {model_id} не найдена"
-            )
-                
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-    except ValueError as e:
+    if not deleted:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Некорректный формат введённых данных: {e}"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Модель с ID {model_id} не найдена"
         )
+
+    # Запись модели удалена (FK CASCADE убрал метаданные файлов) — чистим диск
+    files_manager.drop_model_dir(model_id)
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @routers.get(
     "/{model_id}",
     summary="Получить информацию о модели",
+    description="Возвращает полную информацию об указанной модели по её идентификатору",
+    response_description="Метаданные модели",
     response_model=MLModel,
     responses={
         200: {"description": "Модель успешно найдена"},
@@ -109,19 +144,10 @@ async def delete_task(
     }
 )
 async def get_model_by_id(
-    model_id: str,
+    model_id: str = Depends(validate_model_id),
     manager: MlModelsManager = Depends(get_ml_models_manager)
 ):
     """Получить полную информацию о модели по её ID"""
-    
-    try:
-        valid_uuid(model_id, True)
-    except ValueError as e:
-        logger.error(f"Получен не валидный model_id('{model_id}')")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Модель с ID {model_id} не найдена"
-        )
 
     # Получение модели
     models = manager.get_model(model_id)
@@ -139,6 +165,8 @@ async def get_model_by_id(
 @routers.patch(
     "/{model_id}",
     summary="Частичное обновление модели",
+    description="Обновляет переданные поля указанной модели; неуказанные поля остаются прежними",
+    response_description="Пустой ответ при успешном обновлении",
     responses={
         200: {"description": "Модель успешно обновлена"},
         400: {"description": "Некорректные данные запроса"},
@@ -146,23 +174,14 @@ async def get_model_by_id(
     }
 )
 async def update_model(
-    model_id: str,
     update_data: MLModelUpdate,
+    model_id: str = Depends(validate_model_id),
     manager: MlModelsManager = Depends(get_ml_models_manager)
 ):
     """
     Частичное обновление модели.
     Можно обновить любое из полей, передав только нужные.
     """
-
-    try:
-        valid_uuid(model_id, True)
-    except ValueError as e:
-        logger.error(f"Получен не валидный model_id = '{model_id}'")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Модель с ID {model_id} не найдена"
-        )
 
     # Получаем словарь без None значений
     update_dict = update_data.model_dump(exclude_none=True)
@@ -173,15 +192,8 @@ async def update_model(
             detail="Нет данных для обновления"
         )
 
-    # Проверка существования модели до обновления
-    if manager.get_model(model_id) is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Модель с ID {model_id} не найдена"
-        )
-
+    # Один запрос: UPDATE ... RETURNING вернёт False, если модели нет → 404
     try:
-        # Выполняем обновление
         updated_model = manager.update_model(model_id, update_dict)
     except ValueError as e:
         raise HTTPException(
