@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { DiscussionMeta, DiscussionStatus } from '../../types/agentHistory';
 import { formatDateTime } from '../../utils/format';
+import { useNotification } from '../../contexts/NotificationContext';
 
 interface Props {
   discussion: DiscussionMeta;
@@ -21,6 +22,13 @@ const AGENTS_LIMIT = 3;
 const DiscussionCard: React.FC<Props> = ({ discussion, onSelect, onDelete }) => {
   const title = discussion.title ?? discussion.pipeline ?? 'Без названия';
   const [agentsExpanded, setAgentsExpanded] = useState(false);
+  const { showNotification } = useNotification();
+
+  const handleCopyId = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(discussion.discussion_id);
+    showNotification('ID скопирован', 'success');
+  };
 
   // Список агентов берём из агрегата; если его нет — из заявленных ролей meta.
   const agents = discussion.agents
@@ -29,23 +37,28 @@ const DiscussionCard: React.FC<Props> = ({ discussion, onSelect, onDelete }) => 
   const hiddenCount = agents.length - visibleAgents.length;
 
   return (
-    <div
-      className="card card--hoverable discussion-card"
-      onClick={() => onSelect(discussion.discussion_id)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onSelect(discussion.discussion_id);
-        }
-      }}
-    >
+    <div className="card discussion-card">
       <div className="discussion-card-header">
         <div className="discussion-title-group">
-          <h2>{title}</h2>
-          <span className="discussion-id" title={discussion.discussion_id}>
+          <h2
+            className="discussion-card-title"
+            onClick={() => onSelect(discussion.discussion_id)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSelect(discussion.discussion_id);
+              }
+            }}
+          >{title}</h2>
+          <span
+            className="discussion-id discussion-id--copyable"
+            title="Нажмите, чтобы скопировать ID"
+            onClick={handleCopyId}
+          >
             <i className="fas fa-hashtag"></i>{discussion.discussion_id}
+            <i className="fas fa-copy discussion-id-copy-icon"></i>
           </span>
         </div>
         <div className="discussion-card-actions">

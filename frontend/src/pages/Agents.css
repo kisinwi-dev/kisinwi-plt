@@ -296,9 +296,6 @@
   gap: 0.6rem;
 }
 
-.discussion-card:hover {
-  border-color: var(--color-accent-soft);
-}
 
 .discussion-card-header {
   display: flex;
@@ -323,6 +320,7 @@
 .discussion-id {
   display: inline-flex;
   align-items: center;
+  align-self: flex-start;
   gap: 0.25rem;
   font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
   font-size: 0.75rem;
@@ -333,6 +331,56 @@
 
 .discussion-id i {
   font-size: 0.7rem;
+}
+
+.discussion-card-title {
+  cursor: pointer;
+  position: relative;
+  width: fit-content;
+  transition: color 0.2s ease;
+}
+
+.discussion-card-title::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--color-accent);
+  border-radius: 2px;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.discussion-card-title:hover {
+  color: var(--color-accent);
+}
+
+.discussion-card-title:hover::after {
+  transform: scaleX(1);
+}
+
+.discussion-id--copyable {
+  cursor: pointer;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.discussion-id--copyable:hover {
+  opacity: 1;
+  color: var(--color-accent);
+}
+
+.discussion-id-copy-icon {
+  opacity: 0;
+  transition: opacity 0.15s;
+  font-size: 0.65rem !important;
+  margin-left: 0.1rem;
+}
+
+.discussion-id--copyable:hover .discussion-id-copy-icon {
+  opacity: 0.7;
 }
 
 

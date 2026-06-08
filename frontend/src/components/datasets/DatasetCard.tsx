@@ -3,6 +3,7 @@ import { formatBytes, formatDateTime } from '../../utils/format';
 import type { Dataset, VersionSplitsResponse } from '../../types/dataset';
 import { datasetService } from '../../services/datasetService';
 import VersionSplitsStats from './VersionSplitsStats';
+import { useNotification } from '../../contexts/NotificationContext';
 
 interface DatasetCardProps {
   dataset: Dataset;
@@ -24,6 +25,12 @@ const DatasetCard: React.FC<DatasetCardProps> = ({
   versionForm,
 }) => {
   const [versionStats, setVersionStats] = useState<Record<string, VersionSplitsResponse | 'loading' | 'error'>>({});
+  const { showNotification } = useNotification();
+
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(dataset.id);
+    showNotification('ID скопирован', 'success');
+  };
 
   const handleShowVersionStats = async (versionId: string) => {
     if (versionStats[versionId]) {
@@ -42,7 +49,17 @@ const DatasetCard: React.FC<DatasetCardProps> = ({
   return (
     <div className="card dataset-card">
       <div className="dataset-header">
-        <h2>{dataset.name}</h2>
+        <div className="dataset-title-group">
+          <h2>{dataset.name}</h2>
+          <span
+            className="dataset-id"
+            title="Нажмите, чтобы скопировать ID"
+            onClick={handleCopyId}
+          >
+            <i className="fas fa-hashtag"></i>{dataset.id}
+            <i className="fas fa-copy dataset-id-copy-icon"></i>
+          </span>
+        </div>
         <div className="dataset-actions">
           <button
             className="icon-button"

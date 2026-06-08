@@ -467,7 +467,20 @@ const Datasets: React.FC = () => {
           datasets.map(dataset => (
             <div key={dataset.id} className="card dataset-card">
               <div className="dataset-header">
-                <h2>{dataset.name}</h2>
+                <div className="dataset-title-group">
+                  <h2>{dataset.name}</h2>
+                  <span
+                    className="dataset-id"
+                    title="Нажмите, чтобы скопировать ID"
+                    onClick={() => {
+                      navigator.clipboard.writeText(dataset.id);
+                      showNotification('ID скопирован', 'success');
+                    }}
+                  >
+                    <i className="fas fa-hashtag"></i>{dataset.id}
+                    <i className="fas fa-copy dataset-id-copy-icon"></i>
+                  </span>
+                </div>
                 <div className="dataset-actions">
                   <button
                     className="icon-button"
