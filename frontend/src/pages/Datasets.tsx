@@ -4,7 +4,7 @@ import type { Dataset, NewDataset, SourceItem, VersionSplitsResponse } from '../
 import FileUploader from '../components/FileUploader';
 import './Datasets.css';
 import { useNotification } from '../contexts/NotificationContext';
-import { formatBytes } from '../utils/format';
+import { formatBytes, formatDateTime } from '../utils/format';
 import VersionSplitsStats from '../components/datasets/VersionSplitsStats';
 
 const EMPTY_SOURCE = (): SourceItem => ({ type: 'kaggle', url: null, description: '' });
@@ -314,14 +314,14 @@ const Datasets: React.FC = () => {
   // ── Main render ────────────────────────────────────────────────────────────
 
   if (loading && datasets.length === 0) {
-    return <div className="loading">Загрузка датасетов...</div>;
+    return <div className="loading-state">Загрузка датасетов...</div>;
   }
 
   return (
-    <div className="datasets-page">
-      <div className="datasets-header">
+    <div className="page">
+      <div className="page-header">
         <h1>Управление датасетами</h1>
-        <p className="datasets-description">
+        <p className="page-description">
           Загружайте, удаляйте и управляйте версиями датасетов для классификации изображений.
         </p>
         {!showAddForm && (
@@ -462,10 +462,10 @@ const Datasets: React.FC = () => {
       {/* Список датасетов */}
       <div className="datasets-list">
         {datasets.length === 0 && !loading ? (
-          <p className="no-data">Пока нет ни одного датасета. Создайте первый!</p>
+          <p className="empty-state">Пока нет ни одного датасета. Создайте первый!</p>
         ) : (
           datasets.map(dataset => (
-            <div key={dataset.id} className="dataset-card">
+            <div key={dataset.id} className="card dataset-card">
               <div className="dataset-header">
                 <h2>{dataset.name}</h2>
                 <div className="dataset-actions">
@@ -490,8 +490,8 @@ const Datasets: React.FC = () => {
 
               <div className="dataset-meta">
                 <span><i className="fas fa-tag"></i> {dataset.type} / {dataset.task}</span>
-                <span><i className="fas fa-calendar-alt"></i> Создан: {new Date(dataset.created_at).toLocaleDateString()}</span>
-                <span><i className="fas fa-sync-alt"></i> Обновлён: {new Date(dataset.updated_at).toLocaleDateString()}</span>
+                <span><i className="fas fa-calendar-alt"></i> Создан: {formatDateTime(dataset.created_at)}</span>
+                <span><i className="fas fa-sync-alt"></i> Обновлён: {formatDateTime(dataset.updated_at)}</span>
               </div>
 
               <p className="dataset-description">{dataset.description}</p>
@@ -499,11 +499,11 @@ const Datasets: React.FC = () => {
               {dataset.classes_names.length > 0 && (
                 <div className="dataset-classes">
                   <h4>Классы ({dataset.classes_count})</h4>
-                  <div className="class-tags">
+                  <div className="tag-list">
                     {dataset.classes_names.slice(0, 10).map(className => (
-                      <span key={className} className="class-tag">{className}</span>
+                      <span key={className} className="tag">{className}</span>
                     ))}
-                    {dataset.classes_names.length > 10 && <span className="class-tag">...</span>}
+                    {dataset.classes_names.length > 10 && <span className="tag">...</span>}
                   </div>
                 </div>
               )}
@@ -585,7 +585,7 @@ const Datasets: React.FC = () => {
                             </button>
                           </div>
                         </div>
-                        <span className="version-date">Дата загрузки: {new Date(ver.created_at).toLocaleDateString()}</span>
+                        <span className="version-date">Дата загрузки: {formatDateTime(ver.created_at)}</span>
                         <p className="version-description">Описание: {ver.description}</p>
                         <div className="version-stats">
                           <span>Всего: {ver.num_samples.toLocaleString()}</span>

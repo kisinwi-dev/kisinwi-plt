@@ -13,7 +13,7 @@ const ModelCard: React.FC<Props> = ({ model }) => {
 
   return (
     <div
-      className="model-card"
+      className="card card--hoverable model-card"
       onClick={open}
       role="button"
       tabIndex={0}

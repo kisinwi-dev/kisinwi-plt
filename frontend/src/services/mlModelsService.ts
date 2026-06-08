@@ -6,31 +6,10 @@ import type {
   MLModelStatus,
   ModelsQuery,
 } from '../types/mlModels';
+import { handleResponse, serviceUrl } from './http';
 
 // Базовый URL сервиса ml_models берётся из VITE_ML_MODELS, по умолчанию localhost:6300.
-const ML_MODELS_URL = `http://${import.meta.env.VITE_ML_MODELS ?? 'localhost:6300'}`;
-
-/**
- * Универсальная обработка HTTP-ответа.
- * @returns данные типа T; для пустых ответов (204) — true.
- * @throws ошибка с текстом из тела ответа или статусом.
- */
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    let errorMsg = `HTTP error ${response.status}`;
-    try {
-      const errorData = await response.json();
-      errorMsg = errorData.message || errorData.detail || errorMsg;
-    } catch {
-      // Тело не JSON — оставляем стандартное сообщение.
-    }
-    throw new Error(errorMsg);
-  }
-
-  const text = await response.text();
-  if (!text) return true as T;
-  return JSON.parse(text);
-}
+const ML_MODELS_URL = serviceUrl(import.meta.env.VITE_ML_MODELS, 'localhost:6300');
 
 /**
  * Сервис для просмотра моделей и скачивания файлов весов из ml_models.

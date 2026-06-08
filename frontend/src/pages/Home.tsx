@@ -3,7 +3,7 @@ import './Home.css';
 
 const Home: React.FC = () => {
   return (
-    <div className="home">
+    <div className="page home">
       <header className="hero">
         <h1>KiSinWi</h1>
         <p className="tagline">
@@ -24,21 +24,21 @@ const Home: React.FC = () => {
       <section className="features">
         <h2>Основные возможности</h2>
         <div className="feature-grid">
-          <div className="feature-card">
+          <div className="card card--hoverable feature-card">
             <h3>📁 Работа с датасетами</h3>
             <p>
               Загружай, удаляй и версионируй датасеты. 
               Сейчас поддерживается <strong>Image Classification</strong>.
             </p>
           </div>
-          <div className="feature-card">
+          <div className="card card--hoverable feature-card">
             <h3>⚙️ Запуск обучения</h3>
             <p>
               Выбирай модель и параметры, запускай эксперименты 
               прямо из интерфейса. Всё прозрачно и настраиваемо.
             </p>
           </div>
-          <div className="feature-card">
+          <div className="card card--hoverable feature-card">
             <h3>🤖 Обучение с агентами</h3>
             <p>
               Агенты сами подбирают гиперпараметры, анализируют результаты 
@@ -52,7 +52,7 @@ const Home: React.FC = () => {
       <section className="roadmap">
         <h2>Статус разработки</h2>
         <div className="roadmap-grid">
-          <div className="roadmap-column">
+          <div className="card roadmap-column">
             <h3>✅ Реализовано</h3>
             <ul>
               <li>Создание и управление датасетами</li>
@@ -61,7 +61,7 @@ const Home: React.FC = () => {
               <li>Базовая страница датасетов (UI)</li>
             </ul>
           </div>
-          <div className="roadmap-column">
+          <div className="card roadmap-column">
             <h3>🚀 В планах</h3>
             <ul>
               <li>Запуск обучения моделей (выбор архитектуры, параметры)</li>

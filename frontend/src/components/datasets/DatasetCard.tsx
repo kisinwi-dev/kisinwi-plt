@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { formatBytes } from '../../utils/format';
+import { formatBytes, formatDateTime } from '../../utils/format';
 import type { Dataset, VersionSplitsResponse } from '../../types/dataset';
 import { datasetService } from '../../services/datasetService';
 import VersionSplitsStats from './VersionSplitsStats';
@@ -40,7 +40,7 @@ const DatasetCard: React.FC<DatasetCardProps> = ({
   };
 
   return (
-    <div className="dataset-card">
+    <div className="card dataset-card">
       <div className="dataset-header">
         <h2>{dataset.name}</h2>
         <div className="dataset-actions">
@@ -67,18 +67,18 @@ const DatasetCard: React.FC<DatasetCardProps> = ({
 
       <div className="dataset-meta">
         <span><i className="fas fa-tag"></i> {dataset.type} / {dataset.task}</span>
-        <span><i className="fas fa-calendar-alt"></i> Создан: {new Date(dataset.created_at).toLocaleDateString()}</span>
-        <span><i className="fas fa-sync-alt"></i> Обновлён: {new Date(dataset.updated_at).toLocaleDateString()}</span>
+        <span><i className="fas fa-calendar-alt"></i> Создан: {formatDateTime(dataset.created_at)}</span>
+        <span><i className="fas fa-sync-alt"></i> Обновлён: {formatDateTime(dataset.updated_at)}</span>
       </div>
 
       {dataset.classes_names.length > 0 && (
         <div className="dataset-classes">
           <h4>Классы ({dataset.classes_count})</h4>
-          <div className="class-tags">
+          <div className="tag-list">
             {dataset.classes_names.slice(0, 10).map(className => (
-              <span key={className} className="class-tag">{className}</span>
+              <span key={className} className="tag">{className}</span>
             ))}
-            {dataset.classes_names.length > 10 && <span className="class-tag">...</span>}
+            {dataset.classes_names.length > 10 && <span className="tag">...</span>}
           </div>
         </div>
       )}
@@ -119,7 +119,7 @@ const DatasetCard: React.FC<DatasetCardProps> = ({
                     </button>
                   </div>
                 </div>
-                <span className="version-date">Дата загрузки: {new Date(ver.created_at).toLocaleDateString()}</span>
+                <span className="version-date">Дата загрузки: {formatDateTime(ver.created_at)}</span>
                 <p className="version-description">Описание: {ver.description}</p>
                 <div className="version-stats">
                   <span>Всего: {ver.num_samples.toLocaleString()}</span>

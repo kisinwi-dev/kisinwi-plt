@@ -66,10 +66,10 @@ const Models: React.FC = () => {
   const canNext = offset + PAGE_SIZE < total;
 
   return (
-    <div className="models-page">
-      <div className="models-header">
+    <div className="page">
+      <div className="page-header">
         <h1>Модели</h1>
-        <p className="models-description">
+        <p className="page-description">
           Реестр обученных моделей: фильтруйте, открывайте детали и скачивайте файлы весов.
         </p>
       </div>
@@ -110,11 +110,11 @@ const Models: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="models-status-message">
+        <div className="loading-state">
           <i className="fas fa-spinner fa-spin"></i> Загрузка моделей…
         </div>
       ) : models.length === 0 ? (
-        <div className="models-status-message">
+        <div className="empty-state">
           <i className="fas fa-box-open"></i> Модели не найдены.
         </div>
       ) : (

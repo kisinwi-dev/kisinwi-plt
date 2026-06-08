@@ -30,7 +30,7 @@ const DiscussionCard: React.FC<Props> = ({ discussion, onSelect, onDelete }) => 
 
   return (
     <div
-      className="discussion-card"
+      className="card card--hoverable discussion-card"
       onClick={() => onSelect(discussion.discussion_id)}
       role="button"
       tabIndex={0}
@@ -123,7 +123,7 @@ const DiscussionCard: React.FC<Props> = ({ discussion, onSelect, onDelete }) => 
       {discussion.tags.length > 0 && (
         <div className="discussion-tags">
           {discussion.tags.map(tag => (
-            <span key={tag} className="class-tag">{tag}</span>
+            <span key={tag} className="tag">{tag}</span>
           ))}
         </div>
       )}

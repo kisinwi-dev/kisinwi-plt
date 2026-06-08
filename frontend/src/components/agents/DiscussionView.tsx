@@ -67,11 +67,11 @@ const DiscussionView: React.FC<Props> = ({ discussionId, active = false }) => {
   }, [discussionId, active, showNotification]);
 
   if (loading) {
-    return <div className="loading">Загрузка диалога...</div>;
+    return <div className="loading-state">Загрузка диалога...</div>;
   }
 
   if (feed.length === 0) {
-    return <p className="no-data">В этой дискуссии пока нет сообщений.</p>;
+    return <p className="empty-state">В этой дискуссии пока нет сообщений.</p>;
   }
 
   return (

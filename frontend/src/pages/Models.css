@@ -1,21 +1,4 @@
-/* ── Страница списка моделей ──────────────────────────────────────────────────── */
-.models-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
-}
-
-.models-header {
-  margin-bottom: 1.5rem;
-}
-
-.models-header h1 {
-  margin-bottom: 0.3rem;
-}
-
-.models-description {
-  color: var(--color-text-secondary);
-}
+/* Стили, специфичные для страниц моделей. Общие примитивы — в styles/components.css. */
 
 /* ── Фильтры ──────────────────────────────────────────────────────────────────── */
 .models-filters {
@@ -30,8 +13,8 @@
   align-items: center;
   gap: 0.6rem;
   background: var(--color-bg-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
+  border: var(--border-subtle);
+  border-radius: var(--radius-input);
   padding: 0.55rem 1rem;
   flex: 1 1 220px;
 }
@@ -61,21 +44,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
-}
-
-.model-card {
-  background: var(--color-bg-secondary);
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.model-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
 }
 
 .model-card-header {
@@ -128,39 +96,6 @@
   overflow: hidden;
 }
 
-/* ── Бейджи статусов ─────────────────────────────────────────────────────────── */
-.status-badge {
-  padding: 0.25rem 0.8rem;
-  border-radius: 30px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  white-space: nowrap;
-  background: var(--color-accent-soft);
-  color: var(--color-accent-light);
-}
-
-.status-ready,
-.status-completed,
-.status-succeed {
-  background: rgba(106, 191, 138, 0.18);
-  color: #6abf8a;
-}
-
-.status-training,
-.status-in-progress,
-.status-active {
-  background: rgba(91, 155, 213, 0.18);
-  color: #6fb0e6;
-}
-
-.status-failed,
-.status-error {
-  background: rgba(255, 107, 107, 0.18);
-  color: #ff6b6b;
-}
-
 /* ── Пагинация ───────────────────────────────────────────────────────────────── */
 .models-pagination {
   display: flex;
@@ -175,44 +110,9 @@
   font-size: 0.9rem;
 }
 
-.button.secondary {
-  background: transparent;
-  border: 1px solid var(--color-accent);
-  color: var(--color-accent);
-  box-shadow: none;
-}
-
-.button.secondary:hover:not(:disabled) {
-  background: var(--color-accent-soft);
-}
-
-button:disabled,
-.button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* ── Статус-сообщения ────────────────────────────────────────────────────────── */
-.models-status-message {
-  text-align: center;
-  color: var(--color-text-secondary);
-  padding: 3rem 1rem;
-  font-size: 1rem;
-}
-
-.models-status-message i {
-  margin-right: 0.5rem;
-  color: var(--color-accent);
-}
-
 /* ── Детальный просмотр ──────────────────────────────────────────────────────── */
-.back-button {
+.model-detail-header {
   margin-bottom: 1.5rem;
-}
-
-.back-button i {
-  margin-right: 0.4rem;
 }
 
 .model-detail-title {
@@ -227,10 +127,15 @@ button:disabled,
   word-break: break-word;
 }
 
+.model-detail-description {
+  margin-top: 0.5rem;
+  color: var(--color-text-secondary);
+}
+
 .detail-section {
   background: var(--color-bg-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
   padding: 1.5rem;
   margin-bottom: 1.5rem;
 }
@@ -269,11 +174,6 @@ button:disabled,
   word-break: break-all;
 }
 
-.mono {
-  font-family: 'Courier New', monospace;
-  font-size: 0.9rem;
-}
-
 .detail-empty {
   color: var(--color-text-secondary);
   font-style: italic;
@@ -281,7 +181,7 @@ button:disabled,
 
 .detail-pre {
   background: var(--color-bg-primary);
-  border-radius: 12px;
+  border-radius: var(--radius-input);
   padding: 1rem;
   overflow-x: auto;
   white-space: pre-wrap;
@@ -289,21 +189,6 @@ button:disabled,
   color: var(--color-text-primary);
   font-size: 0.9rem;
   margin: 0;
-}
-
-.model-classes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.class-tag {
-  background: var(--color-accent-soft);
-  color: var(--color-text-primary);
-  padding: 0.3rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 /* ── Файлы весов ─────────────────────────────────────────────────────────────── */
@@ -319,7 +204,7 @@ button:disabled,
   justify-content: space-between;
   gap: 1rem;
   background: var(--color-bg-primary);
-  border-radius: 12px;
+  border-radius: var(--radius-input);
   padding: 1rem 1.2rem;
 }
 

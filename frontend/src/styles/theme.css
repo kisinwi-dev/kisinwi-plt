@@ -14,7 +14,19 @@
   --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
   --border-radius: 24px;
+  --radius-card: 16px;          /* карточки, секции */
+  --radius-input: 12px;         /* поля, мелкие блоки */
+  --radius-pill: 30px;          /* бейджи, чипы, пилюли */
+  --border-subtle: 1px solid rgba(255, 255, 255, 0.05);
   --transition: all 0.25s ease;
+
+  /* Семантические цвета статусов (общие для всех страниц) */
+  --color-success: #6abf8a;
+  --color-success-soft: rgba(106, 191, 138, 0.18);
+  --color-info: #6fb0e6;
+  --color-info-soft: rgba(91, 155, 213, 0.18);
+  --color-danger: #ff6b6b;
+  --color-danger-soft: rgba(255, 107, 107, 0.18);
 
   /* Шрифты */
   --font-primary: 'Inter', sans-serif;

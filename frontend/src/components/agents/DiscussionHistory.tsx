@@ -70,14 +70,14 @@ const DiscussionHistory: React.FC = () => {
 
   // ── Список дискуссий ────────────────────────────────────────────────────────
   if (loading && discussions.length === 0) {
-    return <div className="loading">Загрузка дискуссий...</div>;
+    return <div className="loading-state">Загрузка дискуссий...</div>;
   }
 
   return (
     <>
       <div className="discussions-list">
         {discussions.length === 0 ? (
-          <p className="no-data">Пока нет ни одной дискуссии.</p>
+          <p className="empty-state">Пока нет ни одной дискуссии.</p>
         ) : (
           discussions.map(discussion => (
             <DiscussionCard

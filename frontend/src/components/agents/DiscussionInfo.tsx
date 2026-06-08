@@ -81,7 +81,7 @@ const DiscussionInfo: React.FC<Props> = ({ discussion, discussionId }) => {
           {discussion.tags.length > 0 && (
             <div className="discussion-tags">
               {discussion.tags.map(tag => (
-                <span key={tag} className="class-tag">{tag}</span>
+                <span key={tag} className="tag">{tag}</span>
               ))}
             </div>
           )}

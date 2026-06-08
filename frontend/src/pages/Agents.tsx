@@ -16,10 +16,10 @@ const Agents: React.FC = () => {
   };
 
   return (
-    <div className="agents-page">
-      <div className="agents-header">
+    <div className="page">
+      <div className="page-header">
         <h1>Агенты</h1>
-        <p className="agents-description">
+        <p className="page-description">
           Запускайте пайплайны обучения с агентами и просматривайте историю их работы.
         </p>
       </div>

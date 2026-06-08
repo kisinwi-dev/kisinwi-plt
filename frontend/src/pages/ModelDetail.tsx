@@ -61,8 +61,8 @@ const ModelDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="models-page">
-        <div className="models-status-message">
+      <div className="page">
+        <div className="loading-state">
           <i className="fas fa-spinner fa-spin"></i> Загрузка модели…
         </div>
       </div>
@@ -71,11 +71,11 @@ const ModelDetail: React.FC = () => {
 
   if (!model) {
     return (
-      <div className="models-page">
+      <div className="page">
         <button className="button secondary" onClick={() => navigate('/models')}>
           <i className="fas fa-arrow-left"></i> К списку
         </button>
-        <div className="models-status-message">
+        <div className="empty-state">
           <i className="fas fa-triangle-exclamation"></i> Модель не найдена.
         </div>
       </div>
@@ -85,18 +85,18 @@ const ModelDetail: React.FC = () => {
   const trainParams = Object.entries(model.train_params ?? {});
 
   return (
-    <div className="models-page model-detail">
+    <div className="page model-detail">
       <button className="button secondary back-button" onClick={() => navigate('/models')}>
         <i className="fas fa-arrow-left"></i> К списку
       </button>
 
-      <div className="models-header">
+      <div className="model-detail-header">
         <div className="model-detail-title">
           <h1>{model.name}</h1>
           <span className="model-version"><i className="fas fa-code-branch"></i> v{model.version}</span>
           <span className={`status-badge status-${model.status}`}>{model.status}</span>
         </div>
-        {model.description && <p className="models-description">{model.description}</p>}
+        {model.description && <p className="model-detail-description">{model.description}</p>}
       </div>
 
       <section className="detail-section">
@@ -114,9 +114,9 @@ const ModelDetail: React.FC = () => {
       <section className="detail-section">
         <h3 className="detail-section-title"><i className="fas fa-tags"></i> Классы ({model.classes.length})</h3>
         {model.classes.length > 0 ? (
-          <div className="model-classes">
+          <div className="tag-list">
             {model.classes.map((cls) => (
-              <span key={cls} className="class-tag">{cls}</span>
+              <span key={cls} className="tag">{cls}</span>
             ))}
           </div>
         ) : (
