@@ -9,6 +9,7 @@
   --color-accent: #b15e6b;      /* винный, но светлее для контраста */
   --color-accent-light: #d08c96;
   --color-accent-soft: rgba(177, 94, 107, 0.15);
+  --color-on-accent: #f8fafc;   /* текст/иконки на акцентном фоне (кнопки) */
   
   /* Системные */
   --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -17,20 +18,100 @@
   --radius-card: 16px;          /* карточки, секции */
   --radius-input: 12px;         /* поля, мелкие блоки */
   --radius-pill: 30px;          /* бейджи, чипы, пилюли */
-  --border-subtle: 1px solid rgba(255, 255, 255, 0.05);
   --transition: all 0.25s ease;
+
+  /* Бордеры (полупрозрачные — flip-ятся под тему) */
+  --color-border: rgba(255, 255, 255, 0.05);
+  --color-border-soft: rgba(255, 255, 255, 0.08);
+  --color-border-strong: rgba(255, 255, 255, 0.10);
+  --color-border-faint: rgba(255, 255, 255, 0.03);
+  --color-border-emphasis: rgba(255, 255, 255, 0.20);   /* dashed drop-zone */
+  --border-subtle: 1px solid var(--color-border);
+  --border-soft: 1px solid var(--color-border-soft);
+  --border-strong: 1px solid var(--color-border-strong);
+
+  /* Поверхности / эффекты */
+  --color-surface-faint: rgba(255, 255, 255, 0.03);
+  --color-overlay: rgba(0, 0, 0, 0.55);
+  --color-header-bg: rgba(26, 30, 36, 0.85);
+  --color-bg-deep: #1e222a;
+  --color-accent-glow: rgba(114, 47, 55, 0.3);
+  --color-accent-glow-strong: rgba(114, 47, 55, 0.4);
 
   /* Семантические цвета статусов (общие для всех страниц) */
   --color-success: #6abf8a;
   --color-success-soft: rgba(106, 191, 138, 0.18);
   --color-info: #6fb0e6;
   --color-info-soft: rgba(91, 155, 213, 0.18);
+  --color-warning: #e6b85b;
+  --color-warning-soft: rgba(230, 184, 91, 0.3);
   --color-danger: #ff6b6b;
   --color-danger-soft: rgba(255, 107, 107, 0.18);
+  --color-danger-light: #ff8585;            /* hover деструктивной кнопки */
+
+  /* Яркие варианты — только для тостов */
+  --color-success-bright: #51cf66;
+  --color-info-bright: #4dabf7;
+  --color-warning-bright: #fcc419;
 
   /* Шрифты */
   --font-primary: 'Inter', sans-serif;
   --font-accent: 'Playfair Display', serif;
+}
+
+/*
+ * Темы. :root выше — тема по умолчанию («dark»).
+ * Каждый блок переопределяет ТОЛЬКО цветовые токены; радиусы/отступы/шрифты — общие.
+ * Светлые темы переопределяют ещё и бордеры/тени (полупрозрачный чёрный вместо белого).
+ */
+
+/* ── Светлая ──────────────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --color-bg-primary: #f4f6fa;
+  --color-bg-secondary: #ffffff;
+  --color-text-primary: #1d2330;
+  --color-text-secondary: #5b6472;
+  --color-accent: #b15e6b;
+  --color-accent-light: #97505c;
+  --color-accent-soft: rgba(177, 94, 107, 0.12);
+  --color-on-accent: #ffffff;
+
+  --shadow-sm: 0 4px 12px rgba(20, 30, 50, 0.08);
+  --shadow-md: 0 8px 24px rgba(20, 30, 50, 0.12);
+
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-border-soft: rgba(0, 0, 0, 0.10);
+  --color-border-strong: rgba(0, 0, 0, 0.14);
+  --color-border-faint: rgba(0, 0, 0, 0.05);
+  --color-border-emphasis: rgba(0, 0, 0, 0.20);
+
+  --color-surface-faint: rgba(0, 0, 0, 0.03);
+  --color-overlay: rgba(15, 20, 30, 0.45);
+  --color-header-bg: rgba(255, 255, 255, 0.85);
+  --color-bg-deep: #e7ebf2;
+  --color-accent-glow: rgba(177, 94, 107, 0.25);
+  --color-accent-glow-strong: rgba(177, 94, 107, 0.35);
+}
+
+/* ── Полночь (холодная тёмно-синяя) ──────────────────────────────────────────── */
+[data-theme="midnight"] {
+  --color-bg-primary: #0f1420;
+  --color-bg-secondary: #1a2236;
+  --color-text-primary: #e6ecf7;
+  --color-text-secondary: #9aa6bf;
+  --color-accent: #6c8cff;
+  --color-accent-light: #93a9ff;
+  --color-accent-soft: rgba(108, 140, 255, 0.16);
+  --color-on-accent: #0f1420;
+
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  --color-header-bg: rgba(15, 20, 32, 0.85);
+  --color-bg-deep: #141a2a;
+  --color-accent-glow: rgba(108, 140, 255, 0.30);
+  --color-accent-glow-strong: rgba(108, 140, 255, 0.40);
 }
 
 * {
@@ -45,6 +126,7 @@ body {
   font-family: var(--font-primary);
   line-height: 1.6;
   font-size: 16px;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -70,7 +152,7 @@ a:hover {
 /* Кнопки */
 button, .button {
   background-color: var(--color-accent);
-  color: var(--color-text-primary);
+  color: var(--color-on-accent);
   border: none;
   padding: 0.6rem 1.8rem;
   border-radius: 40px;

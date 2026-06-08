@@ -1,7 +1,7 @@
 .confirm-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--color-overlay);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   display: flex;
@@ -14,7 +14,7 @@
 
 .confirm-modal {
   background: var(--color-bg-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: var(--border-soft);
   border-radius: 20px;
   box-shadow: var(--shadow-md);
   padding: 2rem;
@@ -38,8 +38,8 @@
 }
 
 .confirm-icon--danger {
-  background: rgba(255, 107, 107, 0.15);
-  color: #ff6b6b;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
 }
 
 .confirm-title {
@@ -60,12 +60,12 @@
 }
 
 .button.danger {
-  background: #ff6b6b;
+  background: var(--color-danger);
   color: #fff;
 }
 
 .button.danger:hover {
-  background: #ff8585;
+  background: var(--color-danger-light);
 }
 
 @keyframes confirm-fade {

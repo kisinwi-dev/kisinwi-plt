@@ -12,7 +12,7 @@
   width: fit-content;
   margin-left: auto;
   margin-right: auto;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border);
 }
 
 .agents-tab {
@@ -37,13 +37,13 @@
 
 .agents-tab.active {
   background: var(--color-accent);
-  color: var(--color-text-primary);
+  color: var(--color-on-accent);
   box-shadow: var(--shadow-sm);
 }
 
 .agents-tab.active:hover {
   background: var(--color-accent-light);
-  color: var(--color-text-primary);
+  color: var(--color-on-accent);
 }
 
 .agents-tab i {
@@ -65,7 +65,7 @@
   margin-bottom: 1.5rem;
   padding: 1.25rem 1.5rem;
   background: var(--color-bg-primary);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border-soft);
   border-left: 3px solid var(--color-accent);
   border-radius: 12px;
 }
@@ -121,7 +121,7 @@
   width: 100%;
   padding: 0.8rem;
   background: var(--color-bg-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
   color: var(--color-text-primary);
   font-family: inherit;
@@ -176,7 +176,7 @@
   gap: 0.75rem;
   padding: 0.5rem 0.8rem;
   background: var(--color-bg-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
 }
 
@@ -344,8 +344,8 @@
 }
 
 .discussion-card-actions .icon-button:hover {
-  background: rgba(255, 107, 107, 0.15);
-  color: #ff6b6b;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
 }
 
 .discussion-meta {
@@ -423,8 +423,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  background: rgba(111, 176, 230, 0.16);
-  color: #6fb0e6;
+  background: var(--color-info-soft);
+  color: var(--color-info);
   padding: 0.25rem 0.7rem;
   font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
   font-size: 0.74rem;
@@ -465,7 +465,7 @@
 /* ── Инфо-панель дискуссии (детальный просмотр) ──────────────────────────────── */
 .discussion-info {
   background: var(--color-bg-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
@@ -505,14 +505,14 @@
   background: var(--color-bg-secondary);
   border-radius: 14px;
   padding: 1.2rem;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border);
   border-left: 4px solid var(--color-accent);
   box-shadow: var(--shadow-sm);
 }
 
-.message-bubble.status-succeed { border-left-color: #6abf8a; }
-.message-bubble.status-error { border-left-color: #ff6b6b; }
-.message-bubble.status-in-progress { border-left-color: #6fb0e6; }
+.message-bubble.status-succeed { border-left-color: var(--color-success); }
+.message-bubble.status-error { border-left-color: var(--color-danger); }
+.message-bubble.status-in-progress { border-left-color: var(--color-info); }
 
 .message-header {
   display: flex;
@@ -611,7 +611,7 @@
   margin: 0.6rem 0;
   padding: 0.8rem 1rem;
   background: var(--color-bg-primary);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border-soft);
   border-radius: 10px;
   overflow-x: auto;
 }
@@ -632,7 +632,7 @@
 
 .markdown-body hr {
   border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--color-border-strong);
   margin: 1rem 0;
 }
 
@@ -688,7 +688,7 @@
   background: var(--color-bg-primary);
   border-radius: 10px;
   padding: 0.9rem;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border);
 }
 
 .tool-header {
@@ -742,7 +742,7 @@
 .tool-details {
   margin-top: 0.6rem;
   padding-top: 0.6rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--color-border);
 }
 
 .tool-message {
@@ -766,7 +766,7 @@
 
 .tool-block pre {
   background: var(--color-bg-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 0.7rem;
   font-size: 0.8rem;
@@ -777,8 +777,8 @@
 }
 
 .tool-block--error pre {
-  border-color: rgba(255, 107, 107, 0.3);
-  color: #ff9b9b;
+  border-color: color-mix(in srgb, var(--color-danger) 30%, transparent);
+  color: var(--color-danger-light);
 }
 
 /* ── Системные сообщения ─────────────────────────────────────────────────────── */
@@ -792,7 +792,7 @@
   border-radius: 30px;
   font-size: 0.85rem;
   background: var(--color-bg-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border);
 }
 
 .system-message i {
@@ -811,11 +811,11 @@
   white-space: nowrap;
 }
 
-.msg-info i { color: #6fb0e6; }
-.msg-warning i { color: #e6b85b; }
-.msg-warning { border-color: rgba(230, 184, 91, 0.3); }
-.msg-error i { color: #ff6b6b; }
-.msg-error { border-color: rgba(255, 107, 107, 0.3); }
+.msg-info i { color: var(--color-info); }
+.msg-warning i { color: var(--color-warning); }
+.msg-warning { border-color: var(--color-warning-soft); }
+.msg-error i { color: var(--color-danger); }
+.msg-error { border-color: color-mix(in srgb, var(--color-danger) 30%, transparent); }
 
 /* ── Адаптивность ────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
