@@ -1,11 +1,49 @@
 /* Стили, специфичные для страниц моделей. Общие примитивы — в styles/components.css. */
 
-/* ── Фильтры ──────────────────────────────────────────────────────────────────── */
+/* ── Toolbar (фильтры + переключатель вида) ───────────────────────────────────── */
+.models-toolbar {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
 .models-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-  margin-bottom: 2rem;
+  flex: 1;
+}
+
+/* ── Переключатель вида ───────────────────────────────────────────────────────── */
+.view-toggle {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--color-bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-input);
+  padding: 0.25rem;
+  flex-shrink: 0;
+}
+
+.view-toggle-btn {
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--radius-input) - 2px);
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  transition: background 0.15s, color 0.15s;
+}
+
+.view-toggle-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.view-toggle-btn.active {
+  background: var(--color-accent);
+  color: #fff;
 }
 
 .filter-field {
@@ -42,7 +80,7 @@
 /* ── Сетка карточек ──────────────────────────────────────────────────────────── */
 .models-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr));
   gap: 1.5rem;
 }
 
@@ -234,4 +272,213 @@
   padding: 0.5rem 1.2rem;
   font-size: 0.9rem;
   white-space: nowrap;
+}
+
+/* ── Grouped view ────────────────────────────────────────────────────────────── */
+.model-group-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.model-group-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.model-group-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.model-group-count {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.model-group-count i {
+  margin-right: 0.3rem;
+  color: var(--color-accent);
+}
+
+.model-group-versions {
+  border-top: var(--border-subtle);
+  padding-top: 0.75rem;
+}
+
+.versions-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.versions-table colgroup col:nth-child(1) { width: 5rem; }
+.versions-table colgroup col:nth-child(2) { width: auto; }
+.versions-table colgroup col:nth-child(3) { width: 6rem; }
+.versions-table colgroup col:nth-child(4) { width: 9rem; }
+
+.versions-table thead th {
+  text-align: left;
+  padding: 0.3rem 0.6rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.versions-table thead th:last-child {
+  text-align: right;
+}
+
+.model-version-row {
+  cursor: pointer;
+  transition: background 0.15s;
+  border-radius: var(--radius-input);
+}
+
+.model-version-row:hover td {
+  background: var(--color-bg-primary);
+}
+
+.model-version-row td {
+  padding: 0.45rem 0.6rem;
+  vertical-align: middle;
+}
+
+.model-version-row td:first-child {
+  border-radius: var(--radius-input) 0 0 var(--radius-input);
+}
+
+.model-version-row td:last-child {
+  border-radius: 0 var(--radius-input) var(--radius-input) 0;
+  text-align: right;
+}
+
+.model-version-label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.model-version-label i {
+  margin-right: 0.3rem;
+  color: var(--color-accent);
+}
+
+.model-version-type {
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.model-version-date {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.model-version-time {
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+/* ── Иконочные кнопки действий ───────────────────────────────────────────────── */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-input);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  padding: 0.4rem;
+  font-size: 0.9rem;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.btn-icon:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+}
+
+.btn-icon--danger:hover {
+  color: var(--color-danger, #e05c5c);
+  background: rgba(224, 92, 92, 0.1);
+}
+
+.btn-icon--sm {
+  font-size: 0.75rem;
+  padding: 0.3rem;
+}
+
+.model-version-actions {
+  text-align: center;
+}
+
+.model-version-row .btn-icon--sm {
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+
+.model-version-row:hover .btn-icon--sm {
+  opacity: 1;
+}
+
+.versions-th-sortable {
+  cursor: pointer;
+  user-select: none;
+  border-radius: var(--radius-input);
+  transition: color 0.15s, background 0.15s;
+  padding: 0.3rem 0.6rem !important;
+}
+
+.versions-th-sortable:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+}
+
+/* Двойная стрелка: неактивный шеврон вверх + вниз */
+.sort-icon {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.35rem;
+  gap: 1px;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.sort-icon-up,
+.sort-icon-down {
+  font-size: 0.55rem;
+  color: var(--color-text-secondary);
+  opacity: 0.35;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+/* Активная стрелка — полная яркость и accent-цвет */
+.sort-asc .sort-icon-up {
+  opacity: 1;
+  color: var(--color-accent);
+}
+
+.sort-desc .sort-icon-down {
+  opacity: 1;
+  color: var(--color-accent);
+}
+
+/* На hover обе стрелки чуть ярче */
+.versions-th-sortable:hover .sort-icon-up,
+.versions-th-sortable:hover .sort-icon-down {
+  opacity: 0.6;
 }

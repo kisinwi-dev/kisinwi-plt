@@ -1,18 +1,29 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { mlModelsService } from '../services/mlModelsService';
+import { datasetService } from '../services/datasetService';
 import { useNotification } from '../contexts/NotificationContext';
-import { ModelCard } from '../components/models';
-import type { MLModel, MLModelStatus } from '../types/mlModels';
+import { ModelCard, ModelGroupCard } from '../components/models';
+import type { MLModel, MLModelGroup, MLModelStatus } from '../types/mlModels';
+import type { Dataset } from '../types/dataset';
 import './Models.css';
 
-// Размер страницы списка моделей.
 const PAGE_SIZE = 12;
+
+type ViewMode = 'grouped' | 'flat';
 
 const Models: React.FC = () => {
   const { showNotification } = useNotification();
 
+  const [viewMode, setViewMode] = useState<ViewMode>('grouped');
+
+  // Flat mode state.
   const [models, setModels] = useState<MLModel[]>([]);
-  const [total, setTotal] = useState(0);
+  const [flatTotal, setFlatTotal] = useState(0);
+
+  // Grouped mode state.
+  const [groups, setGroups] = useState<MLModelGroup[]>([]);
+  const [groupedTotal, setGroupedTotal] = useState(0);
+
   const [loading, setLoading] = useState(false);
 
   // Фильтры.
@@ -20,18 +31,21 @@ const Models: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [datasetFilter, setDatasetFilter] = useState('');
   const [statuses, setStatuses] = useState<MLModelStatus[]>([]);
+  const [datasets, setDatasets] = useState<Dataset[]>([]);
 
   // Пагинация.
   const [offset, setOffset] = useState(0);
 
-  // Загружаем справочник статусов один раз.
   useEffect(() => {
     mlModelsService.getModelStatuses()
       .then(setStatuses)
-      .catch(() => { /* фильтр по статусу опционален — молча игнорируем */ });
+      .catch(() => { /* фильтр по статусу опционален */ });
+    datasetService.getDatasets()
+      .then(setDatasets)
+      .catch(() => { /* фильтр по датасету опционален */ });
   }, []);
 
-  const loadModels = useCallback(async () => {
+  const loadFlat = useCallback(async () => {
     setLoading(true);
     try {
       const data = await mlModelsService.getModels({
@@ -42,7 +56,7 @@ const Models: React.FC = () => {
         offset,
       });
       setModels(data.models);
-      setTotal(data.total);
+      setFlatTotal(data.total);
     } catch (error) {
       showNotification(error instanceof Error ? error.message : 'Не удалось загрузить модели', 'error');
     } finally {
@@ -50,20 +64,49 @@ const Models: React.FC = () => {
     }
   }, [nameFilter, statusFilter, datasetFilter, offset, showNotification]);
 
-  useEffect(() => {
-    loadModels();
-  }, [loadModels]);
+  const loadGrouped = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await mlModelsService.getGroupedModels({
+        status: statusFilter || undefined,
+        dataset_id: datasetFilter || undefined,
+        limit: PAGE_SIZE,
+        offset,
+      });
+      setGroups(data.groups);
+      setGroupedTotal(data.total);
+    } catch (error) {
+      showNotification(error instanceof Error ? error.message : 'Не удалось загрузить модели', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter, datasetFilter, offset, showNotification]);
 
-  // Изменение любого фильтра сбрасывает страницу на первую.
+  useEffect(() => {
+    if (viewMode === 'flat') {
+      loadFlat();
+    } else {
+      loadGrouped();
+    }
+  }, [viewMode, loadFlat, loadGrouped]);
+
   const resetAndSet = <T,>(setter: React.Dispatch<React.SetStateAction<T>>) => (value: T) => {
     setOffset(0);
     setter(value);
   };
 
+  const switchView = (mode: ViewMode) => {
+    setOffset(0);
+    setViewMode(mode);
+  };
+
+  const total = viewMode === 'flat' ? flatTotal : groupedTotal;
   const page = Math.floor(offset / PAGE_SIZE) + 1;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const canPrev = offset > 0;
   const canNext = offset + PAGE_SIZE < total;
+
+  const isEmpty = viewMode === 'flat' ? models.length === 0 : groups.length === 0;
 
   return (
     <div className="page">
@@ -74,38 +117,62 @@ const Models: React.FC = () => {
         </p>
       </div>
 
-      <div className="models-filters">
-        <div className="filter-field">
-          <i className="fas fa-search"></i>
-          <input
-            type="text"
-            placeholder="Поиск по имени"
-            value={nameFilter}
-            onChange={(e) => resetAndSet(setNameFilter)(e.target.value)}
-          />
+      <div className="models-toolbar">
+        <div className="models-filters">
+          {viewMode === 'flat' && (
+            <div className="filter-field">
+              <i className="fas fa-search"></i>
+              <input
+                type="text"
+                placeholder="Поиск по имени"
+                value={nameFilter}
+                onChange={(e) => resetAndSet(setNameFilter)(e.target.value)}
+              />
+            </div>
+          )}
+
+          <div className="filter-field">
+            <i className="fas fa-filter"></i>
+            <select
+              value={statusFilter}
+              onChange={(e) => resetAndSet(setStatusFilter)(e.target.value)}
+            >
+              <option value="">Все статусы</option>
+              {statuses.map((s) => (
+                <option key={s.id} value={s.status}>{s.status}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-field">
+            <i className="fas fa-database"></i>
+            <select
+              value={datasetFilter}
+              onChange={(e) => resetAndSet(setDatasetFilter)(e.target.value)}
+            >
+              <option value="">Все датасеты</option>
+              {datasets.map((d) => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        <div className="filter-field">
-          <i className="fas fa-filter"></i>
-          <select
-            value={statusFilter}
-            onChange={(e) => resetAndSet(setStatusFilter)(e.target.value)}
+        <div className="view-toggle">
+          <button
+            className={`view-toggle-btn${viewMode === 'grouped' ? ' active' : ''}`}
+            onClick={() => switchView('grouped')}
+            title="Группировка по моделям"
           >
-            <option value="">Все статусы</option>
-            {statuses.map((s) => (
-              <option key={s.id} value={s.status}>{s.status}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="filter-field">
-          <i className="fas fa-database"></i>
-          <input
-            type="text"
-            placeholder="Dataset ID"
-            value={datasetFilter}
-            onChange={(e) => resetAndSet(setDatasetFilter)(e.target.value)}
-          />
+            <i className="fas fa-layer-group"></i>
+          </button>
+          <button
+            className={`view-toggle-btn${viewMode === 'flat' ? ' active' : ''}`}
+            onClick={() => switchView('flat')}
+            title="Плоский список"
+          >
+            <i className="fas fa-list"></i>
+          </button>
         </div>
       </div>
 
@@ -113,16 +180,17 @@ const Models: React.FC = () => {
         <div className="loading-state">
           <i className="fas fa-spinner fa-spin"></i> Загрузка моделей…
         </div>
-      ) : models.length === 0 ? (
+      ) : isEmpty ? (
         <div className="empty-state">
           <i className="fas fa-box-open"></i> Модели не найдены.
         </div>
       ) : (
         <>
           <div className="models-grid">
-            {models.map((model) => (
-              <ModelCard key={model.id} model={model} />
-            ))}
+            {viewMode === 'flat'
+              ? models.map((model) => <ModelCard key={model.id} model={model} />)
+              : groups.map((group) => <ModelGroupCard key={group.name} group={group} onReload={loadGrouped} />)
+            }
           </div>
 
           <div className="models-pagination">

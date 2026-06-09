@@ -55,3 +55,20 @@ export interface ModelsQuery {
   limit?: number;
   offset?: number;
 }
+
+// Группа версий одной модели (для grouped view).
+export interface MLModelGroup {
+  name: string;
+  versions: MLModel[];  // отсортированы version DESC
+}
+
+// Ответ сгруппированного списка моделей.
+export interface MLModelsGrouped {
+  groups: MLModelGroup[];
+  total: number;
+  limit: number | null;
+  offset: number;
+}
+
+// Параметры запроса grouped endpoint (без name — фильтр идёт по имени группы через name в ModelsQuery).
+export type GroupedModelsQuery = Omit<ModelsQuery, 'name'>;

@@ -22,3 +22,14 @@ export const formatDateTime = (value: string | null | undefined): string => {
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
 };
+
+export const formatDateParts = (value: string | null | undefined): { date: string; time: string } => {
+  if (!value) return { date: '—', time: '' };
+  const normalized = hasTimezone(value) ? value : `${value}Z`;
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) return { date: value, time: '' };
+  return {
+    date: date.toLocaleDateString(),
+    time: date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }),
+  };
+};
