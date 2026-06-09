@@ -24,7 +24,7 @@
   animation: slideIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.1);
   transition: transform 0.2s, box-shadow 0.2s;
   backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: var(--border-strong);
 }
 
 .notification:hover {
@@ -73,45 +73,53 @@
 }
 
 .notification-close:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-border-strong);
   color: var(--color-text-primary);
 }
 
 /* Типы уведомлений */
 .notification-error {
-  border-left-color: #ff6b6b;
-  background: linear-gradient(145deg, rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.05));
+  border-left-color: var(--color-danger);
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--color-danger) 10%, transparent),
+    color-mix(in srgb, var(--color-danger) 5%, transparent));
 }
 
 .notification-error .notification-icon {
-  color: #ff6b6b;
+  color: var(--color-danger);
 }
 
 .notification-success {
-  border-left-color: #51cf66;
-  background: linear-gradient(145deg, rgba(81, 207, 102, 0.1), rgba(81, 207, 102, 0.05));
+  border-left-color: var(--color-success-bright);
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--color-success-bright) 10%, transparent),
+    color-mix(in srgb, var(--color-success-bright) 5%, transparent));
 }
 
 .notification-success .notification-icon {
-  color: #51cf66;
+  color: var(--color-success-bright);
 }
 
 .notification-warning {
-  border-left-color: #fcc419;
-  background: linear-gradient(145deg, rgba(252, 196, 25, 0.1), rgba(252, 196, 25, 0.05));
+  border-left-color: var(--color-warning-bright);
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--color-warning-bright) 10%, transparent),
+    color-mix(in srgb, var(--color-warning-bright) 5%, transparent));
 }
 
 .notification-warning .notification-icon {
-  color: #fcc419;
+  color: var(--color-warning-bright);
 }
 
 .notification-info {
-  border-left-color: #4dabf7;
-  background: linear-gradient(145deg, rgba(77, 171, 247, 0.1), rgba(77, 171, 247, 0.05));
+  border-left-color: var(--color-info-bright);
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--color-info-bright) 10%, transparent),
+    color-mix(in srgb, var(--color-info-bright) 5%, transparent));
 }
 
 .notification-info .notification-icon {
-  color: #4dabf7;
+  color: var(--color-info-bright);
 }
 
 /* Анимация */

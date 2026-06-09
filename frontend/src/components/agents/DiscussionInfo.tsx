@@ -16,7 +16,6 @@ const STATUS_LABELS: Record<DiscussionStatus, string> = {
 
 const DiscussionInfo: React.FC<Props> = ({ discussion, discussionId }) => {
   const title = discussion?.title ?? discussion?.pipeline ?? 'Без названия';
-  // Агенты из агрегата; если его нет — из заявленных ролей meta.
   const agents = discussion?.agents
     ?? discussion?.agent_roles.map(role => ({ role, models: [] }))
     ?? [];
@@ -81,7 +80,7 @@ const DiscussionInfo: React.FC<Props> = ({ discussion, discussionId }) => {
           {discussion.tags.length > 0 && (
             <div className="discussion-tags">
               {discussion.tags.map(tag => (
-                <span key={tag} className="class-tag">{tag}</span>
+                <span key={tag} className="tag">{tag}</span>
               ))}
             </div>
           )}

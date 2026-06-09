@@ -1,29 +1,9 @@
 // Сервис для запуска пайплайнов агентов (сервис agents, порт 6400).
+import { handleResponse, serviceUrl } from './http';
 
 // Базовый URL сервиса агентов берётся из переменной окружения VITE_AGENTS,
 // если её нет – localhost:6400.
-const AGENTS_URL = `http://${import.meta.env.VITE_AGENTS ?? 'localhost:6400'}`;
-
-/**
- * Универсальная обработка HTTP-ответа.
- * @throws Error с текстом из тела ответа (FastAPI: detail/message) или статусом.
- */
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    let errorMsg = `HTTP error ${response.status}`;
-    try {
-      const errorData = await response.json();
-      errorMsg = errorData.detail || errorData.message || errorMsg;
-    } catch {
-      // Тело не JSON — оставляем стандартное сообщение.
-    }
-    throw new Error(errorMsg);
-  }
-
-  const text = await response.text();
-  if (!text) return true as T;
-  return JSON.parse(text);
-}
+const AGENTS_URL = serviceUrl(import.meta.env.VITE_AGENTS, 'localhost:6400');
 
 /** Параметры запуска пайплайна development. */
 export interface StartDevelopmentPayload {

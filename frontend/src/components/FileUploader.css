@@ -4,13 +4,13 @@
 }
 
 .drop-zone {
-  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border: 2px dashed var(--color-border-emphasis);
   border-radius: 16px;
   padding: 2rem 1rem;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--color-surface-faint);
 }
 
 .drop-zone:hover {
@@ -54,7 +54,7 @@
   align-items: center;
   justify-content: space-between;
   background: var(--color-bg-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: var(--border-strong);
   border-radius: 12px;
   padding: 0.8rem 1rem;
   margin: 0.5rem 0;
@@ -105,12 +105,12 @@
 }
 
 .remove-file:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-border-strong);
   color: var(--color-accent);
 }
 
 .upload-error {
-  color: #ff6b6b;
+  color: var(--color-danger);
   font-size: 0.9rem;
   margin-top: 0.5rem;
 }

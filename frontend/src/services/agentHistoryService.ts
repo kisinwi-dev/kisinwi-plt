@@ -6,38 +6,11 @@ import type {
   SystemMessage,
   Tool,
 } from '../types/agentHistory';
+import { handleResponse, serviceUrl } from './http';
 
 // Базовый URL сервиса истории агентов берётся из переменной окружения
 // VITE_AGENT_HISTORY, если её нет – localhost:6410.
-const AGENT_HISTORY_URL = `http://${import.meta.env.VITE_AGENT_HISTORY ?? 'localhost:6410'}`;
-
-/**
- * Универсальная функция обработки HTTP-ответа.
- * @param response – объект Response от fetch.
- * @returns промис с данными типа T.
- * @throws ошибка с текстом, извлечённым из тела ответа или статусом.
- */
-async function handleResponse<T>(response: Response): Promise<T> {
-  // Если статус ответа не в диапазоне 200-299 – ошибка.
-  if (!response.ok) {
-    let errorMsg = `HTTP error ${response.status}`;
-    try {
-      // FastAPI отдаёт ошибки в формате { detail: ... }, поддержим и { message: ... }.
-      const errorData = await response.json();
-      errorMsg = errorData.detail ?? errorData.message ?? errorMsg;
-    } catch {
-      // Если не удалось распарсить JSON – оставляем стандартное сообщение.
-    }
-    throw new Error(errorMsg);
-  }
-
-  // Для пустых ответов (например, 204 No Content) читаем текст, если он пуст – возвращаем true.
-  const text = await response.text();
-  if (!text) return true as T;
-
-  // Иначе парсим JSON и возвращаем результат.
-  return JSON.parse(text);
-}
+const AGENT_HISTORY_URL = serviceUrl(import.meta.env.VITE_AGENT_HISTORY, 'localhost:6410');
 
 /**
  * Сервис для чтения истории агентов: дискуссии, ответы, системные сообщения, инструменты.

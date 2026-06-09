@@ -16,6 +16,7 @@ import Footer from './components/layout/Footer';
 import Home from './pages/Home';
 import Datasets from './pages/Datasets';
 import Models from './pages/Models';
+import ModelDetail from './pages/ModelDetail';
 import Agents from './pages/Agents';
 
 import './styles/App.css';
@@ -35,6 +36,7 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/datasets" element={<Datasets />} />
               <Route path="/models" element={<Models />} />
+              <Route path="/models/:id" element={<ModelDetail />} />
               <Route path="/agents" element={<Agents />} />
             </Routes>
           </main>

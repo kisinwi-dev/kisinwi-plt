@@ -1,0 +1,237 @@
+/* Стили, специфичные для страниц моделей. Общие примитивы — в styles/components.css. */
+
+/* ── Фильтры ──────────────────────────────────────────────────────────────────── */
+.models-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.filter-field {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--color-bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-input);
+  padding: 0.55rem 1rem;
+  flex: 1 1 220px;
+}
+
+.filter-field i {
+  color: var(--color-text-secondary);
+}
+
+.filter-field input,
+.filter-field select {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--color-text-primary);
+  font-family: var(--font-primary);
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+.filter-field select option {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+/* ── Сетка карточек ──────────────────────────────────────────────────────────── */
+.models-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.model-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.model-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.model-title-group h2 {
+  font-size: 1.25rem;
+  margin: 0;
+  word-break: break-word;
+}
+
+.model-version {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.model-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.model-meta i {
+  margin-right: 0.3rem;
+  color: var(--color-accent);
+}
+
+.model-description {
+  margin-top: 1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Пагинация ───────────────────────────────────────────────────────────────── */
+.models-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+}
+
+.pagination-info {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+/* ── Детальный просмотр ──────────────────────────────────────────────────────── */
+.model-detail-header {
+  margin-bottom: 1.5rem;
+}
+
+.model-detail-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.model-detail-title h1 {
+  margin: 0;
+  word-break: break-word;
+}
+
+.model-detail-description {
+  margin-top: 0.5rem;
+  color: var(--color-text-secondary);
+}
+
+.detail-section {
+  background: var(--color-bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.detail-section-title {
+  margin: 0 0 1.2rem;
+  font-size: 1.1rem;
+}
+
+.detail-section-title i {
+  margin-right: 0.5rem;
+  color: var(--color-accent);
+}
+
+.detail-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.detail-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--color-text-secondary);
+}
+
+.detail-field .mono {
+  word-break: break-all;
+}
+
+.detail-empty {
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.detail-pre {
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-input);
+  padding: 1rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--color-text-primary);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* ── Файлы весов ─────────────────────────────────────────────────────────────── */
+.model-files {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.model-file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-input);
+  padding: 1rem 1.2rem;
+}
+
+.model-file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.model-file-name {
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.model-file-name i {
+  margin-right: 0.4rem;
+  color: var(--color-accent);
+}
+
+.model-file-meta {
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+}
+
+.model-file-row .button {
+  padding: 0.5rem 1.2rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}

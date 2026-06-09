@@ -1,36 +1,9 @@
 // Импортируем типы для датасетов, новых датасетов, новых версий и существующих версий.
 import type { Dataset, NewDataset, NewVersion, Version, VersionSplitsResponse } from '../types/dataset';
+import { handleResponse, serviceUrl } from './http';
 
-// Базовый URL API берётся из переменной окружения VITE_API_URL, если её нет – localhost:8000/api.
-const DMS_URL = `http://${import.meta.env.VITE_DMS ?? 'localhost:6500'}`;
-
-/**
- * Универсальная функция обработки HTTP-ответа.
- * @param response – объект Response от fetch.
- * @returns промис с данными типа T.
- * @throws ошибка с текстом, извлечённым из тела ответа или статусом.
- */
-async function handleResponse<T>(response: Response): Promise<T> {
-  // Если статус ответа не в диапазоне 200-299 – ошибка.
-  if (!response.ok) {
-    let errorMsg = `HTTP error ${response.status}`;
-    try {
-      // Пытаемся получить JSON с описанием ошибки (бэкенд может отдавать { message: ... })
-      const errorData = await response.json();
-      errorMsg = errorData.message || errorMsg;
-    } catch {
-      // Если не удалось распарсить JSON – оставляем стандартное сообщение.
-    }
-    throw new Error(errorMsg);
-  }
-
-  // Для пустых ответов (например, 204 No Content) читаем текст, если он пуст – возвращаем true.
-  const text = await response.text();
-  if (!text) return true as T;
-
-  // Иначе парсим JSON и возвращаем результат.
-  return JSON.parse(text);
-}
+// Базовый URL сервиса datasets берётся из переменной окружения VITE_DMS, по умолчанию localhost:6500.
+const DMS_URL = serviceUrl(import.meta.env.VITE_DMS, 'localhost:6500');
 
 /**
  * Сервис для работы с датасетами и версиями.
