@@ -482,14 +482,18 @@
 .model-group-header {
   display: flex;
   flex-direction: column;
+  gap: 0.6rem;
+}
+
+.model-group-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 0.5rem;
 }
 
-.model-group-header-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+.model-group-meta {
+  /* Сводка по последней версии — отдельной строкой под заголовком. */
 }
 
 .model-group-count {
@@ -507,6 +511,33 @@
   padding-top: 0.75rem;
 }
 
+.versions-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.45rem;
+  background: transparent;
+  border: none;
+  border-top: var(--border-subtle);
+  border-radius: 0;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-family: var(--font-primary);
+  font-size: 0.82rem;
+  transition: color 0.15s;
+}
+
+.versions-toggle:hover {
+  color: var(--color-accent);
+}
+
+.versions-toggle i {
+  font-size: 0.7rem;
+}
+
 .versions-table {
   width: 100%;
   table-layout: fixed;
@@ -516,8 +547,17 @@
 
 .versions-table colgroup col:nth-child(1) { width: 5rem; }
 .versions-table colgroup col:nth-child(2) { width: auto; }
-.versions-table colgroup col:nth-child(3) { width: 6rem; }
+.versions-table colgroup col:nth-child(3) { width: 8.5rem; }
 .versions-table colgroup col:nth-child(4) { width: 9rem; }
+
+/* Бейдж статуса не должен вылезать за пределы своей ячейки на колонку «Дата». */
+.versions-table .status-badge {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
 
 .versions-table thead th {
   text-align: left;
@@ -578,7 +618,7 @@
   color: var(--color-text-secondary);
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 0.1rem;
 }
 

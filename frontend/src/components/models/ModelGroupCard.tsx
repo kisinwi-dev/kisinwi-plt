@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { MLModelGroup, MLModel } from '../../types/mlModels';
-import { formatDateParts } from '../../utils/format';
+import { formatDateParts, formatDateTime } from '../../utils/format';
 import { mlModelsService } from '../../services/mlModelsService';
 import { useNotification } from '../../contexts/NotificationContext';
 import ConfirmModal from '../common/ConfirmModal';
@@ -20,11 +20,19 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
   const { showNotification } = useNotification();
   const latest = group.versions[0];
   const [sortAsc, setSortAsc] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [pending, setPending] = useState<PendingDelete | null>(null);
 
   const sorted = [...group.versions].sort((a, b) =>
     sortAsc ? Number(a.version) - Number(b.version) : Number(b.version) - Number(a.version)
   );
+
+  // По умолчанию показываем только COLLAPSED_COUNT свежих версий, чтобы не растягивать
+  // страницу. Остальные — под кнопкой «показать все».
+  const COLLAPSED_COUNT = 3;
+  const collapsible = sorted.length > COLLAPSED_COUNT;
+  const visible = collapsible && !expanded ? sorted.slice(0, COLLAPSED_COUNT) : sorted;
+  const hiddenCount = sorted.length - visible.length;
 
   const handleConfirmDelete = async () => {
     if (!pending) return;
@@ -47,21 +55,12 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
     <>
       <div className="card model-group-card">
         <div className="model-group-header">
-          <div className="model-title-group">
-            <h2>{group.name}</h2>
-            <span className="model-group-count">
-              <i className="fas fa-code-branch"></i> {group.versions.length} {group.versions.length === 1 ? 'версия' : group.versions.length < 5 ? 'версии' : 'версий'}
-            </span>
-          </div>
-          <div className="model-group-header-actions">
-            <div className="model-meta">
-              {latest.framework && (
-                <span>
-                  <i className="fas fa-layer-group"></i> {latest.framework}
-                  {latest.framework_version ? ` ${latest.framework_version}` : ''}
-                </span>
-              )}
-              <span><i className="fas fa-tags"></i> {latest.classes.length} классов</span>
+          <div className="model-group-header-top">
+            <div className="model-title-group">
+              <h2>{group.name}</h2>
+              <span className="model-group-count">
+                <i className="fas fa-code-branch"></i> {group.versions.length} {group.versions.length === 1 ? 'версия' : group.versions.length < 5 ? 'версии' : 'версий'}
+              </span>
             </div>
             <button
               className="btn-icon btn-icon--danger"
@@ -70,6 +69,16 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
             >
               <i className="fas fa-trash"></i>
             </button>
+          </div>
+          <div className="model-meta model-group-meta">
+            {latest.framework && (
+              <span>
+                <i className="fas fa-layer-group"></i> {latest.framework}
+                {latest.framework_version ? ` ${latest.framework_version}` : ''}
+              </span>
+            )}
+            <span><i className="fas fa-tags"></i> {latest.classes.length} классов</span>
+            <span><i className="fas fa-calendar-alt"></i> {formatDateTime(latest.created_at)}</span>
           </div>
         </div>
 
@@ -99,7 +108,7 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
               </tr>
             </thead>
             <tbody>
-              {sorted.map((v) => (
+              {visible.map((v) => (
                 <tr
                   key={v.id}
                   className="model-version-row"
@@ -134,6 +143,18 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
               ))}
             </tbody>
           </table>
+
+          {collapsible && (
+            <button
+              className="versions-toggle"
+              onClick={() => setExpanded((v) => !v)}
+              aria-expanded={expanded}
+            >
+              {expanded
+                ? <><i className="fas fa-chevron-up"></i> Свернуть</>
+                : <><i className="fas fa-chevron-down"></i> Показать ещё {hiddenCount}</>}
+            </button>
+          )}
         </div>
       </div>
 
