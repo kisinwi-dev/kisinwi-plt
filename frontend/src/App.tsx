@@ -19,6 +19,7 @@ import DatasetDetail from './pages/DatasetDetail';
 import Models from './pages/Models';
 import ModelDetail from './pages/ModelDetail';
 import Agents from './pages/Agents';
+import AgentDiscussion from './pages/AgentDiscussion';
 
 import './styles/App.css';
 
@@ -40,6 +41,7 @@ function App() {
               <Route path="/models" element={<Models />} />
               <Route path="/models/:id" element={<ModelDetail />} />
               <Route path="/agents" element={<Agents />} />
+              <Route path="/agents/discussion/:discussionId" element={<AgentDiscussion />} />
             </Routes>
           </main>
           <Footer />

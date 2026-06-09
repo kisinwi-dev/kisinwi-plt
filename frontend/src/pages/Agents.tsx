@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { DiscussionHistory, RunPipelineForm } from '../components/agents';
 import './Agents.css';
 
@@ -7,12 +7,11 @@ type AgentsTab = 'run' | 'history';
 
 const Agents: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AgentsTab>('history');
-  const [, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
-  // После старта пайплайна — переключаемся на историю и открываем дискуссию.
+  // После старта пайплайна — открываем страницу дискуссии.
   const handleStarted = (discussionId: string) => {
-    setActiveTab('history');
-    setSearchParams({ discussion: discussionId });
+    navigate(`/agents/discussion/${discussionId}`);
   };
 
   return (
