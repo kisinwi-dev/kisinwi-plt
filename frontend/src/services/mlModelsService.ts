@@ -2,9 +2,11 @@
 import type {
   MLModel,
   MLModels,
+  MLModelsGrouped,
   MLModelFiles,
   MLModelStatus,
   ModelsQuery,
+  GroupedModelsQuery,
 } from '../types/mlModels';
 import { handleResponse, serviceUrl } from './http';
 
@@ -28,6 +30,38 @@ export const mlModelsService = {
     if (query.offset != null) url.searchParams.append('offset', String(query.offset));
     const response = await fetch(url.toString());
     return handleResponse<MLModels>(response);
+  },
+
+  /**
+   * Получить модели, сгруппированные по имени, с пагинацией по группам.
+   * GET /models/grouped?status&dataset_id&limit&offset
+   */
+  async getGroupedModels(query: GroupedModelsQuery = {}): Promise<MLModelsGrouped> {
+    const url = new URL(`${ML_MODELS_URL}/models/grouped`);
+    if (query.dataset_id) url.searchParams.append('dataset_id', query.dataset_id);
+    if (query.status) url.searchParams.append('status', query.status);
+    if (query.limit != null) url.searchParams.append('limit', String(query.limit));
+    if (query.offset != null) url.searchParams.append('offset', String(query.offset));
+    const response = await fetch(url.toString());
+    return handleResponse<MLModelsGrouped>(response);
+  },
+
+  /**
+   * Удалить одну версию модели по ID.
+   * DELETE /models/{modelId}
+   */
+  async deleteModel(modelId: string): Promise<void> {
+    const response = await fetch(`${ML_MODELS_URL}/models/${modelId}`, { method: 'DELETE' });
+    await handleResponse<unknown>(response);
+  },
+
+  /**
+   * Удалить все версии модели по имени.
+   * DELETE /models/by-name/{name}
+   */
+  async deleteModelsByName(name: string): Promise<void> {
+    const response = await fetch(`${ML_MODELS_URL}/models/by-name/${encodeURIComponent(name)}`, { method: 'DELETE' });
+    await handleResponse<unknown>(response);
   },
 
   /**

@@ -1,11 +1,49 @@
 /* Стили, специфичные для страниц моделей. Общие примитивы — в styles/components.css. */
 
-/* ── Фильтры ──────────────────────────────────────────────────────────────────── */
+/* ── Toolbar (фильтры + переключатель вида) ───────────────────────────────────── */
+.models-toolbar {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
 .models-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-  margin-bottom: 2rem;
+  flex: 1;
+}
+
+/* ── Переключатель вида ───────────────────────────────────────────────────────── */
+.view-toggle {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--color-bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-input);
+  padding: 0.25rem;
+  flex-shrink: 0;
+}
+
+.view-toggle-btn {
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--radius-input) - 2px);
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  transition: background 0.15s, color 0.15s;
+}
+
+.view-toggle-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.view-toggle-btn.active {
+  background: var(--color-accent);
+  color: #fff;
 }
 
 .filter-field {
@@ -39,10 +77,121 @@
   color: var(--color-text-primary);
 }
 
+/* ── Кастомный select (фильтры) ──────────────────────────────────────────────── */
+.select {
+  position: relative;
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.select-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  background: var(--color-bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-input);
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  color: var(--color-text-primary);
+  font-family: var(--font-primary);
+  font-size: 0.95rem;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.select-trigger:hover {
+  border-color: var(--color-border-strong);
+}
+
+.select--open .select-trigger {
+  border-color: var(--color-accent);
+}
+
+.select-trigger > i:first-child {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.select-value {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-caret {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+  transition: transform 0.18s ease;
+}
+
+.select--open .select-caret {
+  transform: rotate(180deg);
+  color: var(--color-accent);
+}
+
+.select-menu {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+  background: var(--color-bg-secondary);
+  border: var(--border-soft);
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow-md);
+  max-height: 16rem;
+  overflow-y: auto;
+  animation: select-menu-in 0.14s ease;
+}
+
+@keyframes select-menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: calc(var(--radius-input) - 2px);
+  cursor: pointer;
+  font-size: 0.92rem;
+  color: var(--color-text-primary);
+  transition: background 0.12s, color 0.12s;
+}
+
+.select-option-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-option--active {
+  background: var(--color-bg-primary);
+}
+
+.select-option--selected {
+  color: var(--color-accent);
+}
+
+.select-option-check {
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
 /* ── Сетка карточек ──────────────────────────────────────────────────────────── */
 .models-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr));
   gap: 1.5rem;
 }
 
@@ -127,6 +276,40 @@
   word-break: break-word;
 }
 
+.model-detail-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+  word-break: break-all;
+  cursor: pointer;
+  transition: opacity 0.15s, color 0.15s;
+  margin-top: 0.3rem;
+}
+
+.model-detail-id:hover {
+  opacity: 1;
+  color: var(--color-accent);
+}
+
+.model-detail-id i {
+  font-size: 0.7rem;
+}
+
+.model-detail-id-copy-icon {
+  opacity: 0;
+  transition: opacity 0.15s;
+  font-size: 0.65rem !important;
+  margin-left: 0.1rem;
+}
+
+.model-detail-id:hover .model-detail-id-copy-icon {
+  opacity: 0.7;
+}
+
 .model-detail-description {
   margin-top: 0.5rem;
   color: var(--color-text-secondary);
@@ -143,6 +326,20 @@
 .detail-section-title {
   margin: 0 0 1.2rem;
   font-size: 1.1rem;
+}
+
+.detail-section-collapsible-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-bottom: 1.2rem;
+  border-bottom: var(--border-subtle);
+  cursor: pointer;
+}
+
+.detail-section-collapsible-header:hover .collapse-chevron,
+.detail-section-collapsible-header:hover .detail-section-title {
+  color: var(--color-accent);
 }
 
 .detail-section-title i {
@@ -177,6 +374,45 @@
 .detail-empty {
   color: var(--color-text-secondary);
   font-style: italic;
+}
+
+.detail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  background: var(--color-accent-soft);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  color: var(--color-accent-light);
+  font-family: var(--font-primary);
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.detail-link i {
+  font-size: 0.78rem;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.detail-link:hover {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  filter: brightness(1.15);
+}
+
+.detail-pre--params,
+.detail-empty--params {
+  margin-top: 2rem;
 }
 
 .detail-pre {
@@ -234,4 +470,278 @@
   padding: 0.5rem 1.2rem;
   font-size: 0.9rem;
   white-space: nowrap;
+}
+
+/* ── Grouped view ────────────────────────────────────────────────────────────── */
+.model-group-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.model-group-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.model-group-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.model-group-count {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.model-group-count i {
+  margin-right: 0.3rem;
+  color: var(--color-accent);
+}
+
+.model-group-versions {
+  border-top: var(--border-subtle);
+  padding-top: 0.75rem;
+}
+
+.versions-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.versions-table colgroup col:nth-child(1) { width: 5rem; }
+.versions-table colgroup col:nth-child(2) { width: auto; }
+.versions-table colgroup col:nth-child(3) { width: 6rem; }
+.versions-table colgroup col:nth-child(4) { width: 9rem; }
+
+.versions-table thead th {
+  text-align: left;
+  padding: 0.3rem 0.6rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.versions-table thead th:last-child {
+  text-align: right;
+}
+
+.model-version-row {
+  cursor: pointer;
+  transition: background 0.15s;
+  border-radius: var(--radius-input);
+}
+
+.model-version-row:hover td {
+  background: var(--color-bg-primary);
+}
+
+.model-version-row td {
+  padding: 0.45rem 0.6rem;
+  vertical-align: middle;
+}
+
+.model-version-row td:first-child {
+  border-radius: var(--radius-input) 0 0 var(--radius-input);
+}
+
+.model-version-row td:last-child {
+  border-radius: 0 var(--radius-input) var(--radius-input) 0;
+  text-align: right;
+}
+
+.model-version-label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.model-version-label i {
+  margin-right: 0.3rem;
+  color: var(--color-accent);
+}
+
+.model-version-type {
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.model-version-date {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.model-version-time {
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+/* ── Иконочные кнопки действий ───────────────────────────────────────────────── */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-input);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  padding: 0.4rem;
+  font-size: 0.9rem;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.btn-icon:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+}
+
+.btn-icon--danger:hover {
+  color: var(--color-danger, #e05c5c);
+  background: rgba(224, 92, 92, 0.1);
+}
+
+.btn-icon--sm {
+  font-size: 0.75rem;
+  padding: 0.3rem;
+}
+
+.model-version-actions {
+  text-align: center;
+}
+
+.model-version-row .btn-icon--sm {
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+
+.model-version-row:hover .btn-icon--sm {
+  opacity: 1;
+}
+
+.versions-th-sortable {
+  cursor: pointer;
+  user-select: none;
+  border-radius: var(--radius-input);
+  transition: color 0.15s, background 0.15s;
+  padding: 0.3rem 0.6rem !important;
+}
+
+.versions-th-sortable:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+}
+
+/* Двойная стрелка: неактивный шеврон вверх + вниз */
+.sort-icon {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.35rem;
+  gap: 1px;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.sort-icon-up,
+.sort-icon-down {
+  font-size: 0.55rem;
+  color: var(--color-text-secondary);
+  opacity: 0.35;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+/* Активная стрелка — полная яркость и accent-цвет */
+.sort-asc .sort-icon-up {
+  opacity: 1;
+  color: var(--color-accent);
+}
+
+.sort-desc .sort-icon-down {
+  opacity: 1;
+  color: var(--color-accent);
+}
+
+/* На hover обе стрелки чуть ярче */
+.versions-th-sortable:hover .sort-icon-up,
+.versions-th-sortable:hover .sort-icon-down {
+  opacity: 0.6;
+}
+
+/* ========================
+   Metrics Charts
+   ======================== */
+
+.metrics-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.metrics-chart-block {
+  background: var(--color-bg-deep);
+  border: var(--border-soft);
+  border-radius: var(--radius-input);
+  padding: 0.85rem 0.75rem 0.5rem;
+}
+
+.metrics-chart-title {
+  margin: 0 0 0.5rem 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+}
+
+.metrics-charts-placeholder {
+  padding: 1rem 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.metrics-charts-placeholder--error {
+  color: var(--color-danger);
+}
+
+/* Collapsible text report */
+.metrics-report-details {
+  margin-top: 0.75rem;
+}
+
+.metrics-report-summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  user-select: none;
+  padding: 0.25rem 0;
+}
+
+.metrics-report-summary:hover,
+.metrics-report-summary:hover .collapse-chevron {
+  color: var(--color-text-primary);
+}
+
+.metrics-report-pre {
+  margin-top: 0.5rem;
 }

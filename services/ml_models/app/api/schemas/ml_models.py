@@ -67,3 +67,15 @@ class MLModelUpdate(BaseModel):
     train_params: Optional[Dict[str, Any]] = None
     framework: Optional[str] = None
     framework_version: Optional[str] = None
+
+class MLModelGroup(BaseModel):
+    """Группа версий одной модели"""
+    name: str = Field(..., description="Имя модели")
+    versions: List[MLModel] = Field(..., description="Версии модели (убывающий порядок)")
+
+class MLModelsGrouped(BaseModel):
+    """Сгруппированный список моделей с пагинацией по уникальным именам"""
+    groups: List[MLModelGroup] = Field(..., description="Группы моделей")
+    total: int = Field(0, description="Общее количество уникальных имён с учётом фильтров")
+    limit: Optional[int] = Field(None, description="Размер страницы (по именам)")
+    offset: int = Field(0, description="Смещение из запроса")

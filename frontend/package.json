@@ -17,6 +17,7 @@
     "react-hook-form": "^7.77.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.13.1",
+    "recharts": "^3.8.1",
     "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1"
   },

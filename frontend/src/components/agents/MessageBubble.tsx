@@ -3,8 +3,9 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import { agentHistoryService } from '../../services/agentHistoryService';
-import type { AgentResponse, AgentStatus, Tool, ToolStatus } from '../../types/agentHistory';
-import { formatDateTime } from '../../utils/format';
+import type { AgentResponse, AgentStatus, Tool } from '../../types/agentHistory';
+import { formatDateTime, formatDuration, statusClass } from '../../utils/format';
+import { CollapseChevron, getDisclosureProps } from '../common/Collapse';
 
 interface Props {
   discussionId: string;
@@ -18,14 +19,6 @@ const STATUS_LABELS: Record<AgentStatus, string> = {
   ERROR: 'Ошибка',
 };
 
-// Класс статуса для бейджа (IN PROGRESS -> in-progress).
-const statusClass = (status: AgentStatus | ToolStatus): string =>
-  `status-${status.toLowerCase().replace(/\s+/g, '-')}`;
-
-// Форматирование длительности в мс/с.
-const formatDuration = (ms: number): string =>
-  ms >= 1000 ? `${(ms / 1000).toFixed(2)} с` : `${ms.toFixed(0)} мс`;
-
 // Отображение одного вызова инструмента: шапка-список + раскрываемые подробности.
 const ToolItem: React.FC<{ tool: Tool }> = ({ tool }) => {
   const [expanded, setExpanded] = useState(false);
@@ -37,15 +30,10 @@ const ToolItem: React.FC<{ tool: Tool }> = ({ tool }) => {
     <div className={`tool-item ${expanded ? 'expanded' : ''}`}>
       <div
         className={`tool-header ${hasDetails ? 'clickable' : ''}`}
-        onClick={hasDetails ? () => setExpanded(prev => !prev) : undefined}
-        role={hasDetails ? 'button' : undefined}
-        tabIndex={hasDetails ? 0 : undefined}
-        onKeyDown={hasDetails ? (e) => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(prev => !prev); }
-        } : undefined}
+        {...(hasDetails ? getDisclosureProps(expanded, () => setExpanded(prev => !prev)) : {})}
       >
         <span className="tool-name">
-          {hasDetails && <i className={`fas tool-chevron ${expanded ? 'fa-chevron-down' : 'fa-chevron-right'}`}></i>}
+          {hasDetails && <CollapseChevron open={expanded} />}
           <i className="fas fa-wrench"></i> {tool.name}
         </span>
         <div className="tool-header-right">
@@ -83,7 +71,7 @@ const ToolItem: React.FC<{ tool: Tool }> = ({ tool }) => {
 
 const MessageBubble: React.FC<Props> = ({ discussionId, response }) => {
   const [tools, setTools] = useState<Tool[] | 'loading' | 'error' | null>(null);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   const handleToggleTools = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -104,15 +92,14 @@ const MessageBubble: React.FC<Props> = ({ discussionId, response }) => {
     <div className={`message-bubble ${statusClass(response.status)}${collapsed ? ' message-bubble--collapsed' : ''}`}>
       <div
         className="message-header message-header--clickable"
-        onClick={() => setCollapsed(prev => !prev)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCollapsed(prev => !prev); } }}
+        {...getDisclosureProps(!collapsed, () => setCollapsed(prev => !prev))}
       >
-        <span className="message-role"><i className="fas fa-robot"></i> {response.agent_role}</span>
+        <span className="message-header-left">
+          <CollapseChevron open={!collapsed} />
+          <span className="message-role"><i className="fas fa-robot"></i> {response.agent_role}</span>
+        </span>
         <div className="message-header-right">
           <span className={`status-badge ${statusClass(response.status)}`}>{STATUS_LABELS[response.status]}</span>
-          <span className="message-chevron-btn"><i className="fas fa-chevron-down message-chevron"></i></span>
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import FileUploader from '../FileUploader';
+import SourcesEditor from './SourcesEditor';
 import type { NewDataset, NewVersion, SourceItem } from '../../types/dataset';
 
 type VersionFormData = Omit<NewVersion, 'id_data'>;
@@ -124,62 +125,13 @@ const DatasetForm: React.FC<DatasetFormProps> = ({
         </div>
 
         <h4>Источники данных</h4>
-        <div className="sources-container">
-          {newDataset.version.sources.map((source, index) => (
-            <div key={index} className="source-card">
-              <div className="source-header">
-                <select
-                  value={source.type}
-                  onChange={(e) => onVersionSourceChange(index, 'type', e.target.value)}
-                  className="source-type-select"
-                  disabled={loading}
-                >
-                  <option value="kaggle">📊 Kaggle</option>
-                  <option value="url">🌐 URL</option>
-                  <option value="huggingface">🤗 Hugging Face</option>
-                  <option value="other">📁 Другой</option>
-                </select>
-                {newDataset.version.sources.length > 1 && (
-                  <button
-                    type="button"
-                    className="source-remove-btn"
-                    onClick={() => onVersionSourceRemove(index)}
-                    disabled={loading}
-                  >
-                    <i className="fas fa-trash-alt"></i>
-                  </button>
-                )}
-              </div>
-              <div className="source-fields">
-                <div className="form-field">
-                  <label>URL источника</label>
-                  <input
-                    type="url"
-                    placeholder="https://..."
-                    value={source.url ?? ''}
-                    onChange={(e) => onVersionSourceChange(index, 'url', e.target.value)}
-                    className="source-input"
-                    disabled={loading}
-                  />
-                </div>
-                <div className="form-field">
-                  <label>Описание</label>
-                  <input
-                    type="text"
-                    placeholder="например: оригинальный источник"
-                    value={source.description}
-                    onChange={(e) => onVersionSourceChange(index, 'description', e.target.value)}
-                    className="source-input"
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-          <button type="button" className="add-source-btn" onClick={onVersionSourceAdd} disabled={loading}>
-            <i className="fas fa-plus-circle"></i> Добавить ещё источник
-          </button>
-        </div>
+        <SourcesEditor
+          sources={newDataset.version.sources}
+          loading={loading}
+          onAdd={onVersionSourceAdd}
+          onRemove={onVersionSourceRemove}
+          onChange={onVersionSourceChange}
+        />
       </div>
 
       <div className="form-section">

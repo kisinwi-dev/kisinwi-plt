@@ -103,6 +103,56 @@ async def get_models_statistics(
     """Статистика моделей: всего и по статусам (для дашборда)"""
     return manager.get_statistics()
 
+@routers.get(
+    "/grouped",
+    summary="Получить модели, сгруппированные по имени",
+    description="Возвращает модели сгруппированными по имени, версии отсортированы по убыванию. Пагинация по уникальным именам.",
+    response_description="Список групп моделей",
+    response_model=MLModelsGrouped,
+    responses={
+        200: {"description": "Список групп (возможно пустой)"},
+        503: {"description": "Ошибка подключения к БД"}
+    }
+)
+async def get_grouped_models(
+    dataset_id: Optional[str] = Query(None, description="Фильтр по ID датасета"),
+    model_status: Optional[str] = Query(None, alias="status", description="Фильтр по статусу модели"),
+    limit: Optional[int] = Query(None, ge=1, description="Размер страницы (по именам)"),
+    offset: int = Query(0, ge=0, description="Смещение для пагинации"),
+    manager: MlModelsManager = Depends(get_ml_models_manager)
+):
+    result = manager.get_grouped_models(
+        dataset_id=dataset_id,
+        status=model_status,
+        limit=limit,
+        offset=offset,
+    )
+    return MLModelsGrouped(**result)
+
+@routers.delete(
+    "/by-name/{name}",
+    summary="Удалить все версии модели по имени",
+    status_code=status.HTTP_200_OK,
+)
+async def delete_models_by_name(
+    name: str,
+    manager: MlModelsManager = Depends(get_ml_models_manager),
+    files_manager: FilesManager = Depends(get_files_manager),
+):
+    deleted_ids = manager.delete_by_name(name)
+    if not deleted_ids:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Модели с именем '{name}' не найдены",
+        )
+
+    # Записи удалены (FK CASCADE убрал метаданные файлов) — чистим диск по каждой версии
+    for model_id in deleted_ids:
+        files_manager.drop_model_dir(model_id)
+
+    return {"deleted": len(deleted_ids)}
+
+
 @routers.delete(
     "/{model_id}",
     summary="Удалить модель",
