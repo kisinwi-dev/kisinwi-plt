@@ -620,6 +620,26 @@
   gap: 1rem;
 }
 
+.discussion-running {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  animation: discussion-running-pulse 1.6s ease-in-out infinite;
+}
+
+.discussion-running i {
+  color: var(--color-info);
+}
+
+@keyframes discussion-running-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
 .message-bubble {
   background: var(--color-bg-secondary);
   border-radius: 14px;

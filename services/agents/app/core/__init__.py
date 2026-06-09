@@ -4,6 +4,7 @@ from app.logs import get_logger
 from app.core.crews.dataset_analyst import run_dataset_analyst
 from app.core.crews.reporter import run_reporter
 from app.core.memory import iteration_context
+from app.services.agent_history import agent_history_client
 from .pipeline import (
     train_and_debug, reasoning,
     TrainingInput
@@ -36,6 +37,7 @@ def development_models(
     """
 
     logger.info("Анализа датасета...")
+    agent_history_client.info("Запуск пайплайна разработки модели. Анализ датасета...")
     dataset_analyst_out = run_dataset_analyst(
         dataset_id=dataset_id,
         dataset_version_id=dataset_version_id,
@@ -43,9 +45,11 @@ def development_models(
     )
     if not dataset_analyst_out.readiness_assessment:
         logger.info("🟥 Анализ датасета показал, что данные не готовы к обучению")
+        agent_history_client.error("Анализ датасета показал, что данные не готовы к обучению. Пайплайн остановлен.")
         return None
 
     logger.info("✅ Анализ датасета")
+    agent_history_client.info("Анализ датасета завершён: данные готовы к обучению.")
     version_model=0
 
     for iter in range(1, max_iter+1):
@@ -53,6 +57,7 @@ def development_models(
         version_model+=1
 
         info_start_iter = f"Полный цикл обучения №{iter} из {max_iter}"
+        agent_history_client.info(f"{info_start_iter}. Этап рассуждения агентов.")
         logger.info(
             f"\n{'='*100}"
             f"\n{'Этап рассуждения':^100}"
@@ -73,8 +78,12 @@ def development_models(
         if not ml_engin_out.decision:
             logger.info("🟥 МЛ инженер и исследователь не смогли придти к общему мнению.")
             logger.warning("🟥 Обучение остановлено")
+            agent_history_client.error(
+                "ML-инженер и исследователь не пришли к общему мнению. Обучение остановлено."
+            )
             return None
         logger.info("✅ Конец рассуждений.")
+        agent_history_client.info("Рассуждение завершено: конфигурация обучения согласована.")
 
         logger.info(
             f"\n{'='*100}"
@@ -82,6 +91,7 @@ def development_models(
             f"\n{info_start_iter:^100}"
             f"\n{'='*100}"
         )
+        agent_history_client.info(f"{info_start_iter}. Запуск обучения модели.")
         # Создаём экземпляр модели для запуска тренировок
         training_input=TrainingInput(
             model_name=model_name,
@@ -104,6 +114,7 @@ def development_models(
                 f"\n{'✅ Модель успешно обучена':^100}"
                 f"\n{'='*100}"
             )
+            agent_history_client.info(f"Цикл обучения №{iter} из {max_iter} завершён: модель успешно обучена.")
 
         else:
             logger.info(
@@ -113,6 +124,9 @@ def development_models(
                 f"\n{'🟥 Не удалось обучить модель':^100}"
                 f"\nОписание: {training_res.error}"
                 f"\n{'='*100}"
+            )
+            agent_history_client.warning(
+                f"Цикл обучения №{iter} из {max_iter} провалился: {training_res.error}"
             )
             # Сообщаем следующей итерации о провале обучения, чтобы исследователь и
             # ML инженер не повторили то же решение.
@@ -126,6 +140,7 @@ def development_models(
             )
 
     # Подводим итоги обучений
+    agent_history_client.info("Все циклы обучения завершены. Формирование итогового отчёта...")
     result = run_reporter(
         business_requirements=business_requirements,
         deployment_constraints=deployment_constraints,

@@ -47,7 +47,9 @@ const DiscussionView: React.FC<Props> = ({ discussionId, active = false }) => {
       continueWhile: () => active,
       onError: err =>
         showNotification(err instanceof Error ? err.message : 'Ошибка загрузки диалога', 'error'),
-      deps: [discussionId],
+      // active в deps: когда статус дискуссии становится active (meta догрузилась),
+      // цикл опроса перезапускается, иначе он умер бы после первого запроса.
+      deps: [discussionId, active],
     },
   );
 
@@ -57,7 +59,7 @@ const DiscussionView: React.FC<Props> = ({ discussionId, active = false }) => {
     return <div className="loading-state">Загрузка диалога...</div>;
   }
 
-  if (feed.length === 0) {
+  if (feed.length === 0 && !active) {
     return <p className="empty-state">В этой дискуссии пока нет сообщений.</p>;
   }
 
@@ -76,6 +78,13 @@ const DiscussionView: React.FC<Props> = ({ discussionId, active = false }) => {
             <span className="system-message-time">{formatDateTime(item.data.timestamp)}</span>
           </div>
         ),
+      )}
+
+      {active && (
+        <div className="discussion-running" role="status" aria-live="polite">
+          <i className="fas fa-spinner fa-spin"></i>
+          <span>Дискуссия в процессе...</span>
+        </div>
       )}
     </div>
   );
