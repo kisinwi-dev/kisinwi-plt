@@ -23,6 +23,14 @@ export const formatDateTime = (value: string | null | undefined): string => {
   return date.toLocaleString();
 };
 
+// Форматирование длительности в мс/с (>= 1 с показываем в секундах).
+export const formatDuration = (ms: number): string =>
+  ms >= 1000 ? `${(ms / 1000).toFixed(2)} с` : `${ms.toFixed(0)} мс`;
+
+// CSS-класс статуса для бейджа: 'IN PROGRESS' -> 'status-in-progress'.
+export const statusClass = (status: string): string =>
+  `status-${status.toLowerCase().replace(/\s+/g, '-')}`;
+
 export const formatDateParts = (value: string | null | undefined): { date: string; time: string } => {
   if (!value) return { date: '—', time: '' };
   const normalized = hasTimezone(value) ? value : `${value}Z`;

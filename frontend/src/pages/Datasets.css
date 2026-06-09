@@ -310,6 +310,11 @@
   line-height: 1.5;
 }
 
+.dataset-description-label {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
 .dataset-meta {
   display: flex;
   gap: 1rem;

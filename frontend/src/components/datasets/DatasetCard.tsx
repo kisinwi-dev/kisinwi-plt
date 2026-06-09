@@ -3,7 +3,7 @@ import { formatBytes, formatDateTime } from '../../utils/format';
 import type { Dataset, VersionSplitsResponse } from '../../types/dataset';
 import { datasetService } from '../../services/datasetService';
 import VersionSplitsStats from './VersionSplitsStats';
-import { useNotification } from '../../contexts/NotificationContext';
+import { useCopyToClipboard } from '../../hooks';
 
 interface DatasetCardProps {
   dataset: Dataset;
@@ -25,12 +25,7 @@ const DatasetCard: React.FC<DatasetCardProps> = ({
   versionForm,
 }) => {
   const [versionStats, setVersionStats] = useState<Record<string, VersionSplitsResponse | 'loading' | 'error'>>({});
-  const { showNotification } = useNotification();
-
-  const handleCopyId = () => {
-    navigator.clipboard.writeText(dataset.id);
-    showNotification('ID скопирован', 'success');
-  };
+  const copyToClipboard = useCopyToClipboard();
 
   const handleShowVersionStats = async (versionId: string) => {
     if (versionStats[versionId]) {
@@ -54,7 +49,7 @@ const DatasetCard: React.FC<DatasetCardProps> = ({
           <span
             className="dataset-id"
             title="Нажмите, чтобы скопировать ID"
-            onClick={handleCopyId}
+            onClick={() => copyToClipboard(dataset.id)}
           >
             <i className="fas fa-hashtag"></i>{dataset.id}
             <i className="fas fa-copy dataset-id-copy-icon"></i>
@@ -80,13 +75,15 @@ const DatasetCard: React.FC<DatasetCardProps> = ({
         </div>
       </div>
 
-      <p className="dataset-description">{dataset.description}</p>
-
       <div className="dataset-meta">
         <span><i className="fas fa-tag"></i> {dataset.type} / {dataset.task}</span>
         <span><i className="fas fa-calendar-alt"></i> Создан: {formatDateTime(dataset.created_at)}</span>
         <span><i className="fas fa-sync-alt"></i> Обновлён: {formatDateTime(dataset.updated_at)}</span>
       </div>
+
+      <p className="dataset-description">
+        <span className="dataset-description-label">Описание:</span> {dataset.description}
+      </p>
 
       {dataset.classes_names.length > 0 && (
         <div className="dataset-classes">

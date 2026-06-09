@@ -4,6 +4,13 @@
 // Статус дискуссии.
 export type DiscussionStatus = 'active' | 'completed' | 'failed';
 
+// Человекочитаемые подписи статусов дискуссии.
+export const DISCUSSION_STATUS_LABELS: Record<DiscussionStatus, string> = {
+  active: 'Активна',
+  completed: 'Завершена',
+  failed: 'Ошибка',
+};
+
 // Статус запуска агента / инструмента (значения как у бэкенда — строки с пробелом).
 export type AgentStatus = 'IN PROGRESS' | 'SUCCEED' | 'ERROR';
 export type ToolStatus = 'IN PROGRESS' | 'SUCCEED' | 'ERROR';
@@ -32,6 +39,15 @@ export interface DiscussionMeta {
   tool_calls_count?: number;
   agents?: AgentModelInfo[];
 }
+
+// Заголовок дискуссии: название → пайплайн → запасной вариант.
+export const getDiscussionTitle = (d: Pick<DiscussionMeta, 'title' | 'pipeline'>): string =>
+  d.title ?? d.pipeline ?? 'Без названия';
+
+// Список агентов: из агрегата, иначе из заявленных ролей meta.
+export const getDiscussionAgents = (
+  d: Pick<DiscussionMeta, 'agents' | 'agent_roles'>,
+): AgentModelInfo[] => d.agents ?? d.agent_roles.map(role => ({ role, models: [] }));
 
 // Ответ (запуск) агента.
 export interface AgentResponse {

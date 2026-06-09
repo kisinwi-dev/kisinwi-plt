@@ -2,12 +2,13 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { mlModelsService } from '../services/mlModelsService';
 import { datasetService } from '../services/datasetService';
 import { useNotification } from '../contexts/NotificationContext';
+import { useModelFilters } from '../hooks';
+import { MODELS_PAGE_SIZE } from '../constants';
 import { ModelCard, ModelGroupCard } from '../components/models';
+import Select from '../components/common/Select';
 import type { MLModel, MLModelGroup, MLModelStatus } from '../types/mlModels';
 import type { Dataset } from '../types/dataset';
 import './Models.css';
-
-const PAGE_SIZE = 12;
 
 type ViewMode = 'grouped' | 'flat';
 
@@ -26,15 +27,10 @@ const Models: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
 
-  // Фильтры.
-  const [nameFilter, setNameFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [datasetFilter, setDatasetFilter] = useState('');
+  // Фильтры и пагинация.
+  const { filters, offset, setFilter, setOffset, resetPage } = useModelFilters();
   const [statuses, setStatuses] = useState<MLModelStatus[]>([]);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
-
-  // Пагинация.
-  const [offset, setOffset] = useState(0);
 
   useEffect(() => {
     mlModelsService.getModelStatuses()
@@ -49,10 +45,10 @@ const Models: React.FC = () => {
     setLoading(true);
     try {
       const data = await mlModelsService.getModels({
-        name: nameFilter || undefined,
-        status: statusFilter || undefined,
-        dataset_id: datasetFilter || undefined,
-        limit: PAGE_SIZE,
+        name: filters.name || undefined,
+        status: filters.status || undefined,
+        dataset_id: filters.dataset || undefined,
+        limit: MODELS_PAGE_SIZE,
         offset,
       });
       setModels(data.models);
@@ -62,15 +58,15 @@ const Models: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [nameFilter, statusFilter, datasetFilter, offset, showNotification]);
+  }, [filters, offset, showNotification]);
 
   const loadGrouped = useCallback(async () => {
     setLoading(true);
     try {
       const data = await mlModelsService.getGroupedModels({
-        status: statusFilter || undefined,
-        dataset_id: datasetFilter || undefined,
-        limit: PAGE_SIZE,
+        status: filters.status || undefined,
+        dataset_id: filters.dataset || undefined,
+        limit: MODELS_PAGE_SIZE,
         offset,
       });
       setGroups(data.groups);
@@ -80,7 +76,7 @@ const Models: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, datasetFilter, offset, showNotification]);
+  }, [filters, offset, showNotification]);
 
   useEffect(() => {
     if (viewMode === 'flat') {
@@ -90,21 +86,16 @@ const Models: React.FC = () => {
     }
   }, [viewMode, loadFlat, loadGrouped]);
 
-  const resetAndSet = <T,>(setter: React.Dispatch<React.SetStateAction<T>>) => (value: T) => {
-    setOffset(0);
-    setter(value);
-  };
-
   const switchView = (mode: ViewMode) => {
-    setOffset(0);
+    resetPage();
     setViewMode(mode);
   };
 
   const total = viewMode === 'flat' ? flatTotal : groupedTotal;
-  const page = Math.floor(offset / PAGE_SIZE) + 1;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.floor(offset / MODELS_PAGE_SIZE) + 1;
+  const totalPages = Math.max(1, Math.ceil(total / MODELS_PAGE_SIZE));
   const canPrev = offset > 0;
-  const canNext = offset + PAGE_SIZE < total;
+  const canNext = offset + MODELS_PAGE_SIZE < total;
 
   const isEmpty = viewMode === 'flat' ? models.length === 0 : groups.length === 0;
 
@@ -125,37 +116,29 @@ const Models: React.FC = () => {
               <input
                 type="text"
                 placeholder="Поиск по имени"
-                value={nameFilter}
-                onChange={(e) => resetAndSet(setNameFilter)(e.target.value)}
+                value={filters.name}
+                onChange={(e) => setFilter('name', e.target.value)}
               />
             </div>
           )}
 
-          <div className="filter-field">
-            <i className="fas fa-filter"></i>
-            <select
-              value={statusFilter}
-              onChange={(e) => resetAndSet(setStatusFilter)(e.target.value)}
-            >
-              <option value="">Все статусы</option>
-              {statuses.map((s) => (
-                <option key={s.id} value={s.status}>{s.status}</option>
-              ))}
-            </select>
-          </div>
+          <Select
+            icon="fas fa-filter"
+            ariaLabel="Фильтр по статусу"
+            placeholder="Все статусы"
+            value={filters.status}
+            options={statuses.map((s) => ({ value: s.status, label: s.status }))}
+            onChange={(v) => setFilter('status', v)}
+          />
 
-          <div className="filter-field">
-            <i className="fas fa-database"></i>
-            <select
-              value={datasetFilter}
-              onChange={(e) => resetAndSet(setDatasetFilter)(e.target.value)}
-            >
-              <option value="">Все датасеты</option>
-              {datasets.map((d) => (
-                <option key={d.id} value={d.id}>{d.name}</option>
-              ))}
-            </select>
-          </div>
+          <Select
+            icon="fas fa-database"
+            ariaLabel="Фильтр по датасету"
+            placeholder="Все датасеты"
+            value={filters.dataset}
+            options={datasets.map((d) => ({ value: d.id, label: d.name }))}
+            onChange={(v) => setFilter('dataset', v)}
+          />
         </div>
 
         <div className="view-toggle">
@@ -197,7 +180,7 @@ const Models: React.FC = () => {
             <button
               className="button secondary"
               disabled={!canPrev}
-              onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
+              onClick={() => setOffset(Math.max(0, offset - MODELS_PAGE_SIZE))}
             >
               <i className="fas fa-chevron-left"></i> Назад
             </button>
@@ -207,7 +190,7 @@ const Models: React.FC = () => {
             <button
               className="button secondary"
               disabled={!canNext}
-              onClick={() => setOffset(offset + PAGE_SIZE)}
+              onClick={() => setOffset(offset + MODELS_PAGE_SIZE)}
             >
               Вперёд <i className="fas fa-chevron-right"></i>
             </button>

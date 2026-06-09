@@ -177,3 +177,15 @@ button:disabled,
   font-family: ui-monospace, 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
   font-size: 0.9rem;
 }
+
+/* ── Единый индикатор сворачивания (collapse/expand) ─────────────────────────── */
+.collapse-chevron {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  transition: transform 0.2s ease, color 0.15s;
+  flex-shrink: 0;
+}
+
+.collapse-chevron.open {
+  transform: rotate(90deg);
+}

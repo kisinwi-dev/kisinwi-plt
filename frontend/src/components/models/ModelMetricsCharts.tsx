@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   LineChart,
   Line,
@@ -8,15 +8,13 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { metricsService, type MetricData } from '../../services/metricsService';
+import { metricsService } from '../../services/metricsService';
+import { usePolling } from '../../hooks';
+import { POLL_INTERVAL_METRICS_MS } from '../../constants';
 
 interface Props {
   modelId: string;
 }
-
-type Status = 'loading' | 'empty' | 'error' | 'ready';
-
-const POLL_INTERVAL = 5_000;
 
 const CHART_COLOR = '#b15e6b';
 const GRID_COLOR = 'rgba(255,255,255,0.06)';
@@ -29,34 +27,18 @@ const formatValue = (v: number) =>
   Number.isInteger(v) ? String(v) : v.toFixed(4);
 
 const ModelMetricsCharts: React.FC<Props> = ({ modelId }) => {
-  const [status, setStatus] = useState<Status>('loading');
-  const [metrics, setMetrics] = useState<MetricData[]>([]);
+  const { data, loading, error } = usePolling(
+    () => metricsService.getModelMetrics(modelId),
+    { intervalMs: POLL_INTERVAL_METRICS_MS, deps: [modelId] },
+  );
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetch = () =>
-      metricsService
-        .getModelMetrics(modelId)
-        .then((data) => {
-          if (cancelled) return;
-          if (!data || data.metrics.length === 0) {
-            setStatus('empty');
-          } else {
-            setMetrics(data.metrics);
-            setStatus('ready');
-          }
-        })
-        .catch(() => {
-          if (!cancelled) setStatus((prev) => prev === 'loading' ? 'error' : prev);
-        });
-
-    setStatus('loading');
-    fetch();
-
-    const timer = setInterval(fetch, POLL_INTERVAL);
-    return () => { cancelled = true; clearInterval(timer); };
-  }, [modelId]);
+  const metrics = data?.metrics ?? [];
+  // Ошибку показываем только если так и не получили данные (первая загрузка упала).
+  const status: 'loading' | 'empty' | 'error' | 'ready' =
+    loading && data === undefined ? 'loading'
+    : error && data === undefined ? 'error'
+    : metrics.length === 0 ? 'empty'
+    : 'ready';
 
   if (status === 'loading') {
     return (
@@ -112,7 +94,7 @@ const ModelMetricsCharts: React.FC<Props> = ({ modelId }) => {
                   fontSize: 12,
                   color: 'var(--color-text-primary)',
                 }}
-                formatter={(value: number) => [formatValue(value), metric.name]}
+                formatter={(value) => [formatValue(Number(value)), metric.name]}
                 labelFormatter={(label) => `Эпоха ${label}`}
               />
               <Line

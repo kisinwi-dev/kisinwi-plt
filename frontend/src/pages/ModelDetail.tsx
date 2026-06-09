@@ -6,15 +6,10 @@ import { useNotification } from '../contexts/NotificationContext';
 import type { MLModel, MLModelFile } from '../types/mlModels';
 import type { Dataset } from '../types/dataset';
 import { formatBytes, formatDateTime } from '../utils/format';
+import { useCopyToClipboard } from '../hooks';
+import { CollapseChevron, getDisclosureProps } from '../components/common/Collapse';
 import { ModelMetricsCharts } from '../components/models';
 import './Models.css';
-
-// Рендер значения train_params: примитивы — как есть, объекты/массивы — как JSON.
-const renderParamValue = (value: unknown): string => {
-  if (value === null || value === undefined) return '—';
-  if (typeof value === 'object') return JSON.stringify(value);
-  return String(value);
-};
 
 const ModelDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +22,7 @@ const ModelDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [paramsOpen, setParamsOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -56,10 +52,7 @@ const ModelDetail: React.FC = () => {
     return () => { cancelled = true; };
   }, [id, showNotification]);
 
-  const handleCopyId = (value: string) => {
-    navigator.clipboard.writeText(value);
-    showNotification('ID скопирован', 'success');
-  };
+  const handleCopyId = useCopyToClipboard();
 
   const handleDownload = async (file: MLModelFile) => {
     setDownloadingId(file.id);
@@ -168,29 +161,28 @@ const ModelDetail: React.FC = () => {
         <h3 className="detail-section-title"><i className="fas fa-chart-line"></i> Метрики</h3>
         <ModelMetricsCharts modelId={model.id} />
         {model.metrics_report && (
-          <details className="metrics-report-details">
-            <summary className="metrics-report-summary">
+          <div className="metrics-report-details">
+            <div
+              className="metrics-report-summary"
+              {...getDisclosureProps(reportOpen, () => setReportOpen(o => !o))}
+            >
+              <CollapseChevron open={reportOpen} />
               <i className="fas fa-file-lines"></i> Текстовый отчёт
-            </summary>
-            <pre className="detail-pre metrics-report-pre">{model.metrics_report}</pre>
-          </details>
+            </div>
+            {reportOpen && <pre className="detail-pre metrics-report-pre">{model.metrics_report}</pre>}
+          </div>
         )}
       </section>
 
       <section className="detail-section">
-        <div className="detail-section-collapsible-header">
+        <div
+          className="detail-section-collapsible-header"
+          {...getDisclosureProps(paramsOpen, () => setParamsOpen(o => !o))}
+        >
+          <CollapseChevron open={paramsOpen} />
           <h3 className="detail-section-title" style={{ margin: 0 }}>
             <i className="fas fa-sliders"></i> Параметры обучения
           </h3>
-          <button
-            className={`detail-expand-btn${paramsOpen ? ' open' : ''}`}
-            onClick={() => setParamsOpen(o => !o)}
-            aria-expanded={paramsOpen}
-          >
-            <i className="fas fa-code"></i>
-            {paramsOpen ? 'Скрыть JSON' : 'Показать JSON'}
-            <i className={`fas fa-chevron-down detail-toggle-chevron${paramsOpen ? ' open' : ''}`}></i>
-          </button>
         </div>
         {paramsOpen && (
           trainParams ? (

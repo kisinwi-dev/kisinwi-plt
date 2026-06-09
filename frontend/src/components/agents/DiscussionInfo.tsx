@@ -1,5 +1,6 @@
 import React from 'react';
-import type { DiscussionMeta, DiscussionStatus } from '../../types/agentHistory';
+import type { DiscussionMeta } from '../../types/agentHistory';
+import { DISCUSSION_STATUS_LABELS, getDiscussionTitle, getDiscussionAgents } from '../../types/agentHistory';
 import { formatDateTime } from '../../utils/format';
 
 interface Props {
@@ -7,31 +8,24 @@ interface Props {
   discussionId: string;
 }
 
-// Человекочитаемые подписи статусов дискуссии.
-const STATUS_LABELS: Record<DiscussionStatus, string> = {
-  active: 'Активна',
-  completed: 'Завершена',
-  failed: 'Ошибка',
-};
-
 const DiscussionInfo: React.FC<Props> = ({ discussion, discussionId }) => {
-  const title = discussion?.title ?? discussion?.pipeline ?? 'Без названия';
-  const agents = discussion?.agents
-    ?? discussion?.agent_roles.map(role => ({ role, models: [] }))
-    ?? [];
+  const title = discussion ? getDiscussionTitle(discussion) : 'Без названия';
+  const agents = discussion ? getDiscussionAgents(discussion) : [];
 
   return (
     <div className="discussion-info">
       <div className="discussion-info-header">
         <div className="discussion-title-group">
-          <h2 className="discussion-detail-title">{title}</h2>
-          <span className="discussion-id" title={discussionId}>
-            <i className="fas fa-hashtag"></i>{discussionId}
-          </span>
+          <div className="discussion-title-inner">
+            <h2 className="discussion-detail-title">{title}</h2>
+            <span className="discussion-id" title={discussionId}>
+              <i className="fas fa-hashtag"></i>{discussionId}
+            </span>
+          </div>
         </div>
         {discussion && (
           <span className={`status-badge status-${discussion.status}`}>
-            {STATUS_LABELS[discussion.status]}
+            {DISCUSSION_STATUS_LABELS[discussion.status]}
           </span>
         )}
       </div>
@@ -61,17 +55,24 @@ const DiscussionInfo: React.FC<Props> = ({ discussion, discussionId }) => {
               </h4>
               <div className="discussion-agents">
                 {agents.map(agent => (
-                  <span key={agent.role} className="agent-chip" title={agent.role}>
-                    <span className="agent-chip-role">
+                  <div key={agent.role} className="agent-card">
+                    <span className="agent-card-avatar">
                       <i className="fas fa-robot"></i>
-                      <span className="agent-role-text">{agent.role}</span>
                     </span>
-                    {agent.models.length > 0 && (
-                      <span className="agent-chip-model">
-                        <i className="fas fa-brain"></i> {agent.models.join(', ')}
-                      </span>
-                    )}
-                  </span>
+                    <div className="agent-card-body">
+                      <span className="agent-card-role" title={agent.role}>{agent.role}</span>
+                      {agent.models.length > 0 && (
+                        <div className="agent-card-models">
+                          {agent.models.map(model => (
+                            <span key={model} className="agent-model-badge" title={model}>
+                              <i className="fas fa-brain"></i>
+                              <span className="agent-model-text">{model}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
