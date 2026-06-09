@@ -6,6 +6,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import type { MLModel, MLModelFile } from '../types/mlModels';
 import type { Dataset } from '../types/dataset';
 import { formatBytes, formatDateTime } from '../utils/format';
+import { ModelMetricsCharts } from '../components/models';
 import './Models.css';
 
 // Рендер значения train_params: примитивы — как есть, объекты/массивы — как JSON.
@@ -165,10 +166,14 @@ const ModelDetail: React.FC = () => {
 
       <section className="detail-section">
         <h3 className="detail-section-title"><i className="fas fa-chart-line"></i> Метрики</h3>
-        {model.metrics_report ? (
-          <pre className="detail-pre">{model.metrics_report}</pre>
-        ) : (
-          <p className="detail-empty">Отчёт по метрикам отсутствует.</p>
+        <ModelMetricsCharts modelId={model.id} />
+        {model.metrics_report && (
+          <details className="metrics-report-details">
+            <summary className="metrics-report-summary">
+              <i className="fas fa-file-lines"></i> Текстовый отчёт
+            </summary>
+            <pre className="detail-pre metrics-report-pre">{model.metrics_report}</pre>
+          </details>
         )}
       </section>
 

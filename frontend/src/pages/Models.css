@@ -608,3 +608,72 @@
 .versions-th-sortable:hover .sort-icon-down {
   opacity: 0.6;
 }
+
+/* ========================
+   Metrics Charts
+   ======================== */
+
+.metrics-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.metrics-chart-block {
+  background: var(--color-bg-deep);
+  border: var(--border-soft);
+  border-radius: var(--radius-input);
+  padding: 0.85rem 0.75rem 0.5rem;
+}
+
+.metrics-chart-title {
+  margin: 0 0 0.5rem 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+}
+
+.metrics-charts-placeholder {
+  padding: 1rem 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.metrics-charts-placeholder--error {
+  color: var(--color-danger);
+}
+
+/* Collapsible text report */
+.metrics-report-details {
+  margin-top: 0.75rem;
+}
+
+.metrics-report-summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  user-select: none;
+  padding: 0.25rem 0;
+  list-style: none;
+}
+
+.metrics-report-summary::-webkit-details-marker {
+  display: none;
+}
+
+.metrics-report-summary:hover {
+  color: var(--color-text-primary);
+}
+
+.metrics-report-pre {
+  margin-top: 0.5rem;
+}
