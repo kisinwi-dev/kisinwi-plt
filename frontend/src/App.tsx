@@ -29,7 +29,7 @@ function App() {
       <BrowserRouter>
         <div className="app-wrapper">
           <Header />
-          <main className="main-content">
+          <main id="main-content" className="main-content">
             <Routes>
               {/*
                 Route определяет соответствие между путём URL и компонентом,

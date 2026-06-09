@@ -51,8 +51,11 @@ const DatasetDetail: React.FC = () => {
   }, [id, showNotification]);
 
   useEffect(() => {
-    setLoading(true);
-    loadDataset();
+    const init = async () => {
+      setLoading(true);
+      await loadDataset();
+    };
+    init();
   }, [loadDataset]);
 
   const handleShowVersionStats = async (versionId: string) => {

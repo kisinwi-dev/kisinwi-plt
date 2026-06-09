@@ -27,6 +27,8 @@ export const ICONS = {
   selected: 'fa-check',        // выбранный пункт в списке/дропдауне
   listView: 'fa-list',         // переключатель «плоский список»
   groupedView: 'fa-layer-group', // переключатель «группировка по моделям»
+  menu: 'fa-bars',             // открыть мобильное меню (бургер)
+  menuClose: 'fa-xmark',       // закрыть мобильное меню (бургер в открытом состоянии)
 
   // --- статусы ---
   loading: 'fa-spinner',       // + fa-spin
@@ -39,6 +41,7 @@ export const ICONS = {
   empty: 'fa-box-open',        // пустой список результатов
 
   // --- сущности ---
+  home: 'fa-house',            // главная страница (пункт навигации)
   dataset: 'fa-database',
   datasetType: 'fa-shapes',
   model: 'fa-cube',
