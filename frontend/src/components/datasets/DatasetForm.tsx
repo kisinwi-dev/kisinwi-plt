@@ -2,6 +2,7 @@ import React from 'react';
 import FileUploader from '../FileUploader';
 import SourcesEditor from './SourcesEditor';
 import Select from '../common/Select';
+import { ICONS } from '../../constants/icons';
 import type { NewDataset, NewVersion, SourceItem } from '../../types/dataset';
 
 const TYPE_OPTIONS = [
@@ -50,7 +51,7 @@ const DatasetForm: React.FC<DatasetFormProps> = ({
 
       <div className="form-section">
         <div className="form-section-head">
-          <h3><i className="fas fa-circle-info"></i> Основная информация</h3>
+          <h3><i className={`fas ${ICONS.info}`}></i> Основная информация</h3>
           <p className="form-section-hint">Как датасет будет называться и о чём он.</p>
         </div>
         <div className="form-grid">
@@ -83,14 +84,14 @@ const DatasetForm: React.FC<DatasetFormProps> = ({
 
       <div className="form-section">
         <div className="form-section-head">
-          <h3><i className="fas fa-shapes"></i> Тип и задача</h3>
+          <h3><i className={`fas ${ICONS.datasetType}`}></i> Тип и задача</h3>
           <p className="form-section-hint">Какого вида данные и для чего модель.</p>
         </div>
         <div className="form-row">
           <div className="form-field">
             <label htmlFor="dataset-type">Тип данных</label>
             <Select
-              icon="fas fa-shapes"
+              icon={`fas ${ICONS.datasetType}`}
               ariaLabel="Тип данных"
               value={newDataset.type}
               options={TYPE_OPTIONS}
@@ -100,7 +101,7 @@ const DatasetForm: React.FC<DatasetFormProps> = ({
           <div className="form-field">
             <label htmlFor="dataset-task">Задача</label>
             <Select
-              icon="fas fa-bullseye"
+              icon={`fas ${ICONS.taskTarget}`}
               ariaLabel="Задача"
               value={newDataset.task}
               options={TASK_OPTIONS}
@@ -112,7 +113,7 @@ const DatasetForm: React.FC<DatasetFormProps> = ({
 
       <div className="form-section">
         <div className="form-section-head">
-          <h3><i className="fas fa-code-branch"></i> Начальная версия <span className="required-star">*</span></h3>
+          <h3><i className={`fas ${ICONS.version}`}></i> Начальная версия <span className="required-star">*</span></h3>
           <p className="form-section-hint">Первая версия данных и откуда они взяты.</p>
         </div>
         <div className="form-grid">
@@ -152,7 +153,7 @@ const DatasetForm: React.FC<DatasetFormProps> = ({
 
       <div className="form-section">
         <div className="form-section-head">
-          <h3><i className="fas fa-file-zipper"></i> Файл датасета</h3>
+          <h3><i className={`fas ${ICONS.fileArchive}`}></i> Файл датасета</h3>
           <p className="form-section-hint">Архив с изображениями, разложенными по классам.</p>
         </div>
         <FileUploader

@@ -9,6 +9,7 @@ import { formatBytes, formatDateTime } from '../utils/format';
 import { useCopyToClipboard } from '../hooks';
 import { CollapseChevron, getDisclosureProps } from '../components/common/Collapse';
 import { ModelMetricsCharts } from '../components/models';
+import { ICONS } from '../constants/icons';
 import './Models.css';
 
 const ModelDetail: React.FC = () => {
@@ -69,7 +70,7 @@ const ModelDetail: React.FC = () => {
     return (
       <div className="page">
         <div className="loading-state">
-          <i className="fas fa-spinner fa-spin"></i> Загрузка модели…
+          <i className={`fas ${ICONS.loading} fa-spin`}></i> Загрузка модели…
         </div>
       </div>
     );
@@ -79,10 +80,10 @@ const ModelDetail: React.FC = () => {
     return (
       <div className="page">
         <button className="detail-back-link" onClick={() => navigate('/models')}>
-          <i className="fas fa-arrow-left"></i> К списку моделей
+          <i className={`fas ${ICONS.back}`}></i> К списку моделей
         </button>
         <div className="empty-state">
-          <i className="fas fa-triangle-exclamation"></i> Модель не найдена.
+          <i className={`fas ${ICONS.notFound}`}></i> Модель не найдена.
         </div>
       </div>
     );
@@ -93,13 +94,13 @@ const ModelDetail: React.FC = () => {
   return (
     <div className="page model-detail">
       <button className="detail-back-link" onClick={() => navigate('/models')}>
-        <i className="fas fa-arrow-left"></i> К списку моделей
+        <i className={`fas ${ICONS.back}`}></i> К списку моделей
       </button>
 
       <div className="model-detail-header">
         <div className="model-detail-title">
           <h1>{model.name}</h1>
-          <span className="model-version"><i className="fas fa-code-branch"></i> v{model.version}</span>
+          <span className="model-version"><i className={`fas ${ICONS.version}`}></i> v{model.version}</span>
           <span className={`status-badge status-${model.status}`}>{model.status}</span>
         </div>
         <span
@@ -107,14 +108,14 @@ const ModelDetail: React.FC = () => {
           title="Нажмите, чтобы скопировать ID"
           onClick={() => handleCopyId(model.id)}
         >
-          <i className="fas fa-hashtag"></i>{model.id}
-          <i className="fas fa-copy model-detail-id-copy-icon"></i>
+          <i className={`fas ${ICONS.id}`}></i>{model.id}
+          <i className={`fas ${ICONS.copy} model-detail-id-copy-icon`}></i>
         </span>
         {model.description && <p className="model-detail-description">{model.description}</p>}
       </div>
 
       <section className="detail-section">
-        <h3 className="detail-section-title"><i className="fas fa-circle-info"></i> Общая информация</h3>
+        <h3 className="detail-section-title"><i className={`fas ${ICONS.info}`}></i> Общая информация</h3>
         <div className="detail-fields">
           <div className="detail-field"><span className="detail-label">Тип</span><span>{model.model_type || '—'}</span></div>
           <div className="detail-field"><span className="detail-label">Framework</span><span>{model.framework ?? '—'}{model.framework_version ? ` ${model.framework_version}` : ''}</span></div>
@@ -126,7 +127,7 @@ const ModelDetail: React.FC = () => {
               onClick={() => navigate('/datasets')}
               title={model.dataset_id}
             >
-              <i className="fas fa-database"></i>
+              <i className={`fas ${ICONS.dataset}`}></i>
               {dataset ? dataset.name : model.dataset_id}
             </button>
           </div>
@@ -137,7 +138,7 @@ const ModelDetail: React.FC = () => {
               onClick={() => navigate('/datasets')}
               title={model.dataset_version_id}
             >
-              <i className="fas fa-code-branch"></i>
+              <i className={`fas ${ICONS.version}`}></i>
               {dataset?.versions.find(v => v.id === model.dataset_version_id)?.name ?? model.dataset_version_id}
             </button>
           </div>
@@ -145,7 +146,7 @@ const ModelDetail: React.FC = () => {
       </section>
 
       <section className="detail-section">
-        <h3 className="detail-section-title"><i className="fas fa-tags"></i> Классы ({model.classes.length})</h3>
+        <h3 className="detail-section-title"><i className={`fas ${ICONS.classes}`}></i> Классы ({model.classes.length})</h3>
         {model.classes.length > 0 ? (
           <div className="tag-list">
             {model.classes.map((cls) => (
@@ -158,7 +159,7 @@ const ModelDetail: React.FC = () => {
       </section>
 
       <section className="detail-section">
-        <h3 className="detail-section-title"><i className="fas fa-chart-line"></i> Метрики</h3>
+        <h3 className="detail-section-title"><i className={`fas ${ICONS.metrics}`}></i> Метрики</h3>
         <ModelMetricsCharts modelId={model.id} />
         {model.metrics_report && (
           <div className="metrics-report-details">
@@ -167,7 +168,7 @@ const ModelDetail: React.FC = () => {
               {...getDisclosureProps(reportOpen, () => setReportOpen(o => !o))}
             >
               <CollapseChevron open={reportOpen} />
-              <i className="fas fa-file-lines"></i> Текстовый отчёт
+              <i className={`fas ${ICONS.report}`}></i> Текстовый отчёт
             </div>
             {reportOpen && <pre className="detail-pre metrics-report-pre">{model.metrics_report}</pre>}
           </div>
@@ -181,7 +182,7 @@ const ModelDetail: React.FC = () => {
         >
           <CollapseChevron open={paramsOpen} />
           <h3 className="detail-section-title" style={{ margin: 0 }}>
-            <i className="fas fa-sliders"></i> Параметры обучения
+            <i className={`fas ${ICONS.trainingParams}`}></i> Параметры обучения
           </h3>
         </div>
         {paramsOpen && (
@@ -196,13 +197,13 @@ const ModelDetail: React.FC = () => {
       </section>
 
       <section className="detail-section">
-        <h3 className="detail-section-title"><i className="fas fa-file-arrow-down"></i> Файлы весов ({files.length})</h3>
+        <h3 className="detail-section-title"><i className={`fas ${ICONS.weights}`}></i> Файлы весов ({files.length})</h3>
         {files.length > 0 ? (
           <div className="model-files">
             {files.map((file) => (
               <div key={file.id} className="model-file-row">
                 <div className="model-file-info">
-                  <span className="model-file-name"><i className="fas fa-file"></i> {file.filename}</span>
+                  <span className="model-file-name"><i className={`fas ${ICONS.file}`}></i> {file.filename}</span>
                   <span className="model-file-meta">
                     {formatBytes(file.file_size)} · {formatDateTime(file.created_at)}
                   </span>
@@ -213,9 +214,9 @@ const ModelDetail: React.FC = () => {
                   onClick={() => handleDownload(file)}
                 >
                   {downloadingId === file.id ? (
-                    <><i className="fas fa-spinner fa-spin"></i> Скачивание…</>
+                    <><i className={`fas ${ICONS.loading} fa-spin`}></i> Скачивание…</>
                   ) : (
-                    <><i className="fas fa-download"></i> Скачать</>
+                    <><i className={`fas ${ICONS.download}`}></i> Скачать</>
                   )}
                 </button>
               </div>

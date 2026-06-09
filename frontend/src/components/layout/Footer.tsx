@@ -1,4 +1,5 @@
 import React from 'react';
+import { ICONS } from '../../constants/icons';
 import './Footer.css';
 
 const Footer: React.FC = () => {
@@ -42,7 +43,7 @@ const Footer: React.FC = () => {
             </a>
           </div>
           <button className="back-to-top" onClick={scrollToTop}>
-            <i className="fas fa-arrow-up"></i> Наверх
+            <i className={`fas ${ICONS.toTop}`}></i> Наверх
           </button>
         </div>
       </div>

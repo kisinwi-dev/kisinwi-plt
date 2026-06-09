@@ -6,6 +6,7 @@ import { agentHistoryService } from '../../services/agentHistoryService';
 import type { AgentResponse, AgentStatus, Tool } from '../../types/agentHistory';
 import { formatDateTime, formatDuration, statusClass } from '../../utils/format';
 import { CollapseChevron, getDisclosureProps } from '../common/Collapse';
+import { ICONS } from '../../constants/icons';
 
 interface Props {
   discussionId: string;
@@ -52,7 +53,7 @@ const ToolItem: React.FC<{ tool: Tool; maxDuration: number }> = ({ tool, maxDura
       >
         <span className="tool-name">
           {hasDetails && <CollapseChevron open={expanded} />}
-          <i className="fas fa-wrench"></i> {tool.name}
+          <i className={`fas ${ICONS.tools}`}></i> {tool.name}
         </span>
         <div className="tool-header-right">
           {tool.duration_ms != null && (
@@ -62,7 +63,7 @@ const ToolItem: React.FC<{ tool: Tool; maxDuration: number }> = ({ tool, maxDura
                   <span className="tool-latency-bar-fill" style={{ width: barWidth }} />
                 </span>
               )}
-              <i className="fas fa-clock"></i> {formatDuration(tool.duration_ms)}
+              <i className={`fas ${ICONS.duration}`}></i> {formatDuration(tool.duration_ms)}
             </span>
           )}
           <span className={`status-badge ${statusClass(tool.status)}`}>{STATUS_LABELS[tool.status]}</span>
@@ -127,7 +128,7 @@ const MessageBubble: React.FC<Props> = ({ discussionId, response }) => {
         </span>
         <div className="message-header-right">
           {response.duration_ms != null && (
-            <span className="message-header-duration"><i className="fas fa-clock"></i> {formatDuration(response.duration_ms)}</span>
+            <span className="message-header-duration"><i className={`fas ${ICONS.duration}`}></i> {formatDuration(response.duration_ms)}</span>
           )}
           <span className={`status-badge ${statusClass(response.status)}`}>{STATUS_LABELS[response.status]}</span>
         </div>
@@ -140,10 +141,10 @@ const MessageBubble: React.FC<Props> = ({ discussionId, response }) => {
       {!collapsed && (
         <>
           <div className="message-meta">
-            {response.model && <span><i className="fas fa-microchip"></i> {response.model}</span>}
-            {response.task_name && <span><i className="fas fa-list-check"></i> {response.task_name}</span>}
-            {response.iteration != null && <span><i className="fas fa-rotate"></i> итерация {response.iteration}</span>}
-            {response.duration_ms != null && <span><i className="fas fa-clock"></i> {formatDuration(response.duration_ms)}</span>}
+            {response.model && <span><i className={`fas ${ICONS.agentModel}`}></i> {response.model}</span>}
+            {response.task_name && <span><i className={`fas ${ICONS.task}`}></i> {response.task_name}</span>}
+            {response.iteration != null && <span><i className={`fas ${ICONS.iteration}`}></i> итерация {response.iteration}</span>}
+            {response.duration_ms != null && <span><i className={`fas ${ICONS.duration}`}></i> {formatDuration(response.duration_ms)}</span>}
           </div>
 
           <div className="message-text markdown-body">
@@ -153,7 +154,7 @@ const MessageBubble: React.FC<Props> = ({ discussionId, response }) => {
           <div className="message-footer">
             <span className="message-time">{formatDateTime(response.timestamp)}</span>
             <button className="tools-toggle" onClick={handleToggleTools}>
-              <i className={`fas ${tools !== null ? 'fa-chevron-up' : 'fa-wrench'}`}></i>
+              <i className={`fas ${tools !== null ? ICONS.collapse : ICONS.tools}`}></i>
               {tools !== null ? ' Скрыть инструменты' : ' Инструменты'}
             </button>
           </div>

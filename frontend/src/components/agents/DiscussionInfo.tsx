@@ -2,6 +2,7 @@ import React from 'react';
 import type { DiscussionMeta } from '../../types/agentHistory';
 import { DISCUSSION_STATUS_LABELS, getDiscussionTitle, getDiscussionAgents } from '../../types/agentHistory';
 import { formatDateTime } from '../../utils/format';
+import { ICONS } from '../../constants/icons';
 
 interface Props {
   discussion: DiscussionMeta | null;
@@ -19,7 +20,7 @@ const DiscussionInfo: React.FC<Props> = ({ discussion, discussionId }) => {
           <div className="discussion-title-inner">
             <h2 className="discussion-detail-title">{title}</h2>
             <span className="discussion-id" title={discussionId}>
-              <i className="fas fa-hashtag"></i>{discussionId}
+              <i className={`fas ${ICONS.id}`}></i>{discussionId}
             </span>
           </div>
         </div>
@@ -38,14 +39,14 @@ const DiscussionInfo: React.FC<Props> = ({ discussion, discussionId }) => {
             <div className="discussion-stats">
               {discussion.responses_count != null && (
                 <div className="stat-chip">
-                  <i className="fas fa-comments"></i>
+                  <i className={`fas ${ICONS.discussion}`}></i>
                   <span className="stat-chip-value">{discussion.responses_count}</span>
                   <span className="stat-chip-label">ответов</span>
                 </div>
               )}
               {discussion.tool_calls_count != null && discussion.tool_calls_count > 0 && (
                 <div className="stat-chip">
-                  <i className="fas fa-wrench"></i>
+                  <i className={`fas ${ICONS.tools}`}></i>
                   <span className="stat-chip-value">{discussion.tool_calls_count}</span>
                   <span className="stat-chip-label">вызовов</span>
                 </div>
@@ -55,24 +56,24 @@ const DiscussionInfo: React.FC<Props> = ({ discussion, discussionId }) => {
 
           <div className="discussion-info-meta">
             {discussion.pipeline && (
-              <span><i className="fas fa-diagram-project"></i> {discussion.pipeline}</span>
+              <span><i className={`fas ${ICONS.pipeline}`}></i> {discussion.pipeline}</span>
             )}
-            <span><i className="fas fa-calendar-alt"></i> Создано: {formatDateTime(discussion.created_at)}</span>
+            <span><i className={`fas ${ICONS.dateCreated}`}></i> Создано: {formatDateTime(discussion.created_at)}</span>
             {discussion.finished_at && (
-              <span><i className="fas fa-flag-checkered"></i> Завершено: {formatDateTime(discussion.finished_at)}</span>
+              <span><i className={`fas ${ICONS.dateFinished}`}></i> Завершено: {formatDateTime(discussion.finished_at)}</span>
             )}
           </div>
 
           {agents.length > 0 && (
             <div className="discussion-agents-section">
               <h4 className="discussion-section-title">
-                <i className="fas fa-users"></i> Агенты ({agents.length})
+                <i className={`fas ${ICONS.agentsGroup}`}></i> Агенты ({agents.length})
               </h4>
               <div className="discussion-agents">
                 {agents.map(agent => (
                   <div key={agent.role} className="agent-card">
                     <span className="agent-card-avatar">
-                      <i className="fas fa-robot"></i>
+                      <i className={`fas ${ICONS.agent}`}></i>
                     </span>
                     <div className="agent-card-body">
                       <span className="agent-card-role" title={agent.role}>{agent.role}</span>
@@ -80,7 +81,7 @@ const DiscussionInfo: React.FC<Props> = ({ discussion, discussionId }) => {
                         <div className="agent-card-models">
                           {agent.models.map(model => (
                             <span key={model} className="agent-model-badge" title={model}>
-                              <i className="fas fa-brain"></i>
+                              <i className={`fas ${ICONS.agentModel}`}></i>
                               <span className="agent-model-text">{model}</span>
                             </span>
                           ))}

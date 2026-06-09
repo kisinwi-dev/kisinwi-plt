@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import './FileUploader.css';
 import { formatBytes } from '../utils/format';
+import { ICONS } from '../constants/icons';
 
 interface FileUploaderProps {
   onFileSelect: (file: File | null) => void;
@@ -63,18 +64,18 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   const getFileIcon = (fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase();
     if (ext === 'zip' || ext === 'rar' || ext === '7z' || ext === 'tar' || ext === 'gz') {
-      return '📦';
+      return ICONS.fileArchive;
     }
     if (ext === 'jpg' || ext === 'jpeg' || ext === 'png' || ext === 'gif' || ext === 'svg') {
-      return '🖼️';
+      return ICONS.fileImage;
     }
     if (ext === 'csv' || ext === 'xlsx' || ext === 'xls') {
-      return '📊';
+      return ICONS.fileTable;
     }
     if (ext === 'txt' || ext === 'md') {
-      return '📄';
+      return ICONS.fileText;
     }
-    return '📁';
+    return ICONS.file;
   };
 
   return (
@@ -96,7 +97,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
             style={{ display: 'none' }}
           />
           <div className="drop-zone-content">
-            <span className="upload-icon">📤</span>
+            <span className="upload-icon"><i className={`fas ${ICONS.upload}`}></i></span>
             <p>Перетащите файл сюда или <span className="browse-link">выберите</span></p>
             <p className="file-hint">Поддерживаются: {accept.split(',').join(', ')}</p>
           </div>
@@ -104,14 +105,14 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       ) : (
         <div className="file-preview">
           <div className="file-info">
-            <span className="file-icon">{getFileIcon(currentFile.name)}</span>
+            <span className="file-icon"><i className={`fas ${getFileIcon(currentFile.name)}`}></i></span>
             <div className="file-details">
               <p className="file-name">{currentFile.name}</p>
               <p className="file-size">{formatBytes(currentFile.size)}</p>
             </div>
           </div>
           <button className="remove-file" onClick={handleRemove} title="Удалить файл">
-            <i className="fas fa-times"></i>
+            <i className={`fas ${ICONS.close}`}></i>
           </button>
         </div>
       )}

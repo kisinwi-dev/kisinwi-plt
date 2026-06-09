@@ -8,6 +8,7 @@ import { ModelCard, ModelGroupCard } from '../components/models';
 import Select from '../components/common/Select';
 import type { MLModel, MLModelGroup, MLModelStatus } from '../types/mlModels';
 import type { Dataset } from '../types/dataset';
+import { ICONS } from '../constants/icons';
 import './Models.css';
 
 type ViewMode = 'grouped' | 'flat';
@@ -116,7 +117,7 @@ const Models: React.FC = () => {
       <div className="models-toolbar">
         <div className="models-filters">
           <div className="filter-field">
-            <i className="fas fa-search"></i>
+            <i className={`fas ${ICONS.search}`}></i>
             <input
               type="text"
               placeholder="Поиск по имени"
@@ -126,7 +127,7 @@ const Models: React.FC = () => {
           </div>
 
           <Select
-            icon="fas fa-filter"
+            icon={`fas ${ICONS.filter}`}
             ariaLabel="Фильтр по статусу"
             placeholder="Все статусы"
             value={filters.status}
@@ -135,7 +136,7 @@ const Models: React.FC = () => {
           />
 
           <Select
-            icon="fas fa-database"
+            icon={`fas ${ICONS.dataset}`}
             ariaLabel="Фильтр по датасету"
             placeholder="Все датасеты"
             value={filters.dataset}
@@ -150,25 +151,25 @@ const Models: React.FC = () => {
             onClick={() => switchView('grouped')}
             title="Группировка по моделям"
           >
-            <i className="fas fa-layer-group"></i>
+            <i className={`fas ${ICONS.groupedView}`}></i>
           </button>
           <button
             className={`view-toggle-btn${viewMode === 'flat' ? ' active' : ''}`}
             onClick={() => switchView('flat')}
             title="Плоский список"
           >
-            <i className="fas fa-list"></i>
+            <i className={`fas ${ICONS.listView}`}></i>
           </button>
         </div>
       </div>
 
       {initialLoading ? (
         <div className="loading-state">
-          <i className="fas fa-spinner fa-spin"></i> Загрузка моделей…
+          <i className={`fas ${ICONS.loading} fa-spin`}></i> Загрузка моделей…
         </div>
       ) : isEmpty ? (
         <div className="empty-state">
-          <i className="fas fa-box-open"></i> Модели не найдены.
+          <i className={`fas ${ICONS.empty}`}></i> Модели не найдены.
         </div>
       ) : (
         <>
@@ -185,7 +186,7 @@ const Models: React.FC = () => {
               disabled={!canPrev}
               onClick={() => setOffset(Math.max(0, offset - MODELS_PAGE_SIZE))}
             >
-              <i className="fas fa-chevron-left"></i> Назад
+              <i className={`fas ${ICONS.pagePrev}`}></i> Назад
             </button>
             <span className="pagination-info">
               Стр. {page} из {totalPages} · всего {total}
@@ -195,7 +196,7 @@ const Models: React.FC = () => {
               disabled={!canNext}
               onClick={() => setOffset(offset + MODELS_PAGE_SIZE)}
             >
-              Вперёд <i className="fas fa-chevron-right"></i>
+              Вперёд <i className={`fas ${ICONS.pageNext}`}></i>
             </button>
           </div>
         </>

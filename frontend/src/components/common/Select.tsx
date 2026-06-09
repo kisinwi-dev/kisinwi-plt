@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { ICONS } from '../../constants/icons';
 import './Select.css';
 
 export interface SelectOption {
@@ -97,7 +98,7 @@ const Select: React.FC<Props> = ({ value, options, onChange, icon, placeholder, 
       >
         {icon && <i className={icon}></i>}
         <span className="select-value">{selected?.label}</span>
-        <i className="fas fa-chevron-down select-caret"></i>
+        <i className={`fas ${ICONS.expand} select-caret`}></i>
       </button>
 
       {open && (
@@ -112,7 +113,7 @@ const Select: React.FC<Props> = ({ value, options, onChange, icon, placeholder, 
               onClick={() => choose(o.value)}
             >
               <span className="select-option-label">{o.label}</span>
-              {o.value === value && <i className="fas fa-check select-option-check"></i>}
+              {o.value === value && <i className={`fas ${ICONS.selected} select-option-check`}></i>}
             </li>
           ))}
         </ul>

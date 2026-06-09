@@ -3,6 +3,7 @@ import type { DiscussionMeta } from '../../types/agentHistory';
 import { DISCUSSION_STATUS_LABELS, getDiscussionTitle, getDiscussionAgents } from '../../types/agentHistory';
 import { formatDateTime } from '../../utils/format';
 import { useCopyToClipboard } from '../../hooks';
+import { ICONS } from '../../constants/icons';
 
 interface Props {
   discussion: DiscussionMeta;
@@ -43,7 +44,7 @@ const DiscussionCard: React.FC<Props> = ({ discussion, onSelect, onDelete }) => 
         <div className="discussion-title-group">
           {discussion.pipeline && (
             <span className="discussion-badge">
-              <i className="fas fa-diagram-project"></i> {discussion.pipeline}
+              <i className={`fas ${ICONS.pipeline}`}></i> {discussion.pipeline}
             </span>
           )}
           <h2>{title}</h2>
@@ -52,8 +53,8 @@ const DiscussionCard: React.FC<Props> = ({ discussion, onSelect, onDelete }) => 
             title="Нажмите, чтобы скопировать ID"
             onClick={handleCopyId}
           >
-            <i className="fas fa-hashtag"></i>{discussion.discussion_id}
-            <i className="fas fa-copy discussion-id-copy-icon"></i>
+            <i className={`fas ${ICONS.id}`}></i>{discussion.discussion_id}
+            <i className={`fas ${ICONS.copy} discussion-id-copy-icon`}></i>
           </span>
         </div>
         <div className="discussion-card-actions">
@@ -66,27 +67,27 @@ const DiscussionCard: React.FC<Props> = ({ discussion, onSelect, onDelete }) => 
             aria-label="Удалить диалог"
             onClick={handleDelete}
           >
-            <i className="fas fa-trash"></i>
+            <i className={`fas ${ICONS.delete}`}></i>
           </button>
         </div>
       </div>
 
       <div className="discussion-meta">
         {agentsCount > 0 && (
-          <span><i className="fas fa-users"></i> Агентов: {agentsCount}</span>
+          <span><i className={`fas ${ICONS.agentsGroup}`}></i> Агентов: {agentsCount}</span>
         )}
         {discussion.responses_count != null && (
-          <span><i className="fas fa-comments"></i> Ответов: {discussion.responses_count}</span>
+          <span><i className={`fas ${ICONS.discussion}`}></i> Ответов: {discussion.responses_count}</span>
         )}
         {discussion.tool_calls_count != null && discussion.tool_calls_count > 0 && (
-          <span><i className="fas fa-wrench"></i> Вызовов: {discussion.tool_calls_count}</span>
+          <span><i className={`fas ${ICONS.tools}`}></i> Вызовов: {discussion.tool_calls_count}</span>
         )}
       </div>
 
       <div className="discussion-meta discussion-meta--dates">
-        <span title="Время старта"><i className="fas fa-calendar-alt"></i> Время старта: {formatDateTime(discussion.created_at)}</span>
+        <span title="Время старта"><i className={`fas ${ICONS.dateCreated}`}></i> Время старта: {formatDateTime(discussion.created_at)}</span>
         {discussion.finished_at && (
-          <span title="Время завершения"><i className="fas fa-flag-checkered"></i> Время завершения: {formatDateTime(discussion.finished_at)}</span>
+          <span title="Время завершения"><i className={`fas ${ICONS.dateFinished}`}></i> Время завершения: {formatDateTime(discussion.finished_at)}</span>
         )}
       </div>
 

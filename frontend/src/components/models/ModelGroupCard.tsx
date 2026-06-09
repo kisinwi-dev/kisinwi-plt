@@ -5,6 +5,7 @@ import { formatDateParts, formatDateTime } from '../../utils/format';
 import { mlModelsService } from '../../services/mlModelsService';
 import { useNotification } from '../../contexts/NotificationContext';
 import ConfirmModal from '../common/ConfirmModal';
+import { ICONS } from '../../constants/icons';
 
 interface Props {
   group: MLModelGroup;
@@ -59,7 +60,7 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
             <div className="model-title-group">
               <h2>{group.name}</h2>
               <span className="model-group-count">
-                <i className="fas fa-code-branch"></i> {group.versions.length} {group.versions.length === 1 ? 'версия' : group.versions.length < 5 ? 'версии' : 'версий'}
+                <i className={`fas ${ICONS.version}`}></i> {group.versions.length} {group.versions.length === 1 ? 'версия' : group.versions.length < 5 ? 'версии' : 'версий'}
               </span>
             </div>
             <button
@@ -67,23 +68,23 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
               title="Удалить все версии"
               onClick={(e) => { e.stopPropagation(); setPending({ kind: 'group', name: group.name, count: group.versions.length }); }}
             >
-              <i className="fas fa-trash"></i>
+              <i className={`fas ${ICONS.delete}`}></i>
             </button>
           </div>
           <div className="model-meta model-group-meta">
             {latest.framework && (
               <span title="Фреймворк (последняя версия)">
-                <i className="fas fa-layer-group"></i>
+                <i className={`fas ${ICONS.framework}`}></i>
                 <span className="meta-label">Фреймворк:</span> {latest.framework}
                 {latest.framework_version ? ` ${latest.framework_version}` : ''}
               </span>
             )}
             <span title="Количество классов (последняя версия)">
-              <i className="fas fa-tags"></i>
+              <i className={`fas ${ICONS.classes}`}></i>
               <span className="meta-label">Классов:</span> {latest.classes.length}
             </span>
             <span title="Дата последней версии">
-              <i className="fas fa-calendar-alt"></i>
+              <i className={`fas ${ICONS.dateUpdated}`}></i>
               <span className="meta-label">Обновлена:</span> {formatDateTime(latest.created_at)}
             </span>
           </div>
@@ -104,8 +105,8 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
                 >
                   Версия
                   <span className={`sort-icon${sortAsc ? ' sort-asc' : ' sort-desc'}`}>
-                    <i className="fas fa-chevron-up sort-icon-up"></i>
-                    <i className="fas fa-chevron-down sort-icon-down"></i>
+                    <i className={`fas ${ICONS.collapse} sort-icon-up`}></i>
+                    <i className={`fas ${ICONS.expand} sort-icon-down`}></i>
                   </span>
                 </th>
                 <th>Тип</th>
@@ -130,7 +131,7 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
                   }}
                 >
                   <td className="model-version-label">
-                    <i className="fas fa-code-branch"></i> v{v.version}
+                    <i className={`fas ${ICONS.version}`}></i> v{v.version}
                   </td>
                   <td className="model-version-type">{v.model_type ?? '—'}</td>
                   <td><span className={`status-badge status-${v.status}`}>{v.status}</span></td>
@@ -143,7 +144,7 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
                       title="Удалить версию"
                       onClick={(e) => { e.stopPropagation(); setPending({ kind: 'version', model: v }); }}
                     >
-                      <i className="fas fa-trash"></i>
+                      <i className={`fas ${ICONS.delete}`}></i>
                     </button>
                   </td>
                 </tr>
@@ -158,8 +159,8 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
               aria-expanded={expanded}
             >
               {expanded
-                ? <><i className="fas fa-chevron-up"></i> Свернуть</>
-                : <><i className="fas fa-chevron-down"></i> Показать ещё {hiddenCount}</>}
+                ? <><i className={`fas ${ICONS.collapse}`}></i> Свернуть</>
+                : <><i className={`fas ${ICONS.expand}`}></i> Показать ещё {hiddenCount}</>}
             </button>
           )}
         </div>

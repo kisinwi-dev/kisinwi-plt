@@ -7,6 +7,7 @@ import { formatBytes, formatDateTime } from '../utils/format';
 import type { Dataset, SourceItem, VersionSplitsResponse } from '../types/dataset';
 import { AddVersionForm, VersionSplitsStats } from '../components/datasets';
 import ConfirmModal from '../components/common/ConfirmModal';
+import { ICONS } from '../constants/icons';
 import './Datasets.css';
 
 const makeUploadId = () => `upload_${Date.now()}`;
@@ -167,7 +168,7 @@ const DatasetDetail: React.FC = () => {
     return (
       <div className="page">
         <div className="loading-state">
-          <i className="fas fa-spinner fa-spin"></i> Загрузка датасета…
+          <i className={`fas ${ICONS.loading} fa-spin`}></i> Загрузка датасета…
         </div>
       </div>
     );
@@ -177,10 +178,10 @@ const DatasetDetail: React.FC = () => {
     return (
       <div className="page">
         <button className="button secondary" onClick={() => navigate('/datasets')}>
-          <i className="fas fa-arrow-left"></i> К списку
+          <i className={`fas ${ICONS.back}`}></i> К списку
         </button>
         <div className="empty-state">
-          <i className="fas fa-triangle-exclamation"></i> Датасет не найден.
+          <i className={`fas ${ICONS.notFound}`}></i> Датасет не найден.
         </div>
       </div>
     );
@@ -189,7 +190,7 @@ const DatasetDetail: React.FC = () => {
   return (
     <div className="page dataset-detail">
       <button className="detail-back-link" onClick={() => navigate('/datasets')}>
-        <i className="fas fa-arrow-left"></i> К списку датасетов
+        <i className={`fas ${ICONS.back}`}></i> К списку датасетов
       </button>
 
       <header className="dataset-detail-header">
@@ -197,7 +198,7 @@ const DatasetDetail: React.FC = () => {
           <div className="dataset-detail-title">
             <h1>{dataset.name}</h1>
             <span className="dataset-badge">
-              <i className="fas fa-tag"></i> {dataset.type} / {dataset.task}
+              <i className={`fas ${ICONS.tag}`}></i> {dataset.type} / {dataset.task}
             </span>
           </div>
           <span
@@ -205,8 +206,8 @@ const DatasetDetail: React.FC = () => {
             title="Нажмите, чтобы скопировать ID"
             onClick={() => copyToClipboard(dataset.id)}
           >
-            <i className="fas fa-hashtag"></i>{dataset.id}
-            <i className="fas fa-copy dataset-id-copy-icon"></i>
+            <i className={`fas ${ICONS.id}`}></i>{dataset.id}
+            <i className={`fas ${ICONS.copy} dataset-id-copy-icon`}></i>
           </span>
         </div>
         <button
@@ -214,21 +215,21 @@ const DatasetDetail: React.FC = () => {
           onClick={() => setPendingDelete({ kind: 'dataset' })}
           disabled={busy}
         >
-          <i className="fas fa-trash"></i> Удалить датасет
+          <i className={`fas ${ICONS.delete}`}></i> Удалить датасет
         </button>
       </header>
 
       <section className="detail-section">
-        <h3 className="detail-section-title"><i className="fas fa-circle-info"></i> Общая информация</h3>
+        <h3 className="detail-section-title"><i className={`fas ${ICONS.info}`}></i> Общая информация</h3>
         <div className="detail-fields">
-          <div className="detail-field"><span className="detail-label"><i className="fas fa-shapes"></i> Тип</span><span>{dataset.type || '—'}</span></div>
-          <div className="detail-field"><span className="detail-label"><i className="fas fa-bullseye"></i> Задача</span><span>{dataset.task || '—'}</span></div>
-          <div className="detail-field"><span className="detail-label"><i className="fas fa-tags"></i> Классов</span><span>{dataset.classes_count}</span></div>
-          <div className="detail-field"><span className="detail-label"><i className="fas fa-layer-group"></i> Версий</span><span>{dataset.versions.length}</span></div>
-          <div className="detail-field"><span className="detail-label"><i className="fas fa-calendar-plus"></i> Создан</span><span>{formatDateTime(dataset.created_at)}</span></div>
-          <div className="detail-field"><span className="detail-label"><i className="fas fa-sync-alt"></i> Обновлён</span><span>{formatDateTime(dataset.updated_at)}</span></div>
+          <div className="detail-field"><span className="detail-label"><i className={`fas ${ICONS.datasetType}`}></i> Тип</span><span>{dataset.type || '—'}</span></div>
+          <div className="detail-field"><span className="detail-label"><i className={`fas ${ICONS.taskTarget}`}></i> Задача</span><span>{dataset.task || '—'}</span></div>
+          <div className="detail-field"><span className="detail-label"><i className={`fas ${ICONS.classes}`}></i> Классов</span><span>{dataset.classes_count}</span></div>
+          <div className="detail-field"><span className="detail-label"><i className={`fas ${ICONS.version}`}></i> Версий</span><span>{dataset.versions.length}</span></div>
+          <div className="detail-field"><span className="detail-label"><i className={`fas ${ICONS.dateCreated}`}></i> Создан</span><span>{formatDateTime(dataset.created_at)}</span></div>
+          <div className="detail-field"><span className="detail-label"><i className={`fas ${ICONS.dateUpdated}`}></i> Обновлён</span><span>{formatDateTime(dataset.updated_at)}</span></div>
           <div className="detail-field detail-field--full">
-            <span className="detail-label"><i className="fas fa-tags"></i> Классы</span>
+            <span className="detail-label"><i className={`fas ${ICONS.classes}`}></i> Классы</span>
             {dataset.classes_names.length > 0 ? (
               <div className="tag-list">
                 {dataset.classes_names.map(className => (
@@ -244,20 +245,20 @@ const DatasetDetail: React.FC = () => {
 
       {dataset.description && (
         <section className="detail-section">
-          <h3 className="detail-section-title"><i className="fas fa-align-left"></i> Описание</h3>
+          <h3 className="detail-section-title"><i className={`fas ${ICONS.description}`}></i> Описание</h3>
           <p className="dataset-detail-description">{dataset.description}</p>
         </section>
       )}
 
       <section className="detail-section versions-section">
         <div className="versions-section-head">
-          <h3 className="detail-section-title"><i className="fas fa-layer-group"></i> Версии ({dataset.versions.length})</h3>
+          <h3 className="detail-section-title"><i className={`fas ${ICONS.version}`}></i> Версии ({dataset.versions.length})</h3>
           <button
             className="button small"
             onClick={() => setShowVersionForm(v => !v)}
             disabled={busy}
           >
-            <i className="fas fa-plus"></i> Добавить версию
+            <i className={`fas ${ICONS.add}`}></i> Добавить версию
           </button>
         </div>
 
@@ -273,7 +274,7 @@ const DatasetDetail: React.FC = () => {
 
         {dataset.versions.length > 1 && (
           <div className="filter-field versions-filter">
-            <i className="fas fa-search"></i>
+            <i className={`fas ${ICONS.search}`}></i>
             <input
               type="text"
               placeholder="Поиск по названию или описанию версии"
@@ -287,7 +288,7 @@ const DatasetDetail: React.FC = () => {
                 onClick={() => setVersionFilter('')}
                 title="Сбросить фильтр"
               >
-                <i className="fas fa-xmark"></i>
+                <i className={`fas ${ICONS.close}`}></i>
               </button>
             )}
           </div>
@@ -319,7 +320,7 @@ const DatasetDetail: React.FC = () => {
                         title="Сделать версией по умолчанию"
                         disabled={busy}
                       >
-                        <i className="fas fa-star"></i>
+                        <i className={`fas ${ICONS.star}`}></i>
                       </button>
                     )}
                     <button
@@ -327,7 +328,7 @@ const DatasetDetail: React.FC = () => {
                       onClick={() => handleShowVersionStats(ver.id)}
                       title="Статистика"
                     >
-                      <i className="fas fa-chart-bar"></i>
+                      <i className={`fas ${ICONS.datasetStats}`}></i>
                     </button>
                     <button
                       className="icon-button small icon-button--danger"
@@ -335,21 +336,21 @@ const DatasetDetail: React.FC = () => {
                       title="Удалить версию"
                       disabled={busy}
                     >
-                      <i className="fas fa-trash"></i>
+                      <i className={`fas ${ICONS.delete}`}></i>
                     </button>
                   </div>
                 </div>
                 <div className="version-meta">
                   <span className="version-meta-item">
-                    <span className="version-meta-label"><i className="fas fa-database"></i> Размер</span>
+                    <span className="version-meta-label"><i className={`fas ${ICONS.dataset}`}></i> Размер</span>
                     <span className="version-meta-value">{formatBytes(ver.size_bytes)}</span>
                   </span>
                   <span className="version-meta-item">
-                    <span className="version-meta-label"><i className="fas fa-images"></i> Образцов</span>
+                    <span className="version-meta-label"><i className={`fas ${ICONS.samples}`}></i> Образцов</span>
                     <span className="version-meta-value">{ver.num_samples.toLocaleString()}</span>
                   </span>
                   <span className="version-meta-item">
-                    <span className="version-meta-label"><i className="fas fa-calendar-alt"></i> Загружено</span>
+                    <span className="version-meta-label"><i className={`fas ${ICONS.dateCreated}`}></i> Загружено</span>
                     <span className="version-meta-value">{formatDateTime(ver.created_at)}</span>
                   </span>
                 </div>
@@ -361,7 +362,7 @@ const DatasetDetail: React.FC = () => {
                 {ver.sources.length > 0 && (
                   <div className="dataset-sources">
                     <span className="dataset-sources-label">
-                      <i className="fas fa-link"></i> Источники ({ver.sources.length})
+                      <i className={`fas ${ICONS.link}`}></i> Источники ({ver.sources.length})
                     </span>
                     {ver.sources.map((src, idx) => (
                       <div key={idx} className="source-item">
@@ -374,7 +375,7 @@ const DatasetDetail: React.FC = () => {
                             className="source-link"
                             title={src.url}
                           >
-                            <i className="fas fa-arrow-up-right-from-square"></i>
+                            <i className={`fas ${ICONS.external}`}></i>
                             <span className="source-link-text">{src.description || src.url}</span>
                           </a>
                         ) : (

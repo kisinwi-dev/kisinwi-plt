@@ -1,5 +1,6 @@
 import React from 'react';
 import './Home.css';
+import { ICONS } from '../constants/icons';
 
 const Home: React.FC = () => {
   return (
@@ -25,21 +26,21 @@ const Home: React.FC = () => {
         <h2>Основные возможности</h2>
         <div className="feature-grid">
           <div className="card card--hoverable feature-card">
-            <h3>📁 Работа с датасетами</h3>
+            <h3><i className={`fas ${ICONS.dataset}`}></i> Работа с датасетами</h3>
             <p>
               Загружай, удаляй и версионируй датасеты. 
               Сейчас поддерживается <strong>Image Classification</strong>.
             </p>
           </div>
           <div className="card card--hoverable feature-card">
-            <h3>⚙️ Запуск обучения</h3>
+            <h3><i className={`fas ${ICONS.trainingParams}`}></i> Запуск обучения</h3>
             <p>
               Выбирай модель и параметры, запускай эксперименты 
               прямо из интерфейса. Всё прозрачно и настраиваемо.
             </p>
           </div>
           <div className="card card--hoverable feature-card">
-            <h3>🤖 Обучение с агентами</h3>
+            <h3><i className={`fas ${ICONS.agent}`}></i> Обучение с агентами</h3>
             <p>
               Агенты сами подбирают гиперпараметры, анализируют результаты 
               и предлагают улучшения — машинное обучение становится доступнее.

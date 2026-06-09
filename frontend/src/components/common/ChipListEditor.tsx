@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ICONS } from '../../constants/icons';
 import './ChipListEditor.css';
 
 interface Props {
@@ -74,7 +75,7 @@ const ChipListEditor: React.FC<Props> = ({
           onClick={() => add()}
           disabled={disabled || !draft.trim()}
         >
-          <i className="fas fa-plus"></i> {addLabel}
+          <i className={`fas ${ICONS.add}`}></i> {addLabel}
         </button>
       </div>
 
@@ -89,7 +90,7 @@ const ChipListEditor: React.FC<Props> = ({
               onClick={() => add(s)}
               disabled={disabled}
             >
-              <i className="fas fa-plus"></i> {s}
+              <i className={`fas ${ICONS.add}`}></i> {s}
             </button>
           ))}
         </div>
@@ -108,7 +109,7 @@ const ChipListEditor: React.FC<Props> = ({
                 aria-label="Удалить"
                 title="Удалить"
               >
-                <i className="fas fa-xmark"></i>
+                <i className={`fas ${ICONS.close}`}></i>
               </button>
             </li>
           ))}

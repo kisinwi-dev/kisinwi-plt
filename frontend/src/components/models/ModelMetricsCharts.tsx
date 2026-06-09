@@ -11,6 +11,7 @@ import {
 import { metricsService } from '../../services/metricsService';
 import { usePolling } from '../../hooks';
 import { POLL_INTERVAL_METRICS_MS } from '../../constants';
+import { ICONS } from '../../constants/icons';
 
 interface Props {
   modelId: string;
@@ -43,7 +44,7 @@ const ModelMetricsCharts: React.FC<Props> = ({ modelId }) => {
   if (status === 'loading') {
     return (
       <div className="metrics-charts-placeholder">
-        <i className="fas fa-spinner fa-spin"></i> Загрузка графиков…
+        <i className={`fas ${ICONS.loading} fa-spin`}></i> Загрузка графиков…
       </div>
     );
   }
@@ -51,7 +52,7 @@ const ModelMetricsCharts: React.FC<Props> = ({ modelId }) => {
   if (status === 'error') {
     return (
       <div className="metrics-charts-placeholder metrics-charts-placeholder--error">
-        <i className="fas fa-triangle-exclamation"></i> Не удалось загрузить данные из сервиса метрик.
+        <i className={`fas ${ICONS.warning}`}></i> Не удалось загрузить данные из сервиса метрик.
       </div>
     );
   }
@@ -59,7 +60,7 @@ const ModelMetricsCharts: React.FC<Props> = ({ modelId }) => {
   if (status === 'empty') {
     return (
       <div className="metrics-charts-placeholder">
-        <i className="fas fa-chart-line"></i> Данные по эпохам отсутствуют.
+        <i className={`fas ${ICONS.metrics}`}></i> Данные по эпохам отсутствуют.
       </div>
     );
   }

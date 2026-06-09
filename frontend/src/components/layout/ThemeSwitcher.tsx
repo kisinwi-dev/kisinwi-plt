@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { THEMES, applyTheme, getStoredTheme, type ThemeId } from '../../theme/themes';
+import { ICONS } from '../../constants/icons';
 import './ThemeSwitcher.css';
 
 const ThemeSwitcher: React.FC = () => {
@@ -48,7 +49,7 @@ const ThemeSwitcher: React.FC = () => {
               >
                 <i className={`fas ${t.icon}`}></i>
                 <span>{t.label}</span>
-                {t.id === theme && <i className="fas fa-check theme-switcher-check"></i>}
+                {t.id === theme && <i className={`fas ${ICONS.selected} theme-switcher-check`}></i>}
               </button>
             </li>
           ))}

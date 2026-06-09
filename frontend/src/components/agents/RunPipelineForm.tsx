@@ -5,6 +5,7 @@ import type { Dataset } from '../../types/dataset';
 import { useNotification } from '../../contexts/NotificationContext';
 import Combobox from '../common/Combobox';
 import ChipListEditor from '../common/ChipListEditor';
+import { ICONS } from '../../constants/icons';
 
 interface Props {
   // Вызывается после успешного старта пайплайна с id созданной дискуссии.
@@ -118,7 +119,7 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
 
       <div className="form-section">
         <div className="form-section-head">
-          <h3><i className="fas fa-database"></i> Данные и модель</h3>
+          <h3><i className={`fas ${ICONS.dataset}`}></i> Данные и модель</h3>
           <p className="form-section-hint">Что обучаем и на каких данных.</p>
         </div>
         <div className="form-grid">
@@ -126,7 +127,7 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
             <label htmlFor="run-dataset">Имя датасета <span className="required-star">*</span></label>
             <Combobox
               id="run-dataset"
-              icon="fas fa-database"
+              icon={`fas ${ICONS.dataset}`}
               placeholder="например: CIFAR-10"
               value={datasetName}
               options={datasets.map(d => d.name)}
@@ -138,7 +139,7 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
             <label htmlFor="run-version">Имя версии <span className="required-star">*</span></label>
             <Combobox
               id="run-version"
-              icon="fas fa-code-branch"
+              icon={`fas ${ICONS.version}`}
               placeholder="например: v1.0"
               value={versionName}
               options={matchedDataset?.versions.map(v => v.name) ?? []}
@@ -176,7 +177,7 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
 
       <div className="form-section">
         <div className="form-section-head">
-          <h3><i className="fas fa-circle-info"></i> Контекст для агентов</h3>
+          <h3><i className={`fas ${ICONS.info}`}></i> Контекст для агентов</h3>
           <p className="form-section-hint">Эту информацию агенты используют при подборе решения.</p>
         </div>
         <div className="form-grid">
@@ -220,7 +221,7 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
 
       <div className="form-section">
         <div className="form-section-head">
-          <h3><i className="fas fa-tag"></i> Параметры запуска</h3>
+          <h3><i className={`fas ${ICONS.tag}`}></i> Параметры запуска</h3>
           <p className="form-section-hint">Как этот запуск будет назван в истории.</p>
         </div>
         <div className="form-grid">
@@ -254,9 +255,9 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
       <div className="run-pipeline-actions">
         <button type="submit" className="button" disabled={submitting}>
           {submitting ? (
-            <><i className="fas fa-spinner fa-spin"></i> Запуск...</>
+            <><i className={`fas ${ICONS.loading} fa-spin`}></i> Запуск...</>
           ) : (
-            <><i className="fas fa-play"></i> Запустить</>
+            <><i className={`fas ${ICONS.play}`}></i> Запустить</>
           )}
         </button>
       </div>

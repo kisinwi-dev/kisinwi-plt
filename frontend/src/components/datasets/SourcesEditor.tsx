@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Select from '../common/Select';
 import './SourcesEditor.css';
+import { ICONS } from '../../constants/icons';
 import type { SourceItem } from '../../types/dataset';
 
 const SOURCE_TYPE_OPTIONS = [
@@ -82,7 +83,7 @@ const SourcesEditor: React.FC<SourcesEditorProps> = ({ sources, loading, onChang
           onClick={addSource}
           disabled={loading || !canAdd}
         >
-          <i className="fas fa-plus"></i> Добавить
+          <i className={`fas ${ICONS.add}`}></i> Добавить
         </button>
       </div>
 
@@ -101,7 +102,7 @@ const SourcesEditor: React.FC<SourcesEditorProps> = ({ sources, loading, onChang
                 aria-label="Удалить источник"
                 title="Удалить источник"
               >
-                <i className="fas fa-xmark"></i>
+                <i className={`fas ${ICONS.close}`}></i>
               </button>
             </li>
           ))}

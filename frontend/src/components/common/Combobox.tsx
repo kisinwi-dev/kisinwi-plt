@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ICONS } from '../../constants/icons';
 import './Combobox.css';
 
 interface Props {
@@ -90,7 +91,7 @@ const Combobox: React.FC<Props> = ({ value, onChange, options, placeholder, icon
             aria-label="Показать варианты"
             onClick={() => setOpen((o) => !o)}
           >
-            <i className="fas fa-chevron-down"></i>
+            <i className={`fas ${ICONS.expand}`}></i>
           </button>
         )}
       </div>
@@ -107,7 +108,7 @@ const Combobox: React.FC<Props> = ({ value, onChange, options, placeholder, icon
               onMouseDown={(e) => { e.preventDefault(); choose(o); }}
             >
               <span className="combobox-option-label">{o}</span>
-              {o === value && <i className="fas fa-check combobox-option-check"></i>}
+              {o === value && <i className={`fas ${ICONS.selected} combobox-option-check`}></i>}
             </li>
           ))}
         </ul>

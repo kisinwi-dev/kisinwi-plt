@@ -6,6 +6,7 @@ import { useNotification } from '../contexts/NotificationContext';
 import { DatasetForm, DatasetCard } from '../components/datasets';
 import Select from '../components/common/Select';
 import ConfirmModal from '../components/common/ConfirmModal';
+import { ICONS } from '../constants/icons';
 
 const TYPE_FILTER_OPTIONS = [
   { value: 'image', label: 'Image' },
@@ -172,13 +173,13 @@ const Datasets: React.FC = () => {
           className={`page-tab ${activeTab === 'create' ? 'active' : ''}`}
           onClick={() => setActiveTab('create')}
         >
-          <i className="fas fa-plus"></i> Создать датасет
+          <i className={`fas ${ICONS.add}`}></i> Создать датасет
         </button>
         <button
           className={`page-tab ${activeTab === 'list' ? 'active' : ''}`}
           onClick={() => setActiveTab('list')}
         >
-          <i className="fas fa-list"></i> Список датасетов
+          <i className={`fas ${ICONS.listView}`}></i> Список датасетов
         </button>
       </div>
 
@@ -198,7 +199,7 @@ const Datasets: React.FC = () => {
           <div className="list-toolbar">
             <div className="list-filters">
               <div className="filter-field">
-                <i className="fas fa-search"></i>
+                <i className={`fas ${ICONS.search}`}></i>
                 <input
                   type="text"
                   placeholder="Поиск по имени"
@@ -208,7 +209,7 @@ const Datasets: React.FC = () => {
               </div>
 
               <Select
-                icon="fas fa-shapes"
+                icon={`fas ${ICONS.datasetType}`}
                 ariaLabel="Фильтр по типу"
                 placeholder="Все типы"
                 value={typeFilter}
@@ -217,7 +218,7 @@ const Datasets: React.FC = () => {
               />
 
               <Select
-                icon="fas fa-bullseye"
+                icon={`fas ${ICONS.taskTarget}`}
                 ariaLabel="Фильтр по задаче"
                 placeholder="Все задачи"
                 value={taskFilter}

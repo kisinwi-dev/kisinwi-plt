@@ -6,6 +6,7 @@ import { usePolling } from '../../hooks';
 import { POLL_INTERVAL_DISCUSSION_MS } from '../../constants';
 import { formatDateTime, statusClass } from '../../utils/format';
 import MessageBubble from './MessageBubble';
+import { ICONS } from '../../constants/icons';
 
 interface Props {
   discussionId: string;
@@ -20,9 +21,9 @@ type FeedItem =
 
 // Иконка системного сообщения по типу.
 const SYSTEM_ICONS: Record<SystemMessageType, string> = {
-  INFO: 'fa-circle-info',
-  WARNING: 'fa-triangle-exclamation',
-  ERROR: 'fa-circle-exclamation',
+  INFO: ICONS.info,
+  WARNING: ICONS.warning,
+  ERROR: ICONS.error,
 };
 
 const DiscussionView: React.FC<Props> = ({ discussionId, active = false }) => {
@@ -78,7 +79,7 @@ const DiscussionView: React.FC<Props> = ({ discussionId, active = false }) => {
   if (feed.length === 0 && !active) {
     return (
       <p className="empty-state">
-        <i className="fas fa-comment-slash"></i> В этой дискуссии пока нет сообщений.
+        <i className={`fas ${ICONS.noMessages}`}></i> В этой дискуссии пока нет сообщений.
       </p>
     );
   }
@@ -89,7 +90,7 @@ const DiscussionView: React.FC<Props> = ({ discussionId, active = false }) => {
         item.kind === 'response' ? (
           <div key={item.data.response_id} className="timeline-row timeline-row--response">
             <span className={`timeline-node ${statusClass(item.data.status)}`} aria-hidden="true">
-              <i className="fas fa-robot"></i>
+              <i className={`fas ${ICONS.agent}`}></i>
             </span>
             <div className="timeline-content">
               <MessageBubble discussionId={discussionId} response={item.data} />
@@ -117,11 +118,11 @@ const DiscussionView: React.FC<Props> = ({ discussionId, active = false }) => {
         <div className="timeline-row timeline-row--active" role="status" aria-live="polite">
           <span className="timeline-node timeline-node--active" aria-hidden="true">
             <span className="timeline-node-pulse"></span>
-            <i className="fas fa-robot"></i>
+            <i className={`fas ${ICONS.agent}`}></i>
           </span>
           <div className="timeline-content">
             <div className="discussion-running">
-              <i className="fas fa-spinner fa-spin"></i>
+              <i className={`fas ${ICONS.loading} fa-spin`}></i>
               <span>Агенты работают...</span>
             </div>
           </div>

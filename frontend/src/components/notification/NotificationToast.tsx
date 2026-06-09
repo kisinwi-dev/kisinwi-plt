@@ -1,21 +1,22 @@
 import React from 'react';
 // Импортируем хук для доступа к контексту уведомлений.
 import { useNotification } from '../../contexts/NotificationContext';
+import { ICONS } from '../../constants/icons';
 // Подключаем стили для компонента уведомлений.
 import './NotificationToast.css';
 
 /**
- * Возвращает иконку в зависимости от типа уведомления.
+ * Возвращает класс иконки Font Awesome в зависимости от типа уведомления.
  * @param type - тип уведомления ('error', 'success', 'warning', 'info').
- * @returns строка с эмодзи, соответствующая типу.
+ * @returns класс иконки Font Awesome.
  */
 const getIcon = (type: string) => {
   switch (type) {
-    case 'error': return '❌';   // Ошибка – красный крестик
-    case 'success': return '✅'; // Успех – зелёная галочка
-    case 'warning': return '⚠️'; // Предупреждение – жёлтый знак опасности
-    case 'info': return 'ℹ️';    // Информация – синяя буква i
-    default: return '•';         // Если тип неизвестен, просто точка
+    case 'error': return ICONS.error;
+    case 'success': return ICONS.success;
+    case 'warning': return ICONS.warning;
+    case 'info': return ICONS.info;
+    default: return ICONS.info;
   }
 };
 
@@ -40,13 +41,13 @@ const NotificationToast: React.FC = () => {
         <div key={n.id} className={`notification notification-${n.type}`}>
           <div className="notification-content">
             {/* Иконка, соответствующая типу */}
-            <span className="notification-icon">{getIcon(n.type)}</span>
+            <span className="notification-icon"><i className={`fas ${getIcon(n.type)}`}></i></span>
             {/* Текст сообщения */}
             <span className="notification-message">{n.message}</span>
           </div>
           {/* Кнопка закрытия – при клике удаляем уведомление по id */}
           <button className="notification-close" onClick={() => removeNotification(n.id)}>
-            ✕
+            <i className={`fas ${ICONS.close}`}></i>
           </button>
         </div>
       ))}

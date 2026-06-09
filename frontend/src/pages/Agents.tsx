@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DiscussionHistory, RunPipelineForm } from '../components/agents';
+import { ICONS } from '../constants/icons';
 import './Agents.css';
 
 type AgentsTab = 'run' | 'history';
@@ -29,13 +30,13 @@ const Agents: React.FC = () => {
           className={`page-tab ${activeTab === 'run' ? 'active' : ''}`}
           onClick={() => setActiveTab('run')}
         >
-          <i className="fas fa-play"></i> Запуск
+          <i className={`fas ${ICONS.play}`}></i> Запуск
         </button>
         <button
           className={`page-tab ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => setActiveTab('history')}
         >
-          <i className="fas fa-clock-rotate-left"></i> История
+          <i className={`fas ${ICONS.history}`}></i> История
         </button>
       </div>
 
