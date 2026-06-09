@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { mlModelsService } from '../services/mlModelsService';
 import { datasetService } from '../services/datasetService';
 import { useNotification } from '../contexts/NotificationContext';
-import { useModelFilters } from '../hooks';
+import { useModelFilters, useDebouncedValue } from '../hooks';
 import { MODELS_PAGE_SIZE } from '../constants';
 import { ModelCard, ModelGroupCard } from '../components/models';
 import Select from '../components/common/Select';
@@ -29,6 +29,8 @@ const Models: React.FC = () => {
 
   // Фильтры и пагинация.
   const { filters, offset, setFilter, setOffset, resetPage } = useModelFilters();
+  // Имя дебаунсим, чтобы не слать запрос на каждое нажатие клавиши.
+  const debouncedName = useDebouncedValue(filters.name);
   const [statuses, setStatuses] = useState<MLModelStatus[]>([]);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
 
@@ -45,7 +47,7 @@ const Models: React.FC = () => {
     setLoading(true);
     try {
       const data = await mlModelsService.getModels({
-        name: filters.name || undefined,
+        name: debouncedName || undefined,
         status: filters.status || undefined,
         dataset_id: filters.dataset || undefined,
         limit: MODELS_PAGE_SIZE,
@@ -58,12 +60,13 @@ const Models: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters, offset, showNotification]);
+  }, [debouncedName, filters.status, filters.dataset, offset, showNotification]);
 
   const loadGrouped = useCallback(async () => {
     setLoading(true);
     try {
       const data = await mlModelsService.getGroupedModels({
+        name: debouncedName || undefined,
         status: filters.status || undefined,
         dataset_id: filters.dataset || undefined,
         limit: MODELS_PAGE_SIZE,
@@ -76,7 +79,7 @@ const Models: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters, offset, showNotification]);
+  }, [debouncedName, filters.status, filters.dataset, offset, showNotification]);
 
   useEffect(() => {
     if (viewMode === 'flat') {
@@ -98,6 +101,8 @@ const Models: React.FC = () => {
   const canNext = offset + MODELS_PAGE_SIZE < total;
 
   const isEmpty = viewMode === 'flat' ? models.length === 0 : groups.length === 0;
+  // Полноэкранный лоадер — только на первичной загрузке; при обновлении приглушаем текущий список.
+  const initialLoading = loading && isEmpty;
 
   return (
     <div className="page">
@@ -110,17 +115,15 @@ const Models: React.FC = () => {
 
       <div className="models-toolbar">
         <div className="models-filters">
-          {viewMode === 'flat' && (
-            <div className="filter-field">
-              <i className="fas fa-search"></i>
-              <input
-                type="text"
-                placeholder="Поиск по имени"
-                value={filters.name}
-                onChange={(e) => setFilter('name', e.target.value)}
-              />
-            </div>
-          )}
+          <div className="filter-field">
+            <i className="fas fa-search"></i>
+            <input
+              type="text"
+              placeholder="Поиск по имени"
+              value={filters.name}
+              onChange={(e) => setFilter('name', e.target.value)}
+            />
+          </div>
 
           <Select
             icon="fas fa-filter"
@@ -159,7 +162,7 @@ const Models: React.FC = () => {
         </div>
       </div>
 
-      {loading ? (
+      {initialLoading ? (
         <div className="loading-state">
           <i className="fas fa-spinner fa-spin"></i> Загрузка моделей…
         </div>
@@ -169,7 +172,7 @@ const Models: React.FC = () => {
         </div>
       ) : (
         <>
-          <div className="models-grid">
+          <div className={`models-grid${loading ? ' is-refreshing' : ''}`}>
             {viewMode === 'flat'
               ? models.map((model) => <ModelCard key={model.id} model={model} />)
               : groups.map((group) => <ModelGroupCard key={group.name} group={group} onReload={loadGrouped} />)

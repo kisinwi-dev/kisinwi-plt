@@ -1,0 +1,120 @@
+/* Редактор списка строк: draft-input + chip-список. Общий для агентов и датасетов. */
+
+.chip-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Строка добавления: input + кнопка */
+.chip-input-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.chip-input-row input {
+  flex: 1;
+}
+
+.chip-input-row .button {
+  white-space: nowrap;
+}
+
+/* Предложенные значения (chip-подсказки) */
+.chip-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chip-suggestions-label {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.chip-suggestion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.85rem;
+  background: transparent;
+  border: 1px dashed var(--color-accent);
+  color: var(--color-accent-light);
+  border-radius: 40px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.chip-suggestion:hover:not(:disabled) {
+  background: var(--color-accent-soft);
+}
+
+/* Список добавленных элементов */
+.chip-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Вариант 'chip' — компактные пилюли с переносом */
+.chip-list--chip {
+  flex-wrap: wrap;
+}
+
+.chip-list--chip .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.4rem 0.3rem 0.8rem;
+  background: var(--color-accent-soft);
+  border: 1px solid var(--color-accent);
+  border-radius: 40px;
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+}
+
+/* Вариант 'row' — строки во всю ширину */
+.chip-list--row {
+  flex-direction: column;
+}
+
+.chip-list--row .chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.8rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 8px;
+}
+
+.chip-text {
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+  word-break: break-word;
+}
+
+.chip-remove {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+  transition: var(--transition);
+}
+
+.chip-remove:hover:not(:disabled) {
+  color: var(--color-accent-light);
+  background: var(--color-accent-soft);
+}

@@ -63,7 +63,7 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
               </span>
             </div>
             <button
-              className="btn-icon btn-icon--danger"
+              className="icon-button icon-button--danger"
               title="Удалить все версии"
               onClick={(e) => { e.stopPropagation(); setPending({ kind: 'group', name: group.name, count: group.versions.length }); }}
             >
@@ -72,13 +72,20 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
           </div>
           <div className="model-meta model-group-meta">
             {latest.framework && (
-              <span>
-                <i className="fas fa-layer-group"></i> {latest.framework}
+              <span title="Фреймворк (последняя версия)">
+                <i className="fas fa-layer-group"></i>
+                <span className="meta-label">Фреймворк:</span> {latest.framework}
                 {latest.framework_version ? ` ${latest.framework_version}` : ''}
               </span>
             )}
-            <span><i className="fas fa-tags"></i> {latest.classes.length} классов</span>
-            <span><i className="fas fa-calendar-alt"></i> {formatDateTime(latest.created_at)}</span>
+            <span title="Количество классов (последняя версия)">
+              <i className="fas fa-tags"></i>
+              <span className="meta-label">Классов:</span> {latest.classes.length}
+            </span>
+            <span title="Дата последней версии">
+              <i className="fas fa-calendar-alt"></i>
+              <span className="meta-label">Обновлена:</span> {formatDateTime(latest.created_at)}
+            </span>
           </div>
         </div>
 
@@ -132,7 +139,7 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
                   </td>
                   <td className="model-version-actions">
                     <button
-                      className="btn-icon btn-icon--danger btn-icon--sm"
+                      className="icon-button icon-button--danger small"
                       title="Удалить версию"
                       onClick={(e) => { e.stopPropagation(); setPending({ kind: 'version', model: v }); }}
                     >

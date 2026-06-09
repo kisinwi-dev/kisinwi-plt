@@ -40,6 +40,7 @@ export const mlModelsService = {
     const url = new URL(`${ML_MODELS_URL}/models/grouped`);
     if (query.dataset_id) url.searchParams.append('dataset_id', query.dataset_id);
     if (query.status) url.searchParams.append('status', query.status);
+    if (query.name) url.searchParams.append('name', query.name);
     if (query.limit != null) url.searchParams.append('limit', String(query.limit));
     if (query.offset != null) url.searchParams.append('offset', String(query.offset));
     const response = await fetch(url.toString());

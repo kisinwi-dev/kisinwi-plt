@@ -33,7 +33,7 @@ const DiscussionDetail: React.FC<Props> = ({ discussionId, onBack }) => {
 
   return (
     <div className="discussion-detail">
-      <button className="button secondary small back-button" onClick={onBack}>
+      <button className="detail-back-link" onClick={onBack}>
         <i className="fas fa-arrow-left"></i> Назад к списку
       </button>
       <DiscussionInfo discussion={meta ?? null} discussionId={discussionId} />

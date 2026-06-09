@@ -29,6 +29,102 @@
   margin: 0 auto 1.5rem;
 }
 
+/* ── Переключатель вкладок страницы ──────────────────────────────────────────── */
+.page-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  padding: 0.3rem;
+  background: var(--color-bg-secondary);
+  border-radius: 40px;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+  border: 1px solid var(--color-border);
+}
+
+.page-tab {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: none;
+  padding: 0.5rem 1.5rem;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: none;
+  transition: var(--transition);
+}
+
+.page-tab:hover {
+  color: var(--color-accent);
+  background: var(--color-accent-soft);
+  transform: none;
+  box-shadow: none;
+}
+
+.page-tab.active {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.page-tab.active:hover {
+  background: var(--color-accent-light);
+  color: var(--color-on-accent);
+}
+
+.page-tab i {
+  margin-right: 0.4rem;
+}
+
+/* ── Тулбар фильтров списка ──────────────────────────────────────────────────── */
+.list-toolbar {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.list-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  flex: 1;
+}
+
+.filter-field {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--color-bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-input);
+  padding: 0.55rem 1rem;
+  flex: 1 1 220px;
+}
+
+.filter-field i {
+  color: var(--color-text-secondary);
+}
+
+.filter-field input,
+.filter-field select {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--color-text-primary);
+  font-family: var(--font-primary);
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+.filter-field select option {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
 /* ── Карточка ────────────────────────────────────────────────────────────────── */
 .card {
   background: var(--color-bg-secondary);
@@ -99,13 +195,42 @@ button:disabled,
   padding: 0.3rem;
 }
 
-/* Кнопка «назад» в детальных просмотрах */
-.back-button {
-  margin-bottom: 1.5rem;
+.icon-button--danger:hover:not(:disabled) {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
 }
 
-.back-button i {
-  margin-right: 0.4rem;
+/* Лёгкая ссылка-возврат в стиле breadcrumb над шапкой детальной страницы.
+   Стрелка сдвигается влево при наведении, фон не подсвечивается. */
+.detail-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: var(--color-text-secondary);
+  font-family: var(--font-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.detail-back-link i {
+  transition: transform 0.15s;
+}
+
+.detail-back-link:hover {
+  background: transparent;
+  color: var(--color-accent);
+  transform: none;
+  box-shadow: none;
+}
+
+.detail-back-link:hover i {
+  transform: translateX(-3px);
 }
 
 /* ── Бейджи статусов ─────────────────────────────────────────────────────────── */
@@ -176,6 +301,114 @@ button:disabled,
 .mono {
   font-family: ui-monospace, 'Cascadia Code', 'Fira Code', 'Courier New', monospace;
   font-size: 0.9rem;
+}
+
+/* ── Детальные страницы: секции и поля ───────────────────────────────────────── */
+.detail-section {
+  background: var(--color-bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.detail-section-title {
+  margin: 0 0 1.2rem;
+  font-size: 1.1rem;
+}
+
+.detail-section-collapsible-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-bottom: 1.2rem;
+  border-bottom: var(--border-subtle);
+  cursor: pointer;
+}
+
+.detail-section-collapsible-header:hover .collapse-chevron,
+.detail-section-collapsible-header:hover .detail-section-title {
+  color: var(--color-accent);
+}
+
+.detail-section-title i {
+  margin-right: 0.5rem;
+  color: var(--color-accent);
+}
+
+.detail-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.detail-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--color-text-secondary);
+}
+
+.detail-field .mono {
+  word-break: break-all;
+}
+
+.detail-empty {
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.detail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  background: var(--color-accent-soft);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  color: var(--color-accent-light);
+  font-family: var(--font-primary);
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.detail-link i {
+  font-size: 0.78rem;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.detail-link:hover {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  filter: brightness(1.15);
+}
+
+.detail-pre {
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-input);
+  padding: 1rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--color-text-primary);
+  font-size: 0.9rem;
+  margin: 0;
 }
 
 /* ── Единый индикатор сворачивания (collapse/expand) ─────────────────────────── */

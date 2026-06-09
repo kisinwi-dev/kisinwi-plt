@@ -29,22 +29,8 @@ const AddVersionForm: React.FC<AddVersionFormProps> = ({
     onVersionChange({ ...version, [field]: value });
   };
 
-  const handleSourceChange = (index: number, field: keyof SourceItem, value: string) => {
-    const sources = [...version.sources];
-    sources[index] = { ...sources[index], [field]: field === 'url' ? (value || null) : value };
+  const handleSourcesChange = (sources: SourceItem[]) => {
     onVersionChange({ ...version, sources });
-  };
-
-  const handleSourceAdd = () => {
-    onVersionChange({
-      ...version,
-      sources: [...version.sources, { type: 'kaggle', url: null, description: '' }],
-    });
-  };
-
-  const handleSourceRemove = (index: number) => {
-    if (version.sources.length <= 1) return;
-    onVersionChange({ ...version, sources: version.sources.filter((_, i) => i !== index) });
   };
 
   return (
@@ -69,9 +55,7 @@ const AddVersionForm: React.FC<AddVersionFormProps> = ({
       <SourcesEditor
         sources={version.sources}
         loading={loading}
-        onAdd={handleSourceAdd}
-        onRemove={handleSourceRemove}
-        onChange={handleSourceChange}
+        onChange={handleSourcesChange}
       />
 
       <h5>Файл версии</h5>

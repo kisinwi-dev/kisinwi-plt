@@ -25,15 +25,15 @@ const Agents: React.FC = () => {
       </div>
 
       {/* Переключатель вкладок */}
-      <div className="agents-tabs">
+      <div className="page-tabs">
         <button
-          className={`agents-tab ${activeTab === 'run' ? 'active' : ''}`}
+          className={`page-tab ${activeTab === 'run' ? 'active' : ''}`}
           onClick={() => setActiveTab('run')}
         >
           <i className="fas fa-play"></i> Запуск
         </button>
         <button
-          className={`agents-tab ${activeTab === 'history' ? 'active' : ''}`}
+          className={`page-tab ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => setActiveTab('history')}
         >
           <i className="fas fa-clock-rotate-left"></i> История

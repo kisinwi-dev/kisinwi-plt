@@ -78,8 +78,8 @@ const ModelDetail: React.FC = () => {
   if (!model) {
     return (
       <div className="page">
-        <button className="button secondary" onClick={() => navigate('/models')}>
-          <i className="fas fa-arrow-left"></i> К списку
+        <button className="detail-back-link" onClick={() => navigate('/models')}>
+          <i className="fas fa-arrow-left"></i> К списку моделей
         </button>
         <div className="empty-state">
           <i className="fas fa-triangle-exclamation"></i> Модель не найдена.
@@ -92,8 +92,8 @@ const ModelDetail: React.FC = () => {
 
   return (
     <div className="page model-detail">
-      <button className="button secondary back-button" onClick={() => navigate('/models')}>
-        <i className="fas fa-arrow-left"></i> К списку
+      <button className="detail-back-link" onClick={() => navigate('/models')}>
+        <i className="fas fa-arrow-left"></i> К списку моделей
       </button>
 
       <div className="model-detail-header">

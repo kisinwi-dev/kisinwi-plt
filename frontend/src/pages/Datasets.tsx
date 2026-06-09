@@ -1,13 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { datasetService } from '../services/datasetService';
 import type { Dataset, NewDataset, SourceItem } from '../types/dataset';
 import './Datasets.css';
 import { useNotification } from '../contexts/NotificationContext';
-import { DatasetForm, DatasetCard, AddVersionForm } from '../components/datasets';
+import { DatasetForm, DatasetCard } from '../components/datasets';
+import Select from '../components/common/Select';
+import ConfirmModal from '../components/common/ConfirmModal';
 
-const EMPTY_SOURCE = (): SourceItem => ({ type: 'kaggle', url: null, description: '' });
+const TYPE_FILTER_OPTIONS = [
+  { value: 'image', label: 'Image' },
+  { value: 'text', label: 'Text' },
+  { value: 'tabular', label: 'Tabular' },
+  { value: 'other', label: 'Other' },
+];
 
-// Идентификатор загрузки для нового датасета/версии.
+const TASK_FILTER_OPTIONS = [
+  { value: 'classification', label: 'Classification' },
+  { value: 'regression', label: 'Regression' },
+  { value: 'detection', label: 'Detection' },
+  { value: 'segmentation', label: 'Segmentation' },
+  { value: 'other', label: 'Other' },
+];
+
+// Идентификатор загрузки для нового датасета.
 const makeUploadId = () => `upload_${Date.now()}`;
 
 const EMPTY_DATASET = () => ({
@@ -18,28 +33,38 @@ const EMPTY_DATASET = () => ({
   version: {
     name: '',
     description: '',
-    sources: [EMPTY_SOURCE()],
+    sources: [] as SourceItem[],
   },
   file: null as File | null,
 });
 
-const EMPTY_VERSION = () => ({
-  name: '',
-  description: '',
-  sources: [EMPTY_SOURCE()],
-  file: null as File | null,
-});
+type DatasetsTab = 'create' | 'list';
 
 const Datasets: React.FC = () => {
   const { showNotification } = useNotification();
 
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [showVersionForm, setShowVersionForm] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<DatasetsTab>('list');
+
+  // Фильтры списка датасетов (клиентские — датасеты грузятся целиком).
+  const [nameFilter, setNameFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [taskFilter, setTaskFilter] = useState('');
 
   const [newDataset, setNewDataset] = useState(EMPTY_DATASET);
-  const [newVersion, setNewVersion] = useState(EMPTY_VERSION);
+
+  // Датасет, ожидающий подтверждения удаления (null — модалка закрыта).
+  const [pendingDelete, setPendingDelete] = useState<Dataset | null>(null);
+
+  const filteredDatasets = useMemo(() => {
+    const name = nameFilter.trim().toLowerCase();
+    return datasets.filter(ds =>
+      (!name || ds.name.toLowerCase().includes(name)) &&
+      (!typeFilter || ds.type === typeFilter) &&
+      (!taskFilter || ds.task === taskFilter)
+    );
+  }, [datasets, nameFilter, typeFilter, taskFilter]);
 
   useEffect(() => {
     const fetchDatasets = async () => {
@@ -66,30 +91,9 @@ const Datasets: React.FC = () => {
     setNewDataset(prev => ({ ...prev, version: { ...prev.version, [field]: value } }));
   };
 
-  const handleVersionSourceAdd = () => {
-    setNewDataset(prev => ({
-      ...prev,
-      version: { ...prev.version, sources: [...prev.version.sources, EMPTY_SOURCE()] },
-    }));
+  const handleVersionSourcesChange = (sources: SourceItem[]) => {
+    setNewDataset(prev => ({ ...prev, version: { ...prev.version, sources } }));
   };
-
-  const handleVersionSourceRemove = (index: number) => {
-    if (newDataset.version.sources.length <= 1) return;
-    setNewDataset(prev => ({
-      ...prev,
-      version: { ...prev.version, sources: prev.version.sources.filter((_, i) => i !== index) },
-    }));
-  };
-
-  const handleVersionSourceChange = (index: number, field: keyof SourceItem, value: string) => {
-    setNewDataset(prev => {
-      const sources = [...prev.version.sources];
-      sources[index] = { ...sources[index], [field]: field === 'url' ? (value || null) : value };
-      return { ...prev, version: { ...prev.version, sources } };
-    });
-  };
-
-  // ── Dataset CRUD ───────────────────────────────────────────────────────────
 
   const handleCreateDataset = async () => {
     if (!newDataset.name || !newDataset.version.name) {
@@ -122,7 +126,7 @@ const Datasets: React.FC = () => {
       const updated = await datasetService.getDatasets();
       setDatasets(updated);
       setNewDataset(EMPTY_DATASET);
-      setShowAddForm(false);
+      setActiveTab('list');
       showNotification('Датасет успешно создан', 'success');
     } catch (err) {
       showNotification(err instanceof Error ? err.message : 'Ошибка создания датасета', 'error');
@@ -131,74 +135,18 @@ const Datasets: React.FC = () => {
     }
   };
 
-  const handleDeleteDataset = async (id: string) => {
-    if (!window.confirm('Вы уверены, что хотите удалить датасет?')) return;
-
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete) return;
+    const dataset = pendingDelete;
+    setPendingDelete(null);
     try {
       setLoading(true);
-      const deleted = await datasetService.deleteDataset(id);
+      const deleted = await datasetService.deleteDataset(dataset.id);
       if (!deleted) throw new Error('Не удалось удалить датасет');
-      setDatasets(prev => prev.filter(ds => ds.id !== id));
+      setDatasets(prev => prev.filter(ds => ds.id !== dataset.id));
       showNotification('Датасет удалён', 'success');
     } catch (err) {
       showNotification(err instanceof Error ? err.message : 'Ошибка удаления датасета', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ── Version CRUD ───────────────────────────────────────────────────────────
-
-  const handleOpenVersionForm = (datasetId: string) => {
-    setShowVersionForm(datasetId);
-    setNewVersion(EMPTY_VERSION);
-  };
-
-  const handleAddVersion = async (datasetId: string) => {
-    if (!newVersion.name) {
-      showNotification('Введите название версии', 'warning');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const id_data = makeUploadId();
-
-      if (newVersion.file) {
-        const uploaded = await datasetService.uploadFile(id_data, newVersion.file);
-        if (!uploaded) throw new Error('Не удалось загрузить файл');
-      }
-
-      await datasetService.createVersion(datasetId, {
-        id_data,
-        name: newVersion.name,
-        description: newVersion.description,
-        sources: newVersion.sources,
-      });
-
-      const updated = await datasetService.getDatasets();
-      setDatasets(updated);
-      setShowVersionForm(null);
-      showNotification('Версия успешно добавлена', 'success');
-    } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Ошибка добавления версии', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteVersion = async (datasetId: string, versionId: string) => {
-    if (!window.confirm('Вы уверены, что хотите удалить эту версию?')) return;
-
-    try {
-      setLoading(true);
-      const deleted = await datasetService.deleteVersion(datasetId, versionId);
-      if (!deleted) throw new Error('Не удалось удалить версию');
-      const updated = await datasetService.getDatasets();
-      setDatasets(updated);
-      showNotification('Версия удалена', 'success');
-    } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Ошибка удаления версии', 'error');
     } finally {
       setLoading(false);
     }
@@ -217,54 +165,92 @@ const Datasets: React.FC = () => {
         <p className="page-description">
           Загружайте, удаляйте и управляйте версиями датасетов для классификации изображений.
         </p>
-        {!showAddForm && (
-          <button className="button" onClick={() => setShowAddForm(true)} disabled={loading}>
-            <i className="fas fa-plus"></i> Новый датасет
-          </button>
-        )}
       </div>
 
-      {showAddForm && (
+      <div className="page-tabs">
+        <button
+          className={`page-tab ${activeTab === 'create' ? 'active' : ''}`}
+          onClick={() => setActiveTab('create')}
+        >
+          <i className="fas fa-plus"></i> Создать датасет
+        </button>
+        <button
+          className={`page-tab ${activeTab === 'list' ? 'active' : ''}`}
+          onClick={() => setActiveTab('list')}
+        >
+          <i className="fas fa-list"></i> Список датасетов
+        </button>
+      </div>
+
+      {activeTab === 'create' ? (
         <DatasetForm
           newDataset={newDataset}
           loading={loading}
           onNewDatasetChange={handleNewDatasetChange}
           onVersionChange={handleVersionFieldChange}
-          onVersionSourceAdd={handleVersionSourceAdd}
-          onVersionSourceRemove={handleVersionSourceRemove}
-          onVersionSourceChange={handleVersionSourceChange}
+          onVersionSourcesChange={handleVersionSourcesChange}
           onFileSelect={(file) => setNewDataset(prev => ({ ...prev, file }))}
           onSubmit={handleCreateDataset}
-          onCancel={() => setShowAddForm(false)}
+          onCancel={() => setActiveTab('list')}
         />
+      ) : (
+        <>
+          <div className="list-toolbar">
+            <div className="list-filters">
+              <div className="filter-field">
+                <i className="fas fa-search"></i>
+                <input
+                  type="text"
+                  placeholder="Поиск по имени"
+                  value={nameFilter}
+                  onChange={(e) => setNameFilter(e.target.value)}
+                />
+              </div>
+
+              <Select
+                icon="fas fa-shapes"
+                ariaLabel="Фильтр по типу"
+                placeholder="Все типы"
+                value={typeFilter}
+                options={TYPE_FILTER_OPTIONS}
+                onChange={setTypeFilter}
+              />
+
+              <Select
+                icon="fas fa-bullseye"
+                ariaLabel="Фильтр по задаче"
+                placeholder="Все задачи"
+                value={taskFilter}
+                options={TASK_FILTER_OPTIONS}
+                onChange={setTaskFilter}
+              />
+            </div>
+          </div>
+
+          <div className="datasets-list">
+            {datasets.length === 0 && !loading ? (
+              <p className="empty-state">Пока нет ни одного датасета. Создайте первый!</p>
+            ) : filteredDatasets.length === 0 ? (
+              <p className="empty-state">Датасеты не найдены.</p>
+            ) : (
+              filteredDatasets.map(dataset => (
+                <DatasetCard key={dataset.id} dataset={dataset} onDelete={setPendingDelete} />
+              ))
+            )}
+          </div>
+        </>
       )}
 
-      <div className="datasets-list">
-        {datasets.length === 0 && !loading ? (
-          <p className="empty-state">Пока нет ни одного датасета. Создайте первый!</p>
-        ) : (
-          datasets.map(dataset => (
-            <DatasetCard
-              key={dataset.id}
-              dataset={dataset}
-              loading={loading}
-              showVersionForm={showVersionForm === dataset.id}
-              onAddVersion={() => handleOpenVersionForm(dataset.id)}
-              onDelete={() => handleDeleteDataset(dataset.id)}
-              onDeleteVersion={(versionId) => handleDeleteVersion(dataset.id, versionId)}
-              versionForm={
-                <AddVersionForm
-                  version={newVersion}
-                  loading={loading}
-                  onVersionChange={setNewVersion}
-                  onSubmit={() => handleAddVersion(dataset.id)}
-                  onCancel={() => setShowVersionForm(null)}
-                />
-              }
-            />
-          ))
-        )}
-      </div>
+      <ConfirmModal
+        open={pendingDelete !== null}
+        danger
+        title="Удалить датасет?"
+        message={pendingDelete ? `Датасет «${pendingDelete.name}» будет удалён безвозвратно.` : undefined}
+        confirmLabel="Удалить"
+        cancelLabel="Отмена"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 };
