@@ -117,6 +117,7 @@ async def get_models_statistics(
 async def get_grouped_models(
     dataset_id: Optional[str] = Query(None, description="Фильтр по ID датасета"),
     model_status: Optional[str] = Query(None, alias="status", description="Фильтр по статусу модели"),
+    name: Optional[str] = Query(None, description="Фильтр по имени модели (частичное совпадение)"),
     limit: Optional[int] = Query(None, ge=1, description="Размер страницы (по именам)"),
     offset: int = Query(0, ge=0, description="Смещение для пагинации"),
     manager: MlModelsManager = Depends(get_ml_models_manager)
@@ -124,6 +125,7 @@ async def get_grouped_models(
     result = manager.get_grouped_models(
         dataset_id=dataset_id,
         status=model_status,
+        name=name,
         limit=limit,
         offset=offset,
     )
