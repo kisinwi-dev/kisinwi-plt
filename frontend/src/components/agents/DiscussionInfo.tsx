@@ -25,6 +25,7 @@ const DiscussionInfo: React.FC<Props> = ({ discussion, discussionId }) => {
         </div>
         {discussion && (
           <span className={`status-badge status-${discussion.status}`}>
+            <span className={`status-dot ${discussion.status === 'active' ? 'status-dot--pulse' : ''}`} aria-hidden="true" />
             {DISCUSSION_STATUS_LABELS[discussion.status]}
           </span>
         )}
@@ -32,6 +33,26 @@ const DiscussionInfo: React.FC<Props> = ({ discussion, discussionId }) => {
 
       {discussion && (
         <>
+          {(discussion.responses_count != null ||
+            (discussion.tool_calls_count != null && discussion.tool_calls_count > 0)) && (
+            <div className="discussion-stats">
+              {discussion.responses_count != null && (
+                <div className="stat-chip">
+                  <i className="fas fa-comments"></i>
+                  <span className="stat-chip-value">{discussion.responses_count}</span>
+                  <span className="stat-chip-label">ответов</span>
+                </div>
+              )}
+              {discussion.tool_calls_count != null && discussion.tool_calls_count > 0 && (
+                <div className="stat-chip">
+                  <i className="fas fa-wrench"></i>
+                  <span className="stat-chip-value">{discussion.tool_calls_count}</span>
+                  <span className="stat-chip-label">вызовов</span>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="discussion-info-meta">
             {discussion.pipeline && (
               <span><i className="fas fa-diagram-project"></i> {discussion.pipeline}</span>
@@ -39,12 +60,6 @@ const DiscussionInfo: React.FC<Props> = ({ discussion, discussionId }) => {
             <span><i className="fas fa-calendar-alt"></i> Создано: {formatDateTime(discussion.created_at)}</span>
             {discussion.finished_at && (
               <span><i className="fas fa-flag-checkered"></i> Завершено: {formatDateTime(discussion.finished_at)}</span>
-            )}
-            {discussion.responses_count != null && (
-              <span><i className="fas fa-comments"></i> {discussion.responses_count} ответов</span>
-            )}
-            {discussion.tool_calls_count != null && discussion.tool_calls_count > 0 && (
-              <span><i className="fas fa-wrench"></i> {discussion.tool_calls_count} вызовов</span>
             )}
           </div>
 
