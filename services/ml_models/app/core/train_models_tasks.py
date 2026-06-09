@@ -74,8 +74,8 @@ class MlModelsManager:
             conditions.append("s.status = %s")
             params.append(status)
         if name:
-            conditions.append("m.name = %s")
-            params.append(name)
+            conditions.append("m.name ILIKE %s")
+            params.append(f"%{name}%")
 
         if conditions:
             query += "WHERE " + " AND ".join(conditions) + "\n"
@@ -330,8 +330,8 @@ class MlModelsManager:
             conditions.append("s.status = %s")
             params.append(status)
         if name:
-            conditions.append("m.name = %s")
-            params.append(name)
+            conditions.append("m.name ILIKE %s")
+            params.append(f"%{name}%")
 
         if conditions:
             query += "WHERE " + " AND ".join(conditions) + "\n"
@@ -360,6 +360,7 @@ class MlModelsManager:
         self,
         dataset_id: str | None = None,
         status: str | None = None,
+        name: str | None = None,
         limit: int | None = None,
         offset: int = 0
     ) -> Dict[str, Any]:
@@ -380,6 +381,9 @@ class MlModelsManager:
         if status:
             conditions.append("s.status = %s")
             filter_params.append(status)
+        if name:
+            conditions.append("m.name ILIKE %s")
+            filter_params.append(f"%{name}%")
 
         filter_where = ("WHERE " + " AND ".join(conditions) + "\n") if conditions else ""
 

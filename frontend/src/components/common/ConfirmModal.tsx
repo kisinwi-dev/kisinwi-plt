@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { ICONS } from '../../constants/icons';
 import './ConfirmModal.css';
 
 interface Props {
@@ -43,7 +44,7 @@ const ConfirmModal: React.FC<Props> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <div className={`confirm-icon ${danger ? 'confirm-icon--danger' : ''}`}>
-          <i className={`fas ${danger ? 'fa-trash' : 'fa-circle-question'}`}></i>
+          <i className={`fas ${danger ? ICONS.delete : ICONS.question}`}></i>
         </div>
         <h3 className="confirm-title">{title}</h3>
         {message && <p className="confirm-message">{message}</p>}

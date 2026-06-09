@@ -10,21 +10,68 @@
   border: 1px solid var(--color-border);
 }
 
-.add-dataset-form h3 {
-  margin-top: 0;
-  margin-bottom: 1rem;
+.add-dataset-form-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.add-dataset-form-head h2 {
+  margin: 0;
+}
+
+.form-close-btn {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 8px;
+  color: var(--color-text-secondary);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.form-close-btn:hover:not(:disabled) {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.form-close-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .add-dataset-form input,
 .add-dataset-form textarea {
   width: 100%;
   padding: 0.8rem;
-  margin-bottom: 1rem;
-  background: var(--color-bg-primary);
+  background: var(--color-bg-secondary);
   border: 1px solid var(--color-border-strong);
   border-radius: 8px;
   color: var(--color-text-primary);
-  font-family: var(--font-primary);
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: var(--transition);
+}
+
+.add-dataset-form input:focus,
+.add-dataset-form textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.add-dataset-form input::placeholder,
+.add-dataset-form textarea::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.6;
 }
 
 .add-dataset-form textarea {
@@ -32,18 +79,9 @@
 }
 
 .add-dataset-form h4 {
-  margin: 1rem 0 0.5rem;
-  color: var(--color-text-primary);
-}
-
-.form-row select {
-  flex: 1;
-  padding: 0.8rem;
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-strong);
-  border-radius: 8px;
-  color: var(--color-text-primary);
-  font-family: var(--font-primary);
+  margin: 1.25rem 0 0.75rem;
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
 }
 
 .form-actions {
@@ -60,145 +98,11 @@
 }
 
 .required-star {
-  color: var(--color-accent);
+  color: var(--color-accent-light);
   margin-left: 2px;
 }
 
-/* Источники данных */
-.sources-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.source-card {
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-soft);
-  border-radius: 12px;
-  padding: 1.2rem;
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.2s, border-color 0.2s;
-}
-
-.source-card:hover {
-  border-color: var(--color-accent-soft);
-  box-shadow: var(--shadow-md);
-}
-
-.source-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.source-type-wrapper {
-  flex: 1;
-}
-
-.source-type-select {
-  width: 100%;
-  max-width: 200px;
-  padding: 0.6rem 1rem;
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-strong);
-  border-radius: 30px;
-  color: var(--color-text-primary);
-  font-family: var(--font-primary);
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 0.7rem center;
-  background-size: 1rem;
-}
-
-.source-type-select:hover {
-  border-color: var(--color-accent);
-  background-color: var(--color-bg-secondary);
-}
-
-.source-remove-btn {
-  background: transparent;
-  border: none;
-  color: var(--color-text-secondary);
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.source-remove-btn:hover {
-  background: var(--color-danger-soft);
-  color: var(--color-danger);
-}
-
-.source-fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.source-input {
-  padding: 0.8rem 1rem;
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  color: var(--color-text-primary);
-  font-family: var(--font-primary);
-  font-size: 0.95rem;
-  transition: all 0.2s;
-}
-
-.source-input:focus {
-  outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-soft);
-}
-
-.source-input::placeholder {
-  color: var(--color-text-secondary);
-  opacity: 0.5;
-}
-
-.add-source-btn {
-  background: transparent;
-  border: 3px dashed var(--color-accent);
-  border-radius: 40px;
-  padding: 0.8rem 1rem;
-  color: var(--color-accent);
-  font-family: var(--font-primary);
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  transition: all 0.2s;
-  width: fit-content;
-}
-
-.add-source-btn:hover {
-  background: var(--color-accent-soft);
-  border-style: solid;
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
-}
-
-.add-source-btn i {
-  font-size: 1.2rem;
-}
-
+/* Источники данных — стили в SourcesEditor.css. */
 
 /* Форма добавления версии */
 .add-version-form {
@@ -243,6 +147,129 @@
 .dataset-card {
   display: flex;
   flex-direction: column;
+  gap: 0.75rem;
+  border: var(--border-subtle);
+}
+
+/* Чёткое состояние наведения и фокуса с клавиатуры */
+.dataset-card.card--hoverable:hover {
+  border-color: var(--color-accent);
+}
+
+.dataset-card:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft), var(--shadow-md);
+}
+
+/* Интервалы между блоками карточки задаёт gap — обнуляем собственные отступы детей */
+.dataset-card > .dataset-header,
+.dataset-card > .dataset-meta,
+.dataset-card > .dataset-classes,
+.dataset-card > .dataset-description {
+  margin: 0;
+}
+
+/* Дата создания/изменения — подстрочник к строке мета, прижимаем ближе */
+.dataset-card > .dataset-meta--dates {
+  margin-top: -0.6rem;
+}
+
+/* ── Страница с информацией о датасете ───────────────────────────────────────── */
+
+/* Шапка: заголовок слева, действия справа, разделитель снизу */
+.dataset-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: var(--border-subtle);
+}
+
+.dataset-detail-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.dataset-detail-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.dataset-detail-title h1 {
+  margin: 0;
+  word-break: break-word;
+}
+
+.dataset-detail-heading .dataset-id {
+  margin-top: 0.1rem;
+}
+
+.dataset-detail-delete {
+  flex-shrink: 0;
+}
+
+/* На узких экранах действие уходит под заголовок */
+@media (max-width: 640px) {
+  .dataset-detail-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .dataset-detail-delete {
+    align-self: flex-start;
+  }
+}
+
+.dataset-detail-description {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Иконки в подписях полей общей информации */
+.detail-field .detail-label i {
+  margin-right: 0.4rem;
+  opacity: 0.8;
+}
+
+/* Поле, занимающее всю ширину сетки (классы) */
+.detail-field--full {
+  grid-column: 1 / -1;
+}
+
+.detail-field--full .tag-list {
+  margin-top: 0.1rem;
+}
+
+.versions-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+}
+
+.versions-section-head .detail-section-title {
+  margin: 0;
+}
+
+/* Опасная кнопка (удаление) */
+.button.danger {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.button.danger:hover:not(:disabled) {
+  background: var(--color-danger);
+  filter: brightness(1.1);
 }
 
 .dataset-header {
@@ -315,6 +342,17 @@
   color: var(--color-text-primary);
 }
 
+/* Длинное описание обрезаем до нескольких строк в карточке списка */
+.dataset-description--clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
 .dataset-meta {
   display: flex;
   gap: 1rem;
@@ -327,21 +365,57 @@
   margin-right: 0.3rem;
 }
 
-/* Источники в карточке датасета */
+/* Тип/задача — винный бейдж-надзаголовок над названием датасета */
+.dataset-badge {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.35rem;
+  padding: 0.15rem 0.7rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-light);
+  border: 1px solid var(--color-accent);
+  text-transform: capitalize;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.dataset-badge i {
+  margin-right: 0;
+  font-size: 0.7rem;
+}
+
+/* Отдельная строка с датами создания/изменения */
+.dataset-meta--dates {
+  gap: 1rem;
+  margin-top: -0.5rem;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+/* Источники в карточке версии */
 .dataset-sources {
-  margin: 0.5rem 0;
+  margin: 0.75rem 0 0;
   padding: 1rem;
   background: var(--color-bg-primary);
   border-radius: 12px;
   border: 1px solid var(--color-border);
 }
 
-.dataset-sources h4 {
-  font-size: 1rem;
-  margin: 0 0 0.8rem 0;
+.dataset-sources-label {
+  display: block;
+  font-size: 0.72rem;
+  margin-bottom: 0.6rem;
   color: var(--color-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+}
+
+.dataset-sources-label i {
+  margin-right: 0.3rem;
+  opacity: 0.8;
 }
 
 .source-item {
@@ -357,6 +431,7 @@
 }
 
 .source-type-badge {
+  flex-shrink: 0;
   background: var(--color-accent-soft);
   color: var(--color-accent);
   padding: 0.3rem 0.8rem;
@@ -367,41 +442,64 @@
   white-space: nowrap;
 }
 
-.source-type-badge--link {
-  cursor: pointer;
-  text-decoration: none;
-  transition: background 0.2s, color 0.2s;
-}
-
-.source-type-badge--link:hover {
-  background: var(--color-accent);
-  color: white;
-}
-
+/* Ссылка на источник — явно кликабельна: акцентный цвет, подчёркивание, иконка */
 .source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   flex: 1;
-  color: var(--color-text-secondary);
-  text-decoration: none;
-  word-break: break-all;
+  min-width: 0;
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
   font-size: 0.9rem;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.source-link i {
+  font-size: 0.78rem;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.source-link-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .source-link:hover {
-  color: var(--color-accent);
-  text-decoration: underline;
+  color: var(--color-accent-light);
 }
 
 .source-description {
-  color: var(--color-text-primary);
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
-  max-width: 200px;
-  text-align: right;
-  opacity: 0.8;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
 }
 
 /* Классы в карточке датасета */
 .dataset-classes {
   margin: 0.5rem 0;
+}
+
+.dataset-classes-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+  margin-bottom: 0.35rem;
+}
+
+/* Лишние классы свёрнуты в "+N ещё" — бейдж намекает, что внутри их больше */
+.tag--more {
+  font-weight: 600;
+  background: transparent;
+  color: var(--color-accent-light);
 }
 
 .dataset-classes h4 {
@@ -410,66 +508,110 @@
   color: var(--color-text-primary);
 }
 
-/* Версии в карточке датасета */
-.versions-section {
-  margin-top: 0.75rem;
-  border-top: 1px solid var(--color-border);
-  padding-top: 0.75rem;
+/* Версии датасета */
+.versions-filter {
+  margin-bottom: 1rem;
 }
 
-.versions-section h4 {
-  font-size: 1rem;
-  margin: 0 0 0.5rem;
-  color: var(--color-text-primary);
+.versions-filter-clear {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0.2rem;
+  font-size: 0.9rem;
+  box-shadow: none;
+  transition: color 0.15s;
+}
+
+.versions-filter-clear:hover {
+  color: var(--color-accent);
 }
 
 .versions-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
+  gap: 0.75rem;
 }
 
 .version-item {
   background: var(--color-bg-primary);
   border-radius: 12px;
-  padding: 0.75rem;
+  padding: 1rem;
   border: 1px solid var(--color-border);
   position: relative;
+  transition: border-color 0.15s;
+}
+
+.version-item:hover {
+  border-color: var(--color-border-strong);
+}
+
+/* Версия по умолчанию — выделяем акцентной полосой слева */
+.version-item--default {
+  border-left: 3px solid var(--color-accent);
 }
 
 .version-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
 }
 
 .version-name {
-  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 600;
   color: var(--color-accent);
 }
 
-.version-date,
-.version-size {
+.version-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 2rem;
+}
+
+.version-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.version-meta-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
   color: var(--color-text-secondary);
-  font-size: 0.9rem;
+}
+
+.version-meta-label i {
+  margin-right: 0.3rem;
+  opacity: 0.8;
+}
+
+.version-meta-value {
+  font-size: 0.95rem;
+  color: var(--color-text-primary);
+  font-weight: 500;
 }
 
 .version-description {
   color: var(--color-text-secondary);
   font-size: 0.9rem;
-  margin: 0.3rem 0;
-  font-style: italic;
+  margin: 0.75rem 0 0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
-.version-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  font-size: 0.85rem;
-  color: var(--color-text-secondary);
+.version-field-label {
+  font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .default-badge-inline {
@@ -520,15 +662,43 @@
   }
 }
 
-/* Стили для лейблов и подсказок */
-.form-section {
-  margin-bottom: 2rem;
+/* Секции формы — карточки с акцентной полосой слева (как в форме запуска пайплайна) */
+.add-dataset-form .form-section {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-soft);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 12px;
+}
+
+.add-dataset-form .form-section-head {
+  margin-bottom: 1.25rem;
+}
+
+.add-dataset-form .form-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--color-text-primary);
+}
+
+.add-dataset-form .form-section h3 i {
+  color: var(--color-accent-light);
+}
+
+.add-dataset-form .form-section-hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
 }
 
 .form-field {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.5rem;
 }
 
 .form-field label {
@@ -539,6 +709,13 @@
 
 .form-field.full-width {
   grid-column: 1 / -1;
+}
+
+/* Кастомный Select внутри form-field: column-flex превращает flex-basis в высоту,
+   поэтому сбрасываем flex и растягиваем по ширине. */
+.form-field .select {
+  flex: none;
+  width: 100%;
 }
 
 .field-hint {

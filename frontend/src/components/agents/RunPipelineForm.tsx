@@ -3,6 +3,9 @@ import { datasetService } from '../../services/datasetService';
 import { agentsService } from '../../services/agentsService';
 import type { Dataset } from '../../types/dataset';
 import { useNotification } from '../../contexts/NotificationContext';
+import Combobox from '../common/Combobox';
+import ChipListEditor from '../common/ChipListEditor';
+import { ICONS } from '../../constants/icons';
 
 interface Props {
   // Вызывается после успешного старта пайплайна с id созданной дискуссии.
@@ -28,35 +31,11 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
   const [title, setTitle] = useState('');
   // Теги добавляются по одному в список.
   const [tagList, setTagList] = useState<string[]>([]);
-  const [tagDraft, setTagDraft] = useState('');
   // Запрещённые гипотезы добавляются по одной в список.
   const [deniedList, setDeniedList] = useState<string[]>([]);
-  const [deniedDraft, setDeniedDraft] = useState('');
   const [maxIter, setMaxIter] = useState(2);
 
   const [submitting, setSubmitting] = useState(false);
-
-  // Добавить тег (из черновика или переданный из предложенных), без дублей.
-  const addTag = (raw?: string) => {
-    const value = (raw ?? tagDraft).trim();
-    if (!value) return;
-    setTagList(prev => (prev.includes(value) ? prev : [...prev, value]));
-    setTagDraft('');
-  };
-  const removeTag = (index: number) => {
-    setTagList(prev => prev.filter((_, i) => i !== index));
-  };
-
-  // Добавить запрещённую гипотезу из черновика в список (без дублей).
-  const addDenied = () => {
-    const value = deniedDraft.trim();
-    if (!value) return;
-    setDeniedList(prev => (prev.includes(value) ? prev : [...prev, value]));
-    setDeniedDraft('');
-  };
-  const removeDenied = (index: number) => {
-    setDeniedList(prev => prev.filter((_, i) => i !== index));
-  };
 
   useEffect(() => {
     const fetchDatasets = async () => {
@@ -135,50 +114,45 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
   };
 
   return (
-    <form className="run-pipeline-form" onSubmit={handleSubmit}>
+    <form className="run-pipeline-form" onSubmit={handleSubmit} autoComplete="off">
       <h2>Запуск пайплайна разработки</h2>
 
       <div className="form-section">
         <div className="form-section-head">
-          <h3><i className="fas fa-database"></i> Данные и модель</h3>
+          <h3><i className={`fas ${ICONS.dataset}`}></i> Данные и модель</h3>
           <p className="form-section-hint">Что обучаем и на каких данных.</p>
         </div>
         <div className="form-grid">
           <div className="form-field">
             <label htmlFor="run-dataset">Имя датасета <span className="required-star">*</span></label>
-            <input
+            <Combobox
               id="run-dataset"
-              type="text"
-              list="run-datasets-list"
+              icon={`fas ${ICONS.dataset}`}
               placeholder="например: CIFAR-10"
               value={datasetName}
-              onChange={(e) => { setDatasetName(e.target.value); setVersionName(''); }}
+              options={datasets.map(d => d.name)}
+              onChange={(v) => { setDatasetName(v); setVersionName(''); }}
               disabled={submitting}
             />
-            <datalist id="run-datasets-list">
-              {datasets.map(d => <option key={d.id} value={d.name} />)}
-            </datalist>
           </div>
           <div className="form-field">
             <label htmlFor="run-version">Имя версии <span className="required-star">*</span></label>
-            <input
+            <Combobox
               id="run-version"
-              type="text"
-              list="run-versions-list"
+              icon={`fas ${ICONS.version}`}
               placeholder="например: v1.0"
               value={versionName}
-              onChange={(e) => setVersionName(e.target.value)}
+              options={matchedDataset?.versions.map(v => v.name) ?? []}
+              onChange={setVersionName}
               disabled={submitting}
             />
-            <datalist id="run-versions-list">
-              {matchedDataset?.versions.map(v => <option key={v.id} value={v.name} />)}
-            </datalist>
           </div>
           <div className="form-field">
             <label htmlFor="run-model">Имя модели <span className="required-star">*</span></label>
             <input
               id="run-model"
               type="text"
+              autoComplete="off"
               placeholder="придумайте сами, например: my-model"
               value={modelName}
               onChange={(e) => setModelName(e.target.value)}
@@ -190,6 +164,7 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
             <label htmlFor="run-max-iter">Попыток обучения</label>
             <input
               id="run-max-iter"
+              className="no-spinner"
               type="number"
               min={1}
               value={maxIter}
@@ -202,7 +177,7 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
 
       <div className="form-section">
         <div className="form-section-head">
-          <h3><i className="fas fa-circle-info"></i> Контекст для агентов</h3>
+          <h3><i className={`fas ${ICONS.info}`}></i> Контекст для агентов</h3>
           <p className="form-section-hint">Эту информацию агенты используют при подборе решения.</p>
         </div>
         <div className="form-grid">
@@ -210,6 +185,7 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
             <label htmlFor="run-business">Бизнес-требования <span className="required-star">*</span></label>
             <textarea
               id="run-business"
+              autoComplete="off"
               placeholder="Что нужно бизнесу от модели"
               value={businessRequirements}
               onChange={(e) => setBusinessRequirements(e.target.value)}
@@ -221,6 +197,7 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
             <label htmlFor="run-deployment">Ограничения прода <span className="required-star">*</span></label>
             <textarea
               id="run-deployment"
+              autoComplete="off"
               placeholder="Технические ограничения, например: только CPU, ≤100 МБ"
               value={deploymentConstraints}
               onChange={(e) => setDeploymentConstraints(e.target.value)}
@@ -230,53 +207,21 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
           </div>
           <div className="form-field full-width">
             <label htmlFor="run-denied">Запрещённые гипотезы и практики</label>
-            <div className="denied-input-row">
-              <input
-                id="run-denied"
-                type="text"
-                placeholder="Например: не использовать аугментацию поворотом"
-                value={deniedDraft}
-                onChange={(e) => setDeniedDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') { e.preventDefault(); addDenied(); }
-                }}
-                disabled={submitting}
-              />
-              <button
-                type="button"
-                className="button secondary small"
-                onClick={addDenied}
-                disabled={submitting || !deniedDraft.trim()}
-              >
-                <i className="fas fa-plus"></i> Добавить
-              </button>
-            </div>
-            {deniedList.length > 0 && (
-              <ul className="denied-list">
-                {deniedList.map((item, index) => (
-                  <li key={item} className="denied-item">
-                    <span className="denied-item-text">{item}</span>
-                    <button
-                      type="button"
-                      className="denied-item-remove"
-                      onClick={() => removeDenied(index)}
-                      disabled={submitting}
-                      aria-label="Удалить"
-                      title="Удалить"
-                    >
-                      <i className="fas fa-xmark"></i>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <ChipListEditor
+              id="run-denied"
+              variant="row"
+              items={deniedList}
+              onChange={setDeniedList}
+              placeholder="Например: не использовать аугментацию поворотом"
+              disabled={submitting}
+            />
           </div>
         </div>
       </div>
 
       <div className="form-section">
         <div className="form-section-head">
-          <h3><i className="fas fa-tag"></i> Параметры запуска</h3>
+          <h3><i className={`fas ${ICONS.tag}`}></i> Параметры запуска</h3>
           <p className="form-section-hint">Как этот запуск будет назван в истории.</p>
         </div>
         <div className="form-grid">
@@ -285,6 +230,7 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
             <input
               id="run-title"
               type="text"
+              autoComplete="off"
               placeholder="Необязательно — иначе сгенерируется автоматически"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -293,62 +239,15 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
           </div>
           <div className="form-field full-width">
             <label htmlFor="run-tags">Теги</label>
-            <div className="denied-input-row">
-              <input
-                id="run-tags"
-                type="text"
-                placeholder="Например: эксперимент"
-                value={tagDraft}
-                onChange={(e) => setTagDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') { e.preventDefault(); addTag(); }
-                }}
-                disabled={submitting}
-              />
-              <button
-                type="button"
-                className="button secondary small"
-                onClick={() => addTag()}
-                disabled={submitting || !tagDraft.trim()}
-              >
-                <i className="fas fa-plus"></i> Добавить
-              </button>
-            </div>
-            {SUGGESTED_TAGS.filter(t => !tagList.includes(t)).length > 0 && (
-              <div className="tag-suggestions">
-                <span className="tag-suggestions-label">Предложенные:</span>
-                {SUGGESTED_TAGS.filter(t => !tagList.includes(t)).map(t => (
-                  <button
-                    key={t}
-                    type="button"
-                    className="tag-suggestion"
-                    onClick={() => addTag(t)}
-                    disabled={submitting}
-                  >
-                    <i className="fas fa-plus"></i> {t}
-                  </button>
-                ))}
-              </div>
-            )}
-            {tagList.length > 0 && (
-              <ul className="tag-list">
-                {tagList.map((tag, index) => (
-                  <li key={tag} className="tag-chip">
-                    <span className="tag-chip-text">{tag}</span>
-                    <button
-                      type="button"
-                      className="tag-chip-remove"
-                      onClick={() => removeTag(index)}
-                      disabled={submitting}
-                      aria-label="Удалить тег"
-                      title="Удалить"
-                    >
-                      <i className="fas fa-xmark"></i>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <ChipListEditor
+              id="run-tags"
+              variant="chip"
+              items={tagList}
+              onChange={setTagList}
+              placeholder="Например: эксперимент"
+              suggestions={SUGGESTED_TAGS}
+              disabled={submitting}
+            />
           </div>
         </div>
       </div>
@@ -356,9 +255,9 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
       <div className="run-pipeline-actions">
         <button type="submit" className="button" disabled={submitting}>
           {submitting ? (
-            <><i className="fas fa-spinner fa-spin"></i> Запуск...</>
+            <><i className={`fas ${ICONS.loading} fa-spin`}></i> Запуск...</>
           ) : (
-            <><i className="fas fa-play"></i> Запустить</>
+            <><i className={`fas ${ICONS.play}`}></i> Запустить</>
           )}
         </button>
       </div>

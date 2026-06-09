@@ -70,5 +70,5 @@ export interface MLModelsGrouped {
   offset: number;
 }
 
-// Параметры запроса grouped endpoint (без name — фильтр идёт по имени группы через name в ModelsQuery).
-export type GroupedModelsQuery = Omit<ModelsQuery, 'name'>;
+// Параметры запроса grouped endpoint: name — частичный поиск по имени группы.
+export type GroupedModelsQuery = ModelsQuery;

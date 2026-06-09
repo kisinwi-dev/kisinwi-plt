@@ -1,28 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { agentHistoryService } from '../../services/agentHistoryService';
 import type { DiscussionMeta } from '../../types/agentHistory';
 import { useNotification } from '../../contexts/NotificationContext';
 import ConfirmModal from '../common/ConfirmModal';
 import DiscussionCard from './DiscussionCard';
-import DiscussionDetail from './DiscussionDetail';
 
 const DiscussionHistory: React.FC = () => {
   const { showNotification } = useNotification();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  // Выбранная дискуссия хранится в URL (?discussion=<id>), чтобы работала
-  // нативная кнопка «Назад» браузера.
-  const selectedId = searchParams.get('discussion');
 
   const [discussions, setDiscussions] = useState<DiscussionMeta[]>([]);
   const [loading, setLoading] = useState(false);
   // Дискуссия, ожидающая подтверждения удаления.
   const [pendingDelete, setPendingDelete] = useState<DiscussionMeta | null>(null);
 
-  // Открыть дискуссию — добавляем запись в историю браузера.
+  // Открыть дискуссию — переход на отдельную страницу детального просмотра.
   const openDiscussion = (discussionId: string) => {
-    setSearchParams({ discussion: discussionId });
+    navigate(`/agents/discussion/${discussionId}`);
   };
 
   useEffect(() => {
@@ -55,18 +50,11 @@ const DiscussionHistory: React.FC = () => {
     try {
       await agentHistoryService.deleteDiscussion(discussionId);
       setDiscussions(prev => prev.filter(d => d.discussion_id !== discussionId));
-      // Если удаляем открытую дискуссию — убираем её из URL без новой записи в истории.
-      if (selectedId === discussionId) setSearchParams({}, { replace: true });
       showNotification('Диалог удалён', 'success');
     } catch (err) {
       showNotification(err instanceof Error ? err.message : 'Ошибка удаления диалога', 'error');
     }
   };
-
-  // ── Детальный просмотр выбранной дискуссии ──────────────────────────────────
-  if (selectedId) {
-    return <DiscussionDetail discussionId={selectedId} onBack={() => navigate(-1)} />;
-  }
 
   // ── Список дискуссий ────────────────────────────────────────────────────────
   if (loading && discussions.length === 0) {

@@ -6,13 +6,18 @@ import { useNotification } from '../contexts/NotificationContext';
  * Возвращает стабильный колбэк (text) => void.
  * e.stopPropagation() при необходимости вызывать на месте (хук работает только с текстом).
  */
-export const useCopyToClipboard = (successMessage = 'ID скопирован'): ((text: string) => void) => {
+export const useCopyToClipboard = (
+  successMessage = 'ID скопирован',
+  errorMessage = 'Не удалось скопировать',
+): ((text: string) => void) => {
   const { showNotification } = useNotification();
   return useCallback(
     (text: string) => {
-      navigator.clipboard.writeText(text);
-      showNotification(successMessage, 'success');
+      navigator.clipboard.writeText(text).then(
+        () => showNotification(successMessage, 'success'),
+        () => showNotification(errorMessage, 'error'),
+      );
     },
-    [showNotification, successMessage],
+    [showNotification, successMessage, errorMessage],
   );
 };

@@ -6,6 +6,7 @@ import { agentHistoryService } from '../../services/agentHistoryService';
 import type { AgentResponse, AgentStatus, Tool } from '../../types/agentHistory';
 import { formatDateTime, formatDuration, statusClass } from '../../utils/format';
 import { CollapseChevron, getDisclosureProps } from '../common/Collapse';
+import { ICONS } from '../../constants/icons';
 
 interface Props {
   discussionId: string;
@@ -19,25 +20,52 @@ const STATUS_LABELS: Record<AgentStatus, string> = {
   ERROR: 'Ошибка',
 };
 
+// Превью текста ответа для свёрнутой карточки: грубая зачистка markdown до плоской строки.
+const toPreview = (text: string, max = 140): string => {
+  const flat = text
+    .replace(/```[\s\S]*?```/g, ' ')           // блоки кода
+    .replace(/[#>*_`~-]+/g, ' ')               // markdown-разметка
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')   // ссылки → текст
+    .replace(/\s+/g, ' ')
+    .trim();
+  return flat.length > max ? `${flat.slice(0, max)}…` : flat;
+};
+
 // Отображение одного вызова инструмента: шапка-список + раскрываемые подробности.
-const ToolItem: React.FC<{ tool: Tool }> = ({ tool }) => {
+// maxDuration — наибольшая длительность среди инструментов ответа (для ширины latency-bar).
+const ToolItem: React.FC<{ tool: Tool; maxDuration: number }> = ({ tool, maxDuration }) => {
   const [expanded, setExpanded] = useState(false);
 
   const hasDetails =
     Boolean(tool.message) || tool.input_args != null || tool.output != null || Boolean(tool.error_traceback);
 
+  // Относительная ширина бара длительности (видно «тяжёлые» вызовы).
+  const barWidth =
+    tool.duration_ms != null && maxDuration > 0
+      ? `${Math.max(4, (tool.duration_ms / maxDuration) * 100)}%`
+      : null;
+
   return (
-    <div className={`tool-item ${expanded ? 'expanded' : ''}`}>
+    <div className={`tool-item ${statusClass(tool.status)} ${expanded ? 'expanded' : ''}`}>
       <div
         className={`tool-header ${hasDetails ? 'clickable' : ''}`}
         {...(hasDetails ? getDisclosureProps(expanded, () => setExpanded(prev => !prev)) : {})}
       >
         <span className="tool-name">
           {hasDetails && <CollapseChevron open={expanded} />}
-          <i className="fas fa-wrench"></i> {tool.name}
+          <i className={`fas ${ICONS.tools}`}></i> {tool.name}
         </span>
         <div className="tool-header-right">
-          {tool.duration_ms != null && <span className="tool-duration"><i className="fas fa-clock"></i> {formatDuration(tool.duration_ms)}</span>}
+          {tool.duration_ms != null && (
+            <span className="tool-duration">
+              {barWidth && (
+                <span className="tool-latency-bar" aria-hidden="true">
+                  <span className="tool-latency-bar-fill" style={{ width: barWidth }} />
+                </span>
+              )}
+              <i className={`fas ${ICONS.duration}`}></i> {formatDuration(tool.duration_ms)}
+            </span>
+          )}
           <span className={`status-badge ${statusClass(tool.status)}`}>{STATUS_LABELS[tool.status]}</span>
         </div>
       </div>
@@ -96,20 +124,27 @@ const MessageBubble: React.FC<Props> = ({ discussionId, response }) => {
       >
         <span className="message-header-left">
           <CollapseChevron open={!collapsed} />
-          <span className="message-role"><i className="fas fa-robot"></i> {response.agent_role}</span>
+          <span className="message-role">{response.agent_role}</span>
         </span>
         <div className="message-header-right">
+          {response.duration_ms != null && (
+            <span className="message-header-duration"><i className={`fas ${ICONS.duration}`}></i> {formatDuration(response.duration_ms)}</span>
+          )}
           <span className={`status-badge ${statusClass(response.status)}`}>{STATUS_LABELS[response.status]}</span>
         </div>
       </div>
 
+      {collapsed && response.text.trim() && (
+        <p className="message-preview">{toPreview(response.text)}</p>
+      )}
+
       {!collapsed && (
         <>
           <div className="message-meta">
-            {response.model && <span><i className="fas fa-microchip"></i> {response.model}</span>}
-            {response.task_name && <span><i className="fas fa-list-check"></i> {response.task_name}</span>}
-            {response.iteration != null && <span><i className="fas fa-rotate"></i> итерация {response.iteration}</span>}
-            {response.duration_ms != null && <span><i className="fas fa-clock"></i> {formatDuration(response.duration_ms)}</span>}
+            {response.model && <span><i className={`fas ${ICONS.agentModel}`}></i> {response.model}</span>}
+            {response.task_name && <span><i className={`fas ${ICONS.task}`}></i> {response.task_name}</span>}
+            {response.iteration != null && <span><i className={`fas ${ICONS.iteration}`}></i> итерация {response.iteration}</span>}
+            {response.duration_ms != null && <span><i className={`fas ${ICONS.duration}`}></i> {formatDuration(response.duration_ms)}</span>}
           </div>
 
           <div className="message-text markdown-body">
@@ -119,7 +154,7 @@ const MessageBubble: React.FC<Props> = ({ discussionId, response }) => {
           <div className="message-footer">
             <span className="message-time">{formatDateTime(response.timestamp)}</span>
             <button className="tools-toggle" onClick={handleToggleTools}>
-              <i className={`fas ${tools !== null ? 'fa-chevron-up' : 'fa-wrench'}`}></i>
+              <i className={`fas ${tools !== null ? ICONS.collapse : ICONS.tools}`}></i>
               {tools !== null ? ' Скрыть инструменты' : ' Инструменты'}
             </button>
           </div>
@@ -129,7 +164,14 @@ const MessageBubble: React.FC<Props> = ({ discussionId, response }) => {
           {Array.isArray(tools) && (
             tools.length === 0
               ? <p className="tools-status">Инструменты не вызывались</p>
-              : <div className="tools-list">{tools.map(tool => <ToolItem key={tool.id} tool={tool} />)}</div>
+              : (() => {
+                  const maxDuration = Math.max(0, ...tools.map(t => t.duration_ms ?? 0));
+                  return (
+                    <div className="tools-list">
+                      {tools.map(tool => <ToolItem key={tool.id} tool={tool} maxDuration={maxDuration} />)}
+                    </div>
+                  );
+                })()
           )}
         </>
       )}

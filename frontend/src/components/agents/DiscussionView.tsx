@@ -4,8 +4,9 @@ import type { AgentResponse, SystemMessage, SystemMessageType } from '../../type
 import { useNotification } from '../../contexts/NotificationContext';
 import { usePolling } from '../../hooks';
 import { POLL_INTERVAL_DISCUSSION_MS } from '../../constants';
-import { formatDateTime } from '../../utils/format';
+import { formatDateTime, statusClass } from '../../utils/format';
 import MessageBubble from './MessageBubble';
+import { ICONS } from '../../constants/icons';
 
 interface Props {
   discussionId: string;
@@ -20,9 +21,9 @@ type FeedItem =
 
 // Иконка системного сообщения по типу.
 const SYSTEM_ICONS: Record<SystemMessageType, string> = {
-  INFO: 'fa-circle-info',
-  WARNING: 'fa-triangle-exclamation',
-  ERROR: 'fa-circle-exclamation',
+  INFO: ICONS.info,
+  WARNING: ICONS.warning,
+  ERROR: ICONS.error,
 };
 
 const DiscussionView: React.FC<Props> = ({ discussionId, active = false }) => {
@@ -47,35 +48,85 @@ const DiscussionView: React.FC<Props> = ({ discussionId, active = false }) => {
       continueWhile: () => active,
       onError: err =>
         showNotification(err instanceof Error ? err.message : 'Ошибка загрузки диалога', 'error'),
-      deps: [discussionId],
+      // active в deps: когда статус дискуссии становится active (meta догрузилась),
+      // цикл опроса перезапускается, иначе он умер бы после первого запроса.
+      deps: [discussionId, active],
     },
   );
 
   const feed = data ?? [];
 
   if (loading && feed.length === 0) {
-    return <div className="loading-state">Загрузка диалога...</div>;
+    // Скелетоны вместо текстовой заглушки — лента ощущается живой ещё до прихода данных.
+    return (
+      <div className="discussion-timeline" aria-busy="true">
+        {[0, 1, 2].map(i => (
+          <div key={i} className="timeline-row">
+            <span className="timeline-node timeline-node--skeleton skeleton" />
+            <div className="timeline-content">
+              <div className="message-skeleton">
+                <div className="skeleton skeleton-line skeleton-line--head" />
+                <div className="skeleton skeleton-line" />
+                <div className="skeleton skeleton-line skeleton-line--short" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   }
 
-  if (feed.length === 0) {
-    return <p className="empty-state">В этой дискуссии пока нет сообщений.</p>;
+  if (feed.length === 0 && !active) {
+    return (
+      <p className="empty-state">
+        <i className={`fas ${ICONS.noMessages}`}></i> В этой дискуссии пока нет сообщений.
+      </p>
+    );
   }
 
   return (
-    <div className="discussion-feed">
+    <div className="discussion-timeline">
       {feed.map(item =>
         item.kind === 'response' ? (
-          <MessageBubble key={item.data.response_id} discussionId={discussionId} response={item.data} />
+          <div key={item.data.response_id} className="timeline-row timeline-row--response">
+            <span className={`timeline-node ${statusClass(item.data.status)}`} aria-hidden="true">
+              <i className={`fas ${ICONS.agent}`}></i>
+            </span>
+            <div className="timeline-content">
+              <MessageBubble discussionId={discussionId} response={item.data} />
+            </div>
+          </div>
         ) : (
           <div
             key={`sys-${item.data.timestamp}-${item.data.type_}-${item.data.message.slice(0, 32)}`}
-            className={`system-message msg-${item.data.type_.toLowerCase()}`}
+            className={`timeline-row timeline-row--system msg-${item.data.type_.toLowerCase()}`}
           >
-            <i className={`fas ${SYSTEM_ICONS[item.data.type_]}`}></i>
-            <span className="system-message-text">{item.data.message}</span>
-            <span className="system-message-time">{formatDateTime(item.data.timestamp)}</span>
+            <span className="timeline-node timeline-node--system" aria-hidden="true">
+              <i className={`fas ${SYSTEM_ICONS[item.data.type_]}`}></i>
+            </span>
+            <div className="timeline-content">
+              <div className="system-message">
+                <span className="system-message-text">{item.data.message}</span>
+                <span className="system-message-time">{formatDateTime(item.data.timestamp)}</span>
+              </div>
+            </div>
           </div>
         ),
+      )}
+
+      {active && (
+        <div className="timeline-row timeline-row--active" role="status" aria-live="polite">
+          <span className="timeline-node timeline-node--active" aria-hidden="true">
+            <span className="timeline-node-pulse"></span>
+            <i className={`fas ${ICONS.agent}`}></i>
+          </span>
+          <div className="timeline-content">
+            <div className="discussion-running">
+              <i className={`fas ${ICONS.loading} fa-spin`}></i>
+              <span>Агенты работают...</span>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

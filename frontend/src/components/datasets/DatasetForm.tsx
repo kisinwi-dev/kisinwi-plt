@@ -1,7 +1,24 @@
 import React from 'react';
 import FileUploader from '../FileUploader';
 import SourcesEditor from './SourcesEditor';
+import Select from '../common/Select';
+import { ICONS } from '../../constants/icons';
 import type { NewDataset, NewVersion, SourceItem } from '../../types/dataset';
+
+const TYPE_OPTIONS = [
+  { value: 'image', label: 'Image' },
+  { value: 'text', label: 'Text' },
+  { value: 'tabular', label: 'Tabular' },
+  { value: 'other', label: 'Other' },
+];
+
+const TASK_OPTIONS = [
+  { value: 'classification', label: 'Classification' },
+  { value: 'regression', label: 'Regression' },
+  { value: 'detection', label: 'Detection' },
+  { value: 'segmentation', label: 'Segmentation' },
+  { value: 'other', label: 'Other' },
+];
 
 type VersionFormData = Omit<NewVersion, 'id_data'>;
 
@@ -10,9 +27,7 @@ interface DatasetFormProps {
   loading: boolean;
   onNewDatasetChange: (field: keyof Omit<NewDataset, 'version'>, value: string) => void;
   onVersionChange: (field: keyof VersionFormData, value: string) => void;
-  onVersionSourceAdd: () => void;
-  onVersionSourceRemove: (index: number) => void;
-  onVersionSourceChange: (index: number, field: keyof SourceItem, value: string) => void;
+  onVersionSourcesChange: (sources: SourceItem[]) => void;
   onFileSelect: (file: File | null) => void;
   onSubmit: () => void;
   onCancel: () => void;
@@ -23,25 +38,29 @@ const DatasetForm: React.FC<DatasetFormProps> = ({
   loading,
   onNewDatasetChange,
   onVersionChange,
-  onVersionSourceAdd,
-  onVersionSourceRemove,
-  onVersionSourceChange,
+  onVersionSourcesChange,
   onFileSelect,
   onSubmit,
   onCancel,
 }) => {
   return (
     <div className="add-dataset-form">
-      <h2>Создать новый датасет</h2>
+      <div className="add-dataset-form-head">
+        <h2>Создать новый датасет</h2>
+      </div>
 
       <div className="form-section">
-        <h3>Основная информация</h3>
+        <div className="form-section-head">
+          <h3><i className={`fas ${ICONS.info}`}></i> Основная информация</h3>
+          <p className="form-section-hint">Как датасет будет называться и о чём он.</p>
+        </div>
         <div className="form-grid">
           <div className="form-field">
             <label htmlFor="dataset-name">Название <span className="required-star">*</span></label>
             <input
               id="dataset-name"
               type="text"
+              autoComplete="off"
               placeholder="например: CIFAR-10"
               value={newDataset.name}
               onChange={(e) => onNewDatasetChange('name', e.target.value)}
@@ -52,6 +71,7 @@ const DatasetForm: React.FC<DatasetFormProps> = ({
             <label htmlFor="dataset-description">Описание</label>
             <textarea
               id="dataset-description"
+              autoComplete="off"
               placeholder="Краткое описание датасета"
               value={newDataset.description}
               onChange={(e) => onNewDatasetChange('description', e.target.value)}
@@ -63,48 +83,46 @@ const DatasetForm: React.FC<DatasetFormProps> = ({
       </div>
 
       <div className="form-section">
-        <h3>Тип и задача</h3>
+        <div className="form-section-head">
+          <h3><i className={`fas ${ICONS.datasetType}`}></i> Тип и задача</h3>
+          <p className="form-section-hint">Какого вида данные и для чего модель.</p>
+        </div>
         <div className="form-row">
           <div className="form-field">
             <label htmlFor="dataset-type">Тип данных</label>
-            <select
-              id="dataset-type"
+            <Select
+              icon={`fas ${ICONS.datasetType}`}
+              ariaLabel="Тип данных"
               value={newDataset.type}
-              onChange={(e) => onNewDatasetChange('type', e.target.value)}
-              disabled={loading}
-            >
-              <option value="image">Image</option>
-              <option value="text">Text</option>
-              <option value="tabular">Tabular</option>
-              <option value="other">Other</option>
-            </select>
+              options={TYPE_OPTIONS}
+              onChange={(v) => onNewDatasetChange('type', v)}
+            />
           </div>
           <div className="form-field">
             <label htmlFor="dataset-task">Задача</label>
-            <select
-              id="dataset-task"
+            <Select
+              icon={`fas ${ICONS.taskTarget}`}
+              ariaLabel="Задача"
               value={newDataset.task}
-              onChange={(e) => onNewDatasetChange('task', e.target.value)}
-              disabled={loading}
-            >
-              <option value="classification">Classification</option>
-              <option value="regression">Regression</option>
-              <option value="detection">Detection</option>
-              <option value="segmentation">Segmentation</option>
-              <option value="other">Other</option>
-            </select>
+              options={TASK_OPTIONS}
+              onChange={(v) => onNewDatasetChange('task', v)}
+            />
           </div>
         </div>
       </div>
 
       <div className="form-section">
-        <h3>Начальная версия <span className="required-star">*</span></h3>
+        <div className="form-section-head">
+          <h3><i className={`fas ${ICONS.version}`}></i> Начальная версия <span className="required-star">*</span></h3>
+          <p className="form-section-hint">Первая версия данных и откуда они взяты.</p>
+        </div>
         <div className="form-grid">
           <div className="form-field">
             <label htmlFor="version-name">Название версии <span className="required-star">*</span></label>
             <input
               id="version-name"
               type="text"
+              autoComplete="off"
               placeholder="например: v1.0"
               value={newDataset.version.name}
               onChange={(e) => onVersionChange('name', e.target.value)}
@@ -116,6 +134,7 @@ const DatasetForm: React.FC<DatasetFormProps> = ({
             <input
               id="version-description"
               type="text"
+              autoComplete="off"
               placeholder="Краткое описание"
               value={newDataset.version.description}
               onChange={(e) => onVersionChange('description', e.target.value)}
@@ -128,14 +147,15 @@ const DatasetForm: React.FC<DatasetFormProps> = ({
         <SourcesEditor
           sources={newDataset.version.sources}
           loading={loading}
-          onAdd={onVersionSourceAdd}
-          onRemove={onVersionSourceRemove}
-          onChange={onVersionSourceChange}
+          onChange={onVersionSourcesChange}
         />
       </div>
 
       <div className="form-section">
-        <h3>Файл датасета</h3>
+        <div className="form-section-head">
+          <h3><i className={`fas ${ICONS.fileArchive}`}></i> Файл датасета</h3>
+          <p className="form-section-hint">Архив с изображениями, разложенными по классам.</p>
+        </div>
         <FileUploader
           onFileSelect={onFileSelect}
           accept=".zip"

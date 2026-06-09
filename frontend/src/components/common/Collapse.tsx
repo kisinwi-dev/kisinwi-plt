@@ -1,4 +1,5 @@
 import React from 'react';
+import { ICONS } from '../../constants/icons';
 
 interface CollapseChevronProps {
   open: boolean;
@@ -12,7 +13,7 @@ interface CollapseChevronProps {
  */
 export const CollapseChevron: React.FC<CollapseChevronProps> = ({ open, className }) => (
   <i
-    className={`fas fa-chevron-right collapse-chevron${open ? ' open' : ''}${className ? ` ${className}` : ''}`}
+    className={`fas ${ICONS.pageNext} collapse-chevron${open ? ' open' : ''}${className ? ` ${className}` : ''}`}
     aria-hidden="true"
   />
 );

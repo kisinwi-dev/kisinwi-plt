@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { DiscussionHistory, RunPipelineForm } from '../components/agents';
+import { ICONS } from '../constants/icons';
 import './Agents.css';
 
 type AgentsTab = 'run' | 'history';
 
 const Agents: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AgentsTab>('history');
-  const [, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
-  // После старта пайплайна — переключаемся на историю и открываем дискуссию.
+  // После старта пайплайна — открываем страницу дискуссии.
   const handleStarted = (discussionId: string) => {
-    setActiveTab('history');
-    setSearchParams({ discussion: discussionId });
+    navigate(`/agents/discussion/${discussionId}`);
   };
 
   return (
@@ -25,18 +25,18 @@ const Agents: React.FC = () => {
       </div>
 
       {/* Переключатель вкладок */}
-      <div className="agents-tabs">
+      <div className="page-tabs">
         <button
-          className={`agents-tab ${activeTab === 'run' ? 'active' : ''}`}
+          className={`page-tab ${activeTab === 'run' ? 'active' : ''}`}
           onClick={() => setActiveTab('run')}
         >
-          <i className="fas fa-play"></i> Запуск
+          <i className={`fas ${ICONS.play}`}></i> Запуск
         </button>
         <button
-          className={`agents-tab ${activeTab === 'history' ? 'active' : ''}`}
+          className={`page-tab ${activeTab === 'history' ? 'active' : ''}`}
           onClick={() => setActiveTab('history')}
         >
-          <i className="fas fa-clock-rotate-left"></i> История
+          <i className={`fas ${ICONS.history}`}></i> История
         </button>
       </div>
 

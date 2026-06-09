@@ -1,0 +1,120 @@
+/* Поле с автодополнением в стилистике кастомного Select. */
+.combobox {
+  position: relative;
+  width: 100%;
+}
+
+.combobox-control {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  background: var(--color-bg-secondary);
+  border: var(--border-subtle);
+  border-radius: var(--radius-input);
+  padding: 0.55rem 1rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.combobox-control:hover {
+  border-color: var(--color-border-strong);
+}
+
+.combobox--open .combobox-control {
+  border-color: var(--color-accent);
+}
+
+.combobox-icon {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.combobox-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-primary);
+  font-size: 0.95rem;
+}
+
+.combobox-input::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.combobox-input:disabled {
+  cursor: not-allowed;
+}
+
+.combobox-caret {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+  transition: transform 0.18s ease, color 0.15s;
+}
+
+.combobox--open .combobox-caret {
+  transform: rotate(180deg);
+  color: var(--color-accent);
+}
+
+.combobox-menu {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+  background: var(--color-bg-secondary);
+  border: var(--border-soft);
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow-md);
+  max-height: 16rem;
+  overflow-y: auto;
+  animation: combobox-menu-in 0.14s ease;
+}
+
+@keyframes combobox-menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.combobox-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: calc(var(--radius-input) - 2px);
+  cursor: pointer;
+  font-size: 0.92rem;
+  color: var(--color-text-primary);
+  transition: background 0.12s, color 0.12s;
+}
+
+.combobox-option-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.combobox-option--active {
+  background: var(--color-bg-primary);
+}
+
+.combobox-option--selected {
+  color: var(--color-accent);
+}
+
+.combobox-option-check {
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}

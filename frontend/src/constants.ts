@@ -3,9 +3,6 @@
 // Сколько моделей грузим на одну страницу списка моделей.
 export const MODELS_PAGE_SIZE = 12;
 
-// Сколько агентов показываем в карточке дискуссии до сворачивания.
-export const DISCUSSION_AGENTS_LIMIT = 3;
-
 // Интервал опроса прогресса активной дискуссии (meta и лента сообщений).
 export const POLL_INTERVAL_DISCUSSION_MS = 3000;
 

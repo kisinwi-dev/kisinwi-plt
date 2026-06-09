@@ -5,6 +5,7 @@ import { usePolling } from '../../hooks';
 import { POLL_INTERVAL_DISCUSSION_MS } from '../../constants';
 import DiscussionInfo from './DiscussionInfo';
 import DiscussionView from './DiscussionView';
+import { ICONS } from '../../constants/icons';
 
 interface Props {
   discussionId: string;
@@ -33,8 +34,8 @@ const DiscussionDetail: React.FC<Props> = ({ discussionId, onBack }) => {
 
   return (
     <div className="discussion-detail">
-      <button className="button secondary small back-button" onClick={onBack}>
-        <i className="fas fa-arrow-left"></i> Назад к списку
+      <button className="detail-back-link" onClick={onBack}>
+        <i className={`fas ${ICONS.back}`}></i> Назад к списку
       </button>
       <DiscussionInfo discussion={meta ?? null} discussionId={discussionId} />
       <DiscussionView discussionId={discussionId} active={isActive} />

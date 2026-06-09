@@ -1,4 +1,5 @@
 import React from 'react';
+import { ICONS } from '../../constants/icons';
 import type { VersionSplitsResponse } from '../../types/dataset';
 
 interface Props {
@@ -20,7 +21,7 @@ const VersionSplitsStats: React.FC<Props> = ({ stats, onClose }) => {
       <div className="splits-stats-header">
         <span className="splits-stats-title">Статистика сплитов</span>
         <button className="icon-button small" onClick={onClose} title="Скрыть">
-          <i className="fas fa-times"></i>
+          <i className={`fas ${ICONS.close}`}></i>
         </button>
       </div>
       <div className="splits-overall">
