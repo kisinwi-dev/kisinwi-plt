@@ -88,7 +88,6 @@ export const ICONS = {
   themeMidnight: 'fa-cloud-moon',
 
   // --- бренды (использование с префиксом `fab`, а не `fas`) ---
-  brandTelegram: 'fa-telegram',
   brandGithub: 'fa-github',
 } as const;
 

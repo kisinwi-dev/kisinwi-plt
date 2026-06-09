@@ -24,15 +24,6 @@ const Footer: React.FC = () => {
           <h4 className="footer-title">Связь</h4>
           <div className="social-links">
             <a
-              href="https://t.me/andrySin"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="social-link"
-              title="Telegram"
-            >
-              <i className={`fab ${ICONS.brandTelegram}`}></i>
-            </a>
-            <a
               href="https://github.com/kisinwi-dev/kisinwi-plt"
               target="_blank"
               rel="noopener noreferrer"
@@ -50,7 +41,7 @@ const Footer: React.FC = () => {
 
       <div className="footer-bottom">
         <p className="footer-copyright">
-          © {currentYear} KiSinWi. Все права защищены.
+          © {currentYear} KiSinWi. Лицензия MIT.
         </p>
       </div>
     </footer>
