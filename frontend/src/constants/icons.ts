@@ -1,6 +1,7 @@
 // Единый реестр иконок интерфейса (Font Awesome 6, CDN подключён в index.html).
 // Значения хранятся без префикса `fas`/`fab` — как в theme/themes.ts и SYSTEM_ICONS.
 // Использование в JSX: <i className={`fas ${ICONS.delete}`} />
+//   brand-иконки (секция «бренды») идут с префиксом `fab`: <i className={`fab ${ICONS.brandGithub}`} />
 //   loading-спиннер: <i className={`fas ${ICONS.loading} fa-spin`} />
 // Ключи — это семантические РОЛИ, поэтому совпадение значений у разных ролей
 // (например classes/tags = fa-tags) допустимо и намеренно.
@@ -85,6 +86,10 @@ export const ICONS = {
   themeDark: 'fa-moon',
   themeLight: 'fa-sun',
   themeMidnight: 'fa-cloud-moon',
+
+  // --- бренды (использование с префиксом `fab`, а не `fas`) ---
+  brandTelegram: 'fa-telegram',
+  brandGithub: 'fa-github',
 } as const;
 
 export type IconKey = keyof typeof ICONS;

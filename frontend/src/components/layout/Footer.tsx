@@ -30,7 +30,7 @@ const Footer: React.FC = () => {
               className="social-link"
               title="Telegram"
             >
-              <i className="fab fa-telegram"></i>
+              <i className={`fab ${ICONS.brandTelegram}`}></i>
             </a>
             <a
               href="https://github.com/kisinwi-dev/kisinwi-plt"
@@ -39,7 +39,7 @@ const Footer: React.FC = () => {
               className="social-link"
               title="GitHub"
             >
-              <i className="fab fa-github"></i>
+              <i className={`fab ${ICONS.brandGithub}`}></i>
             </a>
           </div>
           <button className="back-to-top" onClick={scrollToTop}>
