@@ -1,5 +1,6 @@
 import pytest
 from app.core.filesystem import FileSystemManager
+from app.core.exception.version import VersionValidationError
 
 def test_init_sets_root_to_tmp_path(tmp_path):
     fsm = FileSystemManager(root=tmp_path)
@@ -72,6 +73,25 @@ def test_get_all_files(populated_fs):
     assert set(files) == {"photo1.jpg", "photo2.png", "doc.pdf", "text.txt"}
 
 
+def test_get_all_files_recursive(populated_fs):
+    files = populated_fs.get_all_files_recursive()
+    assert files == sorted([
+        "photo1.jpg", "photo2.png", "doc.pdf", "text.txt",
+        "photos/cat.jpg", "photos/dog.PNG", "photos/note.txt",
+    ])
+
+
+def test_get_all_files_recursive_from_subdir(populated_fs):
+    populated_fs.in_dir("photos")
+    files = populated_fs.get_all_files_recursive()
+    assert files == ["cat.jpg", "dog.PNG", "note.txt"]
+
+
+def test_get_all_files_recursive_empty_dir(populated_fs):
+    populated_fs.in_dir("empty")
+    assert populated_fs.get_all_files_recursive() == []
+
+
 def test_rename_file_success(populated_fs):
     populated_fs.rename_file("photo1.jpg", "image1.jpg")
     assert "image1.jpg" in populated_fs.get_all_files()
@@ -122,23 +142,25 @@ def test_delete_nonexistent_raises(populated_fs):
         populated_fs.delete("nonexistent.xyz")
 
 
-def test_all_file_is_image_only_images(populated_fs):
+def test_all_file_is_image_mixed_dir_raises(populated_fs):
+    # в photos/ есть note.txt → исключение
     populated_fs.in_dir("photos")
-    assert not populated_fs.all_file_is_image(recursive=False)
+    with pytest.raises(VersionValidationError):
+        populated_fs.all_file_is_image()
 
 
-def test_all_file_is_image_recursive_true(populated_fs):
-    # в корне есть pdf и txt → False
-    assert not populated_fs.all_file_is_image(recursive=True)
+def test_all_file_is_image_mixed_root_raises(populated_fs):
+    # в корне есть pdf и txt → исключение
+    with pytest.raises(VersionValidationError):
+        populated_fs.all_file_is_image()
 
 
 def test_all_file_is_image_empty_dir(tmp_path):
     fsm = FileSystemManager(root=tmp_path)
-    assert fsm.all_file_is_image()
-    assert fsm.all_file_is_image(recursive=True)
+    assert fsm.all_file_is_image() == []
 
 
-def test_all_file_is_image_only_images_recursive(populated_fs):
+def test_all_file_is_image_only_images(populated_fs):
     # Создаём чистую папку только с картинками
     clean = populated_fs._root / "clean"
     clean.mkdir()
@@ -146,4 +168,5 @@ def test_all_file_is_image_only_images_recursive(populated_fs):
     (clean / "b.png").write_text("")
 
     populated_fs.in_dir("clean")
-    assert populated_fs.all_file_is_image(recursive=True)
+    images = populated_fs.all_file_is_image()
+    assert {p.name for p in images} == {"a.jpg", "b.png"}

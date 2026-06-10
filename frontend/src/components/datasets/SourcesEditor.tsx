@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Select from '../common/Select';
+import { Tooltip } from '../common/Tooltip';
 import './SourcesEditor.css';
 import { ICONS } from '../../constants/icons';
 import type { SourceItem } from '../../types/dataset';
@@ -94,16 +95,17 @@ const SourcesEditor: React.FC<SourcesEditorProps> = ({ sources, loading, onChang
               <span className="source-row-type">{TYPE_LABEL[source.type]}</span>
               {source.url && <span className="source-row-url">{source.url}</span>}
               {source.description && <span className="source-row-desc">{source.description}</span>}
-              <button
-                type="button"
-                className="source-row-remove"
-                onClick={() => removeSource(index)}
-                disabled={loading}
-                aria-label="Удалить источник"
-                title="Удалить источник"
-              >
-                <i className={`fas ${ICONS.close}`}></i>
-              </button>
+              <Tooltip content="Удалить источник">
+                <button
+                  type="button"
+                  className="source-row-remove"
+                  onClick={() => removeSource(index)}
+                  disabled={loading}
+                  aria-label="Удалить источник"
+                >
+                  <i className={`fas ${ICONS.close}`}></i>
+                </button>
+              </Tooltip>
             </li>
           ))}
         </ul>

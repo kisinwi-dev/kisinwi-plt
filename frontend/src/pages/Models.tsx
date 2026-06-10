@@ -6,6 +6,7 @@ import { useModelFilters, useDebouncedValue } from '../hooks';
 import { MODELS_PAGE_SIZE } from '../constants';
 import { ModelCard, ModelGroupCard } from '../components/models';
 import Select from '../components/common/Select';
+import { Tooltip } from '../components/common/Tooltip';
 import type { MLModel, MLModelGroup, MLModelStatus } from '../types/mlModels';
 import type { Dataset } from '../types/dataset';
 import { ICONS } from '../constants/icons';
@@ -146,20 +147,24 @@ const Models: React.FC = () => {
         </div>
 
         <div className="view-toggle">
-          <button
-            className={`view-toggle-btn${viewMode === 'grouped' ? ' active' : ''}`}
-            onClick={() => switchView('grouped')}
-            title="Группировка по моделям"
-          >
-            <i className={`fas ${ICONS.groupedView}`}></i>
-          </button>
-          <button
-            className={`view-toggle-btn${viewMode === 'flat' ? ' active' : ''}`}
-            onClick={() => switchView('flat')}
-            title="Плоский список"
-          >
-            <i className={`fas ${ICONS.listView}`}></i>
-          </button>
+          <Tooltip content="Группировка по моделям">
+            <button
+              className={`view-toggle-btn${viewMode === 'grouped' ? ' active' : ''}`}
+              onClick={() => switchView('grouped')}
+              aria-label="Группировка по моделям"
+            >
+              <i className={`fas ${ICONS.groupedView}`}></i>
+            </button>
+          </Tooltip>
+          <Tooltip content="Плоский список">
+            <button
+              className={`view-toggle-btn${viewMode === 'flat' ? ' active' : ''}`}
+              onClick={() => switchView('flat')}
+              aria-label="Плоский список"
+            >
+              <i className={`fas ${ICONS.listView}`}></i>
+            </button>
+          </Tooltip>
         </div>
       </div>
 

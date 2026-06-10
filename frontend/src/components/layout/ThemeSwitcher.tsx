@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { THEMES, applyTheme, getStoredTheme, type ThemeId } from '../../theme/themes';
 import { ICONS } from '../../constants/icons';
+import { Tooltip } from '../common/Tooltip';
 import './ThemeSwitcher.css';
 
 const ThemeSwitcher: React.FC = () => {
@@ -28,15 +29,17 @@ const ThemeSwitcher: React.FC = () => {
 
   return (
     <div className="theme-switcher" ref={ref}>
-      <button
-        className="theme-switcher-toggle"
-        onClick={() => setOpen((v) => !v)}
-        title="Сменить тему"
-        aria-haspopup="true"
-        aria-expanded={open}
-      >
-        <i className={`fas ${current.icon}`}></i>
-      </button>
+      <Tooltip content="Сменить тему">
+        <button
+          className="theme-switcher-toggle"
+          onClick={() => setOpen((v) => !v)}
+          aria-label="Сменить тему"
+          aria-haspopup="true"
+          aria-expanded={open}
+        >
+          <i className={`fas ${current.icon}`}></i>
+        </button>
+      </Tooltip>
 
       {open && (
         <ul className="theme-switcher-menu" role="menu">

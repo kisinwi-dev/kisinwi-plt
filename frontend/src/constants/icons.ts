@@ -29,6 +29,10 @@ export const ICONS = {
   groupedView: 'fa-layer-group', // переключатель «группировка по моделям»
   menu: 'fa-bars',             // открыть мобильное меню (бургер)
   menuClose: 'fa-xmark',       // закрыть мобильное меню (бургер в открытом состоянии)
+  compare: 'fa-code-compare',  // сравнение версий датасета
+  swap: 'fa-right-left',       // поменять местами базовую и сравниваемую версии
+  arrowRight: 'fa-arrow-right', // направление сравнения «базовая → сравниваемая»
+  minus: 'fa-minus',           // удалённые элементы в diff (пара к add)
 
   // --- статусы ---
   loading: 'fa-spinner',       // + fa-spin
@@ -68,6 +72,9 @@ export const ICONS = {
   tags: 'fa-tags',             // классы / множество ярлыков
   classes: 'fa-tags',
   samples: 'fa-images',
+  imageSize: 'fa-ruler-combined', // размеры изображений (статистика версии)
+  balance: 'fa-scale-balanced',   // баланс классов
+  drift: 'fa-wave-square',        // дрейф распределения классов между версиями
   link: 'fa-link',
   description: 'fa-align-left',
   taskTarget: 'fa-bullseye',   // поле «Задача» датасета

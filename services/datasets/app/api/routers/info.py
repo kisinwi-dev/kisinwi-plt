@@ -5,7 +5,7 @@ from app.core.health import check_health_all
 
 routers = APIRouter(
     prefix="/info", 
-    tags=["info"]
+    tags=["Info"]
 )
 
 @routers.get(

@@ -5,6 +5,7 @@ import { formatDateParts, formatDateTime } from '../../utils/format';
 import { mlModelsService } from '../../services/mlModelsService';
 import { useNotification } from '../../contexts/NotificationContext';
 import ConfirmModal from '../common/ConfirmModal';
+import { Tooltip } from '../common/Tooltip';
 import { ICONS } from '../../constants/icons';
 
 interface Props {
@@ -63,30 +64,38 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
                 <i className={`fas ${ICONS.version}`}></i> {group.versions.length} {group.versions.length === 1 ? 'версия' : group.versions.length < 5 ? 'версии' : 'версий'}
               </span>
             </div>
-            <button
-              className="icon-button icon-button--danger"
-              title="Удалить все версии"
-              onClick={(e) => { e.stopPropagation(); setPending({ kind: 'group', name: group.name, count: group.versions.length }); }}
-            >
-              <i className={`fas ${ICONS.delete}`}></i>
-            </button>
+            <Tooltip content="Удалить все версии">
+              <button
+                className="icon-button icon-button--danger"
+                aria-label="Удалить все версии"
+                onClick={(e) => { e.stopPropagation(); setPending({ kind: 'group', name: group.name, count: group.versions.length }); }}
+              >
+                <i className={`fas ${ICONS.delete}`}></i>
+              </button>
+            </Tooltip>
           </div>
           <div className="model-meta model-group-meta">
             {latest.framework && (
-              <span title="Фреймворк (последняя версия)">
-                <i className={`fas ${ICONS.framework}`}></i>
-                <span className="meta-label">Фреймворк:</span> {latest.framework}
-                {latest.framework_version ? ` ${latest.framework_version}` : ''}
-              </span>
+              <Tooltip content="Фреймворк (последняя версия)">
+                <span>
+                  <i className={`fas ${ICONS.framework}`}></i>
+                  <span className="meta-label">Фреймворк:</span> {latest.framework}
+                  {latest.framework_version ? ` ${latest.framework_version}` : ''}
+                </span>
+              </Tooltip>
             )}
-            <span title="Количество классов (последняя версия)">
-              <i className={`fas ${ICONS.classes}`}></i>
-              <span className="meta-label">Классов:</span> {latest.classes.length}
-            </span>
-            <span title="Дата последней версии">
-              <i className={`fas ${ICONS.dateUpdated}`}></i>
-              <span className="meta-label">Обновлена:</span> {formatDateTime(latest.created_at)}
-            </span>
+            <Tooltip content="Количество классов (последняя версия)">
+              <span>
+                <i className={`fas ${ICONS.classes}`}></i>
+                <span className="meta-label">Классов:</span> {latest.classes.length}
+              </span>
+            </Tooltip>
+            <Tooltip content="Дата последней версии">
+              <span>
+                <i className={`fas ${ICONS.dateUpdated}`}></i>
+                <span className="meta-label">Обновлена:</span> {formatDateTime(latest.created_at)}
+              </span>
+            </Tooltip>
           </div>
         </div>
 
@@ -101,13 +110,14 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
                   className="versions-th-sortable"
                   onClick={() => setSortAsc((v) => !v)}
                   aria-sort={sortAsc ? 'ascending' : 'descending'}
-                  title={sortAsc ? 'Сейчас: старые → новые. Нажать для обратного порядка' : 'Сейчас: новые → старые. Нажать для обратного порядка'}
                 >
-                  Версия
-                  <span className={`sort-icon${sortAsc ? ' sort-asc' : ' sort-desc'}`}>
-                    <i className={`fas ${ICONS.collapse} sort-icon-up`}></i>
-                    <i className={`fas ${ICONS.expand} sort-icon-down`}></i>
-                  </span>
+                  <Tooltip content={sortAsc ? 'Сейчас: старые → новые. Нажать для обратного порядка' : 'Сейчас: новые → старые. Нажать для обратного порядка'}>
+                    Версия
+                    <span className={`sort-icon${sortAsc ? ' sort-asc' : ' sort-desc'}`}>
+                      <i className={`fas ${ICONS.collapse} sort-icon-up`}></i>
+                      <i className={`fas ${ICONS.expand} sort-icon-down`}></i>
+                    </span>
+                  </Tooltip>
                 </th>
                 <th>Тип</th>
                 <th>Статус</th>
@@ -139,13 +149,15 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
                     {(() => { const { date, time } = formatDateParts(v.created_at); return <><span>{date}</span>{time && <span className="model-version-time">{time}</span>}</>; })()}
                   </td>
                   <td className="model-version-actions">
-                    <button
-                      className="icon-button icon-button--danger small"
-                      title="Удалить версию"
-                      onClick={(e) => { e.stopPropagation(); setPending({ kind: 'version', model: v }); }}
-                    >
-                      <i className={`fas ${ICONS.delete}`}></i>
-                    </button>
+                    <Tooltip content="Удалить версию">
+                      <button
+                        className="icon-button icon-button--danger small"
+                        aria-label="Удалить версию"
+                        onClick={(e) => { e.stopPropagation(); setPending({ kind: 'version', model: v }); }}
+                      >
+                        <i className={`fas ${ICONS.delete}`}></i>
+                      </button>
+                    </Tooltip>
                   </td>
                 </tr>
               ))}

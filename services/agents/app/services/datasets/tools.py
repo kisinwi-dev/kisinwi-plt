@@ -115,6 +115,142 @@ class GetDatasetSplitSizesTool(BaseTool):
         return await asyncio.to_thread(self._run, dataset_id, version_id)
 
 
+class GetDatasetSplitCountsTool(BaseTool):
+    """Инструмент для получения количества изображений по сплитам версии датасета"""
+
+    name: str = "GetDatasetSplitCounts"
+    description: str = """
+    НАЗНАЧЕНИЕ: Получить общее количество изображений версии и количество в каждом сплите (train/val/test).
+
+    КОГДА ИСПОЛЬЗОВАТЬ:
+    - Когда нужны только размеры выборок, без остальной статистики
+    - Для оценки достаточности данных перед обучением
+    - Для проверки пропорций разбиения train/val/test
+
+    ВХОДНЫЕ ДАННЫЕ:
+    - dataset_id (str): ID датасета.
+      Пример: "human_face_emotions"
+    - version_id (str): ID версии датасета.
+      Пример: "v_1"
+
+    ВОЗВРАЩАЕТ:
+    - dict с общим количеством изображений и количеством по сплитам
+
+    ВАЖНЫЕ ЗАМЕЧАНИЯ:
+    - Это более лёгкий запрос, чем GetDatasetSplitSizes — используй его, если нужны только размеры
+    """
+
+    @tool_response(DATASETS_URL)
+    def _run(self, dataset_id: str, version_id: str) -> str:
+        url = f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}/splits/count"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
+
+    async def _arun(self, dataset_id: str, version_id: str) -> str:
+        return await asyncio.to_thread(self._run, dataset_id, version_id)
+
+
+class GetDatasetSplitBalanceTool(BaseTool):
+    """Инструмент для получения баланса классов по сплитам версии датасета"""
+
+    name: str = "GetDatasetSplitBalance"
+    description: str = """
+    НАЗНАЧЕНИЕ: Получить коэффициент баланса классов в каждом сплите и общий баланс версии.
+
+    КОГДА ИСПОЛЬЗОВАТЬ:
+    - Для проверки сбалансированности классов перед обучением
+    - Когда нужно решить, требуются ли веса классов или аугментация
+    - Для выявления перекоса классов в train/val/test
+
+    ВХОДНЫЕ ДАННЫЕ:
+    - dataset_id (str): ID датасета.
+      Пример: "human_face_emotions"
+    - version_id (str): ID версии датасета.
+      Пример: "v_1"
+
+    ВОЗВРАЩАЕТ:
+    - dict с коэффициентами баланса классов по сплитам и общим балансом
+
+    ВАЖНЫЕ ЗАМЕЧАНИЯ:
+    - Для задач классификации важно, чтобы распределение классов было равномерным
+    """
+
+    @tool_response(DATASETS_URL)
+    def _run(self, dataset_id: str, version_id: str) -> str:
+        url = f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}/splits/balance"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
+
+    async def _arun(self, dataset_id: str, version_id: str) -> str:
+        return await asyncio.to_thread(self._run, dataset_id, version_id)
+
+
+class GetDatasetClassDistributionTool(BaseTool):
+    """Инструмент для получения распределения классов по сплитам версии датасета"""
+
+    name: str = "GetDatasetClassDistribution"
+    description: str = """
+    НАЗНАЧЕНИЕ: Получить распределение изображений по классам в каждом сплите.
+
+    КОГДА ИСПОЛЬЗОВАТЬ:
+    - Когда нужно точное количество изображений каждого класса в train/val/test
+    - Для анализа редких классов и принятия решения об аугментации
+    - Для проверки, что все классы представлены в каждом сплите
+
+    ВХОДНЫЕ ДАННЫЕ:
+    - dataset_id (str): ID датасета.
+      Пример: "human_face_emotions"
+    - version_id (str): ID версии датасета.
+      Пример: "v_1"
+
+    ВОЗВРАЩАЕТ:
+    - dict с распределением по классам для каждого сплита
+
+    ВАЖНЫЕ ЗАМЕЧАНИЯ:
+    - Если какой-то класс отсутствует в сплите, это проблема разбиения — сообщи об этом
+    """
+
+    @tool_response(DATASETS_URL)
+    def _run(self, dataset_id: str, version_id: str) -> str:
+        url = f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}/splits/distribution"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
+
+    async def _arun(self, dataset_id: str, version_id: str) -> str:
+        return await asyncio.to_thread(self._run, dataset_id, version_id)
+
+
+class GetDatasetImageSizeStatsTool(BaseTool):
+    """Инструмент для получения статистики размеров изображений по сплитам версии датасета"""
+
+    name: str = "GetDatasetImageSizeStats"
+    description: str = """
+    НАЗНАЧЕНИЕ: Получить статистику размеров изображений в каждом сплите.
+
+    КОГДА ИСПОЛЬЗОВАТЬ:
+    - Для выбора размера входа модели (input size)
+    - Для настройки resize/crop в препроцессинге
+    - Когда нужно понять, насколько разнородны размеры изображений
+
+    ВХОДНЫЕ ДАННЫЕ:
+    - dataset_id (str): ID датасета.
+      Пример: "human_face_emotions"
+    - version_id (str): ID версии датасета.
+      Пример: "v_1"
+
+    ВОЗВРАЩАЕТ:
+    - dict со статистикой размеров изображений по сплитам
+
+    ВАЖНЫЕ ЗАМЕЧАНИЯ:
+    - Учитывай эту статистику при подборе параметров препроцессинга
+    """
+
+    @tool_response(DATASETS_URL)
+    def _run(self, dataset_id: str, version_id: str) -> str:
+        url = f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}/splits/size-stats"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
+
+    async def _arun(self, dataset_id: str, version_id: str) -> str:
+        return await asyncio.to_thread(self._run, dataset_id, version_id)
+
+
 class ListAllDatasetsTool(BaseTool):
     """Инструмент для получения всех доступных датасетов"""
 

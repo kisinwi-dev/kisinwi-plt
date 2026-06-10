@@ -1,29 +1,39 @@
-from fastapi import APIRouter, Depends, HTTPException, Form
-from typing import List
+from fastapi import APIRouter, Depends, HTTPException, Form, Query, Response
+from typing import List, Optional
 
 from app.logs import get_logger
 from app.core.services import DatasetManager
 from app.core.exception.base import CoreException
 from app.api.deps import get_dataset_manager
 from app.api.schemas.dataset import DatasetResponse
-from app.api.schemas.dataset_new import NewDataset
+from app.api.schemas.dataset_new import NewDataset, DatasetUpdate
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/datasets", tags=["Datasets"])
 
 @router.get(
-    "/", 
+    "/",
     response_model=List[DatasetResponse],
     summary="Получение списка метаданных датасетов",
-    description="Возвращает информацию в виде списка о всех доступных датасетах",
+    description="""
+Возвращает страницу списка датасетов.
+
+- `limit`/`offset` — пагинация
+- `search` — фильтр по подстроке в id или name (без учёта регистра)
+- Общее количество (с учётом фильтра) — в заголовке ответа `X-Total-Count`
+""",
     response_description="Список метаданных датасетов",
 )
-def list_datasets(dm: DatasetManager = Depends(get_dataset_manager)):
-    ids = dm.get_datasets_id()
-    dsms = []
-    for id in ids:
-        dsms.append(dm._get_dataset_info(id))
-    return dsms
+def list_datasets(
+    response: Response,
+    limit: int = Query(50, ge=1, le=500, description="Размер страницы"),
+    offset: int = Query(0, ge=0, description="Смещение от начала списка"),
+    search: Optional[str] = Query(None, description="Подстрока для поиска по id/name"),
+    dm: DatasetManager = Depends(get_dataset_manager)
+):
+    datasets, total = dm.list_datasets_response(limit=limit, offset=offset, search=search)
+    response.headers["X-Total-Count"] = str(total)
+    return datasets
 
 @router.get(
     "/{dataset_id}", 
@@ -50,13 +60,47 @@ def new_default_version(
     default_version: str,
     dm: DatasetManager = Depends(get_dataset_manager)
 ):
-    ds = dm._get_dataset_info(dataset_id)
-    ds.default_version_id = default_version
-    dm.change_dataset_info(ds)
-    return True
+    try:
+        ds = dm._get_dataset_info(dataset_id)
+        version_ids = [v.id for v in ds.versions]
+        if default_version not in version_ids:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Версия '{default_version}' не найдена в датасете '{dataset_id}'"
+            )
+        ds.default_version_id = default_version
+        dm.change_dataset_info(ds)
+        return True
+    except HTTPException:
+        raise
+    except CoreException as e:
+        raise HTTPException(
+            status_code=e.status_code,
+            detail=f"{e.message} {e.detail}" if e.detail else e.message
+        )
+
+@router.patch(
+    "/{dataset_id}",
+    response_model=DatasetResponse,
+    summary="Изменить название/описание датасета",
+    description="Обновляет name и/или description датасета. ID и расположение на диске не меняются.",
+    response_description="Обновлённые метаданные датасета",
+)
+def update_dataset(
+    dataset_id: str,
+    update: DatasetUpdate,
+    dm: DatasetManager = Depends(get_dataset_manager)
+):
+    try:
+        return dm.update_dataset_info(dataset_id, update.name, update.description)
+    except CoreException as e:
+        raise HTTPException(
+            status_code=e.status_code,
+            detail=f"{e.message} {e.detail}" if e.detail else e.message
+        )
 
 @router.delete(
-    "/{dataset_id}", 
+    "/{dataset_id}",
     response_model=bool,
     summary="Удалить датасет",
     description="Удаляет указанный датасет из системы",
@@ -98,8 +142,11 @@ def create_dataset(
         return True
     except CoreException as e:
         logger.error(f"\nОшибка: {e.message}\nДетали: {e.detail}")
-        dm.drop_cache()
+        # данные чистим только при ошибке валидации: при сбое сохранения
+        # метаданных они уже возвращены в temp и пригодны для повтора
+        if e.status_code == 400:
+            dm.drop_cache(new_dataset.version.id_data)
         raise HTTPException(
-            status_code=e.status_code, 
-            detail=e.message
+            status_code=e.status_code,
+            detail=f"{e.message} {e.detail}" if e.detail else e.message
         )

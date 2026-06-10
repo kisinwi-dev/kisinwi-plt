@@ -48,6 +48,19 @@ def test_unpack_zip_success(am: ArchiveManager, simple_zip_bytes):
     assert (extracted / "file1.txt").read_text() == "hello world"
 
 
+def test_unpack_flattens_single_root_folder(am: ArchiveManager, wrapped_zip_bytes):
+    zip_path = am.temp_folder / "wrapped.zip"
+    zip_path.write_bytes(wrapped_zip_bytes)
+
+    extracted = am.unpack(zip_path, "tester")
+
+    # обёртка my_dataset/ снята, train/val/test — на верхнем уровне
+    assert not (extracted / "my_dataset").exists()
+    assert (extracted / "train" / "cat" / "img1.jpg").is_file()
+    assert (extracted / "val" / "cat" / "img2.jpg").is_file()
+    assert (extracted / "test" / "cat" / "img3.jpg").is_file()
+
+
 def test_unpack_raises_on_non_zip(am: ArchiveManager):
     txt_path = am.temp_folder / "data.txt"
     txt_path.write_text("not archive")

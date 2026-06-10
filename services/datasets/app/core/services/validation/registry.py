@@ -9,13 +9,15 @@ from .image_classification import (
     version_validation_and_create_metadata as vvm
 )
 
-PreprocLoaderDataset = Callable[[FileSystemManager, NewDataset], DatasetMetadata]
+# Валидаторы возвращают метаданные + карту хешей файлов (путь -> SHA256)
+FileHashes = Dict[str, str]
+PreprocLoaderDataset = Callable[[FileSystemManager, NewDataset], Tuple[DatasetMetadata, FileHashes]]
 
 PREPROC_LOADERS_DATASET: Dict[Tuple[str, str], PreprocLoaderDataset] = {
     ("image", "classification"): dvm,
 }
 
-PreprocLoaderVersion = Callable[[FileSystemManager, NewVersion, DatasetMetadata], Version]
+PreprocLoaderVersion = Callable[[FileSystemManager, NewVersion, DatasetMetadata], Tuple[Version, FileHashes]]
 
 PREPROC_LOADERS_VERSION: Dict[Tuple[str, str], PreprocLoaderVersion] = {
     ("image", "classification"): vvm,

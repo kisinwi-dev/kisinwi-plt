@@ -6,6 +6,10 @@ from app.services.datasets import (
     GetDatasetDetailsTool,
     GetDatasetVersionDetailsTool,
     GetDatasetSplitSizesTool,
+    GetDatasetSplitCountsTool,
+    GetDatasetSplitBalanceTool,
+    GetDatasetClassDistributionTool,
+    GetDatasetImageSizeStatsTool,
     ListAllDatasetsTool
 )
 
@@ -13,6 +17,10 @@ _tool_instances = [
     GetDatasetDetailsTool(),
     GetDatasetVersionDetailsTool(),
     GetDatasetSplitSizesTool(),
+    GetDatasetSplitCountsTool(),
+    GetDatasetSplitBalanceTool(),
+    GetDatasetClassDistributionTool(),
+    GetDatasetImageSizeStatsTool(),
     ListAllDatasetsTool(),
 ]
 

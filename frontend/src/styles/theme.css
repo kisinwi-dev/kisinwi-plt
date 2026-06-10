@@ -57,6 +57,10 @@
   /* Шрифты */
   --font-primary: 'Inter', sans-serif;
   --font-accent: 'Playfair Display', serif;
+
+  /* Scrollbar */
+  --scrollbar-thumb: rgba(255, 255, 255, 0.18);
+  --scrollbar-thumb-hover: rgba(208, 140, 150, 0.55);
 }
 
 /*
@@ -91,6 +95,9 @@
   --color-bg-deep: #e7ebf2;
   --color-accent-glow: rgba(177, 94, 107, 0.25);
   --color-accent-glow-strong: rgba(177, 94, 107, 0.35);
+
+  --scrollbar-thumb: rgba(29, 35, 48, 0.25);
+  --scrollbar-thumb-hover: rgba(177, 94, 107, 0.55);
 }
 
 /* ── Полночь (холодная тёмно-синяя) ──────────────────────────────────────────── */
@@ -112,6 +119,8 @@
   --color-bg-deep: #141a2a;
   --color-accent-glow: rgba(108, 140, 255, 0.30);
   --color-accent-glow-strong: rgba(108, 140, 255, 0.40);
+
+  --scrollbar-thumb-hover: rgba(147, 169, 255, 0.55);
 }
 
 * {
@@ -127,6 +136,49 @@ body {
   line-height: 1.6;
   font-size: 16px;
   transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────────────────
+ * Место под ползунок страницы резервируется всегда (scrollbar-gutter),
+ * чтобы интерфейс не съезжал при появлении/скрытии прокрутки.
+ */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* Chromium / Safari / Edge: тонкий «парящий» thumb без дорожки.
+ * Видимая толщина ~6px — прозрачный border 2px съедается background-clip. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox не поддерживает ::-webkit-scrollbar — даём стандартные свойства
+ * только ему: в Chromium ≥121 они перебили бы webkit-стили выше. */
+@supports (not selector(::-webkit-scrollbar)) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
 }
 
 h1, h2, h3, h4, h5, h6 {

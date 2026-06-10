@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { formatDateTime } from '../../utils/format';
 import { useCopyToClipboard } from '../../hooks';
 import { ICONS } from '../../constants/icons';
+import { Tooltip } from '../common/Tooltip';
 import type { Dataset } from '../../types/dataset';
 
 interface DatasetCardProps {
@@ -46,24 +47,26 @@ const DatasetCard: React.FC<DatasetCardProps> = ({ dataset, onDelete }) => {
         <div className="dataset-title-group">
           <span className="dataset-badge"><i className={`fas ${ICONS.tag}`}></i> {dataset.type} / {dataset.task}</span>
           <h2>{dataset.name}</h2>
-          <span
-            className="dataset-id"
-            title="Нажмите, чтобы скопировать ID"
-            onClick={handleCopyId}
-          >
-            <i className={`fas ${ICONS.id}`}></i>{dataset.id}
-            <i className={`fas ${ICONS.copy} dataset-id-copy-icon`}></i>
-          </span>
+          <Tooltip content="Нажмите, чтобы скопировать ID">
+            <span
+              className="dataset-id"
+              onClick={handleCopyId}
+            >
+              <i className={`fas ${ICONS.id}`}></i>{dataset.id}
+              <i className={`fas ${ICONS.copy} dataset-id-copy-icon`}></i>
+            </span>
+          </Tooltip>
         </div>
         <div className="dataset-actions">
-          <button
-            className="icon-button icon-button--danger"
-            title="Удалить датасет"
-            aria-label="Удалить датасет"
-            onClick={handleDelete}
-          >
-            <i className={`fas ${ICONS.delete}`}></i>
-          </button>
+          <Tooltip content="Удалить датасет">
+            <button
+              className="icon-button icon-button--danger"
+              aria-label="Удалить датасет"
+              onClick={handleDelete}
+            >
+              <i className={`fas ${ICONS.delete}`}></i>
+            </button>
+          </Tooltip>
         </div>
       </div>
 
@@ -73,8 +76,8 @@ const DatasetCard: React.FC<DatasetCardProps> = ({ dataset, onDelete }) => {
       </div>
 
       <div className="dataset-meta dataset-meta--dates">
-        <span title="Создан"><i className={`fas ${ICONS.dateCreated}`}></i> Создан: {formatDateTime(dataset.created_at)}</span>
-        <span title="Изменён"><i className={`fas ${ICONS.dateUpdated}`}></i> Изменён: {formatDateTime(dataset.updated_at)}</span>
+        <span><i className={`fas ${ICONS.dateCreated}`}></i> Создан: {formatDateTime(dataset.created_at)}</span>
+        <span><i className={`fas ${ICONS.dateUpdated}`}></i> Изменён: {formatDateTime(dataset.updated_at)}</span>
       </div>
 
       {dataset.classes_names.length > 0 && (
