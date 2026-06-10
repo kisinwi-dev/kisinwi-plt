@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from typing import List
+from typing import List, Optional
 
 from app.logs import get_logger
 from app.core.services import DatasetManager
@@ -15,7 +15,10 @@ from app.api.schemas.comparison import (
     DistributionComparisonResponse, BalanceComparisonResponse,
     SizeStatsComparisonResponse, FilesDiffResponse
 )
-from app.api.schemas.dataset_new import NewVersion
+from app.api.schemas.dataset_new import NewVersion, VersionUpdate
+from app.api.schemas.integrity import IntegrityReportResponse
+from app.api.schemas.files import VersionFilesResponse
+from app.api.schemas.splits import SplitType
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/datasets/{dataset_id}/versions")
@@ -268,6 +271,75 @@ def get_version_image_size_stats(
 ):
     return dm.get_version_image_size_stats(dataset_id, version_id)
 
+@router.get(
+    "/{version_id}/integrity",
+    tags=["Version Stats"],
+    summary="Получить отчёт целостности данных",
+    description="""
+Возвращает детальный отчёт о целостности данных версии (по SHA256-хешам файлов):
+
+- Группы одинаковых файлов внутри одного сплита (дубликаты)
+
+- Изображения, встречающиеся в нескольких сплитах (train/test leakage)
+    """,
+    response_description="Отчёт о дубликатах и утечках между сплитами",
+    response_model=IntegrityReportResponse
+)
+def get_version_integrity(
+        dataset_id: str,
+        version_id: str,
+        dm: DatasetManager = Depends(get_dataset_manager)
+):
+    try:
+        return dm.get_version_integrity(dataset_id, version_id)
+    except CoreException as e:
+        raise _to_http_error(e)
+
+@router.get(
+    "/{version_id}/files",
+    tags=["Version Stats"],
+    summary="Получить список файлов версии",
+    description="""
+Возвращает страницу списка файлов версии (относительные пути `split/class/filename`).
+
+- `split` — фильтр по одному сплиту (train/val/test)
+- `limit`/`offset` — пагинация, `total` в ответе считается с учётом фильтра
+""",
+    response_description="Страница списка файлов версии",
+    response_model=VersionFilesResponse
+)
+def get_version_files(
+        dataset_id: str,
+        version_id: str,
+        split: Optional[SplitType] = Query(None, description="Фильтр по сплиту"),
+        limit: int = Query(100, ge=1, le=10000, description="Размер страницы"),
+        offset: int = Query(0, ge=0, description="Смещение от начала списка"),
+        dm: DatasetManager = Depends(get_dataset_manager)
+):
+    try:
+        return dm.get_version_files(dataset_id, version_id, split, limit, offset)
+    except CoreException as e:
+        raise _to_http_error(e)
+
+@router.patch(
+    "/{version_id}",
+    tags=["Versions"],
+    response_model=VersionResponse,
+    summary="Изменить название/описание версии",
+    description="Обновляет name и/или description версии. ID и данные версии не меняются.",
+    response_description="Обновлённые метаданные версии",
+)
+def update_version(
+        dataset_id: str,
+        version_id: str,
+        update: VersionUpdate,
+        dm: DatasetManager = Depends(get_dataset_manager)
+):
+    try:
+        return dm.update_version_info(dataset_id, version_id, update.name, update.description)
+    except CoreException as e:
+        raise _to_http_error(e)
+
 @router.delete(
     "/{version_id}",
     tags=["Versions"],
@@ -311,5 +383,8 @@ def create_version(
     try:
         return dm.add_new_version(dataset_id, new_dataset)
     except CoreException as e:
-        dm.drop_cache()
+        # данные чистим только при ошибке валидации: при сбое сохранения
+        # метаданных они уже возвращены в temp и пригодны для повтора
+        if e.status_code == 400:
+            dm.drop_cache(new_dataset.id_data)
         raise _to_http_error(e)

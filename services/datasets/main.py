@@ -1,8 +1,34 @@
+import asyncio
+import os
+from contextlib import asynccontextmanager
+
 import uvicorn
 from fastapi import FastAPI
 
 from app.api.routers import api_routers
+from app.core.filesystem import ArchiveManager
+from app.logs import get_logger
 from fastapi.middleware.cors import CORSMiddleware
+
+logger = get_logger(__name__)
+
+TEMP_TTL_HOURS = float(os.getenv("DATASETS_TEMP_TTL_HOURS", "24"))
+TEMP_CLEANUP_INTERVAL_SECONDS = 3600
+
+async def _temp_cleanup_loop():
+    """Раз в час удаляет устаревшие загрузки из временной папки"""
+    while True:
+        try:
+            ArchiveManager().cleanup_stale(TEMP_TTL_HOURS)
+        except Exception:
+            logger.exception("Ошибка фоновой очистки временной папки")
+        await asyncio.sleep(TEMP_CLEANUP_INTERVAL_SECONDS)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    cleanup_task = asyncio.create_task(_temp_cleanup_loop())
+    yield
+    cleanup_task.cancel()
 
 openapi_tags = [
     {
@@ -44,6 +70,7 @@ app = FastAPI(
 Сервис отвечает за управление датасетами и получение информации о них.
 """,
     openapi_tags=openapi_tags,
+    lifespan=lifespan,
 )
 
 app.include_router(
