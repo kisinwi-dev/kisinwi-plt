@@ -12,7 +12,8 @@ INSERT INTO task_statuses (status, description) VALUES
     ('waiting', 'Ожидает начало выполнения'),
     ('running', 'Выполняется'),
     ('completed', 'Завершено'),
-    ('failed', 'Завершена с ошибкой');
+    ('failed', 'Завершена с ошибкой'),
+    ('cancelled', 'Отменена');
 
 -- ============================================================================
 -- Таблица для информации о задачах тренировок
@@ -63,13 +64,8 @@ BEGIN
         NEW.started_at = CURRENT_TIMESTAMP;
     END IF;
 
-    -- Если задача успешно завершена
-    IF NEW.status_id = 3 AND OLD.status_id != 3 THEN
-        NEW.completed_at = CURRENT_TIMESTAMP;
-    END IF;
-    
-    -- Если задача закончена с ошибкой
-    IF NEW.status_id = 4 AND OLD.status_id != 4 THEN
+    -- Если задача перешла в финальный статус (completed / failed / cancelled)
+    IF NEW.status_id IN (3, 4, 5) AND OLD.status_id NOT IN (3, 4, 5) THEN
         NEW.completed_at = CURRENT_TIMESTAMP;
     END IF;
     

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Response, HTTPException, status
+from fastapi import APIRouter, Depends, Query, Response, HTTPException, status
 
 from app.api.schemas import (
     TaskCreate, TaskUpdate, TaskStatistics, 
@@ -73,11 +73,15 @@ async def create_task(
     status_code=status.HTTP_201_CREATED
 )
 async def get_tasks(
+    status_filter: str | None = Query(None, alias="status", description="Фильтр по статусу задачи"),
     manager: TrainingTaskManager = Depends(get_training_task_manager)
 ):
     try:
-        
-        tasks = manager.get_tasks()
+
+        if status_filter:
+            tasks = manager.get_task_with_status(status_filter)
+        else:
+            tasks = manager.get_tasks()
 
         if tasks is None:
             raise HTTPException(
@@ -206,7 +210,7 @@ async def get_task_for_id(
     summary="Обновить статус задачи",
     responses={
         200: {"description": "Задача обновлена"},
-        404: {"description": "Задача/статус не найдены"},
+        400: {"description": "Задача/статус не найдены"},
         503: {"description": "Ошибка подключения к БД"}
     },
 )
@@ -225,9 +229,46 @@ async def update_task_status(
         )
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_404_BAD_REQUEST,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+
+@routers.post(
+    "/{task_id}/cancel",
+    summary="Отменить задачу",
+    responses={
+        200: {"description": "Задача отменена"},
+        400: {"description": "Задачу нельзя отменить из текущего статуса"},
+        404: {"description": "Задача не найдена"},
+        503: {"description": "Ошибка подключения к БД"}
+    },
+)
+async def cancel_task(
+    task_id: str,
+    manager: TrainingTaskManager = Depends(get_training_task_manager)
+):
+    """Переводит задачу в статус cancelled. Воркер останавливает обучение на границе эпохи."""
+    valid_uuid(task_id, True)
+
+    task = manager.get_task(task_id)
+    if task is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Задача с ID {task_id} не найдена"
+        )
+
+    if task["status"] not in ("waiting", "running"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Задачу в статусе '{task['status']}' нельзя отменить"
+        )
+
+    manager.update_status(
+        task_id=task_id,
+        status="cancelled",
+        status_info="Задача отменена пользователем"
+    )
+    return {"task_id": task_id, "status": "cancelled"}
 
 @routers.post(
     "/{task_id}/agents-response",

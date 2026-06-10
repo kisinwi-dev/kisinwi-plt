@@ -126,11 +126,4 @@ def _process_special_params(
     if 'ratio' in processed_params and isinstance(processed_params['ratio'], list):
         processed_params['ratio'] = tuple(processed_params['ratio'])
 
-    # преобразование mean и std если они списки
-    if transform_name == 'Normalize':
-        if 'mean' in processed_params and isinstance(processed_params['mean'], list):
-            processed_params['mean'] = processed_params['mean']
-        if 'std' in processed_params and isinstance(processed_params['std'], list):
-            processed_params['std'] = processed_params['std']
-
     return processed_params

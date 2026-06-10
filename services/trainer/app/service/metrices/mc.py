@@ -46,6 +46,8 @@ class MetricesClient:
         self._metrics_early_stop_values = {
             f"val_{early_stop_params.metric_name}": []
         }
+        # Последнее значение метрики ранней остановки (для выбора лучшей эпохи)
+        self.last_early_stop_value: float | None = None
 
     def update(
         self,
@@ -124,6 +126,7 @@ class MetricesClient:
             
             current_value = metrics[metric_name]
             self._metrics_early_stop_values[metric_name].append(current_value.item())
+            self.last_early_stop_value = current_value.item()
 
             # Проверяем, достаточно ли данных
             if len(history) > patience:

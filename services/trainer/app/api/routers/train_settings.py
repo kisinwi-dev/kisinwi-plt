@@ -30,10 +30,10 @@ async def get_example_config() -> Dict[str, Any]:
         config_schema = TaskParams.model_json_schema()
         return config_schema
     except Exception as e:
-        logger.error(f"Ошибка при получении примера конфигруций: {e}")
+        logger.error(f"Ошибка при получении примера конфигураций: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Не удалось сгенерировать схему конфигурации: {e}"
+            detail="Не удалось сгенерировать схему конфигурации"
         )
 
 
@@ -52,10 +52,10 @@ async def get_available_models(
         models = get_models_type_name(filter)
         return models 
     except Exception as e:
-        logger.error(f"Ошибка при получении списка моделей: {e}")
+        logger.error(f"Ошибка при получении списка моделей: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Не удалось получить список доступных моделей: {e}"
+            detail="Не удалось получить список доступных моделей"
         )
 
 @routers.get(
@@ -71,10 +71,10 @@ async def get_system_info():
         si = system_info()
         return si
     except Exception as e:
-        logger.error(f"Ошибка при получении информации о технических возможностях обучения: {e}")
+        logger.error(f"Ошибка при получении информации о технических возможностях обучения: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Не удалось получить список имеющихся вычислительных устройств: {e}"
+            detail="Не удалось получить список имеющихся вычислительных устройств"
         )
 
 @routers.get(
@@ -89,10 +89,10 @@ async def get_optimizers():
     try:
         return optimizers()
     except Exception as e:
-        logger.error(f"Ошибка при получении списка оптимизаторов: {e}")
+        logger.error(f"Ошибка при получении списка оптимизаторов: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Не удалось получить список имеющихся оптимизаторов: {e}"
+            detail="Не удалось получить список имеющихся оптимизаторов"
         )
 
 @routers.get(
@@ -107,20 +107,20 @@ async def get_schedulers():
     try:
         return schedulers()
     except Exception as e:
-        logger.error(f"Ошибка при получении списка планировщиков: {e}")
+        logger.error(f"Ошибка при получении списка планировщиков: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Не удалось получить список имеющихся планировщиков: {e}"
+            detail="Не удалось получить список имеющихся планировщиков"
         )
 
 @routers.get(
         "/health",
         response_model=HealthResponse,
-        summary="Работаспособность сервиса"
+        summary="Работоспособность сервиса"
 )
 async def health():
     """Проверка работоспособности сервиса"""
-    return config_services.check_services()
+    return await config_services.check_services()
 
 @routers.get(
         "/metrics",
@@ -134,10 +134,10 @@ async def get_available_metrics():
     try:
         return list(METRICS_REGISTRY.keys())
     except Exception as e:
-        logger.error(f"Ошибка при получении списка метрик: {e}")
+        logger.error(f"Ошибка при получении списка метрик: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Не удалось получить список доступных метрик: {e}"
+            detail="Не удалось получить список доступных метрик"
         )
 
 @routers.get(
@@ -152,8 +152,8 @@ async def get_available_augmentations():
     try:
         return list(ALLOWED_TRANSFORMS.keys())
     except Exception as e:
-        logger.error(f"Ошибка при получении списка методов аугментации: {e}")
+        logger.error(f"Ошибка при получении списка методов аугментации: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Не удалось получить список доступных метрик: {e}"
+            detail="Не удалось получить список доступных методов аугментации"
         )
