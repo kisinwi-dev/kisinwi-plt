@@ -4,7 +4,12 @@ from pydantic import (
     BaseModel, Field,
     HttpUrl, model_validator
 )
-from .splits import Split, SplitType, SplitSummaryResponse
+from .splits import (
+    Split, SplitType, SplitSummaryResponse,
+    SplitCountsResponse, SplitBalanceInfo, SplitBalanceResponse,
+    ClassDistributionItem, ClassDistributionResponse,
+    ImageSizeStats, ImageSizeStatsResponse
+)
 
 class Source(BaseModel):
     type: Literal["kaggle", "url", "huggingface", "other"]
@@ -89,6 +94,65 @@ class Version(BaseModel):
             overall_balance=self._get_overall_balance()
         )
         
+    def get_split_counts(self) -> SplitCountsResponse:
+        """Возвращает количество изображений по сплитам"""
+        return SplitCountsResponse(
+            id=self.id,
+            name=self.name,
+            num_samples=self.num_samples,
+            counts_per_split={
+                split_type.value: split.total_samples
+                for split_type, split in self.splits.items()
+            }
+        )
+
+    def get_split_balance(self) -> SplitBalanceResponse:
+        """Возвращает баланс классов по сплитам"""
+        return SplitBalanceResponse(
+            id=self.id,
+            name=self.name,
+            overall_balance=self._get_overall_balance(),
+            splits={
+                split_type.value: SplitBalanceInfo(
+                    total_samples=split.total_samples,
+                    num_classes=split.num_classes,
+                    balance_ratio=split.get_balance_ratio(),
+                    is_balanced=split.is_balanced()
+                )
+                for split_type, split in self.splits.items()
+            }
+        )
+
+    def get_class_distribution_response(self) -> ClassDistributionResponse:
+        """Возвращает распределение классов по сплитам"""
+        return ClassDistributionResponse(
+            id=self.id,
+            name=self.name,
+            splits={
+                split_type.value: [
+                    ClassDistributionItem(
+                        class_name=cd.class_name,
+                        class_id=cd.class_id,
+                        count=cd.count,
+                        percentage=cd.percentage
+                    )
+                    for cd in split.class_distribution
+                ]
+                for split_type, split in self.splits.items()
+            }
+        )
+
+    def get_image_size_stats(self) -> ImageSizeStatsResponse:
+        """Возвращает статистику размеров изображений по сплитам"""
+        return ImageSizeStatsResponse(
+            id=self.id,
+            name=self.name,
+            splits={
+                split_type.value: ImageSizeStats(**split.to_image_size_summary())
+                for split_type, split in self.splits.items()
+            }
+        )
+
     def _get_overall_balance(self) -> float:
         """Общий баланс по всем сплитам"""
         all_counts = {}

@@ -65,6 +65,55 @@ class SplitSummaryResponse(BaseModel):
     splits_summary: Dict[str, Dict] = Field(description="Краткая информация по каждому сплиту")
     image_size_stats: Dict[str, Dict] = Field(description="Статистика размеров изображений по сплитам")
 
+class SplitCountsResponse(BaseModel):
+    """Количество изображений по сплитам версии"""
+    id: str = Field(description="ID версии")
+    name: str = Field(description="Название версии")
+    num_samples: int = Field(description="Общее количество изображений")
+    counts_per_split: Dict[str, int] = Field(description="Количество изображений в каждом сплите")
+
+class SplitBalanceInfo(BaseModel):
+    """Баланс классов одного сплита"""
+    total_samples: int = Field(description="Общее количество в сплите")
+    num_classes: int = Field(description="Количество классов в сплите")
+    balance_ratio: float = Field(description="Коэффициент баланса классов (0-1, где 1 - идеальный баланс)")
+    is_balanced: bool = Field(description="Сбалансирован ли сплит")
+
+class SplitBalanceResponse(BaseModel):
+    """Баланс классов по сплитам версии"""
+    id: str = Field(description="ID версии")
+    name: str = Field(description="Название версии")
+    overall_balance: float = Field(description="Общий коэффициент баланса классов")
+    splits: Dict[str, SplitBalanceInfo] = Field(description="Баланс классов в каждом сплите")
+
+class ClassDistributionItem(BaseModel):
+    """Один класс в распределении сплита"""
+    class_name: str = Field(description="Имя класса")
+    class_id: int = Field(description="Id класса")
+    count: int = Field(description="Количество обьектов")
+    percentage: Optional[float] = Field(default=None, description="Процент от общего количества в выборке")
+
+class ClassDistributionResponse(BaseModel):
+    """Распределение классов по сплитам версии"""
+    id: str = Field(description="ID версии")
+    name: str = Field(description="Название версии")
+    splits: Dict[str, List[ClassDistributionItem]] = Field(description="Распределение классов в каждом сплите")
+
+class ImageSizeStats(BaseModel):
+    """Статистика размеров изображений одного сплита"""
+    unique_sizes: int = Field(description="Количество уникальных размеров")
+    total_images: int = Field(description="Общее количество изображений")
+    most_common_size: Optional[str] = Field(default=None, description="Самый частый размер")
+    most_common_count: Optional[int] = Field(default=None, description="Количество изображений самого частого размера")
+    size_consistency: Optional[float] = Field(default=None, description="Доля изображений самого частого размера")
+    top_10_sizes: Dict[str, int] = Field(default_factory=dict, description="Топ-10 размеров по количеству изображений")
+
+class ImageSizeStatsResponse(BaseModel):
+    """Статистика размеров изображений по сплитам версии"""
+    id: str = Field(description="ID версии")
+    name: str = Field(description="Название версии")
+    splits: Dict[str, ImageSizeStats] = Field(description="Статистика размеров изображений в каждом сплите")
+
 class Split(BaseModel):
     class_distribution: List[ClassDistribution] = Field(default_factory=list, description="Информации про каждому классу")
 

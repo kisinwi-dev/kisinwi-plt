@@ -6,7 +6,10 @@ from pydantic import ValidationError
 from ..filesystem import FileSystemManager
 from app.api.schemas.dataset import DatasetMetadata, DatasetResponse, Version, VersionResponse
 from app.api.schemas.dataset_new import NewDataset, NewVersion
-from app.api.schemas.splits import SplitSummaryResponse
+from app.api.schemas.splits import (
+    SplitSummaryResponse, SplitCountsResponse, SplitBalanceResponse,
+    ClassDistributionResponse, ImageSizeStatsResponse
+)
 from app.core.exception.dataset import *
 from app.core.exception.version import VersionNotFoundError
 from app.core.services.validation import (
@@ -88,6 +91,42 @@ class DatasetManager:
         """Получение информации по распределениям"""
         version = self._get_version_info(dataset_id, version_id)
         return version.get_split_summary()
+
+    def get_version_split_counts(
+        self,
+        dataset_id: str,
+        version_id: str
+    ) -> SplitCountsResponse:
+        """Получение количества изображений по сплитам"""
+        version = self._get_version_info(dataset_id, version_id)
+        return version.get_split_counts()
+
+    def get_version_split_balance(
+        self,
+        dataset_id: str,
+        version_id: str
+    ) -> SplitBalanceResponse:
+        """Получение баланса классов по сплитам"""
+        version = self._get_version_info(dataset_id, version_id)
+        return version.get_split_balance()
+
+    def get_version_class_distribution(
+        self,
+        dataset_id: str,
+        version_id: str
+    ) -> ClassDistributionResponse:
+        """Получение распределения классов по сплитам"""
+        version = self._get_version_info(dataset_id, version_id)
+        return version.get_class_distribution_response()
+
+    def get_version_image_size_stats(
+        self,
+        dataset_id: str,
+        version_id: str
+    ) -> ImageSizeStatsResponse:
+        """Получение статистики размеров изображений по сплитам"""
+        version = self._get_version_info(dataset_id, version_id)
+        return version.get_image_size_stats()
 
     # ================ выдача имеющейся информации о датасетах и версиях ======================
 

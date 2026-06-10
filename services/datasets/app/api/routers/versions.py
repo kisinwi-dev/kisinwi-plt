@@ -5,6 +5,10 @@ from app.logs import get_logger
 from app.core.services import DatasetManager
 from app.api.deps import get_dataset_manager
 from app.api.schemas.dataset import VersionResponse, SplitSummaryResponse
+from app.api.schemas.splits import (
+    SplitCountsResponse, SplitBalanceResponse,
+    ClassDistributionResponse, ImageSizeStatsResponse
+)
 from app.api.schemas.dataset_new import NewVersion
 
 logger = get_logger(__name__)
@@ -61,6 +65,62 @@ def get_version_splits(
         dm: DatasetManager = Depends(get_dataset_manager)
 ):
     return dm.get_version_split_summary(dataset_id, version_id)
+
+@router.get(
+    "/{version_id}/splits/count",
+    summary="Получить количество изображений по сплитам",
+    description="Возвращает общее количество изображений версии и количество в каждом сплите",
+    response_description="Количество изображений по сплитам",
+    response_model=SplitCountsResponse
+)
+def get_version_split_counts(
+        dataset_id: str,
+        version_id: str,
+        dm: DatasetManager = Depends(get_dataset_manager)
+):
+    return dm.get_version_split_counts(dataset_id, version_id)
+
+@router.get(
+    "/{version_id}/splits/balance",
+    summary="Получить баланс классов по сплитам",
+    description="Возвращает коэффициент баланса классов в каждом сплите и общий баланс версии",
+    response_description="Баланс классов по сплитам",
+    response_model=SplitBalanceResponse
+)
+def get_version_split_balance(
+        dataset_id: str,
+        version_id: str,
+        dm: DatasetManager = Depends(get_dataset_manager)
+):
+    return dm.get_version_split_balance(dataset_id, version_id)
+
+@router.get(
+    "/{version_id}/splits/distribution",
+    summary="Получить распределение классов",
+    description="Возвращает распределение по классам в каждом сплите",
+    response_description="Распределение классов по сплитам",
+    response_model=ClassDistributionResponse
+)
+def get_version_class_distribution(
+        dataset_id: str,
+        version_id: str,
+        dm: DatasetManager = Depends(get_dataset_manager)
+):
+    return dm.get_version_class_distribution(dataset_id, version_id)
+
+@router.get(
+    "/{version_id}/splits/size-stats",
+    summary="Получить статистику размеров изображений",
+    description="Возвращает статистику размеров изображений в каждом сплите",
+    response_description="Статистика размеров изображений по сплитам",
+    response_model=ImageSizeStatsResponse
+)
+def get_version_image_size_stats(
+        dataset_id: str,
+        version_id: str,
+        dm: DatasetManager = Depends(get_dataset_manager)
+):
+    return dm.get_version_image_size_stats(dataset_id, version_id)
 
 @router.delete(
     "/{version_id}", 
