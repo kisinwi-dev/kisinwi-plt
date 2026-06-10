@@ -51,6 +51,8 @@ async def training_model(config: TaskParams, model_id: str):
     # Запуск обучения
     await tasker_service.update_status_task(percentages=13, status_info="Формирование процесса обучения...")
     trainer = Trainer(
+        # ID модели
+        model_id=model_id,
         # Вспомогательные сервисы
         tasker_service=tasker_service,
         metric_service=metric_client,
@@ -84,3 +86,6 @@ async def training_model(config: TaskParams, model_id: str):
     await tasker_service.update_status_task(percentages=88, status_info="Сохранение модели...")
     await upload_file_model_in_ml_models(model_id, onnx_path, "onnx_model")
     await tasker_service.update_status_task(percentages=95, status_info="Модель сохранена.")
+
+    # Модель выгружена — чекпоинт лучшей эпохи больше не нужен
+    trainer.checkpoint_path.unlink(missing_ok=True)

@@ -107,6 +107,14 @@ class TrainerParams(BaseModel):
         default_factory=EarlyStop,
         description="Параметры ранней остановки обучения"
     )
+    use_amp: bool = Field(
+        default=False,
+        description="Automatic Mixed Precision: ускоряет обучение на GPU, на CPU игнорируется"
+    )
+    grad_clip_norm: float | None = Field(
+        default=None,
+        description="Максимальная норма градиентов (clip_grad_norm_); None — без ограничения"
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -139,7 +147,9 @@ class TrainerParams(BaseModel):
                     "patience": 4,
                     "min_delta": 0.001,
                     "mode": "min"
-                }
+                },
+                "use_amp": False,
+                "grad_clip_norm": 1.0
             }
         }
     }

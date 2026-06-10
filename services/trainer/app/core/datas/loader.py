@@ -64,6 +64,8 @@ def create_dataloaders(
 
     # pin_memory ускоряет передачу на GPU и бесполезен на CPU
     pin_memory = torch.cuda.is_available()
+    # persistent_workers убирает пересоздание воркеров между эпохами
+    persistent_workers = params.num_workers > 0
 
     # Создаём DataLoader'ы
     train_loader = DataLoader(
@@ -71,21 +73,24 @@ def create_dataloaders(
         batch_size=params.batch_size,
         shuffle=True,
         pin_memory=pin_memory,
-        num_workers=params.num_workers
+        num_workers=params.num_workers,
+        persistent_workers=persistent_workers
     )
     val_loader = DataLoader(
         val_dataset,
         batch_size=params.batch_size,
         shuffle=False,
         pin_memory=pin_memory,
-        num_workers=params.num_workers
+        num_workers=params.num_workers,
+        persistent_workers=persistent_workers
     )
     test_loader = DataLoader(
         test_dataset,
         batch_size=params.batch_size,
         shuffle=False,
         pin_memory=pin_memory,
-        num_workers=params.num_workers
+        num_workers=params.num_workers,
+        persistent_workers=persistent_workers
     )
 
     logger.info("✅ Датасеты собраны")

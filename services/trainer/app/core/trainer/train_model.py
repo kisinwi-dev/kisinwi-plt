@@ -1,4 +1,6 @@
 import sys
+import tempfile
+from pathlib import Path
 from tqdm import tqdm
 import torch
 from torch import nn, optim, device, Tensor
@@ -10,6 +12,7 @@ import asyncio
 from app.service.metrices import MetricesClient
 from app.service.tasker import TaskerClient
 from app.api.schemas import TrainerParams, LossConfig, OptimizerConfig, SchedulerConfig
+from app.core.exceptions import TaskCancelledError
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -17,6 +20,9 @@ logger = get_logger(__name__)
 class Trainer:
     def __init__(
             self,
+            # ID модели (для имени чекпоинта)
+            model_id: str,
+
             # Модель
             model: nn.Module,
 
@@ -56,12 +62,22 @@ class Trainer:
         self._setup_optimizer(train_params.optimizer)
         self._setup_scheduler(train_params.scheduler)
 
+        # AMP и gradient clipping (AMP работает только на CUDA)
+        self._use_amp = train_params.use_amp and self.device.type == "cuda"
+        self._scaler = torch.amp.GradScaler(self.device.type, enabled=self._use_amp)
+        self._grad_clip_norm = train_params.grad_clip_norm
+        if train_params.use_amp and not self._use_amp:
+            logger.warning("AMP запрошен, но устройство не CUDA — обучение без AMP")
+
         # Направление улучшения метрики ранней остановки (для выбора лучшей эпохи)
         self._early_stop_mode = train_params.early_stop.mode
 
         # Сервисы
         self._metric_service = metric_service
         self._tasker_service = tasker_service
+
+        # Чекпоинт лучшей эпохи
+        self.checkpoint_path = Path(tempfile.gettempdir()) / "checkpoints" / f"model_{model_id}.pt"
 
         logger.debug("🏁 Инициализация успешно завершена")
 
@@ -170,17 +186,24 @@ class Trainer:
 
             self.optimizer.zero_grad()
 
-            # Forward pass
-            outputs = self.model(inputs)
+            # Forward pass (с autocast при включённом AMP)
+            with torch.amp.autocast(self.device.type, enabled=self._use_amp):
+                outputs = self.model(inputs)
 
-            # Расчёт loss (labels для loss готовятся отдельно,
-            # в метрики уходят исходные индексы классов)
-            loss_targets = self._prepare_labels_for_loss(outputs, labels)
-            loss = self.loss_fn(outputs, loss_targets)
+                # Расчёт loss (labels для loss готовятся отдельно,
+                # в метрики уходят исходные индексы классов)
+                loss_targets = self._prepare_labels_for_loss(outputs, labels)
+                loss = self.loss_fn(outputs, loss_targets)
 
             # Backward pass
-            loss.backward()
-            self.optimizer.step()
+            self._scaler.scale(loss).backward()
+
+            if self._grad_clip_norm is not None:
+                self._scaler.unscale_(self.optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), self._grad_clip_norm)
+
+            self._scaler.step(self.optimizer)
+            self._scaler.update()
 
             if is_batch_scheduler:
                 self.scheduler.step()
@@ -370,6 +393,27 @@ class Trainer:
         logger.debug("Валидация...")
         return self._validate_one_epoch()
 
+    def _save_checkpoint(
+            self,
+            state_dict: Dict[str, Tensor],
+            epoch: int,
+            metric_value: float
+    ) -> None:
+        """Сохраняет веса лучшей эпохи на диск (ошибка сохранения не прерывает обучение)"""
+        try:
+            self.checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+            torch.save(
+                {
+                    "state_dict": state_dict,
+                    "epoch": epoch,
+                    "metric": metric_value
+                },
+                self.checkpoint_path
+            )
+            logger.info(f"💾 Чекпоинт лучшей эпохи сохранён: {self.checkpoint_path}")
+        except Exception as e:
+            logger.warning(f"Не удалось сохранить чекпоинт: {e!r}")
+
     def _is_better(self, current: float, best: Optional[float]) -> bool:
         """Сравнение значения метрики ранней остановки с лучшим"""
         if best is None:
@@ -395,6 +439,11 @@ class Trainer:
         best_epoch: Optional[int] = None
 
         for epoch in range(1, self.epochs + 1):
+            # Проверка отмены задачи (на границе эпох)
+            if await self._tasker_service.get_task_status() == "cancelled":
+                logger.info("🛑 Задача отменена пользователем, обучение остановлено")
+                raise TaskCancelledError("Задача отменена пользователем")
+
             # Логгирование начала эпохи
             logger.info("=" * 40)
             text_info_start = f"🔄 [{epoch}/{self.epochs}] эпоха"
@@ -419,6 +468,9 @@ class Trainer:
                     for k, v in self.model.state_dict().items()
                 }
                 logger.info(f"🏅 Новая лучшая эпоха: {epoch} (метрика: {current_value:.6f})")
+                await asyncio.to_thread(
+                    self._save_checkpoint, best_state, best_epoch, best_value
+                )
 
             # Логгирование конца эпохи
             text_info_end = f"☑️ Эпоха [{epoch}/{self.epochs}] завершена"
