@@ -18,7 +18,7 @@ from app.api.schemas.comparison import (
 from app.api.schemas.dataset_new import NewVersion
 
 logger = get_logger(__name__)
-router = APIRouter(prefix="/datasets/{dataset_id}/versions", tags=["Version"])
+router = APIRouter(prefix="/datasets/{dataset_id}/versions")
 
 def _to_http_error(e: CoreException) -> HTTPException:
     logger.error(f"\nОшибка: {e.message}\nДетали: {e.detail}")
@@ -28,7 +28,8 @@ def _to_http_error(e: CoreException) -> HTTPException:
     )
 
 @router.get(
-    "/", 
+    "/",
+    tags=["Versions"],
     response_model=List[VersionResponse],
     summary="Получение списка метаданных версий",
     description="Возвращает список метаданных всех доступных версий датасета",
@@ -42,6 +43,7 @@ def list_versions(
 
 @router.get(
     "/compare",
+    tags=["Version Compare"],
     response_model=VersionComparisonResponse,
     summary="Сравнить две версии датасета",
     description="""
@@ -72,6 +74,7 @@ def compare_versions(
 
 @router.get(
     "/compare/counts",
+    tags=["Version Compare"],
     response_model=CountsComparisonResponse,
     summary="Сравнить количество изображений двух версий",
     description="Возвращает изменение количества изображений между версиями: общее, по сплитам и по классам",
@@ -90,6 +93,7 @@ def compare_version_counts(
 
 @router.get(
     "/compare/distribution",
+    tags=["Version Compare"],
     response_model=DistributionComparisonResponse,
     summary="Сравнить распределения классов двух версий",
     description="Возвращает изменения состава классов и drift-метрики распределений (JS divergence, PSI) по сплитам",
@@ -108,6 +112,7 @@ def compare_version_distribution(
 
 @router.get(
     "/compare/balance",
+    tags=["Version Compare"],
     response_model=BalanceComparisonResponse,
     summary="Сравнить баланс классов двух версий",
     description="Возвращает изменение коэффициента баланса классов: общего и по сплитам",
@@ -126,6 +131,7 @@ def compare_version_balance(
 
 @router.get(
     "/compare/size-stats",
+    tags=["Version Compare"],
     response_model=SizeStatsComparisonResponse,
     summary="Сравнить размеры и форматы изображений двух версий",
     description="Возвращает изменение количества изображений по форматам и по размерам (WxH) в каждом сплите",
@@ -144,6 +150,7 @@ def compare_version_size_stats(
 
 @router.get(
     "/compare/files",
+    tags=["Version Compare"],
     response_model=FilesDiffResponse,
     summary="Сравнить файлы двух версий",
     description="Возвращает по-файловый diff между версиями по относительным путям (split/class/filename): добавленные и удалённые файлы",
@@ -162,6 +169,7 @@ def compare_version_files(
 
 @router.get(
     "/{version_id}",
+    tags=["Versions"],
     response_model=VersionResponse,
     summary="Получить метаданные версии",
     description="Возвращает метаданные указанной версии по её идентификатору",
@@ -175,7 +183,8 @@ def get_version_all_metadata(
     return dm.get_version_info(dataset_id, version_id)
 
 @router.get(
-    "/{version_id}/splits", 
+    "/{version_id}/splits",
+    tags=["Version Stats"],
     summary="Получить статистику по сплитам",
     description="""
 
@@ -201,6 +210,7 @@ def get_version_splits(
 
 @router.get(
     "/{version_id}/splits/count",
+    tags=["Version Stats"],
     summary="Получить количество изображений по сплитам",
     description="Возвращает общее количество изображений версии и количество в каждом сплите",
     response_description="Количество изображений по сплитам",
@@ -215,6 +225,7 @@ def get_version_split_counts(
 
 @router.get(
     "/{version_id}/splits/balance",
+    tags=["Version Stats"],
     summary="Получить баланс классов по сплитам",
     description="Возвращает коэффициент баланса классов в каждом сплите и общий баланс версии",
     response_description="Баланс классов по сплитам",
@@ -229,6 +240,7 @@ def get_version_split_balance(
 
 @router.get(
     "/{version_id}/splits/distribution",
+    tags=["Version Stats"],
     summary="Получить распределение классов",
     description="Возвращает распределение по классам в каждом сплите",
     response_description="Распределение классов по сплитам",
@@ -243,6 +255,7 @@ def get_version_class_distribution(
 
 @router.get(
     "/{version_id}/splits/size-stats",
+    tags=["Version Stats"],
     summary="Получить статистику размеров изображений",
     description="Возвращает статистику размеров изображений в каждом сплите",
     response_description="Статистика размеров изображений по сплитам",
@@ -256,7 +269,8 @@ def get_version_image_size_stats(
     return dm.get_version_image_size_stats(dataset_id, version_id)
 
 @router.delete(
-    "/{version_id}", 
+    "/{version_id}",
+    tags=["Versions"],
     response_model=bool,
     summary="Удалить версию",
     description="Удаляет указанную версию датасета из системы",
@@ -270,7 +284,8 @@ def delete_version(
     return dm.drop_version(dataset_id, version_id)
 
 @router.post(
-    "/new", 
+    "/new",
+    tags=["Versions"],
     response_model=bool,
     summary="Создать новую версию данных",
     description="""
