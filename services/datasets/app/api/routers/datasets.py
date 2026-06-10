@@ -60,10 +60,24 @@ def new_default_version(
     default_version: str,
     dm: DatasetManager = Depends(get_dataset_manager)
 ):
-    ds = dm._get_dataset_info(dataset_id)
-    ds.default_version_id = default_version
-    dm.change_dataset_info(ds)
-    return True
+    try:
+        ds = dm._get_dataset_info(dataset_id)
+        version_ids = [v.id for v in ds.versions]
+        if default_version not in version_ids:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Версия '{default_version}' не найдена в датасете '{dataset_id}'"
+            )
+        ds.default_version_id = default_version
+        dm.change_dataset_info(ds)
+        return True
+    except HTTPException:
+        raise
+    except CoreException as e:
+        raise HTTPException(
+            status_code=e.status_code,
+            detail=f"{e.message} {e.detail}" if e.detail else e.message
+        )
 
 @router.patch(
     "/{dataset_id}",

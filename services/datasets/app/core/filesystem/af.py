@@ -32,7 +32,7 @@ class ArchiveManager:
         self.temp_folder = temp_folder.resolve()
         if not self.temp_folder.is_dir():
             logger.warning(f"Папка временных файлов создана автоматически.")
-            os.makedirs(temp_folder, exist_ok=True)
+            os.makedirs(self.temp_folder, exist_ok=True)
 
     def save_file(self, uploaded_file: UploadFile, name_file: str) -> Path:
         """Сохраняет загруженный файл с уникальным именем"""
@@ -150,7 +150,9 @@ class ArchiveManager:
     def _create_temp_subfolder(self, folder_name: str) -> Path:
         """Создаёт уникальную подпапку внутри temp_folder"""
         folder_path = self.temp_folder / folder_name
-        folder_path.mkdir(exist_ok=False)
+        if folder_path.exists():
+            shutil.rmtree(folder_path)
+        folder_path.mkdir()
         return folder_path
 
     def _check_zip_is_safe(self, members: list[str], target_folder: Path):

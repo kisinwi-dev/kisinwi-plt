@@ -377,14 +377,14 @@ def delete_version(
 )
 def create_version(
     dataset_id: str,
-    new_dataset: NewVersion,
+    new_version: NewVersion,
     dm: DatasetManager = Depends(get_dataset_manager),
 ):
     try:
-        return dm.add_new_version(dataset_id, new_dataset)
+        return dm.add_new_version(dataset_id, new_version)
     except CoreException as e:
         # данные чистим только при ошибке валидации: при сбое сохранения
         # метаданных они уже возвращены в temp и пригодны для повтора
         if e.status_code == 400:
-            dm.drop_cache(new_dataset.id_data)
+            dm.drop_cache(new_version.id_data)
         raise _to_http_error(e)
