@@ -10,7 +10,7 @@ logger = get_logger(__name__)
 def models_is_exists(model_id: str):
     try:
         response = requests.get(
-            ml_models_config.URL + '/models/' + model_id,
+            ml_models_config.URL + '/versions/' + model_id,
             timeout=5
         )
         return response.status_code == 200

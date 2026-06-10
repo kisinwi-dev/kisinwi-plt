@@ -11,11 +11,10 @@ logger = get_logger(__name__)
 
 class TrainingOut(BaseModel):
     is_completed_successfully: bool = Field(description="Задача успешно завершена")
-    error: str | None = Field(None, description="Информация об ошибке, если задача завершена с ошибкой") 
+    error: str | None = Field(None, description="Информация об ошибке, если задача завершена с ошибкой")
 
 class TrainingInput(BaseModel):
     model_name: str = Field(description="Имя модели")
-    version_model: int = Field(description="Версия модели")
     dataset_id: str = Field(description="ID датасета")
     dataset_version_id: str = Field(description="ID версии датасета")
     ml_engin_out: MlEngineerResponse = Field(description="Полученная информация от ML инженера")
@@ -24,7 +23,7 @@ def training(
     training_input: TrainingInput
 ) -> TrainingOut:
     """
-    Создание модели на основе ответа мл инженера, запуск обучения и
+    Создание версии модели на основе ответа мл инженера, запуск обучения и
     ожидание конца тренировки. На выход получаем итоги обучения.
 
     Args:
@@ -38,15 +37,14 @@ def training(
 
     if ml_model is None:
         return TrainingOut(
-            is_completed_successfully=False, 
+            is_completed_successfully=False,
             error="Не найдены конфигурации для мл модели"
         )
 
-    logger.info("Создание ML модели...")
-    model_id = ml_models_client.create_model(
+    logger.info("Создание версии ML модели...")
+    result = ml_models_client.create_model_version(
         # информация о модели
         name=training_input.model_name,
-        version=training_input.version_model,
         model_type=ml_model.type,
         description=ml_model.description_model,
         # информация о данных
@@ -56,22 +54,24 @@ def training(
         classes=get_dataset_info_classes(training_input.dataset_id)
     )
 
-    # При ошибке create_model возвращает не id, а {"ERROR": ...}. Не отправляем
-    # обучение с битым model_id — сразу сообщаем о провале.
-    if not isinstance(model_id, str):
-        error = model_id.get("ERROR") if isinstance(model_id, dict) else str(model_id)
-        logger.error(f"🟥 Не удалось создать ML модель: {error}")
+    # При ошибке create_model_version возвращает {"ERROR": ...}. Не отправляем
+    # обучение с битым id версии — сразу сообщаем о провале.
+    if "ERROR" in result:
+        error = result["ERROR"]
+        logger.error(f"🟥 Не удалось создать версию ML модели: {error}")
         return TrainingOut(
             is_completed_successfully=False,
-            error=f"Не удалось создать ML модель: {error}"
+            error=f"Не удалось создать версию ML модели: {error}"
         )
 
-    logger.info("✅ ML модель создана")
+    version_id = result["version_id"]
+    version = result["version"]
+    logger.info(f"✅ Создана версия {version} ML модели")
 
     logger.info("Создание задачи на обучение...")
     task_id = tasker_client.task_training_create(
-        task_name=f"Обучение модели {training_input.model_name} версия {training_input.version_model}",
-        model_id=model_id,
+        task_name=f"Обучение модели {training_input.model_name} версия {version}",
+        model_id=version_id,
         discussion_id=discussion_context.get()
     )
     logger.info("✅ Задача создана")
@@ -80,9 +80,9 @@ def training(
     is_complete, task = tasker_client.waiting_completed(task_id)
 
     if is_complete:
-        # занесение модели в список обученных моделей
+        # занесение версии в список обученных моделей
         logger.info("✅ Модель обучена")
-        models_context.add_model(model_id)
+        models_context.add_model(version_id)
     else:
         logger.info(
             "🟥 Модель не была обучена."

@@ -19,7 +19,7 @@ async def get_params(
 ) -> TaskParams:
     """Получение параметров обучения"""
     try:
-        res = await _client.get(f"{ML_MODELS_URL}/models/{model_id}")
+        res = await _client.get(f"{ML_MODELS_URL}/versions/{model_id}")
         res.raise_for_status()
         params = res.json()['train_params']
         return TaskParams.model_validate(params)
@@ -40,7 +40,7 @@ async def patch_model_status(
     """Обновление статуса модели"""
     try:
         res = await _client.patch(
-            f"{ML_MODELS_URL}/models/{model_id}",
+            f"{ML_MODELS_URL}/versions/{model_id}",
             json={"status": status}
         )
         res.raise_for_status()
@@ -72,7 +72,7 @@ async def upload_file_model_in_ml_models(
         else:
             filename = path.name
 
-        url = f"{ML_MODELS_URL}/models/{model_id}/files"
+        url = f"{ML_MODELS_URL}/versions/{model_id}/files"
 
         # Файл может быть большим — читаем в отдельном потоке
         content = await asyncio.to_thread(path.read_bytes)

@@ -1,3 +1,4 @@
-from .train_models_tasks import MlModelsManager
+from .models import ModelsManager
+from .versions import VersionsManager
 
-__all__ = ['MlModelsManager']
+__all__ = ['ModelsManager', 'VersionsManager']

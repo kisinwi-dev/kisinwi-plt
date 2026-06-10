@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { MLModelGroup, MLModel } from '../../types/mlModels';
+import type { MLModel, MLModelVersion } from '../../types/mlModels';
 import { formatDateParts, formatDateTime } from '../../utils/format';
 import { mlModelsService } from '../../services/mlModelsService';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -9,23 +9,23 @@ import { Tooltip } from '../common/Tooltip';
 import { ICONS } from '../../constants/icons';
 
 interface Props {
-  group: MLModelGroup;
+  model: MLModel;
   onReload: () => void;
 }
 
 type PendingDelete =
-  | { kind: 'version'; model: MLModel }
-  | { kind: 'group'; name: string; count: number };
+  | { kind: 'version'; version: MLModelVersion }
+  | { kind: 'model'; id: string; name: string; count: number };
 
-const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
+const ModelGroupCard: React.FC<Props> = ({ model, onReload }) => {
   const navigate = useNavigate();
   const { showNotification } = useNotification();
-  const latest = group.versions[0];
+  const latest = model.versions[0];
   const [sortAsc, setSortAsc] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [pending, setPending] = useState<PendingDelete | null>(null);
 
-  const sorted = [...group.versions].sort((a, b) =>
+  const sorted = [...model.versions].sort((a, b) =>
     sortAsc ? Number(a.version) - Number(b.version) : Number(b.version) - Number(a.version)
   );
 
@@ -41,11 +41,11 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
     setPending(null);
     try {
       if (pending.kind === 'version') {
-        await mlModelsService.deleteModel(pending.model.id);
-        showNotification(`Версия v${pending.model.version} удалена`, 'success');
+        await mlModelsService.deleteVersion(pending.version.id);
+        showNotification(`Версия v${pending.version.version} удалена`, 'success');
       } else {
-        await mlModelsService.deleteModelsByName(pending.name);
-        showNotification(`Все версии модели «${pending.name}» удалены`, 'success');
+        await mlModelsService.deleteModel(pending.id);
+        showNotification(`Модель «${pending.name}» удалена со всеми версиями`, 'success');
       }
       onReload();
     } catch (err) {
@@ -59,23 +59,23 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
         <div className="model-group-header">
           <div className="model-group-header-top">
             <div className="model-title-group">
-              <h2>{group.name}</h2>
+              <h2>{model.name}</h2>
               <span className="model-group-count">
-                <i className={`fas ${ICONS.version}`}></i> {group.versions.length} {group.versions.length === 1 ? 'версия' : group.versions.length < 5 ? 'версии' : 'версий'}
+                <i className={`fas ${ICONS.version}`}></i> {model.versions.length} {model.versions.length === 1 ? 'версия' : model.versions.length < 5 ? 'версии' : 'версий'}
               </span>
             </div>
-            <Tooltip content="Удалить все версии">
+            <Tooltip content="Удалить модель со всеми версиями">
               <button
                 className="icon-button icon-button--danger"
-                aria-label="Удалить все версии"
-                onClick={(e) => { e.stopPropagation(); setPending({ kind: 'group', name: group.name, count: group.versions.length }); }}
+                aria-label="Удалить модель со всеми версиями"
+                onClick={(e) => { e.stopPropagation(); setPending({ kind: 'model', id: model.id, name: model.name, count: model.versions.length }); }}
               >
                 <i className={`fas ${ICONS.delete}`}></i>
               </button>
             </Tooltip>
           </div>
           <div className="model-meta model-group-meta">
-            {latest.framework && (
+            {latest?.framework && (
               <Tooltip content="Фреймворк (последняя версия)">
                 <span>
                   <i className={`fas ${ICONS.framework}`}></i>
@@ -84,16 +84,18 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
                 </span>
               </Tooltip>
             )}
-            <Tooltip content="Количество классов (последняя версия)">
-              <span>
-                <i className={`fas ${ICONS.classes}`}></i>
-                <span className="meta-label">Классов:</span> {latest.classes.length}
-              </span>
-            </Tooltip>
+            {latest && (
+              <Tooltip content="Количество классов (последняя версия)">
+                <span>
+                  <i className={`fas ${ICONS.classes}`}></i>
+                  <span className="meta-label">Классов:</span> {latest.classes.length}
+                </span>
+              </Tooltip>
+            )}
             <Tooltip content="Дата последней версии">
               <span>
                 <i className={`fas ${ICONS.dateUpdated}`}></i>
-                <span className="meta-label">Обновлена:</span> {formatDateTime(latest.created_at)}
+                <span className="meta-label">Обновлена:</span> {formatDateTime(latest ? latest.created_at : model.created_at)}
               </span>
             </Tooltip>
           </div>
@@ -153,7 +155,7 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
                       <button
                         className="icon-button icon-button--danger small"
                         aria-label="Удалить версию"
-                        onClick={(e) => { e.stopPropagation(); setPending({ kind: 'version', model: v }); }}
+                        onClick={(e) => { e.stopPropagation(); setPending({ kind: 'version', version: v }); }}
                       >
                         <i className={`fas ${ICONS.delete}`}></i>
                       </button>
@@ -181,12 +183,12 @@ const ModelGroupCard: React.FC<Props> = ({ group, onReload }) => {
       <ConfirmModal
         open={pending !== null}
         danger
-        title={pending?.kind === 'group' ? 'Удалить все версии?' : 'Удалить версию?'}
+        title={pending?.kind === 'model' ? 'Удалить модель?' : 'Удалить версию?'}
         message={
-          pending?.kind === 'group'
-            ? `Все ${pending.count} ${pending.count === 1 ? 'версия' : pending.count < 5 ? 'версии' : 'версий'} модели «${pending.name}» будут удалены безвозвратно.`
+          pending?.kind === 'model'
+            ? `Модель «${pending.name}» и все её ${pending.count} ${pending.count === 1 ? 'версия' : pending.count < 5 ? 'версии' : 'версий'} будут удалены безвозвратно.`
             : pending?.kind === 'version'
-            ? `Версия v${pending.model.version} модели «${group.name}» будет удалена безвозвратно.`
+            ? `Версия v${pending.version.version} модели «${model.name}» будет удалена безвозвратно.`
             : undefined
         }
         confirmLabel="Удалить"

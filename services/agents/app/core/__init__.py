@@ -50,11 +50,9 @@ def development_models(
 
     logger.info("✅ Анализ датасета")
     agent_history_client.info("Анализ датасета завершён: данные готовы к обучению.")
-    version_model=0
 
     for iter in range(1, max_iter+1):
         iteration_context.set(iter)
-        version_model+=1
 
         info_start_iter = f"Полный цикл обучения №{iter} из {max_iter}"
         agent_history_client.info(f"{info_start_iter}. Этап рассуждения агентов.")
@@ -95,14 +93,13 @@ def development_models(
         # Создаём экземпляр модели для запуска тренировок
         training_input=TrainingInput(
             model_name=model_name,
-            version_model=version_model,
             ml_engin_out=ml_engin_out,
             dataset_id=dataset_id,
             dataset_version_id=dataset_version_id
         )
-        # Запуск процеса тренировки 
+        # Запуск процеса тренировки
         logger.info("")
-        training_res, version_model = train_and_debug(training_input)
+        training_res = train_and_debug(training_input)
 
         info_final_iter_1_line = f"Полный цикл обучения №{iter} из {max_iter}"
         info_final_iter_2_line =  "завершился с результатом:"

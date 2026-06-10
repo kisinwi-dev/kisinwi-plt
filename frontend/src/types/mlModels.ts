@@ -1,13 +1,14 @@
-// Типы для сервиса ml_models (реестр обученных моделей и файлов весов).
+// Типы для сервиса ml_models (реестр моделей: модель → версии, файлы весов).
 
-// Одна модель из реестра ml_models.
-export interface MLModel {
+// Версия модели (name/description денормализованы из родительской модели).
+export interface MLModelVersion {
   id: string;
+  model_id: string;
   name: string;
+  description: string | null;
   version: number;
   model_type: string;
   status: string;
-  description: string | null;
   metrics_report: string;
   classes: string[];
   // Конфиг обучения динамический — структуру не хардкодим.
@@ -19,7 +20,16 @@ export interface MLModel {
   framework_version: string | null;
 }
 
-// Ответ списка моделей с метаданными пагинации.
+// Модель (родитель) со списком версий (version DESC).
+export interface MLModel {
+  id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  versions: MLModelVersion[];
+}
+
+// Ответ списка моделей с метаданными пагинации (по моделям).
 export interface MLModels {
   models: MLModel[];
   total: number;
@@ -27,10 +37,18 @@ export interface MLModels {
   offset: number;
 }
 
-// Файл весов модели.
+// Ответ плоского списка версий с метаданными пагинации.
+export interface MLModelVersions {
+  versions: MLModelVersion[];
+  total: number;
+  limit: number | null;
+  offset: number;
+}
+
+// Файл весов версии модели.
 export interface MLModelFile {
   id: string;
-  model_id: string;
+  version_id: string;
   filename: string;
   file_size: number;
   created_at: string;
@@ -56,19 +74,7 @@ export interface ModelsQuery {
   offset?: number;
 }
 
-// Группа версий одной модели (для grouped view).
-export interface MLModelGroup {
-  name: string;
-  versions: MLModel[];  // отсортированы version DESC
+// Параметры плоского списка версий: дополнительно фильтр по родительской модели.
+export interface VersionsQuery extends ModelsQuery {
+  model_id?: string;
 }
-
-// Ответ сгруппированного списка моделей.
-export interface MLModelsGrouped {
-  groups: MLModelGroup[];
-  total: number;
-  limit: number | null;
-  offset: number;
-}
-
-// Параметры запроса grouped endpoint: name — частичный поиск по имени группы.
-export type GroupedModelsQuery = ModelsQuery;

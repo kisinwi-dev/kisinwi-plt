@@ -6,76 +6,75 @@ from app.api.schemas import Files, File, FileDeletes
 from app.api.deps import (
     get_files_manager,
     FilesManager,
-    get_ml_models_manager,
-    MlModelsManager,
-    validate_model_id,
+    get_versions_manager,
+    VersionsManager,
+    validate_version_id,
     validate_file_id,
 )
 
 routers = APIRouter(
-    prefix='/models',
-    tags=['models', 'files']
+    tags=['versions', 'files']
 )
 
 logger = get_logger(__name__)
 
 @routers.get(
-    "/{model_id}/files",
-    summary="Получение информации о файлах модели",
-    description="Возвращает список файлов, связанных с указанной моделью",
-    response_description="Список файлов модели",
+    "/versions/{version_id}/files",
+    summary="Получение информации о файлах версии",
+    description="Возвращает список файлов, связанных с указанной версией модели",
+    response_description="Список файлов версии",
     responses={
-        200: {"description": "Информация о файлах модели успешно получена"},
-        204: {"description": "Модель не имеет файлов"},
-        404: {"description": "Модель не найдена"},
+        200: {"description": "Информация о файлах версии успешно получена"},
+        204: {"description": "Версия не имеет файлов"},
+        404: {"description": "Версия не найдена"},
         503: {"description": "Ошибка подключения к БД"}
     }
 )
 async def get_files(
-    model_id: str = Depends(validate_model_id),
+    version_id: str = Depends(validate_version_id),
     manager: FilesManager = Depends(get_files_manager),
-    models_manager: MlModelsManager = Depends(get_ml_models_manager),
+    versions_manager: VersionsManager = Depends(get_versions_manager),
 ):
-    # Модель должна существовать — иначе 404 (а не «нет файлов»)
-    if models_manager.get_model(model_id) is None:
+    # Версия должна существовать — иначе 404 (а не «нет файлов»)
+    if versions_manager.get_version(version_id) is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Модель с ID {model_id} не найдена"
+            detail=f"Версия с ID {version_id} не найдена"
         )
 
-    files = manager.get_info_files(model_id)
+    files = manager.get_info_files(version_id)
     if files:
         return Files(files=[File(**file) for file in files])
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @routers.post(
-    "/{model_id}/files",
-    summary="Загрузить файл модели",
-    description="Загружает и сохраняет файл, связанный с указанной моделью",
+    "/versions/{version_id}/files",
+    summary="Загрузить файл версии",
+    description="Загружает и сохраняет файл, связанный с указанной версией модели",
     response_description="Пустой ответ при успешной загрузке",
     responses={
         200: {"description": "Файл успешно загружен"},
-        404: {"description": "Модель не найдена"},
+        404: {"description": "Версия не найдена"},
         409: {"description": "Ошибка сохранения файла"},
         503: {"description": "Ошибка подключения к БД"}
     }
 )
 async def add_file(
     files: UploadFile,
-    model_id: str = Depends(validate_model_id),
+    version_id: str = Depends(validate_version_id),
     manager: FilesManager = Depends(get_files_manager),
-    models_manager: MlModelsManager = Depends(get_ml_models_manager)
+    versions_manager: VersionsManager = Depends(get_versions_manager)
 ):
-    # Модель должна существовать — иначе 404 (а не 500 + директория-мусор)
-    if models_manager.get_model(model_id) is None:
+    # Версия должна существовать — иначе 404 (а не 500 + директория-мусор)
+    if versions_manager.get_version(version_id) is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Модель с ID {model_id} не найдена"
+            detail=f"Версия с ID {version_id} не найдена"
         )
 
     try:
-        manager.add_file(model_id, files)
+        manager.add_file(version_id, files)
     except FileExistsError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -87,37 +86,37 @@ async def add_file(
             detail=str(e)
         )
 
-    return {"model_id": model_id, "filename": files.filename, "status": "ok"}
+    return {"version_id": version_id, "filename": files.filename, "status": "ok"}
 
 @routers.delete(
-    "/{model_id}/files",
-    summary="Удаление файлов модели",
-    description="Удаляет указанные файлы модели, либо все файлы модели, если идентификаторы не переданы",
+    "/versions/{version_id}/files",
+    summary="Удаление файлов версии",
+    description="Удаляет указанные файлы версии, либо все файлы версии, если идентификаторы не переданы",
     response_description="Пустой ответ при успешном удалении",
     responses={
         200: {"description": "Операция удалёния выполнена"},
         204: {"description": "Нет файлов для удаления"},
-        404: {"description": "Модель не найдена"},
+        404: {"description": "Версия не найдена"},
         503: {"description": "Ошибка подключения к БД"}
     }
 )
 async def del_file(
     files: FileDeletes,
-    model_id: str = Depends(validate_model_id),
+    version_id: str = Depends(validate_version_id),
     manager: FilesManager = Depends(get_files_manager),
-    models_manager: MlModelsManager = Depends(get_ml_models_manager)
+    versions_manager: VersionsManager = Depends(get_versions_manager)
 ):
-    # Модель должна существовать — иначе 404 (а не 204 + директория-мусор)
-    if models_manager.get_model(model_id) is None:
+    # Версия должна существовать — иначе 404 (а не 204 + директория-мусор)
+    if versions_manager.get_version(version_id) is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Модель с ID {model_id} не найдена"
+            detail=f"Версия с ID {version_id} не найдена"
         )
 
     if files.ids is None:
-        result = manager.drop(model_id)
+        result = manager.drop(version_id)
     else:
-        result = manager.drop(model_id, files.ids)
+        result = manager.drop(version_id, files.ids)
 
     if result == 0:
         return Response(
@@ -128,7 +127,7 @@ async def del_file(
 @routers.get(
     "/files/{file_id}/download",
     summary="Скачать конкретный файл по ID",
-    description="Возвращает содержимое файла модели для скачивания по его идентификатору",
+    description="Возвращает содержимое файла версии для скачивания по его идентификатору",
     response_description="Содержимое файла",
     responses={
         200: {"description": "Файл успешно скачан"},
@@ -151,7 +150,7 @@ async def download_file(
             filename=filename,
             media_type="application/octet-stream"
         )
-        
+
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

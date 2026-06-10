@@ -1,12 +1,13 @@
-// Импортируем типы для моделей, файлов и параметров запроса.
+// Импортируем типы для моделей, версий, файлов и параметров запроса.
 import type {
   MLModel,
   MLModels,
-  MLModelsGrouped,
+  MLModelVersion,
+  MLModelVersions,
   MLModelFiles,
   MLModelStatus,
   ModelsQuery,
-  GroupedModelsQuery,
+  VersionsQuery,
 } from '../types/mlModels';
 import { handleResponse, serviceUrl } from './http';
 
@@ -18,7 +19,7 @@ const ML_MODELS_URL = serviceUrl(import.meta.env.VITE_ML_MODELS, 'localhost:6300
  */
 export const mlModelsService = {
   /**
-   * Получить список моделей с фильтрами и пагинацией.
+   * Получить модели с вложенными версиями (пагинация по моделям).
    * GET /models?dataset_id&status&name&limit&offset
    */
   async getModels(query: ModelsQuery = {}): Promise<MLModels> {
@@ -33,22 +34,41 @@ export const mlModelsService = {
   },
 
   /**
-   * Получить модели, сгруппированные по имени, с пагинацией по группам.
-   * GET /models/grouped?status&dataset_id&limit&offset
+   * Получить плоский список версий с фильтрами и пагинацией.
+   * GET /versions?dataset_id&status&name&model_id&limit&offset
    */
-  async getGroupedModels(query: GroupedModelsQuery = {}): Promise<MLModelsGrouped> {
-    const url = new URL(`${ML_MODELS_URL}/models/grouped`);
+  async getVersions(query: VersionsQuery = {}): Promise<MLModelVersions> {
+    const url = new URL(`${ML_MODELS_URL}/versions`);
     if (query.dataset_id) url.searchParams.append('dataset_id', query.dataset_id);
     if (query.status) url.searchParams.append('status', query.status);
     if (query.name) url.searchParams.append('name', query.name);
+    if (query.model_id) url.searchParams.append('model_id', query.model_id);
     if (query.limit != null) url.searchParams.append('limit', String(query.limit));
     if (query.offset != null) url.searchParams.append('offset', String(query.offset));
     const response = await fetch(url.toString());
-    return handleResponse<MLModelsGrouped>(response);
+    return handleResponse<MLModelVersions>(response);
   },
 
   /**
-   * Удалить одну версию модели по ID.
+   * Получить одну модель (с версиями) по ID.
+   * GET /models/{modelId}
+   */
+  async getModel(modelId: string): Promise<MLModel> {
+    const response = await fetch(`${ML_MODELS_URL}/models/${modelId}`);
+    return handleResponse<MLModel>(response);
+  },
+
+  /**
+   * Получить одну версию по ID.
+   * GET /versions/{versionId}
+   */
+  async getVersion(versionId: string): Promise<MLModelVersion> {
+    const response = await fetch(`${ML_MODELS_URL}/versions/${versionId}`);
+    return handleResponse<MLModelVersion>(response);
+  },
+
+  /**
+   * Удалить модель со всеми версиями.
    * DELETE /models/{modelId}
    */
   async deleteModel(modelId: string): Promise<void> {
@@ -57,21 +77,12 @@ export const mlModelsService = {
   },
 
   /**
-   * Удалить все версии модели по имени.
-   * DELETE /models/by-name/{name}
+   * Удалить одну версию модели.
+   * DELETE /versions/{versionId}
    */
-  async deleteModelsByName(name: string): Promise<void> {
-    const response = await fetch(`${ML_MODELS_URL}/models/by-name/${encodeURIComponent(name)}`, { method: 'DELETE' });
+  async deleteVersion(versionId: string): Promise<void> {
+    const response = await fetch(`${ML_MODELS_URL}/versions/${versionId}`, { method: 'DELETE' });
     await handleResponse<unknown>(response);
-  },
-
-  /**
-   * Получить одну модель по ID.
-   * GET /models/{modelId}
-   */
-  async getModel(modelId: string): Promise<MLModel> {
-    const response = await fetch(`${ML_MODELS_URL}/models/${modelId}`);
-    return handleResponse<MLModel>(response);
   },
 
   /**
@@ -86,21 +97,21 @@ export const mlModelsService = {
   },
 
   /**
-   * Получить список файлов весов модели. 204 → пустой список.
-   * GET /models/{modelId}/files
+   * Получить список файлов весов версии. 204 → пустой список.
+   * GET /versions/{versionId}/files
    */
-  async getModelFiles(modelId: string): Promise<MLModelFiles> {
-    const response = await fetch(`${ML_MODELS_URL}/models/${modelId}/files`);
+  async getVersionFiles(versionId: string): Promise<MLModelFiles> {
+    const response = await fetch(`${ML_MODELS_URL}/versions/${versionId}/files`);
     const data = await handleResponse<MLModelFiles>(response);
     return typeof data === 'object' && data?.files ? data : { files: [] };
   },
 
   /**
    * Скачать файл весов: получаем blob и инициируем загрузку в браузере.
-   * GET /models/files/{fileId}/download
+   * GET /files/{fileId}/download
    */
   async downloadFile(fileId: string, filename: string): Promise<void> {
-    const response = await fetch(`${ML_MODELS_URL}/models/files/${fileId}/download`);
+    const response = await fetch(`${ML_MODELS_URL}/files/${fileId}/download`);
     if (!response.ok) {
       throw new Error(`HTTP error ${response.status}`);
     }

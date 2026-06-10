@@ -7,7 +7,7 @@ import { MODELS_PAGE_SIZE } from '../constants';
 import { ModelCard, ModelGroupCard } from '../components/models';
 import Select from '../components/common/Select';
 import { Tooltip } from '../components/common/Tooltip';
-import type { MLModel, MLModelGroup, MLModelStatus } from '../types/mlModels';
+import type { MLModel, MLModelVersion, MLModelStatus } from '../types/mlModels';
 import type { Dataset } from '../types/dataset';
 import { ICONS } from '../constants/icons';
 import './Models.css';
@@ -20,11 +20,11 @@ const Models: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('grouped');
 
   // Flat mode state.
-  const [models, setModels] = useState<MLModel[]>([]);
+  const [versions, setVersions] = useState<MLModelVersion[]>([]);
   const [flatTotal, setFlatTotal] = useState(0);
 
   // Grouped mode state.
-  const [groups, setGroups] = useState<MLModelGroup[]>([]);
+  const [models, setModels] = useState<MLModel[]>([]);
   const [groupedTotal, setGroupedTotal] = useState(0);
 
   const [loading, setLoading] = useState(false);
@@ -48,14 +48,14 @@ const Models: React.FC = () => {
   const loadFlat = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await mlModelsService.getModels({
+      const data = await mlModelsService.getVersions({
         name: debouncedName || undefined,
         status: filters.status || undefined,
         dataset_id: filters.dataset || undefined,
         limit: MODELS_PAGE_SIZE,
         offset,
       });
-      setModels(data.models);
+      setVersions(data.versions);
       setFlatTotal(data.total);
     } catch (error) {
       showNotification(error instanceof Error ? error.message : 'Не удалось загрузить модели', 'error');
@@ -67,14 +67,14 @@ const Models: React.FC = () => {
   const loadGrouped = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await mlModelsService.getGroupedModels({
+      const data = await mlModelsService.getModels({
         name: debouncedName || undefined,
         status: filters.status || undefined,
         dataset_id: filters.dataset || undefined,
         limit: MODELS_PAGE_SIZE,
         offset,
       });
-      setGroups(data.groups);
+      setModels(data.models);
       setGroupedTotal(data.total);
     } catch (error) {
       showNotification(error instanceof Error ? error.message : 'Не удалось загрузить модели', 'error');
@@ -102,7 +102,7 @@ const Models: React.FC = () => {
   const canPrev = offset > 0;
   const canNext = offset + MODELS_PAGE_SIZE < total;
 
-  const isEmpty = viewMode === 'flat' ? models.length === 0 : groups.length === 0;
+  const isEmpty = viewMode === 'flat' ? versions.length === 0 : models.length === 0;
   // Полноэкранный лоадер — только на первичной загрузке; при обновлении приглушаем текущий список.
   const initialLoading = loading && isEmpty;
 
@@ -180,8 +180,8 @@ const Models: React.FC = () => {
         <>
           <div className={`models-grid${loading ? ' is-refreshing' : ''}`}>
             {viewMode === 'flat'
-              ? models.map((model) => <ModelCard key={model.id} model={model} />)
-              : groups.map((group) => <ModelGroupCard key={group.name} group={group} onReload={loadGrouped} />)
+              ? versions.map((version) => <ModelCard key={version.id} model={version} />)
+              : models.map((model) => <ModelGroupCard key={model.id} model={model} onReload={loadGrouped} />)
             }
           </div>
 

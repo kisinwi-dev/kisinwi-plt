@@ -1,12 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { MLModel } from '../../types/mlModels';
+import type { MLModelVersion } from '../../types/mlModels';
 import { formatDateTime } from '../../utils/format';
 import { ICONS } from '../../constants/icons';
 import { Tooltip } from '../common/Tooltip';
 
 interface Props {
-  model: MLModel;
+  model: MLModelVersion;
 }
 
 const ModelCard: React.FC<Props> = ({ model }) => {
