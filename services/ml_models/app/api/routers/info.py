@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.logs import get_logger
 from app.core.health import check_health_all
 from app.api.schemas import HealthResponse, MLModelsStatusesResponse, MLModelStatus
-from app.api.deps import get_ml_models_manager, MlModelsManager
+from app.api.deps import get_versions_manager, VersionsManager
 
 logger = get_logger(__name__)
 
@@ -44,7 +44,7 @@ async def health():
     }
 )
 async def get_statuses(
-    manager: MlModelsManager = Depends(get_ml_models_manager)
+    manager: VersionsManager = Depends(get_versions_manager)
 ):
     try:
         statuses_list = manager.get_statuses_info()
