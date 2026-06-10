@@ -236,7 +236,12 @@ const SplitComparePanel: React.FC<SplitComparePanelProps> = ({ splitsSummary, sp
         <div className="vstats-compare-row vstats-bar-head">
           <span className="vstats-bar-label">Класс</span>
           <span className="vstats-bar-label">Доля в сплите</span>
-          <span className="vstats-compare-delta">Δ п.п.</span>
+          <span
+            className="vstats-compare-delta"
+            title={`Разброс доли класса между сплитами в процентных пунктах (макс. % − мин. %). Больше ${DRIFT_WARN_PP} п.п. — заметный дрейф, больше ${DRIFT_BAD_PP} п.п. — сильный.`}
+          >
+            Δ п.п. <i className={`fas ${ICONS.info}`}></i>
+          </span>
         </div>
         {rows.map(row => (
           <div key={row.name} className="vstats-compare-row">
