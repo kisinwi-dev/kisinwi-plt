@@ -82,12 +82,31 @@ class TrainingTaskManager:
                 f"SELECT id FROM {self._status_tables} WHERE status = %s",
                 (status,)
             )
-            
+
             if not status_result:
                 raise ValueError(f"Неизвестный статус: {status}")
-            
+
             status_id = status_result[0]
-            
+
+            # Задачу в финальном статусе обновлять нельзя
+            # (иначе progress-апдейты воркера перетирают cancelled/completed/failed)
+            current = db.fetch_one(
+                f"""
+                SELECT s.status FROM {self._table} t
+                LEFT JOIN {self._status_tables} s ON t.status_id = s.id
+                WHERE t.id = %s
+                """,
+                (task_id,)
+            )
+
+            if current is None:
+                raise ValueError(f"Задача с ID {task_id} не найдена")
+
+            if current[0] in ('completed', 'failed', 'cancelled'):
+                raise ValueError(
+                    f"Задача в финальном статусе '{current[0]}' не может быть обновлена"
+                )
+
             # Обновляем задачу
             query = f"""
                 UPDATE {self._table} 
