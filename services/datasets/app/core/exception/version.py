@@ -10,6 +10,16 @@ class VersionNotFoundError(CoreException):
             detail="Убедитесь, что идентификатор указан верно."
         )
 
+class VersionComparisonError(CoreException):
+    """Некорректные параметры сравнения версий"""
+
+    def __init__(self, reason: str):
+        super().__init__(
+            message="Ошибка сравнения версий",
+            status_code=400,
+            detail=reason
+        )
+
 class VersionValidationError(CoreException):
     """Структура или содержимое версии не соответствует требованиям"""
     

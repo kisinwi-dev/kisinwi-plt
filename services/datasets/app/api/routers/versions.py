@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List
 
 from app.logs import get_logger
@@ -10,10 +10,22 @@ from app.api.schemas.splits import (
     SplitCountsResponse, SplitBalanceResponse,
     ClassDistributionResponse, ImageSizeStatsResponse
 )
+from app.api.schemas.comparison import (
+    VersionComparisonResponse, CountsComparisonResponse,
+    DistributionComparisonResponse, BalanceComparisonResponse,
+    SizeStatsComparisonResponse, FilesDiffResponse
+)
 from app.api.schemas.dataset_new import NewVersion
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/datasets/{dataset_id}/versions", tags=["Version"])
+
+def _to_http_error(e: CoreException) -> HTTPException:
+    logger.error(f"\nОшибка: {e.message}\nДетали: {e.detail}")
+    return HTTPException(
+        status_code=e.status_code,
+        detail=f"{e.message} {e.detail}" if e.detail else e.message
+    )
 
 @router.get(
     "/", 
@@ -29,7 +41,127 @@ def list_versions(
     return dm.get_dataset_response_info(dataset_id).versions
 
 @router.get(
-    "/{version_id}", 
+    "/compare",
+    response_model=VersionComparisonResponse,
+    summary="Сравнить две версии датасета",
+    description="""
+Возвращает полную сводку сравнения двух версий одного датасета:
+
+- Изменение количества изображений по сплитам и классам
+
+- Изменения состава классов и drift-метрики распределений (JS divergence, PSI)
+
+- Изменение баланса классов
+
+- Изменение размеров и форматов изображений
+
+- Счётчики по-файлового diff (полные списки — в `/compare/files`)
+    """,
+    response_description="Полная сводка сравнения версий",
+)
+def compare_versions(
+        dataset_id: str,
+        from_version: str = Query(..., alias="from", description="ID базовой версии"),
+        to_version: str = Query(..., alias="to", description="ID сравниваемой версии"),
+        dm: DatasetManager = Depends(get_dataset_manager)
+):
+    try:
+        return dm.compare_versions(dataset_id, from_version, to_version)
+    except CoreException as e:
+        raise _to_http_error(e)
+
+@router.get(
+    "/compare/counts",
+    response_model=CountsComparisonResponse,
+    summary="Сравнить количество изображений двух версий",
+    description="Возвращает изменение количества изображений между версиями: общее, по сплитам и по классам",
+    response_description="Сравнение количества изображений",
+)
+def compare_version_counts(
+        dataset_id: str,
+        from_version: str = Query(..., alias="from", description="ID базовой версии"),
+        to_version: str = Query(..., alias="to", description="ID сравниваемой версии"),
+        dm: DatasetManager = Depends(get_dataset_manager)
+):
+    try:
+        return dm.compare_version_counts(dataset_id, from_version, to_version)
+    except CoreException as e:
+        raise _to_http_error(e)
+
+@router.get(
+    "/compare/distribution",
+    response_model=DistributionComparisonResponse,
+    summary="Сравнить распределения классов двух версий",
+    description="Возвращает изменения состава классов и drift-метрики распределений (JS divergence, PSI) по сплитам",
+    response_description="Сравнение распределений классов",
+)
+def compare_version_distribution(
+        dataset_id: str,
+        from_version: str = Query(..., alias="from", description="ID базовой версии"),
+        to_version: str = Query(..., alias="to", description="ID сравниваемой версии"),
+        dm: DatasetManager = Depends(get_dataset_manager)
+):
+    try:
+        return dm.compare_version_distribution(dataset_id, from_version, to_version)
+    except CoreException as e:
+        raise _to_http_error(e)
+
+@router.get(
+    "/compare/balance",
+    response_model=BalanceComparisonResponse,
+    summary="Сравнить баланс классов двух версий",
+    description="Возвращает изменение коэффициента баланса классов: общего и по сплитам",
+    response_description="Сравнение баланса классов",
+)
+def compare_version_balance(
+        dataset_id: str,
+        from_version: str = Query(..., alias="from", description="ID базовой версии"),
+        to_version: str = Query(..., alias="to", description="ID сравниваемой версии"),
+        dm: DatasetManager = Depends(get_dataset_manager)
+):
+    try:
+        return dm.compare_version_balance(dataset_id, from_version, to_version)
+    except CoreException as e:
+        raise _to_http_error(e)
+
+@router.get(
+    "/compare/size-stats",
+    response_model=SizeStatsComparisonResponse,
+    summary="Сравнить размеры и форматы изображений двух версий",
+    description="Возвращает изменение количества изображений по форматам и по размерам (WxH) в каждом сплите",
+    response_description="Сравнение размеров и форматов изображений",
+)
+def compare_version_size_stats(
+        dataset_id: str,
+        from_version: str = Query(..., alias="from", description="ID базовой версии"),
+        to_version: str = Query(..., alias="to", description="ID сравниваемой версии"),
+        dm: DatasetManager = Depends(get_dataset_manager)
+):
+    try:
+        return dm.compare_version_size_stats(dataset_id, from_version, to_version)
+    except CoreException as e:
+        raise _to_http_error(e)
+
+@router.get(
+    "/compare/files",
+    response_model=FilesDiffResponse,
+    summary="Сравнить файлы двух версий",
+    description="Возвращает по-файловый diff между версиями по относительным путям (split/class/filename): добавленные и удалённые файлы",
+    response_description="По-файловый diff версий",
+)
+def compare_version_files(
+        dataset_id: str,
+        from_version: str = Query(..., alias="from", description="ID базовой версии"),
+        to_version: str = Query(..., alias="to", description="ID сравниваемой версии"),
+        dm: DatasetManager = Depends(get_dataset_manager)
+):
+    try:
+        return dm.compare_version_files(dataset_id, from_version, to_version)
+    except CoreException as e:
+        raise _to_http_error(e)
+
+@router.get(
+    "/{version_id}",
     response_model=VersionResponse,
     summary="Получить метаданные версии",
     description="Возвращает метаданные указанной версии по её идентификатору",
@@ -164,9 +296,5 @@ def create_version(
     try:
         return dm.add_new_version(dataset_id, new_dataset)
     except CoreException as e:
-        logger.error(f"\nОшибка: {e.message}\nДетали: {e.detail}")
         dm.drop_cache()
-        raise HTTPException(
-            status_code=e.status_code,
-            detail=f"{e.message} {e.detail}" if e.detail else e.message
-        )
+        raise _to_http_error(e)

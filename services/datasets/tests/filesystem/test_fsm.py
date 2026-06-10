@@ -73,6 +73,25 @@ def test_get_all_files(populated_fs):
     assert set(files) == {"photo1.jpg", "photo2.png", "doc.pdf", "text.txt"}
 
 
+def test_get_all_files_recursive(populated_fs):
+    files = populated_fs.get_all_files_recursive()
+    assert files == sorted([
+        "photo1.jpg", "photo2.png", "doc.pdf", "text.txt",
+        "photos/cat.jpg", "photos/dog.PNG", "photos/note.txt",
+    ])
+
+
+def test_get_all_files_recursive_from_subdir(populated_fs):
+    populated_fs.in_dir("photos")
+    files = populated_fs.get_all_files_recursive()
+    assert files == ["cat.jpg", "dog.PNG", "note.txt"]
+
+
+def test_get_all_files_recursive_empty_dir(populated_fs):
+    populated_fs.in_dir("empty")
+    assert populated_fs.get_all_files_recursive() == []
+
+
 def test_rename_file_success(populated_fs):
     populated_fs.rename_file("photo1.jpg", "image1.jpg")
     assert "image1.jpg" in populated_fs.get_all_files()

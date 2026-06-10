@@ -10,12 +10,18 @@ from app.api.schemas.splits import (
     SplitSummaryResponse, SplitCountsResponse, SplitBalanceResponse,
     ClassDistributionResponse, ImageSizeStatsResponse
 )
+from app.api.schemas.comparison import (
+    VersionComparisonResponse, CountsComparisonResponse,
+    DistributionComparisonResponse, BalanceComparisonResponse,
+    SizeStatsComparisonResponse, FilesDiffResponse, FilesDiffSummary
+)
 from app.core.exception.dataset import *
-from app.core.exception.version import VersionNotFoundError
+from app.core.exception.version import VersionNotFoundError, VersionComparisonError
 from app.core.services.validation import (
     new_dataset as dvc,
     new_version as vvc
 )
+from . import comparison
 
 from app.logs import get_logger
 
@@ -70,7 +76,7 @@ class DatasetManager:
         for version in dsm.versions:
             if version.id == version_id:
                 return version
-        raise ValueError(f"Версия не найдена")
+        raise VersionNotFoundError(version_id)
     
     # ================ проверки наличия данных ======================
 
@@ -127,6 +133,107 @@ class DatasetManager:
         """Получение статистики размеров изображений по сплитам"""
         version = self._get_version_info(dataset_id, version_id)
         return version.get_image_size_stats()
+
+    # ================ сравнение версий ======================
+
+    def _get_versions_pair(
+        self,
+        dataset_id: str,
+        from_version_id: str,
+        to_version_id: str
+    ) -> Tuple[Version, Version]:
+        """Загрузить пару версий для сравнения с валидацией параметров"""
+        if from_version_id == to_version_id:
+            raise VersionComparisonError("Нельзя сравнивать версию саму с собой")
+        return (
+            self._get_version_info(dataset_id, from_version_id),
+            self._get_version_info(dataset_id, to_version_id)
+        )
+
+    def compare_versions(
+        self,
+        dataset_id: str,
+        from_version_id: str,
+        to_version_id: str
+    ) -> VersionComparisonResponse:
+        """Полная сводка сравнения двух версий датасета"""
+        from_v, to_v = self._get_versions_pair(dataset_id, from_version_id, to_version_id)
+        files_diff = self.compare_version_files(dataset_id, from_version_id, to_version_id)
+        return VersionComparisonResponse(
+            dataset_id=dataset_id,
+            from_version_id=from_version_id,
+            to_version_id=to_version_id,
+            counts=comparison.compare_counts(dataset_id, from_v, to_v),
+            distribution=comparison.compare_distribution(dataset_id, from_v, to_v),
+            balance=comparison.compare_balance(dataset_id, from_v, to_v),
+            size_stats=comparison.compare_size_stats(dataset_id, from_v, to_v),
+            files=FilesDiffSummary(
+                added_count=files_diff.added_count,
+                removed_count=files_diff.removed_count,
+                common_count=files_diff.common_count
+            )
+        )
+
+    def compare_version_counts(
+        self,
+        dataset_id: str,
+        from_version_id: str,
+        to_version_id: str
+    ) -> CountsComparisonResponse:
+        """Сравнение количества изображений по сплитам и классам"""
+        from_v, to_v = self._get_versions_pair(dataset_id, from_version_id, to_version_id)
+        return comparison.compare_counts(dataset_id, from_v, to_v)
+
+    def compare_version_distribution(
+        self,
+        dataset_id: str,
+        from_version_id: str,
+        to_version_id: str
+    ) -> DistributionComparisonResponse:
+        """Сравнение распределений классов (состав + drift-метрики)"""
+        from_v, to_v = self._get_versions_pair(dataset_id, from_version_id, to_version_id)
+        return comparison.compare_distribution(dataset_id, from_v, to_v)
+
+    def compare_version_balance(
+        self,
+        dataset_id: str,
+        from_version_id: str,
+        to_version_id: str
+    ) -> BalanceComparisonResponse:
+        """Сравнение баланса классов"""
+        from_v, to_v = self._get_versions_pair(dataset_id, from_version_id, to_version_id)
+        return comparison.compare_balance(dataset_id, from_v, to_v)
+
+    def compare_version_size_stats(
+        self,
+        dataset_id: str,
+        from_version_id: str,
+        to_version_id: str
+    ) -> SizeStatsComparisonResponse:
+        """Сравнение форматов и размеров изображений"""
+        from_v, to_v = self._get_versions_pair(dataset_id, from_version_id, to_version_id)
+        return comparison.compare_size_stats(dataset_id, from_v, to_v)
+
+    def compare_version_files(
+        self,
+        dataset_id: str,
+        from_version_id: str,
+        to_version_id: str
+    ) -> FilesDiffResponse:
+        """По-файловый diff между версиями (по относительным путям)"""
+        self._get_versions_pair(dataset_id, from_version_id, to_version_id)
+
+        def _scan(version_id: str) -> set:
+            with self._fsm.use_path(self._fsm.worker_path / dataset_id / version_id):
+                return set(self._fsm.get_all_files_recursive())
+
+        return comparison.build_files_diff(
+            dataset_id,
+            from_version_id,
+            to_version_id,
+            from_files=_scan(from_version_id),
+            to_files=_scan(to_version_id)
+        )
 
     # ================ выдача имеющейся информации о датасетах и версиях ======================
 

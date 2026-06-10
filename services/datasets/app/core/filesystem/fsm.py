@@ -137,6 +137,13 @@ class FileSystemManager:
     def get_all_files(self) -> list[str]:
         return [path.name for path in self.worker_path.iterdir() if path.is_file()]
 
+    def get_all_files_recursive(self) -> list[str]:
+        """Относительные posix-пути всех файлов от worker_path, отсортированные"""
+        return sorted(
+            path.relative_to(self.worker_path).as_posix()
+            for path in self.worker_path.rglob("*") if path.is_file()
+        )
+
     # ================ Переименовывание файлов ======================
 
     def rename_dir(
