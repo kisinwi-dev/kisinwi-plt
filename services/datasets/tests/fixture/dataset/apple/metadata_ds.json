@@ -1,45 +1,194 @@
 {
-  "dataset_id": "apple",
+  "id": "apple",
   "name": "apple",
   "description": "Бинарная классификация красное/зелёное",
-  "num_classes": 2,
-  "class_names": [
+  "classes_count": 2,
+  "classes_names": [
     "red",
     "green"
   ],
-  "class_to_idx": {
+  "classes_to_idx": {
     "red": 0,
     "green": 1
-  },
-  "source": {
-    "kaggle": {
-      "url": "https://www.kaggle.com/datasets/anthonytherrien/apple",
-      "description": "Яблочки"
-    }
   },
   "type": "image",
   "task": "classification",
   "default_version_id": "v2",
   "versions": [
     {
-      "version_id": "v1",
-      "created_at": "2026-03-03T00:00:00",
+      "id": "v1",
+      "name": "v1",
       "description": "Первая загрузка, сырые данные с Kaggle",
-      "size_bytes": 124567890,
+      "sources": [
+        {
+          "type": "kaggle",
+          "url": "https://www.kaggle.com/datasets/anthonytherrien/apple",
+          "description": "Яблочки"
+        }
+      ],
       "num_samples": 5000,
-      "num_train": 4000,
-      "num_val": 500,
-      "num_test": 500
+      "size_bytes": 124567890,
+      "image_format_stats": {
+        "jpg": 4500,
+        "png": 500
+      },
+      "splits": {
+        "train": {
+          "class_distribution": [
+            {
+              "class_name": "red",
+              "class_id": 0,
+              "count": 2200,
+              "image_size_count": {
+                "224x224": 2000,
+                "300x300": 200
+              },
+              "percentage": 55.0
+            },
+            {
+              "class_name": "green",
+              "class_id": 1,
+              "count": 1800,
+              "image_size_count": {
+                "224x224": 1800
+              },
+              "percentage": 45.0
+            }
+          ]
+        },
+        "val": {
+          "class_distribution": [
+            {
+              "class_name": "red",
+              "class_id": 0,
+              "count": 250,
+              "image_size_count": {
+                "224x224": 250
+              },
+              "percentage": 50.0
+            },
+            {
+              "class_name": "green",
+              "class_id": 1,
+              "count": 250,
+              "image_size_count": {
+                "224x224": 250
+              },
+              "percentage": 50.0
+            }
+          ]
+        },
+        "test": {
+          "class_distribution": [
+            {
+              "class_name": "red",
+              "class_id": 0,
+              "count": 250,
+              "image_size_count": {
+                "224x224": 240,
+                "640x480": 10
+              },
+              "percentage": 50.0
+            },
+            {
+              "class_name": "green",
+              "class_id": 1,
+              "count": 250,
+              "image_size_count": {
+                "224x224": 250
+              },
+              "percentage": 50.0
+            }
+          ]
+        }
+      },
+      "created_at": "2026-03-03T00:00:00"
     },
     {
-      "version_id": "v2",
-      "created_at": "2026-03-09T00:00:00",
+      "id": "v2",
+      "name": "v2",
       "description": "Очищено от шумовых изображений, выровнена балансировка классов",
-      "size_bytes": 118000000,
+      "sources": [
+        {
+          "type": "kaggle",
+          "url": "https://www.kaggle.com/datasets/anthonytherrien/apple",
+          "description": "Яблочки"
+        }
+      ],
       "num_samples": 4800,
-      "num_train": 3840,
-      "num_val": 480,
-      "num_test": 480
+      "size_bytes": 118000000,
+      "image_format_stats": {
+        "jpg": 4800
+      },
+      "splits": {
+        "train": {
+          "class_distribution": [
+            {
+              "class_name": "red",
+              "class_id": 0,
+              "count": 1920,
+              "image_size_count": {
+                "224x224": 1920
+              },
+              "percentage": 50.0
+            },
+            {
+              "class_name": "green",
+              "class_id": 1,
+              "count": 1920,
+              "image_size_count": {
+                "224x224": 1920
+              },
+              "percentage": 50.0
+            }
+          ]
+        },
+        "val": {
+          "class_distribution": [
+            {
+              "class_name": "red",
+              "class_id": 0,
+              "count": 240,
+              "image_size_count": {
+                "224x224": 240
+              },
+              "percentage": 50.0
+            },
+            {
+              "class_name": "green",
+              "class_id": 1,
+              "count": 240,
+              "image_size_count": {
+                "224x224": 240
+              },
+              "percentage": 50.0
+            }
+          ]
+        },
+        "test": {
+          "class_distribution": [
+            {
+              "class_name": "red",
+              "class_id": 0,
+              "count": 240,
+              "image_size_count": {
+                "224x224": 240
+              },
+              "percentage": 50.0
+            },
+            {
+              "class_name": "green",
+              "class_id": 1,
+              "count": 240,
+              "image_size_count": {
+                "224x224": 240
+              },
+              "percentage": 50.0
+            }
+          ]
+        }
+      },
+      "created_at": "2026-03-09T00:00:00"
     }
   ],
   "created_at": "2026-03-10T22:05:00.696972",
