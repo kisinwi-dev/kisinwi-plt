@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.errors import PyMongoError
@@ -16,11 +18,14 @@ class ManagerBase:
         self.url = url
         self.database_name = database_name
         self.collection_name = collection_name
-        self.client: MongoClient
+        self.client: Optional[MongoClient] = None
         self.collection: Collection
 
     def connect(self):
-        """Подключение к MongoDB"""
+        """Подключение к MongoDB (повторный вызов не создаёт новый клиент)"""
+        if self.client is not None:
+            return
+
         try:
             # Заходим в коллекцию
             self.client = MongoClient(self.url)
@@ -30,16 +35,17 @@ class ManagerBase:
         except PyMongoError as e:
             logger.error(f"😡 Не удалось подключиться к {self.database_name}/{self.collection_name} : {e}")
             raise
-    
+
     def disconnect(self):
         """Отключение от MongoDB"""
-        if self.client:
+        if self.client is not None:
             self.client.close()
+            self.client = None
 
     def __enter__(self):
         self.connect()
         return self
 
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self.disconnect()
         return False
