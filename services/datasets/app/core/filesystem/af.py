@@ -1,5 +1,7 @@
 import os
 import shutil
+import tarfile
+import time
 import zipfile
 from app.logs import get_logger
 from pathlib import Path
@@ -7,9 +9,11 @@ from fastapi import UploadFile
 
 logger = get_logger(__name__)
 
-# Предволагается, что мы расширим список принимаемых расширений архивов
 UNPACK_HANDLERS = {
     '.zip': '_unpack_zip',
+    '.tar': '_unpack_tar',
+    '.tar.gz': '_unpack_tar',
+    '.tgz': '_unpack_tar',
 }
 
 class ArchiveManager:
@@ -57,12 +61,17 @@ class ArchiveManager:
         if not archive_path.is_file():
             raise FileNotFoundError(f"Файл не найден: {archive_path}")
 
-        suffix = archive_path.suffix.lower()
+        # составные расширения (.tar.gz) проверяются раньше простых (.gz не поддерживается отдельно)
+        name = archive_path.name.lower()
+        suffix = next(
+            (ext for ext in sorted(UNPACK_HANDLERS, key=len, reverse=True) if name.endswith(ext)),
+            None
+        )
 
-        if suffix not in UNPACK_HANDLERS:
+        if suffix is None:
             supported = ", ".join(sorted(UNPACK_HANDLERS.keys()))
             raise ValueError(
-                f"Формат архива не поддерживается: {suffix}\n"
+                f"Формат архива не поддерживается: {archive_path.suffix}\n"
                 f"Поддерживаемые форматы: {supported}"
             )
 
@@ -74,9 +83,17 @@ class ArchiveManager:
         result = handler(archive_path, extract_folder)
 
         Path.unlink(archive_path)
+        self._remove_junk_dirs(result)
         self._flatten_single_root(result)
 
         return result
+
+    def _remove_junk_dirs(self, extract_folder: Path):
+        """Удаляет служебные папки архиваторов (например __MACOSX от macOS)"""
+        for junk in extract_folder.rglob("__MACOSX"):
+            if junk.is_dir():
+                logger.debug(f"Удалена служебная папка: {junk}")
+                shutil.rmtree(junk)
 
     def _unpack_zip(self, zip_path: Path, extract_folder: Path) -> Path:
         """Распаковка ZIP-архива"""
@@ -94,6 +111,24 @@ class ArchiveManager:
             raise
 
         logger.info(f"ZIP успешно распакован в: {extract_folder.name}")
+        return extract_folder
+
+    def _unpack_tar(self, tar_path: Path, extract_folder: Path) -> Path:
+        """Распаковка TAR-архива (включая .tar.gz/.tgz)"""
+        logger.info(f"Распаковываем TAR: {tar_path.name}")
+
+        try:
+            with tarfile.open(tar_path, "r:*") as tf:
+                # filter='data' отбрасывает symlink'и, абсолютные пути и выход за пределы папки
+                tf.extractall(extract_folder, filter="data")
+        except tarfile.TarError as e:
+            logger.error(f"Повреждённый TAR: {tar_path}: {e}")
+            raise ValueError("Некорректный или повреждённый TAR-архив")
+        except Exception as e:
+            logger.error(f"Ошибка распаковки TAR {tar_path}: {e}")
+            raise
+
+        logger.info(f"TAR успешно распакован в: {extract_folder.name}")
         return extract_folder
 
     def _flatten_single_root(self, extract_folder: Path):
@@ -134,6 +169,29 @@ class ArchiveManager:
             if not full_path.is_relative_to(target_resolved):
                 logger.error(f"Обнаружена попытка выхода за пределы: {member}")
                 raise PermissionError(f"Небезопасный архив: попытка path traversal ({member})")
+
+    def cleanup_stale(self, ttl_hours: float = 24) -> int:
+        """
+        Удаляет содержимое временной папки старше ttl_hours (по mtime).
+        Возвращает количество удалённых элементов.
+        """
+        deadline = time.time() - ttl_hours * 3600
+        removed = 0
+
+        for item in self.temp_folder.iterdir():
+            try:
+                if item.stat().st_mtime > deadline:
+                    continue
+                if item.is_dir():
+                    shutil.rmtree(item)
+                else:
+                    item.unlink()
+                removed += 1
+                logger.info(f"Удалены устаревшие временные данные: {item.name}")
+            except Exception as e:
+                logger.error(f"Не удалось удалить {item}: {e}")
+
+        return removed
 
     def clear_temp_folder(self):
         """

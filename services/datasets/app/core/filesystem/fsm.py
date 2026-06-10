@@ -1,5 +1,6 @@
 import shutil
-from typing import List
+import hashlib
+from typing import Dict, List
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -9,6 +10,11 @@ from app.logs import get_logger
 logger = get_logger(__name__)
 
 IMAGE_SUFFIXES = {'.jpg', '.png', '.jpeg'}
+# Служебные файлы ОС/архиваторов — не считаются данными и молча пропускаются
+JUNK_FILE_NAMES = {'thumbs.db', 'desktop.ini'}
+
+def is_junk_file(p: Path) -> bool:
+    return p.name.startswith('.') or p.name.lower() in JUNK_FILE_NAMES
 
 class FileSystemManager:
     def __init__(
@@ -221,14 +227,34 @@ class FileSystemManager:
 
         ps = []
         for p in self.worker_path.rglob("*"):
-            if p.is_file(): 
+            if p.is_file():
                 if is_image(p):
                     ps.append(p)
+                elif is_junk_file(p):
+                    logger.debug(f"Пропущен служебный файл: {p}")
                 else:
                     raise VersionValidationError(
                         f"В директории {self.worker_path} файл {p.name} не является изображениям.",
                     )
         return ps
+
+    # ================ Хеширование файлов ======================
+
+    def hash_all_files(self) -> Dict[str, str]:
+        """
+        SHA256 всех изображений от worker_path.
+        Возвращает словарь: относительный posix-путь -> хеш
+        """
+        hashes: Dict[str, str] = {}
+        for path in sorted(self.worker_path.rglob("*")):
+            if not path.is_file() or path.suffix.lower() not in IMAGE_SUFFIXES:
+                continue
+            h = hashlib.sha256()
+            with path.open("rb") as f:
+                for chunk in iter(lambda: f.read(1 << 20), b""):
+                    h.update(chunk)
+            hashes[path.relative_to(self.worker_path).as_posix()] = h.hexdigest()
+        return hashes
 
     # ================ Размер папки ======================
 
