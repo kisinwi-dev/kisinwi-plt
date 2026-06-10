@@ -1,6 +1,5 @@
 import pymongo
-from pymongo.errors import ConnectionFailure
-from typing import Dict
+from pymongo.errors import PyMongoError
 
 from app.api.schemas.info import HealthResponse, HealthStatus
 from app.config import mongodb_config
@@ -13,6 +12,7 @@ def check_connection_status(
         bd_name: str
     ) -> HealthStatus:
     """Проверка подключения к БД"""
+    client = None
     try:
         logger.debug(f"Проверка URL: {url}")
         client = pymongo.MongoClient(
@@ -22,7 +22,7 @@ def check_connection_status(
         client[bd_name].command("ping")
         logger.info(f"🟩 MongoDB[{bd_name}]: готов")
         return HealthStatus.HEALTHY
-    except ConnectionFailure as e:
+    except PyMongoError as e:
         logger.error(f"Не удалось установить соединение с MongoDB (DB:'{bd_name}'):\n{e}")
         return HealthStatus.UNHEALTHY
     finally:
