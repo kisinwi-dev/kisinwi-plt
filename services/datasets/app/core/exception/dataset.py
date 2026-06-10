@@ -60,6 +60,16 @@ class DatasetValidationError(CoreException):
             detail=reason
         )
 
+class MetadataSaveError(CoreException):
+    """Не удалось сохранить метаданные датасета на диск"""
+
+    def __init__(self, dataset_id: str, reason: str):
+        super().__init__(
+            message=f"Не удалось сохранить метаданные датасета '{dataset_id}'",
+            status_code=500,
+            detail=reason
+        )
+
 class UnsupportedDatasetError(CoreException):
     """Задача и тип датасета не поддерживаются"""
     
