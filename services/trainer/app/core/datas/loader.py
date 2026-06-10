@@ -1,4 +1,5 @@
 import os
+import torch
 from typing import Tuple, List
 from torch.utils.data import DataLoader
 from torchvision import datasets
@@ -8,33 +9,6 @@ from .augmentations import build_transforms
 from app.logs import get_logger
 
 logger = get_logger(__name__)
-
-
-# def calculate_normalize_dataset(
-#     dataloader: DataLoader
-# ) -> Tuple[torch.Tensor, torch.Tensor]:
-#     """
-#     Вычисляет среднее и стандартное отклонение по датасету.
-#     Используется для нормализации, если is_calculate_normalize_dataset=True.
-#     """
-#     logger.debug("⚪[calculate_normalize_dataset] start")
-#     channels_sum = torch.zeros(3)
-#     channels_sq_sum = torch.zeros(3)
-#     num_batches = 0
-
-#     for data, _ in tqdm(dataloader, desc="Calculating normalization"):
-#         # data: (batch, channels, height, width)
-#         channels_sum += torch.mean(data, dim=[0, 2, 3])
-#         channels_sq_sum += torch.mean(data ** 2, dim=[0, 2, 3])
-#         num_batches += 1
-
-#     if num_batches == 0:
-#         raise ValueError("Датасет пустой, нельзя рассчитать нормализацию")
-
-#     mean = channels_sum / num_batches
-#     std = (channels_sq_sum / num_batches - mean ** 2) ** 0.5
-#     logger.debug(f"🟢[calculate_normalize_dataset] computed mean={mean}, std={std}")
-#     return mean, std
 
 
 def create_dataloaders(
@@ -57,69 +31,67 @@ def create_dataloaders(
                 class2/...
 
     Args:
-        params: параметры загр
+        params: параметры загрузки данных
         base_data_dir: корневая папка с датасетами.
 
     Returns:
         Кортеж (train_loader, val_loader, test_loader, classes).
     """
-    try:
-        data_root = os.path.join(base_data_dir, params.dataset_id, params.version_id)
-        train_dir = os.path.join(data_root, "train")
-        val_dir = os.path.join(data_root, "val")
-        test_dir = os.path.join(data_root, "test")
+    data_root = os.path.join(base_data_dir, params.dataset_id, params.version_id)
+    train_dir = os.path.join(data_root, "train")
+    val_dir = os.path.join(data_root, "val")
+    test_dir = os.path.join(data_root, "test")
 
-        # Проверяем существование обязательных папок
-        for d in [train_dir, val_dir, test_dir]:
-            if not os.path.isdir(d):
-                logger.error(f"Не верная структура датасета {d} не найдена")
-                raise FileNotFoundError("Не верная структура датасета.")
+    # Проверяем существование обязательных папок
+    for d in [train_dir, val_dir, test_dir]:
+        if not os.path.isdir(d):
+            logger.error(f"Неверная структура датасета: {d} не найдена")
+            raise FileNotFoundError(f"Неверная структура датасета: {d} не найдена")
 
-        # Создание "трансформаторов"
-        train_transform = build_transforms(params.train_transforms_config)
-        val_test_transform = build_transforms(params.val_and_test_transforms_config)
+    # Создание "трансформаторов"
+    train_transform = build_transforms(params.train_transforms_config)
+    val_test_transform = build_transforms(params.val_and_test_transforms_config)
 
-        # Создание загрузчиков
-        train_dataset = datasets.ImageFolder(root=train_dir, transform=train_transform)
-        val_dataset = datasets.ImageFolder(root=val_dir, transform=val_test_transform)
-        test_dataset = datasets.ImageFolder(root=test_dir, transform=val_test_transform)
+    # Создание загрузчиков
+    train_dataset = datasets.ImageFolder(root=train_dir, transform=train_transform)
+    val_dataset = datasets.ImageFolder(root=val_dir, transform=val_test_transform)
+    test_dataset = datasets.ImageFolder(root=test_dir, transform=val_test_transform)
 
-        # Проверяем согласованность классов
-        if not (train_dataset.classes == val_dataset.classes == test_dataset.classes):
-            raise ValueError("Имена классов в каталогах не совпадают")
-        classes = train_dataset.classes
+    # Проверяем согласованность классов
+    if not (train_dataset.classes == val_dataset.classes == test_dataset.classes):
+        raise ValueError("Имена классов в каталогах не совпадают")
+    classes = train_dataset.classes
 
-        # Создаём DataLoader'ы
-        train_loader = DataLoader(
-            train_dataset,
-            batch_size=params.batch_size,
-            shuffle=True,
-            pin_memory=True,
-            num_workers=0
-        )
-        val_loader = DataLoader(
-            val_dataset,
-            batch_size=params.batch_size,
-            shuffle=False,
-            pin_memory=True,
-            num_workers=0
-        )
-        test_loader = DataLoader(
-            test_dataset,
-            batch_size=params.batch_size,
-            shuffle=False,
-            pin_memory=True,
-            num_workers=0
-        )
+    # pin_memory ускоряет передачу на GPU и бесполезен на CPU
+    pin_memory = torch.cuda.is_available()
 
-        logger.info("✅ Датасеты собраны")
-        logger.info(f"   Train выборка: {len(train_dataset)}")
-        logger.info(f"   Val   выборка: {len(val_dataset)}")
-        logger.info(f"   Test  выборка: {len(test_dataset)}")
-        logger.info(f"   Классы:        {classes}")
+    # Создаём DataLoader'ы
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=params.batch_size,
+        shuffle=True,
+        pin_memory=pin_memory,
+        num_workers=params.num_workers
+    )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=params.batch_size,
+        shuffle=False,
+        pin_memory=pin_memory,
+        num_workers=params.num_workers
+    )
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=params.batch_size,
+        shuffle=False,
+        pin_memory=pin_memory,
+        num_workers=params.num_workers
+    )
 
-        return train_loader, val_loader, test_loader, classes
-    except Exception as e:
-        mes = f'Ошибка при создании DataLoader: {str(e)}'
-        logger.error(mes, exc_info=True)
-        raise Exception(mes) from e
+    logger.info("✅ Датасеты собраны")
+    logger.info(f"   Train выборка: {len(train_dataset)}")
+    logger.info(f"   Val   выборка: {len(val_dataset)}")
+    logger.info(f"   Test  выборка: {len(test_dataset)}")
+    logger.info(f"   Классы:        {classes}")
+
+    return train_loader, val_loader, test_loader, classes
