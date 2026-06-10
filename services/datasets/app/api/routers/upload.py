@@ -1,5 +1,6 @@
 import os
 import shutil
+from pathlib import Path
 from fastapi import UploadFile, APIRouter, File, Form, HTTPException
 
 from app.logs import get_logger
@@ -28,18 +29,20 @@ def uploads_data(
     af = ArchiveManager()
     save_path = None
     try:
-        file_type = str(file.filename).split('.')[-1]
-        save_path = af.save_file(file, f"{id_data}.{file_type}")
+        # сохраняем полное расширение, чтобы не терять составные (.tar.gz)
+        file_suffixes = ''.join(Path(str(file.filename)).suffixes)
+        save_path = af.save_file(file, f"{id_data}{file_suffixes}")
         
         af.unpack(save_path, id_data)
         return True
     except Exception as e:
-        logger.debug('')
+        logger.error(f"Ошибка обработки загрузки `{id_data}`: {e}")
         if save_path and os.path.exists(save_path):
             os.remove(save_path)
-        
-        if os.path.exists(id_data):
-            shutil.rmtree(id_data)
-        
+
+        extracted_folder = af.temp_folder / id_data
+        if extracted_folder.exists():
+            shutil.rmtree(extracted_folder)
+
         raise HTTPException(status_code=500, detail=f"Ошибка обработки: {str(e)}")
     
