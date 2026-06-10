@@ -90,8 +90,9 @@ const ModelMetricsCharts: React.FC<Props> = ({ modelId }) => {
               <Tooltip
                 contentStyle={{
                   background: 'var(--color-bg-secondary)',
-                  border: '1px solid var(--color-border-strong)',
-                  borderRadius: 8,
+                  border: '1px solid var(--color-border-soft)',
+                  borderRadius: 12,
+                  boxShadow: 'var(--shadow-md)',
                   fontSize: 12,
                   color: 'var(--color-text-primary)',
                 }}

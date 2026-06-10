@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import './FileUploader.css';
 import { formatBytes } from '../utils/format';
 import { ICONS } from '../constants/icons';
+import { Tooltip } from './common/Tooltip';
 
 interface FileUploaderProps {
   onFileSelect: (file: File | null) => void;
@@ -111,9 +112,11 @@ const FileUploader: React.FC<FileUploaderProps> = ({
               <p className="file-size">{formatBytes(currentFile.size)}</p>
             </div>
           </div>
-          <button className="remove-file" onClick={handleRemove} title="Удалить файл">
-            <i className={`fas ${ICONS.close}`}></i>
-          </button>
+          <Tooltip content="Удалить файл">
+            <button className="remove-file" onClick={handleRemove} aria-label="Удалить файл">
+              <i className={`fas ${ICONS.close}`}></i>
+            </button>
+          </Tooltip>
         </div>
       )}
     </div>

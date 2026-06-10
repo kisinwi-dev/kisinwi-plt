@@ -2,7 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { datasetService } from '../../services/datasetService';
 import { formatBytes, formatDateTime } from '../../utils/format';
 import { ICONS } from '../../constants/icons';
+import { Tooltip } from '../common/Tooltip';
 import type { ImageSizeStats, SplitStats, Version, VersionSplitsResponse } from '../../types/dataset';
+import { BarRow, SPLIT_COLORS, SPLIT_LABELS, StatCard, balanceTone, orderSplitKeys } from './statsShared';
 import './VersionStatsModal.css';
 
 interface Props {
@@ -12,77 +14,12 @@ interface Props {
   onClose: () => void;
 }
 
-const SPLIT_LABELS: Record<string, string> = {
-  train: 'Train',
-  val: 'Val',
-  test: 'Test',
-};
-
-const SPLIT_ORDER = ['train', 'val', 'test'];
-
-const BALANCE_THRESHOLD = 0.7;
-
 // Псевдо-таб режима сравнения сплитов; не пересекается с именами реальных сплитов.
 const COMPARE_TAB = '__compare__';
-
-// Цвет сплита по его индексу в splitKeys; токены заданы в :root theme.css
-// и не переопределяются темами.
-const SPLIT_COLORS = ['var(--color-accent)', 'var(--color-info)', 'var(--color-warning)'];
 
 // Пороги дрейфа распределения между сплитами, в процентных пунктах.
 const DRIFT_WARN_PP = 5;
 const DRIFT_BAD_PP = 10;
-
-// Известные сплиты — в фиксированном порядке, неизвестные ключи — после них.
-const orderSplitKeys = (keys: string[]): string[] =>
-  [...keys].sort((a, b) => {
-    const ia = SPLIT_ORDER.indexOf(a);
-    const ib = SPLIT_ORDER.indexOf(b);
-    return (ia === -1 ? SPLIT_ORDER.length : ia) - (ib === -1 ? SPLIT_ORDER.length : ib);
-  });
-
-const balanceTone = (ratio: number) => (ratio >= BALANCE_THRESHOLD ? 'good' : 'poor');
-
-interface StatCardProps {
-  icon: string;
-  label: string;
-  value: React.ReactNode;
-  tone?: 'good' | 'poor';
-  children?: React.ReactNode;
-}
-
-const StatCard: React.FC<StatCardProps> = ({ icon, label, value, tone, children }) => (
-  <div className="vstats-card">
-    <span className="vstats-card-label">
-      <i className={`fas ${icon}`}></i> {label}
-    </span>
-    <span className={`vstats-card-value${tone ? ` vstats-balance--${tone}` : ''}`}>{value}</span>
-    {children}
-  </div>
-);
-
-interface BarRowProps {
-  label: string;
-  count: number;
-  maxCount: number;
-  pct?: string;
-}
-
-// Ширина бара масштабируется от максимального count в списке, чтобы самая
-// крупная строка занимала всю дорожку; настоящий процент показываем текстом.
-const BarRow: React.FC<BarRowProps> = ({ label, count, maxCount, pct }) => (
-  <div className="vstats-bar-row">
-    <span className="vstats-bar-label" title={label}>{label}</span>
-    <span className="vstats-bar-track">
-      <span
-        className="vstats-bar-fill"
-        style={{ width: `${maxCount > 0 ? (count / maxCount) * 100 : 0}%` }}
-      />
-    </span>
-    <span className="vstats-bar-count">{count.toLocaleString()}</span>
-    <span className="vstats-bar-pct">{pct ?? ''}</span>
-  </div>
-);
 
 interface SplitPanelProps {
   stats: SplitStats;
@@ -236,16 +173,16 @@ const SplitComparePanel: React.FC<SplitComparePanelProps> = ({ splitsSummary, sp
         <div className="vstats-compare-row vstats-bar-head">
           <span className="vstats-bar-label">Класс</span>
           <span className="vstats-bar-label">Доля в сплите</span>
-          <span
+          <Tooltip
+            content={`Разброс доли класса между сплитами в процентных пунктах (макс. % − мин. %). Больше ${DRIFT_WARN_PP} п.п. — заметный дрейф, больше ${DRIFT_BAD_PP} п.п. — сильный.`}
             className="vstats-compare-delta"
-            title={`Разброс доли класса между сплитами в процентных пунктах (макс. % − мин. %). Больше ${DRIFT_WARN_PP} п.п. — заметный дрейф, больше ${DRIFT_BAD_PP} п.п. — сильный.`}
           >
             Δ п.п. <i className={`fas ${ICONS.info}`}></i>
-          </span>
+          </Tooltip>
         </div>
         {rows.map(row => (
           <div key={row.name} className="vstats-compare-row">
-            <span className="vstats-bar-label" title={row.name}>{row.name}</span>
+            <Tooltip content={row.name} className="vstats-bar-label">{row.name}</Tooltip>
             <span className="vstats-compare-bars">
               {row.pcts.map((pct, i) => (
                 <span key={splitKeys[i]} className="vstats-compare-line">
@@ -355,9 +292,11 @@ const VersionStatsModal: React.FC<Props> = ({ datasetId, version, isDefault, onC
               <i className={`fas ${ICONS.dateCreated}`}></i> {formatDateTime(version.created_at)}
             </span>
           </div>
-          <button className="icon-button vstats-close" onClick={onClose} title="Закрыть">
-            <i className={`fas ${ICONS.close}`}></i>
-          </button>
+          <Tooltip content="Закрыть">
+            <button className="icon-button vstats-close" onClick={onClose} aria-label="Закрыть">
+              <i className={`fas ${ICONS.close}`}></i>
+            </button>
+          </Tooltip>
         </header>
 
         <div className="vstats-body">
@@ -482,16 +421,17 @@ const VersionStatsModal: React.FC<Props> = ({ datasetId, version, isDefault, onC
                       <div key={idx} className="vstats-source-item">
                         <span className="vstats-source-type">{src.type}</span>
                         {src.url ? (
-                          <a
-                            href={src.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="vstats-source-link"
-                            title={src.url}
-                          >
-                            <i className={`fas ${ICONS.external}`}></i>
-                            <span>{src.description || src.url}</span>
-                          </a>
+                          <Tooltip content={src.url}>
+                            <a
+                              href={src.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="vstats-source-link"
+                            >
+                              <i className={`fas ${ICONS.external}`}></i>
+                              <span>{src.description || src.url}</span>
+                            </a>
+                          </Tooltip>
                         ) : (
                           <span className="vstats-source-text">{src.description || '—'}</span>
                         )}

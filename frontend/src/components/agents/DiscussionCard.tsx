@@ -4,6 +4,7 @@ import { DISCUSSION_STATUS_LABELS, getDiscussionTitle, getDiscussionAgents } fro
 import { formatDateTime } from '../../utils/format';
 import { useCopyToClipboard } from '../../hooks';
 import { ICONS } from '../../constants/icons';
+import { Tooltip } from '../common/Tooltip';
 
 interface Props {
   discussion: DiscussionMeta;
@@ -48,27 +49,29 @@ const DiscussionCard: React.FC<Props> = ({ discussion, onSelect, onDelete }) => 
             </span>
           )}
           <h2>{title}</h2>
-          <span
-            className="discussion-id"
-            title="Нажмите, чтобы скопировать ID"
-            onClick={handleCopyId}
-          >
-            <i className={`fas ${ICONS.id}`}></i>{discussion.discussion_id}
-            <i className={`fas ${ICONS.copy} discussion-id-copy-icon`}></i>
-          </span>
+          <Tooltip content="Нажмите, чтобы скопировать ID">
+            <span
+              className="discussion-id"
+              onClick={handleCopyId}
+            >
+              <i className={`fas ${ICONS.id}`}></i>{discussion.discussion_id}
+              <i className={`fas ${ICONS.copy} discussion-id-copy-icon`}></i>
+            </span>
+          </Tooltip>
         </div>
         <div className="discussion-card-actions">
           <span className={`status-badge status-${discussion.status}`}>
             {DISCUSSION_STATUS_LABELS[discussion.status]}
           </span>
-          <button
-            className="icon-button icon-button--danger"
-            title="Удалить диалог"
-            aria-label="Удалить диалог"
-            onClick={handleDelete}
-          >
-            <i className={`fas ${ICONS.delete}`}></i>
-          </button>
+          <Tooltip content="Удалить диалог">
+            <button
+              className="icon-button icon-button--danger"
+              aria-label="Удалить диалог"
+              onClick={handleDelete}
+            >
+              <i className={`fas ${ICONS.delete}`}></i>
+            </button>
+          </Tooltip>
         </div>
       </div>
 
@@ -85,9 +88,9 @@ const DiscussionCard: React.FC<Props> = ({ discussion, onSelect, onDelete }) => 
       </div>
 
       <div className="discussion-meta discussion-meta--dates">
-        <span title="Время старта"><i className={`fas ${ICONS.dateCreated}`}></i> Время старта: {formatDateTime(discussion.created_at)}</span>
+        <span><i className={`fas ${ICONS.dateCreated}`}></i> Время старта: {formatDateTime(discussion.created_at)}</span>
         {discussion.finished_at && (
-          <span title="Время завершения"><i className={`fas ${ICONS.dateFinished}`}></i> Время завершения: {formatDateTime(discussion.finished_at)}</span>
+          <span><i className={`fas ${ICONS.dateFinished}`}></i> Время завершения: {formatDateTime(discussion.finished_at)}</span>
         )}
       </div>
 

@@ -3,6 +3,7 @@ import type { DiscussionMeta } from '../../types/agentHistory';
 import { DISCUSSION_STATUS_LABELS, getDiscussionTitle, getDiscussionAgents } from '../../types/agentHistory';
 import { formatDateTime } from '../../utils/format';
 import { ICONS } from '../../constants/icons';
+import { Tooltip } from '../common/Tooltip';
 
 interface Props {
   discussion: DiscussionMeta | null;
@@ -19,9 +20,9 @@ const DiscussionInfo: React.FC<Props> = ({ discussion, discussionId }) => {
         <div className="discussion-title-group">
           <div className="discussion-title-inner">
             <h2 className="discussion-detail-title">{title}</h2>
-            <span className="discussion-id" title={discussionId}>
+            <Tooltip content={discussionId} className="discussion-id">
               <i className={`fas ${ICONS.id}`}></i>{discussionId}
-            </span>
+            </Tooltip>
           </div>
         </div>
         {discussion && (
@@ -76,14 +77,14 @@ const DiscussionInfo: React.FC<Props> = ({ discussion, discussionId }) => {
                       <i className={`fas ${ICONS.agent}`}></i>
                     </span>
                     <div className="agent-card-body">
-                      <span className="agent-card-role" title={agent.role}>{agent.role}</span>
+                      <Tooltip content={agent.role} className="agent-card-role">{agent.role}</Tooltip>
                       {agent.models.length > 0 && (
                         <div className="agent-card-models">
                           {agent.models.map(model => (
-                            <span key={model} className="agent-model-badge" title={model}>
+                            <Tooltip key={model} content={model} className="agent-model-badge">
                               <i className={`fas ${ICONS.agentModel}`}></i>
                               <span className="agent-model-text">{model}</span>
-                            </span>
+                            </Tooltip>
                           ))}
                         </div>
                       )}

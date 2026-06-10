@@ -8,6 +8,7 @@ import type { Dataset } from '../types/dataset';
 import { formatBytes, formatDateTime } from '../utils/format';
 import { useCopyToClipboard } from '../hooks';
 import { CollapseChevron, getDisclosureProps } from '../components/common/Collapse';
+import { Tooltip } from '../components/common/Tooltip';
 import { ModelMetricsCharts } from '../components/models';
 import { ICONS } from '../constants/icons';
 import './Models.css';
@@ -103,14 +104,15 @@ const ModelDetail: React.FC = () => {
           <span className="model-version"><i className={`fas ${ICONS.version}`}></i> v{model.version}</span>
           <span className={`status-badge status-${model.status}`}>{model.status}</span>
         </div>
-        <span
-          className="model-detail-id"
-          title="Нажмите, чтобы скопировать ID"
-          onClick={() => handleCopyId(model.id)}
-        >
-          <i className={`fas ${ICONS.id}`}></i>{model.id}
-          <i className={`fas ${ICONS.copy} model-detail-id-copy-icon`}></i>
-        </span>
+        <Tooltip content="Нажмите, чтобы скопировать ID">
+          <span
+            className="model-detail-id"
+            onClick={() => handleCopyId(model.id)}
+          >
+            <i className={`fas ${ICONS.id}`}></i>{model.id}
+            <i className={`fas ${ICONS.copy} model-detail-id-copy-icon`}></i>
+          </span>
+        </Tooltip>
         {model.description && <p className="model-detail-description">{model.description}</p>}
       </div>
 
@@ -122,25 +124,27 @@ const ModelDetail: React.FC = () => {
           <div className="detail-field"><span className="detail-label">Создана</span><span>{formatDateTime(model.created_at)}</span></div>
           <div className="detail-field">
             <span className="detail-label">Датасет</span>
-            <button
-              className="detail-link"
-              onClick={() => navigate('/datasets')}
-              title={model.dataset_id}
-            >
-              <i className={`fas ${ICONS.dataset}`}></i>
-              {dataset ? dataset.name : model.dataset_id}
-            </button>
+            <Tooltip content={model.dataset_id}>
+              <button
+                className="detail-link"
+                onClick={() => navigate('/datasets')}
+              >
+                <i className={`fas ${ICONS.dataset}`}></i>
+                {dataset ? dataset.name : model.dataset_id}
+              </button>
+            </Tooltip>
           </div>
           <div className="detail-field">
             <span className="detail-label">Версия датасета</span>
-            <button
-              className="detail-link"
-              onClick={() => navigate('/datasets')}
-              title={model.dataset_version_id}
-            >
-              <i className={`fas ${ICONS.version}`}></i>
-              {dataset?.versions.find(v => v.id === model.dataset_version_id)?.name ?? model.dataset_version_id}
-            </button>
+            <Tooltip content={model.dataset_version_id}>
+              <button
+                className="detail-link"
+                onClick={() => navigate('/datasets')}
+              >
+                <i className={`fas ${ICONS.version}`}></i>
+                {dataset?.versions.find(v => v.id === model.dataset_version_id)?.name ?? model.dataset_version_id}
+              </button>
+            </Tooltip>
           </div>
         </div>
       </section>

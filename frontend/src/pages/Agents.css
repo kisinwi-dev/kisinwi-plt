@@ -202,6 +202,12 @@
   transition: opacity 0.15s, color 0.15s;
 }
 
+/* Copy-ID обёрнут в Tooltip: не даём обёртке растянуться на всю колонку. */
+.discussion-title-group .tooltip-trigger {
+  align-self: flex-start;
+  max-width: 100%;
+}
+
 .discussion-id:hover {
   opacity: 1;
   color: var(--color-accent);
@@ -325,6 +331,12 @@
   flex-direction: column;
   gap: 0.35rem;
   min-width: 0;
+}
+
+/* Роль обёрнута в Tooltip: на inline-flex обёртке ellipsis голого текста
+   не работает, поэтому возвращаем block. */
+.tooltip-trigger.agent-card-role {
+  display: block;
 }
 
 .agent-card-role {

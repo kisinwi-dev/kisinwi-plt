@@ -211,6 +211,13 @@
   margin-top: 0.1rem;
 }
 
+/* Copy-ID обёрнут в Tooltip: не даём обёртке растянуться на всю колонку. */
+.dataset-detail-heading .tooltip-trigger,
+.dataset-title-group .tooltip-trigger {
+  align-self: flex-start;
+  max-width: 100%;
+}
+
 .dataset-detail-delete {
   flex-shrink: 0;
 }
@@ -259,6 +266,13 @@
 
 .versions-section-head .detail-section-title {
   margin: 0;
+}
+
+.versions-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
 }
 
 /* Опасная кнопка (удаление) */

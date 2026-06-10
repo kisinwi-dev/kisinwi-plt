@@ -143,6 +143,15 @@
   color: var(--color-text-primary);
 }
 
+/* Info-иконка с пояснением метрики (атрибут title). */
+.vstats-hint {
+  cursor: help;
+}
+
+.vstats-card-label .vstats-hint {
+  color: var(--color-text-secondary);
+}
+
 .vstats-card-bar {
   height: 5px;
   background: var(--color-surface-faint);
@@ -330,6 +339,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Лейбл обёрнут в Tooltip: на inline-flex обёртке ellipsis голого текста
+   не работает, поэтому возвращаем block. */
+.tooltip-trigger.vstats-bar-label {
+  display: block;
 }
 
 .vstats-bar-head .vstats-bar-label {

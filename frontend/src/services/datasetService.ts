@@ -1,5 +1,6 @@
 // Импортируем типы для датасетов, новых датасетов, новых версий и существующих версий.
 import type { Dataset, NewDataset, NewVersion, Version, VersionSplitsResponse } from '../types/dataset';
+import type { FilesDiffResponse, VersionComparisonResponse } from '../types/datasetComparison';
 import { handleResponse, serviceUrl } from './http';
 
 // Базовый URL сервиса datasets берётся из переменной окружения VITE_DMS, по умолчанию localhost:6500.
@@ -117,6 +118,44 @@ export const datasetService = {
   async getVersionSplits(datasetId: string, versionId: string): Promise<VersionSplitsResponse> {
     const response = await fetch(`${DMS_URL}/datasets/${datasetId}/versions/${versionId}/splits`);
     return handleResponse<VersionSplitsResponse>(response);
+  },
+
+  /**
+   * Получить полную сводку сравнения двух версий датасета.
+   * @param datasetId – идентификатор датасета.
+   * @param fromVersionId – идентификатор базовой версии.
+   * @param toVersionId – идентификатор сравниваемой версии.
+   * GET /datasets/{datasetId}/versions/compare?from={fromVersionId}&to={toVersionId}
+   */
+  async compareVersions(
+    datasetId: string,
+    fromVersionId: string,
+    toVersionId: string,
+  ): Promise<VersionComparisonResponse> {
+    const url = new URL(`${DMS_URL}/datasets/${datasetId}/versions/compare`);
+    url.searchParams.append('from', fromVersionId);
+    url.searchParams.append('to', toVersionId);
+    const response = await fetch(url.toString());
+    return handleResponse<VersionComparisonResponse>(response);
+  },
+
+  /**
+   * Получить по-файловый diff двух версий (списки добавленных/удалённых файлов).
+   * @param datasetId – идентификатор датасета.
+   * @param fromVersionId – идентификатор базовой версии.
+   * @param toVersionId – идентификатор сравниваемой версии.
+   * GET /datasets/{datasetId}/versions/compare/files?from={fromVersionId}&to={toVersionId}
+   */
+  async compareVersionFiles(
+    datasetId: string,
+    fromVersionId: string,
+    toVersionId: string,
+  ): Promise<FilesDiffResponse> {
+    const url = new URL(`${DMS_URL}/datasets/${datasetId}/versions/compare/files`);
+    url.searchParams.append('from', fromVersionId);
+    url.searchParams.append('to', toVersionId);
+    const response = await fetch(url.toString());
+    return handleResponse<FilesDiffResponse>(response);
   },
 
   // ==================== Загрузка файлов ====================

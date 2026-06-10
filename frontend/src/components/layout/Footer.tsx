@@ -1,5 +1,6 @@
 import React from 'react';
 import { ICONS } from '../../constants/icons';
+import { Tooltip } from '../common/Tooltip';
 import './Footer.css';
 
 const Footer: React.FC = () => {
@@ -23,15 +24,17 @@ const Footer: React.FC = () => {
         <div className="footer-section">
           <h4 className="footer-title">Связь</h4>
           <div className="social-links">
-            <a
-              href="https://github.com/kisinwi-dev/kisinwi-plt"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="social-link"
-              title="GitHub"
-            >
-              <i className={`fab ${ICONS.brandGithub}`}></i>
-            </a>
+            <Tooltip content="GitHub">
+              <a
+                href="https://github.com/kisinwi-dev/kisinwi-plt"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="social-link"
+                aria-label="GitHub"
+              >
+                <i className={`fab ${ICONS.brandGithub}`}></i>
+              </a>
+            </Tooltip>
           </div>
           <button className="back-to-top" onClick={scrollToTop}>
             <i className={`fas ${ICONS.toTop}`}></i> Наверх

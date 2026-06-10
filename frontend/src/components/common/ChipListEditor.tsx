@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ICONS } from '../../constants/icons';
+import { Tooltip } from './Tooltip';
 import './ChipListEditor.css';
 
 interface Props {
@@ -101,16 +102,17 @@ const ChipListEditor: React.FC<Props> = ({
           {items.map((item, index) => (
             <li key={item} className="chip">
               <span className="chip-text">{item}</span>
-              <button
-                type="button"
-                className="chip-remove"
-                onClick={() => remove(index)}
-                disabled={disabled}
-                aria-label="Удалить"
-                title="Удалить"
-              >
-                <i className={`fas ${ICONS.close}`}></i>
-              </button>
+              <Tooltip content="Удалить">
+                <button
+                  type="button"
+                  className="chip-remove"
+                  onClick={() => remove(index)}
+                  disabled={disabled}
+                  aria-label="Удалить"
+                >
+                  <i className={`fas ${ICONS.close}`}></i>
+                </button>
+              </Tooltip>
             </li>
           ))}
         </ul>

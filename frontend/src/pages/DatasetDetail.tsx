@@ -7,6 +7,7 @@ import { formatBytes, formatDateTime } from '../utils/format';
 import type { Dataset, SourceItem, Version } from '../types/dataset';
 import { AddVersionForm, VersionStatsModal } from '../components/datasets';
 import ConfirmModal from '../components/common/ConfirmModal';
+import { Tooltip } from '../components/common/Tooltip';
 import { ICONS } from '../constants/icons';
 import './Datasets.css';
 
@@ -190,14 +191,15 @@ const DatasetDetail: React.FC = () => {
               <i className={`fas ${ICONS.tag}`}></i> {dataset.type} / {dataset.task}
             </span>
           </div>
-          <span
-            className="dataset-id"
-            title="Нажмите, чтобы скопировать ID"
-            onClick={() => copyToClipboard(dataset.id)}
-          >
-            <i className={`fas ${ICONS.id}`}></i>{dataset.id}
-            <i className={`fas ${ICONS.copy} dataset-id-copy-icon`}></i>
-          </span>
+          <Tooltip content="Нажмите, чтобы скопировать ID">
+            <span
+              className="dataset-id"
+              onClick={() => copyToClipboard(dataset.id)}
+            >
+              <i className={`fas ${ICONS.id}`}></i>{dataset.id}
+              <i className={`fas ${ICONS.copy} dataset-id-copy-icon`}></i>
+            </span>
+          </Tooltip>
         </div>
         <button
           className="button danger dataset-detail-delete"
@@ -242,13 +244,24 @@ const DatasetDetail: React.FC = () => {
       <section className="detail-section versions-section">
         <div className="versions-section-head">
           <h3 className="detail-section-title"><i className={`fas ${ICONS.version}`}></i> Версии ({dataset.versions.length})</h3>
-          <button
-            className="button small"
-            onClick={() => setShowVersionForm(v => !v)}
-            disabled={busy}
-          >
-            <i className={`fas ${ICONS.add}`}></i> Добавить версию
-          </button>
+          <div className="versions-section-actions">
+            {dataset.versions.length > 1 && (
+              <button
+                className="button small secondary"
+                onClick={() => navigate(`/datasets/${dataset.id}/compare`)}
+                disabled={busy}
+              >
+                <i className={`fas ${ICONS.compare}`}></i> Сравнить
+              </button>
+            )}
+            <button
+              className="button small"
+              onClick={() => setShowVersionForm(v => !v)}
+              disabled={busy}
+            >
+              <i className={`fas ${ICONS.add}`}></i> Добавить версию
+            </button>
+          </div>
         </div>
 
         {showVersionForm && (
@@ -271,14 +284,16 @@ const DatasetDetail: React.FC = () => {
               onChange={(e) => setVersionFilter(e.target.value)}
             />
             {versionFilter && (
-              <button
-                type="button"
-                className="versions-filter-clear"
-                onClick={() => setVersionFilter('')}
-                title="Сбросить фильтр"
-              >
-                <i className={`fas ${ICONS.close}`}></i>
-              </button>
+              <Tooltip content="Сбросить фильтр">
+                <button
+                  type="button"
+                  className="versions-filter-clear"
+                  onClick={() => setVersionFilter('')}
+                  aria-label="Сбросить фильтр"
+                >
+                  <i className={`fas ${ICONS.close}`}></i>
+                </button>
+              </Tooltip>
             )}
           </div>
         )}
@@ -303,30 +318,47 @@ const DatasetDetail: React.FC = () => {
                   </span>
                   <div className="version-actions">
                     {ver.id !== dataset.default_version_id && (
+                      <Tooltip content="Сделать версией по умолчанию">
+                        <button
+                          className="icon-button small"
+                          onClick={() => handleSetDefaultVersion(ver.id)}
+                          aria-label="Сделать версией по умолчанию"
+                          disabled={busy}
+                        >
+                          <i className={`fas ${ICONS.star}`}></i>
+                        </button>
+                      </Tooltip>
+                    )}
+                    <Tooltip content="Статистика">
                       <button
                         className="icon-button small"
-                        onClick={() => handleSetDefaultVersion(ver.id)}
-                        title="Сделать версией по умолчанию"
+                        onClick={() => setStatsVersion(ver)}
+                        aria-label="Статистика"
+                      >
+                        <i className={`fas ${ICONS.datasetStats}`}></i>
+                      </button>
+                    </Tooltip>
+                    {dataset.versions.length > 1 && (
+                      <Tooltip content="Сравнить с другой версией">
+                        <button
+                          className="icon-button small"
+                          onClick={() => navigate(`/datasets/${dataset.id}/compare?from=${ver.id}`)}
+                          aria-label="Сравнить с другой версией"
+                        >
+                          <i className={`fas ${ICONS.compare}`}></i>
+                        </button>
+                      </Tooltip>
+                    )}
+                    <Tooltip content="Удалить версию">
+                      <button
+                        className="icon-button small icon-button--danger"
+                        onClick={() => setPendingDelete({ kind: 'version', id: ver.id, name: ver.name })}
+                        aria-label="Удалить версию"
                         disabled={busy}
                       >
-                        <i className={`fas ${ICONS.star}`}></i>
+                        <i className={`fas ${ICONS.delete}`}></i>
                       </button>
-                    )}
-                    <button
-                      className="icon-button small"
-                      onClick={() => setStatsVersion(ver)}
-                      title="Статистика"
-                    >
-                      <i className={`fas ${ICONS.datasetStats}`}></i>
-                    </button>
-                    <button
-                      className="icon-button small icon-button--danger"
-                      onClick={() => setPendingDelete({ kind: 'version', id: ver.id, name: ver.name })}
-                      title="Удалить версию"
-                      disabled={busy}
-                    >
-                      <i className={`fas ${ICONS.delete}`}></i>
-                    </button>
+                    </Tooltip>
                   </div>
                 </div>
                 <div className="version-meta">
@@ -357,16 +389,17 @@ const DatasetDetail: React.FC = () => {
                       <div key={idx} className="source-item">
                         <span className="source-type-badge">{src.type}</span>
                         {src.url ? (
-                          <a
-                            href={src.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="source-link"
-                            title={src.url}
-                          >
-                            <i className={`fas ${ICONS.external}`}></i>
-                            <span className="source-link-text">{src.description || src.url}</span>
-                          </a>
+                          <Tooltip content={src.url}>
+                            <a
+                              href={src.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="source-link"
+                            >
+                              <i className={`fas ${ICONS.external}`}></i>
+                              <span className="source-link-text">{src.description || src.url}</span>
+                            </a>
+                          </Tooltip>
                         ) : (
                           <span className="source-description">{src.description || '—'}</span>
                         )}
