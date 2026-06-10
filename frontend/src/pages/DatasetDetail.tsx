@@ -4,8 +4,8 @@ import { datasetService } from '../services/datasetService';
 import { useNotification } from '../contexts/NotificationContext';
 import { useCopyToClipboard } from '../hooks';
 import { formatBytes, formatDateTime } from '../utils/format';
-import type { Dataset, SourceItem, VersionSplitsResponse } from '../types/dataset';
-import { AddVersionForm, VersionSplitsStats } from '../components/datasets';
+import type { Dataset, SourceItem, Version } from '../types/dataset';
+import { AddVersionForm, VersionStatsModal } from '../components/datasets';
 import ConfirmModal from '../components/common/ConfirmModal';
 import { ICONS } from '../constants/icons';
 import './Datasets.css';
@@ -31,7 +31,8 @@ const DatasetDetail: React.FC = () => {
   const [showVersionForm, setShowVersionForm] = useState(false);
   const [versionFilter, setVersionFilter] = useState('');
   const [newVersion, setNewVersion] = useState(EMPTY_VERSION);
-  const [versionStats, setVersionStats] = useState<Record<string, VersionSplitsResponse | 'loading' | 'error'>>({});
+  // Версия, для которой открыта модалка с полной статистикой.
+  const [statsVersion, setStatsVersion] = useState<Version | null>(null);
 
   // Ожидающее подтверждения удаление: весь датасет либо конкретная версия.
   const [pendingDelete, setPendingDelete] = useState<
@@ -57,21 +58,6 @@ const DatasetDetail: React.FC = () => {
     };
     init();
   }, [loadDataset]);
-
-  const handleShowVersionStats = async (versionId: string) => {
-    if (!id) return;
-    if (versionStats[versionId]) {
-      setVersionStats(prev => { const next = { ...prev }; delete next[versionId]; return next; });
-      return;
-    }
-    setVersionStats(prev => ({ ...prev, [versionId]: 'loading' }));
-    try {
-      const data = await datasetService.getVersionSplits(id, versionId);
-      setVersionStats(prev => ({ ...prev, [versionId]: data }));
-    } catch {
-      setVersionStats(prev => ({ ...prev, [versionId]: 'error' }));
-    }
-  };
 
   const handleAddVersion = async () => {
     if (!id) return;
@@ -328,7 +314,7 @@ const DatasetDetail: React.FC = () => {
                     )}
                     <button
                       className="icon-button small"
-                      onClick={() => handleShowVersionStats(ver.id)}
+                      onClick={() => setStatsVersion(ver)}
                       title="Статистика"
                     >
                       <i className={`fas ${ICONS.datasetStats}`}></i>
@@ -388,23 +374,20 @@ const DatasetDetail: React.FC = () => {
                     ))}
                   </div>
                 )}
-                {versionStats[ver.id] === 'loading' && (
-                  <p className="stats-loading">Загрузка статистики...</p>
-                )}
-                {versionStats[ver.id] === 'error' && (
-                  <p className="stats-error">Не удалось загрузить статистику</p>
-                )}
-                {typeof versionStats[ver.id] === 'object' && (
-                  <VersionSplitsStats
-                    stats={versionStats[ver.id] as VersionSplitsResponse}
-                    onClose={() => handleShowVersionStats(ver.id)}
-                  />
-                )}
               </div>
             ))}
           </div>
         )}
       </section>
+
+      {statsVersion && id && (
+        <VersionStatsModal
+          datasetId={id}
+          version={statsVersion}
+          isDefault={statsVersion.id === dataset.default_version_id}
+          onClose={() => setStatsVersion(null)}
+        />
+      )}
 
       <ConfirmModal
         open={pendingDelete !== null}

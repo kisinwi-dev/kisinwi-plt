@@ -68,6 +68,8 @@ export const ICONS = {
   tags: 'fa-tags',             // классы / множество ярлыков
   classes: 'fa-tags',
   samples: 'fa-images',
+  imageSize: 'fa-ruler-combined', // размеры изображений (статистика версии)
+  balance: 'fa-scale-balanced',   // баланс классов
   link: 'fa-link',
   description: 'fa-align-left',
   taskTarget: 'fa-bullseye',   // поле «Задача» датасета
