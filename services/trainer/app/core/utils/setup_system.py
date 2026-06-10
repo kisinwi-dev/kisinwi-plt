@@ -70,7 +70,7 @@ def get_cpu_info() -> dict:
 
     try:
         cpu_info_all = get_for_cpu_info()
-        info['type'] = 'cpu',
+        info['type'] = 'cpu'
         info['name'] = cpu_info_all['brand_raw']
         info['arch'] = cpu_info_all['arch']
         info['count'] = cpu_info_all['count']

@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Literal
 from pydantic import BaseModel, Field
 
 class LossConfig(BaseModel):
@@ -48,7 +48,7 @@ class OptimizerConfig(BaseModel):
         }
     }
 
-class ShedulerConfig(BaseModel):
+class SchedulerConfig(BaseModel):
     name: str = Field(
         ..., 
         description="Название планировщика из torch.optim.lr_scheduler (например, 'CosineAnnealingLR', 'StepLR')"
@@ -81,6 +81,10 @@ class EarlyStop(BaseModel):
         default=0.001,
         description="Размер допустимого изменения метрики"
     )
+    mode: Literal['min', 'max'] = Field(
+        default='min',
+        description="Направление улучшения метрики: 'min' (например, loss) или 'max' (например, accuracy)"
+    )
 
 class TrainerParams(BaseModel):
     loss_fn: LossConfig = Field(
@@ -91,13 +95,17 @@ class TrainerParams(BaseModel):
         ..., 
         description="Конфигурация оптимизатора для обновления весов"
     )
-    scheduler: ShedulerConfig = Field(
-        ..., 
+    scheduler: SchedulerConfig = Field(
+        ...,
         description="Конфигурация планировщика скорости обучения"
     )
     epochs: int = Field(
-        ..., 
+        ...,
         description="Количество эпох обучения"
+    )
+    early_stop: EarlyStop = Field(
+        default_factory=EarlyStop,
+        description="Параметры ранней остановки обучения"
     )
 
     model_config = {
@@ -125,7 +133,13 @@ class TrainerParams(BaseModel):
                         "eta_min": 1e-6
                     }
                 },
-                "epochs": 50
+                "epochs": 50,
+                "early_stop": {
+                    "metric_name": "loss",
+                    "patience": 4,
+                    "min_delta": 0.001,
+                    "mode": "min"
+                }
             }
         }
     }

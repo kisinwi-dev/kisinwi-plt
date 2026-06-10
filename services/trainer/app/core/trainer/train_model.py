@@ -4,12 +4,12 @@ import torch
 from torch import nn, optim, device, Tensor
 from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List
 import asyncio
 
 from app.service.metrices import MetricesClient
 from app.service.tasker import TaskerClient
-from app.api.schemas import TrainerParams, LossConfig, OptimizerConfig, ShedulerConfig
+from app.api.schemas import TrainerParams, LossConfig, OptimizerConfig, SchedulerConfig
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -19,16 +19,16 @@ class Trainer:
             self,
             # Модель
             model: nn.Module,
-            
+
             # Данные
             train_loader: DataLoader,
             val_loader: DataLoader,
             test_loader: DataLoader,
             classes: List[str],
-            
+
             # Настройки тренировки
             train_params: TrainerParams,
-            
+
             # Устройство
             device: device,
 
@@ -55,6 +55,9 @@ class Trainer:
         self._setup_loss_fn(train_params.loss_fn)
         self._setup_optimizer(train_params.optimizer)
         self._setup_scheduler(train_params.scheduler)
+
+        # Направление улучшения метрики ранней остановки (для выбора лучшей эпохи)
+        self._early_stop_mode = train_params.early_stop.mode
 
         # Сервисы
         self._metric_service = metric_service
@@ -89,27 +92,27 @@ class Trainer:
             loss_config: LossConfig
         ) -> None:
         """Настройка функции потерь"""
-        
+
         loss_fn_type = loss_config.name
         if not hasattr(nn, loss_fn_type):
             raise ValueError(f"Функция потерь '{loss_fn_type}' не найдена в torch.nn")
-        
+
         loss_fn_params = loss_config.params
-        
+
         # Конвертируем list в Tensor для весов классов
         if 'weight' in loss_fn_params:
             if isinstance(loss_fn_params['weight'], list):
                 loss_fn_params['weight'] = torch.tensor(loss_fn_params['weight']).to(self.device)
                 logger.debug(f"Конвертирован weight из list в Tensor: {loss_fn_params['weight'].shape}")
-        
+
         # Для pos_weight в BCEWithLogitsLoss
         if 'pos_weight' in loss_fn_params:
             if isinstance(loss_fn_params['pos_weight'], list):
                 loss_fn_params['pos_weight'] = torch.tensor(loss_fn_params['pos_weight']).to(self.device)
-        
+
         loss_fn_class = getattr(nn, loss_fn_type)
         self.loss_fn = loss_fn_class(**loss_fn_params)
-        
+
         logger.debug(f"Функция потерь `{loss_fn_type}` создана с параметрами: {loss_fn_params}")
 
     def _setup_optimizer(
@@ -118,89 +121,84 @@ class Trainer:
         ) -> None:
         """Настройка оптимизатора"""
         optimizer_type = optimizer_config.name
-        
+
         if not hasattr(optim, optimizer_type):
             raise ValueError(f"Оптимизатор {optimizer_type} не найден в torch.optim")
-        
+
         optimizer_params = optimizer_config.params
         optimizer_class = getattr(optim, optimizer_type)
         self.optimizer = optimizer_class(self.model.parameters(), **optimizer_params)
-        
+
         logger.debug(f"Оптимизатор `{optimizer_type}` создан с параметрами: {optimizer_params}")
 
     def _setup_scheduler(
             self,
-            scheduler_config: ShedulerConfig
+            scheduler_config: SchedulerConfig
         ) -> None:
         """Настройка планировщика"""
-        
+
         scheduler_type = scheduler_config.name
-        
+
         if not hasattr(lr_scheduler, scheduler_type):
             raise ValueError(f"Планировщик {scheduler_type} не найден в torch.optim.lr_scheduler")
-        
+
         scheduler_params = scheduler_config.params
-        
+
         scheduler_class = getattr(lr_scheduler, scheduler_type)
         self.scheduler = scheduler_class(self.optimizer, **scheduler_params)
-        
+
         logger.debug(f"Планировщик `{scheduler_type}` создан с параметрами: {scheduler_params}")
 
     def _train_one_epoch(self):
         """Тренировка(одна эпоха)"""
 
         # __WARNING__ Требуется создать отдельную функцию для работы scheduler
-        
+
         self.model.train()
-        
+
         is_batch_scheduler = isinstance(
             self.scheduler,
             (lr_scheduler.OneCycleLR, lr_scheduler.CyclicLR)
         )
 
-        try:
-            for batch in self._tqdm_loader(self.train_loader, "Тренировка"):
-                
-                inputs, labels = batch
-                
-                inputs = inputs.to(self.device)
-                labels = labels.to(self.device)
-                
-                self.optimizer.zero_grad()
-                
-                # Forward pass
-                outputs = self.model(inputs)
-                
-                # Расчёт loss
-                labels = self._prepare_labels_for_loss(outputs, labels)
-                loss = self.loss_fn(outputs, labels)
-                
-                # Backward pass
-                loss.backward()
-                self.optimizer.step()
+        for batch in self._tqdm_loader(self.train_loader, "Тренировка"):
 
-                if is_batch_scheduler:
-                    self.scheduler.step()
-                
-                # Обновление метрик
-                _, predicted = torch.max(outputs, dim=1)
-                self._metric_service.update(
-                    type='train',
-                    preds=predicted,
-                    targets=labels,
-                    loss=loss
-                )
-            
-            # Обновление scheduler
-            if self.scheduler is not None and not is_batch_scheduler:
-                logger.debug("Обновление scheduler")
+            inputs, labels = batch
+
+            inputs = inputs.to(self.device)
+            labels = labels.to(self.device)
+
+            self.optimizer.zero_grad()
+
+            # Forward pass
+            outputs = self.model(inputs)
+
+            # Расчёт loss (labels для loss готовятся отдельно,
+            # в метрики уходят исходные индексы классов)
+            loss_targets = self._prepare_labels_for_loss(outputs, labels)
+            loss = self.loss_fn(outputs, loss_targets)
+
+            # Backward pass
+            loss.backward()
+            self.optimizer.step()
+
+            if is_batch_scheduler:
                 self.scheduler.step()
 
-        except Exception as e:
-            mes = f"Ошибка на стадии тренировки модели: {str(e)}"
-            logger.error(mes)
-            raise Exception(mes) from e
-        
+            # Обновление метрик
+            _, predicted = torch.max(outputs, dim=1)
+            self._metric_service.update(
+                type='train',
+                preds=predicted,
+                targets=labels,
+                loss=loss
+            )
+
+        # Обновление scheduler
+        if self.scheduler is not None and not is_batch_scheduler:
+            logger.debug("Обновление scheduler")
+            self.scheduler.step()
+
         # Расчёт метрик
         self._metric_service.compute('train')
 
@@ -209,29 +207,29 @@ class Trainer:
             torch.cuda.empty_cache()
 
     def _prepare_labels_for_loss(
-            self, 
-            outputs: Tensor, 
+            self,
+            outputs: Tensor,
             labels: Tensor
         ) -> Tensor:
         """
         Подготавливает labels в зависимости от типа loss функции
-        
+
         Args:
             outputs: Выход модели [batch_size, num_classes] или [batch_size, 1]
             labels: Исходные метки (могут быть в разных форматах)
-        
+
         Returns:
             Tensor: Подготовленные метки для loss функции
         """
-        
+
         loss_type = self.loss_fn.__class__.__name__
-        
+
         # Для CrossEntropyLoss - нужны индексы классов
         if loss_type in ['CrossEntropyLoss', 'CrossEntropyLoss2d']:
             if labels.dim() == 2 and labels.size(1) > 1:
                 labels = labels.argmax(dim=1)
             return labels.long()
-        
+
         # Для BCEWithLogitsLoss и BCELoss
         elif loss_type in ['BCEWithLogitsLoss', 'BCELoss']:
             if outputs.size(1) == 1:
@@ -241,12 +239,12 @@ class Trainer:
                     return labels.argmax(dim=1).float().unsqueeze(1)
                 else:
                     return labels.float()
-            
+
             # Бинарная классификация с двумя выходами [batch, 2]
             elif outputs.size(1) == 2:
                 if labels.dim() == 1:
                     labels_one_hot = torch.zeros(
-                        labels.size(0), outputs.size(1), 
+                        labels.size(0), outputs.size(1),
                         device=labels.device
                     )
                     labels_one_hot.scatter_(1, labels.unsqueeze(1).long(), 1)
@@ -255,107 +253,98 @@ class Trainer:
                     return labels.float()
                 elif labels.dim() == 2 and labels.size(1) == 1:
                     labels_one_hot = torch.zeros(
-                        labels.size(0), outputs.size(1), 
+                        labels.size(0), outputs.size(1),
                         device=labels.device
                     )
                     labels_one_hot.scatter_(1, labels.long(), 1)
                     return labels_one_hot.float()
-            
+
             # Мульти классификация [batch, num_classes]
             else:
                 if labels.dim() == 1:
                     labels_one_hot = torch.zeros(
-                        labels.size(0), outputs.size(1), 
+                        labels.size(0), outputs.size(1),
                         device=labels.device
                     )
                     labels_one_hot.scatter_(1, labels.unsqueeze(1).long(), 1)
                     return labels_one_hot.float()
                 elif labels.dim() == 2 and labels.size(1) == outputs.size(1):
                     return labels.float()
-        
+
         # Для MSE Loss (регрессия)
         elif loss_type in ['MSELoss', 'L1Loss']:
             if labels.dim() != outputs.dim():
                 if labels.dim() == 1 and outputs.dim() == 2:
                     return labels.float().unsqueeze(1)
             return labels.float()
-        
+
         # Не обработанная функция потерь
         else:
             logger.warning(f"Неизвестная loss функция: {loss_type}")
             return labels
-        
+
         return labels
 
     def _validate_one_epoch(self) -> bool:
         """
         Валидация(одна эпоха)
-        
+
         Returns:
             bool: True - стоит продолжать обучение. False - нет смысла продолжать обучение.
         """
         self.model.eval()
-        
-        with torch.no_grad():
-            try:
-                for batch in self._tqdm_loader(self.val_loader, "Валидация"):
-                    inputs, labels = batch
-                    
-                    inputs = inputs.to(self.device)
-                    labels = labels.to(self.device)
-                    outputs = self.model(inputs)
-                    
-                    # Рассчёт loss
-                    loss = self.loss_fn(outputs, labels)
-                    _, predicted = torch.max(outputs.data, 1)
 
-                    # Обновление метрик
-                    self._metric_service.update(
-                        type='val',
-                        preds=predicted,
-                        targets=labels,
-                        loss=loss
-                    )
-            except Exception as e:
-                mes = f"Ошибка на этапе валидации модели: {str(e)}"
-                logger.error(mes)
-                raise Exception(mes) from e
-        
+        with torch.no_grad():
+            for batch in self._tqdm_loader(self.val_loader, "Валидация"):
+                inputs, labels = batch
+
+                inputs = inputs.to(self.device)
+                labels = labels.to(self.device)
+                outputs = self.model(inputs)
+
+                # Рассчёт loss
+                loss_targets = self._prepare_labels_for_loss(outputs, labels)
+                loss = self.loss_fn(outputs, loss_targets)
+                _, predicted = torch.max(outputs, dim=1)
+
+                # Обновление метрик
+                self._metric_service.update(
+                    type='val',
+                    preds=predicted,
+                    targets=labels,
+                    loss=loss
+                )
+
         # Расчёт метрик
         relevance = self._metric_service.compute('val')
-        
+
         # Очистка кэша
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-        
+
         return relevance
 
-    async def _test_model(self) -> Optional[Dict[str, Any]]:
+    def _test_model(self) -> None:
         """Тестирование модели на тестовых данных"""
-        try:
-            self.model.eval()
-            
-            with torch.no_grad():
-                for batch in self._tqdm_loader(self.test_loader, "Testing"):
-                    
-                    inputs, labels = batch
-                    
-                    inputs = inputs.to(self.device)
-                    labels = labels.to(self.device)
-                    outputs = self.model(inputs)
-                    
-                    self._metric_service.update(
-                        'test',
-                        preds=outputs,
-                        targets=labels
-                    )
-            
-            self._metric_service.compute('test')
-            
-        except Exception as e:
-            mes = f"Ошибка на стадии тестирования: {str(e)}"
-            logger.error(mes, exc_info=True)
-            raise Exception(mes) from e
+        self.model.eval()
+
+        with torch.no_grad():
+            for batch in self._tqdm_loader(self.test_loader, "Testing"):
+
+                inputs, labels = batch
+
+                inputs = inputs.to(self.device)
+                labels = labels.to(self.device)
+                outputs = self.model(inputs)
+
+                _, predicted = torch.max(outputs, dim=1)
+                self._metric_service.update(
+                    'test',
+                    preds=predicted,
+                    targets=labels
+                )
+
+        self._metric_service.compute('test')
 
     def _tqdm_loader(self, data_loader: DataLoader, desc: str = "process") -> tqdm:
         """Получение обьекта tqdm"""
@@ -365,13 +354,14 @@ class Trainer:
             bar_format="{l_bar}{bar:20}{r_bar}",
             colour="blue",
             leave=False,
-            file=sys.stdout
+            file=sys.stdout,
+            disable=not sys.stdout.isatty()
         )
 
     def _train_one_full_epoch(self) -> bool:
         """
         Полное синхронное обучение
-        
+
         Returns:
             bool: True - стоит продолжать обучение. False - нет смысла продолжать обучение.
         """
@@ -380,54 +370,76 @@ class Trainer:
         logger.debug("Валидация...")
         return self._validate_one_epoch()
 
+    def _is_better(self, current: float, best: Optional[float]) -> bool:
+        """Сравнение значения метрики ранней остановки с лучшим"""
+        if best is None:
+            return True
+        if self._early_stop_mode == 'max':
+            return current > best
+        return current < best
+
     async def train(
             self,
-            value_procces_start: int,
-            value_procces_end: int
+            progress_value_start: int,
+            progress_value_end: int
         ) -> nn.Module:
         "Полный процесс тренировки"
-        
-        # Переменные для изсенения значений прогрессса
-        value_procces = value_procces_start
-        one_epoch_procces_value = (value_procces_end - value_procces_start) // self.epochs
-        
-        try:
-            for epoch in range(1, self.epochs + 1):
-                # Логгирование начала эпохи
-                logger.info("=" * 40)
-                text_info_start = f"🔄 [{epoch}/{self.epochs}] эпоха"
-                logger.info(text_info_start)
-                
-                # Обновление статуса задачи
-                await self._tasker_service.update_status_task(
-                    percentages=value_procces + 1, 
-                    status_info=text_info_start
-                )
-                
-                # Тренировка и валидация
-                relevance = await asyncio.to_thread(self._train_one_full_epoch)
 
-                # Логгирование конца эпохи
-                text_info_end = f"☑️ Эпоха [{epoch}/{self.epochs}] завершена"
-                value_procces += one_epoch_procces_value
-                logger.info(text_info_end)
-                await self._tasker_service.update_status_task(
-                    percentages=value_procces - 1, 
-                    status_info=text_info_end
-                )
+        # Переменные для изменения значений прогресса
+        progress_value = float(progress_value_start)
+        progress_per_epoch = (progress_value_end - progress_value_start) / self.epochs
 
-                if relevance == False:
-                    logger.info("Обучение модели остановлено")
-                    break
+        # Лучшая эпоха по метрике ранней остановки
+        best_value: Optional[float] = None
+        best_state: Optional[Dict[str, Tensor]] = None
+        best_epoch: Optional[int] = None
 
-            logger.info("🦾 Тестирование модели...")
-            await self._test_model()
-            logger.info("✅ Тестирование завершено")
+        for epoch in range(1, self.epochs + 1):
+            # Логгирование начала эпохи
+            logger.info("=" * 40)
+            text_info_start = f"🔄 [{epoch}/{self.epochs}] эпоха"
+            logger.info(text_info_start)
 
+            # Обновление статуса задачи
+            await self._tasker_service.update_status_task(
+                percentages=round(progress_value) + 1,
+                status_info=text_info_start
+            )
 
-        except Exception as e:
-            mes = f"Ошибка в процессе обучения: {str(e)}"
-            logger.error(mes, exc_info=True)
-            raise Exception(mes) from e
-        
+            # Тренировка и валидация
+            relevance = await asyncio.to_thread(self._train_one_full_epoch)
+
+            # Трекинг лучшей эпохи (веса храним на CPU, чтобы не занимать память GPU)
+            current_value = self._metric_service.last_early_stop_value
+            if current_value is not None and self._is_better(current_value, best_value):
+                best_value = current_value
+                best_epoch = epoch
+                best_state = {
+                    k: v.detach().cpu().clone()
+                    for k, v in self.model.state_dict().items()
+                }
+                logger.info(f"🏅 Новая лучшая эпоха: {epoch} (метрика: {current_value:.6f})")
+
+            # Логгирование конца эпохи
+            text_info_end = f"☑️ Эпоха [{epoch}/{self.epochs}] завершена"
+            progress_value += progress_per_epoch
+            logger.info(text_info_end)
+            await self._tasker_service.update_status_task(
+                percentages=round(progress_value) - 1,
+                status_info=text_info_end
+            )
+
+            if relevance == False:
+                logger.info("Обучение модели остановлено")
+                break
+
+        # Восстановление весов лучшей эпохи
+        if best_state is not None:
+            self.model.load_state_dict(best_state)
+            logger.info(f"♻️ Восстановлены веса лучшей эпохи [{best_epoch}] (метрика: {best_value:.6f})")
+
+        logger.info("🦾 Тестирование модели...")
+        await asyncio.to_thread(self._test_model)
+        logger.info("✅ Тестирование завершено")
+
         return self.model
