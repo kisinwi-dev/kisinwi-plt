@@ -36,8 +36,11 @@ class TaskerClient():
         except httpx.HTTPStatusError as e:
             logger.error(f"HTTP ошибка {e.response.status_code}")
             return None
-        except httpx.ConnectError:
-            logger.error("Сервис задач недоступен")
+        except httpx.HTTPError as e:
+            logger.error(f"Сервис задач недоступен: {e!r}")
+            return None
+        except Exception as e:
+            logger.error(f"Некорректный ответ сервиса задач: {e!r}")
             return None
         
     async def update_status_task(
@@ -69,11 +72,17 @@ class TaskerClient():
         logger.debug(f"Отправка нового статуса задачи в сервис задач.\ntask_id:{task_id}\nData:{data_json}")
 
         try:
-            await self._client.post(url, json=data_json)
+            resp = await self._client.post(url, json=data_json)
+            resp.raise_for_status()
             return True
+        except httpx.HTTPStatusError as e:
+            logger.error(
+                f"Не удалось обновить статус задачи {task_id}: "
+                f"HTTP {e.response.status_code}, ответ: {e.response.text}"
+            )
+            return False
         except Exception as e:
-            logger.error("Не удалось обновить статус задачи")
-            logger.error(f"Ошибка: {e}")
+            logger.error(f"Не удалось обновить статус задачи {task_id}: {e!r}")
             return False
         
 

@@ -206,7 +206,7 @@ async def get_task_for_id(
     summary="Обновить статус задачи",
     responses={
         200: {"description": "Задача обновлена"},
-        404: {"description": "Задача/статус не найдены"},
+        400: {"description": "Задача/статус не найдены"},
         503: {"description": "Ошибка подключения к БД"}
     },
 )
@@ -225,7 +225,7 @@ async def update_task_status(
         )
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_404_BAD_REQUEST,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
 

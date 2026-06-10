@@ -70,16 +70,21 @@ async def to_work():
 
         while True:
 
-            # Запрашиваем задачу
-            task = await tasker_service.get_next_task()
+            try:
+                # Запрашиваем задачу
+                task = await tasker_service.get_next_task()
 
-            if task is None:
+                if task is None:
+                    await asyncio.sleep(time_sleep)
+                    continue
+
+                task_id = task["id"]
+                model_id = task["model_id"]
+            except Exception as e:
+                logger.error(f"Ошибка при получении задачи: {e}", exc_info=True)
                 await asyncio.sleep(time_sleep)
                 continue
 
-            task_id = task["id"]
-            model_id = task["model_id"]
-            
             try:
                 # получаем параметры для запуска обучения
                 params = await get_params(model_id)
@@ -107,12 +112,37 @@ async def to_work():
 
             except Exception as e:
                 logger.error(f"Ошибка task_id='{task_id}' model_id='{model_id}': {e}", exc_info=True)
-                await tasker_service.update_status_task(
-                    status="failed",
-                    status_info="Задача завершена с ошибкой",
-                    error=f"Ошибка: {str(e)}"
-                )
+                await report_task_failed(task_id, error=f"Ошибка: {str(e)}")
                 try:
                     await patch_model_status(model_id, "draft")
                 except Exception as status_error:
                     logger.error(f"Не удалось вернуть модель '{model_id}' в статус draft: {status_error}")
+
+
+async def report_task_failed(
+        task_id: str,
+        error: str,
+        attempts: int = 3,
+        retry_delay: float = 5.0
+):
+    """Отправляет статус failed в сервис задач с повторами"""
+    for attempt in range(1, attempts + 1):
+        ok = await tasker_service.update_status_task(
+            status="failed",
+            status_info="Задача завершена с ошибкой",
+            error=error,
+            task_id=task_id
+        )
+        if ok:
+            return
+        logger.warning(
+            f"Не удалось отправить статус failed задачи '{task_id}' "
+            f"(попытка {attempt}/{attempts})"
+        )
+        if attempt < attempts:
+            await asyncio.sleep(retry_delay)
+
+    logger.critical(
+        f"Статус failed задачи '{task_id}' не доставлен в сервис задач, "
+        f"задача останется в статусе running"
+    )
