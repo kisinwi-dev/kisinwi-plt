@@ -10,6 +10,7 @@ from .splits import (
     ClassDistributionItem, ClassDistributionResponse,
     ImageSizeStats, ImageSizeStatsResponse
 )
+from .integrity import IntegritySummary
 
 class Source(BaseModel):
     type: Literal["kaggle", "url", "huggingface", "other"]
@@ -31,6 +32,8 @@ class VersionResponse(BaseModel):
     num_samples: int = Field(..., ge=0, description="Количество изображений")
     size_bytes: int = Field(..., ge=0, description="Вес версии в байтах")
     image_format_stats: Dict[str, int] = Field(default_factory=dict, description="Формат изображений")
+    color_mode_stats: Dict[str, int] = Field(default_factory=dict, description="Цветовые режимы изображений (RGB/L/RGBA/...)")
+    integrity: Optional[IntegritySummary] = Field(default=None, description="Сводка по дубликатам и утечкам между сплитами")
     created_at: datetime = Field(default_factory=datetime.now, frozen=True, description="Время создания")
 
 class Version(BaseModel):
@@ -42,6 +45,8 @@ class Version(BaseModel):
     size_bytes: int = Field(..., ge=0, description="Вес версии в байтах")
 
     image_format_stats: Dict[str, int] = Field(default_factory=dict, description="Формат изображений")
+    color_mode_stats: Dict[str, int] = Field(default_factory=dict, description="Цветовые режимы изображений (RGB/L/RGBA/...)")
+    integrity: Optional[IntegritySummary] = Field(default=None, description="Сводка по дубликатам и утечкам между сплитами")
     splits: Dict[SplitType, Split] = Field(default_factory=dict, description='Выборки test/trai/val')
 
     created_at: datetime = Field(default_factory=datetime.now, frozen=True, description="Время создания")

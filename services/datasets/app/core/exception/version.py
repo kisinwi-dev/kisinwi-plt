@@ -20,6 +20,16 @@ class VersionComparisonError(CoreException):
             detail=reason
         )
 
+class IntegrityReportNotAvailableError(CoreException):
+    """Для версии не рассчитаны хеши файлов (создана до обновления сервиса)"""
+
+    def __init__(self, version_id: str):
+        super().__init__(
+            message=f"Отчёт целостности недоступен для версии '{version_id}'",
+            status_code=404,
+            detail="Хеши файлов не были рассчитаны: версия создана до появления этой функции."
+        )
+
 class VersionValidationError(CoreException):
     """Структура или содержимое версии не соответствует требованиям"""
     

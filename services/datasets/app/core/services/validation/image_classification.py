@@ -9,6 +9,7 @@ from app.api.schemas.splits import ClassDistribution, Split
 from app.api.schemas.dataset_new import NewDataset, NewVersion
 from app.core.exception.dataset import DatasetValidationError
 from app.core.exception.version import VersionValidationError
+from app.core.services.integrity import compute_integrity_summary
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -18,14 +19,14 @@ SELECTION_NAME = {item.value for item in SplitType}
 def dataset_validation_and_create_metadata(
         fsm: FileSystemManager,
         dsn: NewDataset,
-    ) -> DatasetMetadata:
+    ) -> Tuple[DatasetMetadata, Dict[str, str]]:
         """
-        Валидация датасета и вывод метаданных
+        Валидация датасета и вывод метаданных + карта хешей файлов
 
         * fsm - должен находиться в временной папке в новых данных.
         К примеру в `temp/my_new_data/` и видеть папки `train`, `val` и `test`
         """
-        version, new_classes = _data_validation_and_create_metadata(
+        version, new_classes, hashes = _data_validation_and_create_metadata(
             dsn.version,
             fsm
         )
@@ -37,36 +38,37 @@ def dataset_validation_and_create_metadata(
             "classes_to_idx": {class_: indx for indx, class_ in enumerate(sorted(new_classes))},
         }
 
-        return DatasetMetadata(
+        dsm = DatasetMetadata(
             **dsn.model_dump(exclude={"version"}),
             **classes_info,
             default_version_id=version.id,
             versions=[version]
         )
+        return dsm, hashes
 
 def version_validation_and_create_metadata(
     fsm: FileSystemManager,
     nv: NewVersion,
     dsm: DatasetMetadata
-) -> Version:
+) -> Tuple[Version, Dict[str, str]]:
     """
-    Валидация версии и вывод метаданных
+    Валидация версии и вывод метаданных + карта хешей файлов
     * fsm - должен находиться в временной папке в новых данных.
     К примеру в `temp/my_new_data/` и видеть папки `train`, `val` и `test`
     """
-    version, _ = _data_validation_and_create_metadata(nv, fsm, dsm)
-    return version
+    version, _, hashes = _data_validation_and_create_metadata(nv, fsm, dsm)
+    return version, hashes
 
 def _data_validation_and_create_metadata(
     nv: NewVersion,
     fsm: FileSystemManager,
     dsm: Optional[DatasetMetadata] = None
-) -> Tuple[Version, List[str]]:
+) -> Tuple[Version, List[str], Dict[str, str]]:
     """
     Валидация данных.
-    
+
     Работает в 2 итерации. Первый раз проверяет структуру данных, после чего проверяет сами данные.
-    
+
     * fsm - должен находиться в временной папке в новых данных.
     К примеру в `temp/my_new_data/` и видеть папки `train`, `val` и `test`
     """
@@ -79,11 +81,14 @@ def _data_validation_and_create_metadata(
         _check_cache(fsm, class_names)
 
         # расчёт статистики
-        splits, image_format_stats = _calculate_statistics(fsm, class_names)
+        splits, image_format_stats, color_mode_stats = _calculate_statistics(fsm, class_names)
+
+        # хеши файлов: дубликаты и утечки между сплитами
+        hashes = fsm.hash_all_files()
 
         # расчёт размера в байтах
         size_bytes = fsm.get_dir_size()
-    
+
     finally:
         fsm.reset()
 
@@ -94,15 +99,17 @@ def _data_validation_and_create_metadata(
         sources=nv.sources,
         size_bytes=size_bytes,
         image_format_stats=image_format_stats,
+        color_mode_stats=color_mode_stats,
+        integrity=compute_integrity_summary(hashes),
         splits=splits
     )
 
-    return version, class_names
+    return version, class_names, hashes
 
 def _calculate_statistics(
     fsm: FileSystemManager,
     class_names: List[str]
-) -> Tuple[Dict[SplitType, Split], Dict[str, int]]:
+) -> Tuple[Dict[SplitType, Split], Dict[str, int], Dict[str, int]]:
     """
     Расчёт статистики данных.
 
@@ -112,11 +119,17 @@ def _calculate_statistics(
 
     Returns:
         * словарь выборок, где ключ имя выборки, а значение статистика по выборке
-        * словарь разрешений, где ключ это разрешение, а значение это количество
+        * словарь форматов, где ключ это формат, а значение это количество
+        * словарь цветовых режимов, где ключ это режим (RGB/L/...), а значение это количество
+
+    Raises:
+        VersionValidationError: если найдены повреждённые изображения
     """
     # Объекты для формирования метаданных
     splits: Dict[SplitType, Split] = {}
     image_format_stats: Dict[str, int] = {}
+    color_mode_stats: Dict[str, int] = {}
+    broken_files: List[str] = []
 
     # Проверка самих файлов и статистики
     for selection in SELECTION_NAME:
@@ -134,8 +147,14 @@ def _calculate_statistics(
 
             # Получение статистики по всем изображениям в директории fsm
             image_statistics = _class_statistic(fsm)
-            # пополнение словаря форматов
-            image_format_stats = image_format_stats | image_statistics.format_stats
+            # пополнение словарей форматов и цветовых режимов (счётчики суммируются между классами)
+            for ext, cnt in image_statistics.format_stats.items():
+                image_format_stats[ext] = image_format_stats.get(ext, 0) + cnt
+            for mode, cnt in image_statistics.color_mode_stats.items():
+                color_mode_stats[mode] = color_mode_stats.get(mode, 0) + cnt
+            broken_files.extend(
+                f"{selection}/{dir_class}/{name}" for name in image_statistics.broken_files
+            )
 
             # Создаем объект ClassDistribution
             class_dist = ClassDistribution(
@@ -148,7 +167,7 @@ def _calculate_statistics(
 
             logger.debug(f'🟩 `{selection}/{dir_class}` - `{image_statistics.image_count}` изображений')
             fsm.out_dir()
-        
+
         # расчёт процентного соотношения классов к всей выборке
         _calculate_percentage_in_all(class_distributions)
 
@@ -157,8 +176,13 @@ def _calculate_statistics(
         logger.info(f'🟩 Файлы в `{selection}` успешно проверены')
         fsm.out_dir()
 
+    if broken_files:
+        raise VersionValidationError(
+            "Найдены повреждённые изображения (не открываются): " + ", ".join(broken_files)
+        )
+
     logger.info(f'✅ Все папки проверены!')
-    return splits, image_format_stats
+    return splits, image_format_stats, color_mode_stats
 
 def _check_cache(
     fsm: FileSystemManager,
@@ -233,35 +257,44 @@ class ImageStatistics():
     image_count: int = 0
     size_counter: Dict[str, int] = field(default_factory=dict)
     format_stats: Dict[str, int] = field(default_factory=dict)
+    color_mode_stats: Dict[str, int] = field(default_factory=dict)
+    broken_files: List[str] = field(default_factory=list)
 
 def _class_statistic(
     fsm: FileSystemManager,
 ) -> ImageStatistics:
     """
-    Сбор статистики по всем изображениям
-    
+    Сбор статистики по всем изображениям.
+    Повреждённые изображения собираются в `broken_files` (решение об ошибке — на уровне выше).
+
     Args:
         fsm: файловый менеджер
     """
     # Получение path всех изображений
     image_files = fsm.all_file_is_image()
-    
+
     image_statistics = ImageStatistics(
         image_count=len(image_files)
     )
 
     for img_path in image_files:
         try:
-            # Статистика разрешений
+            # Проверка целостности файла (verify портит объект — нужно открыть заново)
+            with Image.open(img_path) as img:
+                img.verify()
+
+            # Статистика разрешений и цветовых режимов
             with Image.open(img_path) as img:
                 size_str = f"{img.width}x{img.height}"
                 image_statistics.size_counter[size_str] = image_statistics.size_counter.get(size_str, 0) + 1
+                image_statistics.color_mode_stats[img.mode] = image_statistics.color_mode_stats.get(img.mode, 0) + 1
 
             # Статистика форматов
             ext = img_path.suffix.lower().lstrip('.')
             image_statistics.format_stats[ext] = image_statistics.format_stats.get(ext, 0) + 1
         except Exception as e:
-            logger.warning(f"Не удалось получить размер изображения {img_path.name}: {e}")
+            logger.warning(f"Повреждённое изображение {img_path.name}: {e}")
+            image_statistics.broken_files.append(img_path.name)
     return image_statistics
 
 def _classes_load(

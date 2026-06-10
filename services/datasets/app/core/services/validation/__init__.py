@@ -1,3 +1,5 @@
+from typing import Dict, Tuple
+
 from .registry import PREPROC_LOADERS_DATASET, PREPROC_LOADERS_VERSION, type_task_supported
 
 from app.core.filesystem.fsm import FileSystemManager
@@ -12,8 +14,8 @@ logger = get_logger(__name__)
 
 def new_dataset(
     dsn: NewDataset
-) -> DatasetMetadata:
-        """Валидация при созданиии нового датасета данных"""
+) -> Tuple[DatasetMetadata, Dict[str, str]]:
+        """Валидация при созданиии нового датасета данных. Возвращает метаданные и карту хешей файлов"""
         logger.info('⬜ Валидация...')
 
         processor = PREPROC_LOADERS_DATASET.get((dsn.type, dsn.task))
@@ -32,16 +34,16 @@ def new_dataset(
         fsm = _fsm_setting(dsn.version.id_data)
 
         # процесс валидации
-        dsm = processor(fsm, dsn)
+        dsm, hashes = processor(fsm, dsn)
 
         logger.debug(f'🏁 Валидация пройдена')
-        return dsm
+        return dsm, hashes
 
 def new_version(
     dsm: DatasetMetadata,
     nv: NewVersion,
-) -> Version:
-    """Валидация при добавлении новой версии в существующий датасет"""
+) -> Tuple[Version, Dict[str, str]]:
+    """Валидация при добавлении новой версии в существующий датасет. Возвращает метаданные версии и карту хешей файлов"""
     logger.info('⬜ Валидация...')
 
     processor = PREPROC_LOADERS_VERSION.get((dsm.type, dsm.task))
@@ -60,10 +62,10 @@ def new_version(
     fsm = _fsm_setting(nv.id_data)
 
     # процесс валидации
-    version = processor(fsm, nv, dsm)
+    version, hashes = processor(fsm, nv, dsm)
 
     logger.debug(f'🏁 Валидация пройдена')
-    return version
+    return version, hashes
 
 def _fsm_setting(
     id_data: str
