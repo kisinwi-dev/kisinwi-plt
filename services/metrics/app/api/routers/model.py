@@ -13,7 +13,9 @@ router = APIRouter(prefix="/models", tags=["metrics"])
 @router.post(
     "/add",
     summary="Добавить метрику модели",
-    description="Добавляет значения одной метрики модели; при отсутствии модели создаёт запись",
+    description="Добавляет значения одной метрики модели в её выборку (train/val/test); "
+                "выборка берётся из поля split или из префикса названия; "
+                "при отсутствии модели создаёт запись",
     response_description="Статус операции",
 )
 async def add_metric(
@@ -28,7 +30,8 @@ async def add_metric(
 @router.post(
     "/adds",
     summary="Добавить несколько метрик модели",
-    description="Добавляет значения сразу нескольких метрик модели за один запрос (используется при обучении)",
+    description="Добавляет значения сразу нескольких метрик модели за один запрос (используется при обучении); "
+                "каждая метрика попадает в свою выборку (train/val/test)",
     response_description="Статус операции",
 )
 async def add_metrics(
@@ -44,7 +47,8 @@ async def add_metrics(
     "/batch",
     response_model=List[ModelMetrics],
     summary="Получить метрики нескольких моделей",
-    description="Возвращает метрики сразу нескольких моделей за один запрос; модели без метрик в ответ не попадают",
+    description="Возвращает метрики сразу нескольких моделей за один запрос, разбитые по выборкам "
+                "(train/val/test); модели без метрик в ответ не попадают",
     response_description="Список метрик по каждой найденной модели",
 )
 async def get_models_metrics(
@@ -57,7 +61,8 @@ async def get_models_metrics(
     "/{model_id}",
     response_model=ModelMetrics,
     summary="Получить метрики модели",
-    description="Возвращает все метрики указанной модели с их значениями по эпохам",
+    description="Возвращает все метрики указанной модели с их значениями по эпохам, "
+                "разбитые по выборкам (train/val/test)",
     response_description="Метрики модели",
 )
 async def get_task_metrics(

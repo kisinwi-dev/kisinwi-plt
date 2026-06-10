@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 from pymongo.errors import PyMongoError
 
 from .mongo import ManagerBase
@@ -7,10 +7,79 @@ from app.logs import get_logger
 
 logger = get_logger(__name__)
 
+SPLITS = ("train", "val", "test")
+
+def parse_split(name: str) -> Tuple[str, str]:
+    """
+    Определение выборки по префиксу названия метрики.
+
+    'train_loss' -> ('train', 'loss'); название без известного
+    префикса относится к тренировочной выборке.
+    """
+    for split in SPLITS:
+        prefix = f"{split}_"
+        if name.startswith(prefix):
+            return split, name[len(prefix):]
+
+    logger.warning(f"Метрика '{name}' без префикса выборки — отнесена к train")
+    return "train", name
+
+def resolve_split(metric: ModelMetricData) -> Tuple[str, str]:
+    """Выборка и чистое название метрики: явное поле split приоритетнее префикса"""
+    if metric.split is not None:
+        return metric.split, metric.name
+    return parse_split(metric.name)
+
 class CVMetricManager(ManagerBase):
 
+    def _push_metric(
+        self,
+        model_id: str,
+        metric: ModelMetricData
+    ):
+        """Дозапись значений метрики в массив её выборки (метрика создаётся при отсутствии)"""
+        split, name = resolve_split(metric)
+
+        result = self.collection.update_one(
+            {
+                'model_id': model_id,
+                f'splits.{split}.metric': name
+            },
+            {
+                '$push': {
+                    f'splits.{split}.$.values': {'$each': metric.values}
+                }
+            }
+        )
+
+        # Если метрика не найдена, добавляем новую
+        if result.matched_count == 0:
+            new_metric = {
+                'metric': name,
+                'values': metric.values,
+            }
+            self.collection.update_one(
+                {'model_id': model_id},
+                {'$push': {f'splits.{split}': new_metric}}
+            )
+
+    @staticmethod
+    def _new_document(model_id: str, metrics: list) -> dict:
+        """Документ новой модели с метриками, разнесёнными по выборкам"""
+        splits = {split: [] for split in SPLITS}
+        for metric in metrics:
+            split, name = resolve_split(metric)
+            splits[split].append({
+                'metric': name,
+                'values': metric.values,
+            })
+        return {
+            'model_id': model_id,
+            'splits': splits,
+        }
+
     def add_metric(
-        self, 
+        self,
         metric: ModelMetricAdd
     ) -> bool:
         """Добавление новой метрики для модели"""
@@ -20,41 +89,12 @@ class CVMetricManager(ManagerBase):
 
             if model_doc:
                 # Модель существует
-                result = self.collection.update_one(
-                    {
-                        'model_id': metric.model_id,
-                        'metrics.metric': metric.metric.name
-                    },
-                    {
-                        '$push': {
-                            f'metrics.$.values': {'$each': metric.metric.values}
-                        }
-                    }
-                )
-
-                # Если метрика не найдена, добавляем новую
-                if result.matched_count == 0:
-                    new_metric = {
-                        'metric': metric.metric.name,
-                        'values': metric.metric.values,
-                    }
-                    self.collection.update_one(
-                        {'model_id': metric.model_id},
-                        {
-                            '$push': {'metrics': new_metric}
-                        }
-                    )
+                self._push_metric(metric.model_id, metric.metric)
             else:
-
                 # Новая модель, создаем документ
-                new_task = {
-                    'model_id': metric.model_id,
-                    'metrics': [{
-                        'metric': metric.metric.name,
-                        'values': metric.metric.values,
-                    }]
-                }
-                self.collection.insert_one(new_task)
+                self.collection.insert_one(
+                    self._new_document(metric.model_id, [metric.metric])
+                )
 
             logger.debug(f"Добавлена метрика {metric.metric.name}={metric.metric.values} для модели {metric.model_id}")
             return True
@@ -65,81 +105,62 @@ class CVMetricManager(ManagerBase):
 
 
     def add_metrics(
-            self, 
+            self,
             metrics: ModelMetricAdds
     ) -> bool:
         """Добавление нескольких метрик для модели"""
         try:
             # Поиск модели
             model_doc = self.model_metrics_exists(metrics.model_id)
-            
+
             if model_doc:
                 # Задача существует
                 for metric in metrics.metrics:
-                    result = self.collection.update_one(
-                        {
-                            'model_id': metrics.model_id,
-                            'metrics.metric': metric.name
-                        },
-                        {
-                            '$push': {
-                                f'metrics.$.values': {'$each': metric.values}
-                            }
-                        }
-                    )
-                    
-                    # Если метрики не найдены, сооздаём её
-                    if result.matched_count == 0:
-                        new_metric = {
-                            'metric': metric.name,
-                            'values': metric.values,
-                        }
-                        self.collection.update_one(
-                            {'model_id': metrics.model_id},
-                            {'$push': {'metrics': new_metric}}
-                        )
+                    self._push_metric(metrics.model_id, metric)
             else:
                 # Если не найдена модель создаем документ
-                new_task = {
-                    'model_id': metrics.model_id,
-                    'metrics': [
-                        {
-                            'metric': metric.name,
-                            'values': metric.values,
-                        }
-                        for metric in metrics.metrics
-                    ]
-                }
-                self.collection.insert_one(new_task)
-            
+                self.collection.insert_one(
+                    self._new_document(metrics.model_id, metrics.metrics)
+                )
+
             metric_name = ",".join(metric.name for metric in metrics.metrics)
 
             logger.debug(f"Добавлены метрики ({metric_name}) для модели (id:{metrics.model_id})")
             return True
-            
+
         except PyMongoError as e:
             logger.error(f"Ошибка добавления метрик модели(id{metrics.model_id}): {e}")
             return False
 
+    @staticmethod
+    def _doc_to_model_metrics(model_doc: dict) -> ModelMetrics:
+        """Сборка ответа из документа: метрики по выборкам"""
+        splits = model_doc.get('splits', {})
+        return ModelMetrics(
+            model_id=model_doc['model_id'],
+            **{
+                split: [
+                    ModelMetricData(
+                        name=m['metric'],
+                        split=split,
+                        values=m['values'],
+                    )
+                    for m in splits.get(split, [])
+                ]
+                for split in SPLITS
+            },
+        )
+
     def get_model_metrics(
-        self, 
+        self,
         model_id: str
     ) -> Optional[ModelMetrics]:
         """Получение всех метрик для модели"""
         try:
             model_doc = self.collection.find_one({'model_id': model_id})
-            
+
             if model_doc:
-                return ModelMetrics(
-                    model_id=model_doc['model_id'],
-                    metrics=[
-                        ModelMetricData(
-                            name=m['metric'],
-                            values=m['values'],
-                        )
-                        for m in model_doc['metrics']
-                    ],
-                )
+                return self._doc_to_model_metrics(model_doc)
             return None
 
         except PyMongoError as e:
@@ -153,16 +174,7 @@ class CVMetricManager(ManagerBase):
         """Получение метрик сразу нескольких моделей одним запросом"""
         try:
             docs = self.collection.find({'model_id': {'$in': model_ids}})
-            return [
-                ModelMetrics(
-                    model_id=doc['model_id'],
-                    metrics=[
-                        ModelMetricData(name=m['metric'], values=m['values'])
-                        for m in doc['metrics']
-                    ],
-                )
-                for doc in docs
-            ]
+            return [self._doc_to_model_metrics(doc) for doc in docs]
         except PyMongoError as e:
             logger.error(f"Ошибка получения метрик моделей: {e}")
             return []
@@ -181,7 +193,7 @@ class CVMetricManager(ManagerBase):
     ) -> bool:
         """Удаление документа метрик модели"""
         result = self.collection.delete_one({'model_id': model_id})
-        
+
         if result.deleted_count > 0:
             logger.debug(f"Метрики для модели(id:{model_id}) удалены")
             return True
