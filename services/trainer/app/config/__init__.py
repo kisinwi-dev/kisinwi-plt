@@ -1,5 +1,6 @@
 import os
-import requests
+import asyncio
+import httpx
 from dotenv import load_dotenv
 from dataclasses import dataclass
 
@@ -10,11 +11,12 @@ logger = get_logger(__name__)
 
 load_dotenv()
 
-hf_token = os.getenv("HF_TOKEN")
-if not hf_token:
+if not os.getenv("HF_TOKEN"):
     logger.warning("HF_TOKEN не найден в .env")
 else:
-    logger.info(f"✅ HF_TOKEN загружен ({hf_token[:10]}...)")
+    logger.info("✅ HF_TOKEN загружен")
+
+HEALTH_TIMEOUT = 5.0
 
 @dataclass
 class ConfigServices:
@@ -24,54 +26,56 @@ class ConfigServices:
     }
     ML_MODELS = {
         'name': "ml_models",
-        'url': f"http://{os.getenv("ML_MODELS_DOMAIN", "localhost:6300")}"
+        'url': f"http://{os.getenv('ML_MODELS_DOMAIN', 'localhost:6300')}"
     }
     METRICS = {
         'name': "metrics",
-        'url': f"http://{os.getenv("METRICS_DOMAIN", "localhost:6310")}"
+        'url': f"http://{os.getenv('METRICS_DOMAIN', 'localhost:6310')}"
     }
 
     ALL_SERVICES = [
         TASKER, ML_MODELS, METRICS
     ]
 
-    def check_services(self) -> HealthResponse:
+    async def check_services(self) -> HealthResponse:
         """
-        Проверка работоспособности сервиса
-        
+        Проверка работоспособности вспомогательных сервисов
+
         Returns:
-            Слоаварь с названием сервиса и статусом
+            Статус сервиса и статусы вспомогательных сервисов
         """
         status = HealthStatus.HEALTHY
+        logger.info("Проверка доступа к сервисам:")
+
+        async with httpx.AsyncClient(timeout=HEALTH_TIMEOUT) as client:
+            results = await asyncio.gather(
+                *[self._health(client, service) for service in self.ALL_SERVICES]
+            )
+
         services = {}
-        logger.info(f"Проверка доступа к сервисам:")
-        for service in self.ALL_SERVICES:
-            service_name = service.get("name", "ERROR")
-            services[service_name] = self._health(service)
-            if services[service_name] != HealthStatus.HEALTHY:
+        for service, service_status in zip(self.ALL_SERVICES, results):
+            services[service['name']] = service_status
+            if service_status != HealthStatus.HEALTHY:
                 status = HealthStatus.DEGRADED
 
         return HealthResponse(
             status=status,
             services=services
         )
-    
-    def _health(
-        self, 
+
+    async def _health(
+        self,
+        client: httpx.AsyncClient,
         service: dict
     ) -> HealthStatus:
+        service_url = service.get("url", "ERROR")
+        service_name = service.get("name", "ERROR")
         try:
-            service_url = service.get("url", "ERROR")
-            service_name = service.get("name", "ERROR")
-
-            response = requests.get(
-                f"{service_url}/info/health",
-                timeout=30
-            )        
+            response = await client.get(f"{service_url}/info/health")
             response.raise_for_status()
             logger.info(f" ✅ Сервис `{service_name}` доступен")
             return response.json()["status"]
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             logger.error(f" 🟥 Ошибка HTTP при обращении к сервису `{service_name}`, `{service_url}`\nError:{e}")
             return HealthStatus.UNHEALTHY
         except Exception as e:

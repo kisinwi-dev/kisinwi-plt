@@ -1,7 +1,10 @@
 import asyncio
-from app import server, to_work
+from app import server, to_work, config_services
 
 async def main():
+    # Проверка доступа к вспомогательным сервисам
+    await config_services.check_services()
+
     # Запуск сервера uvicorn и асинхронной функции опроса
     await asyncio.gather(
         server.serve(),

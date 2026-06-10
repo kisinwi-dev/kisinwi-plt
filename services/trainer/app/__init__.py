@@ -1,8 +1,5 @@
 from .config import config_services
 
-# Проверка доступа к вспомогательным сервисам
-config_services.check_services()
-
 import os
 import httpx
 import asyncio
@@ -13,7 +10,7 @@ from .api.routers import api_routers
 from .core import training_model
 from .logs import get_logger
 from .service.tasker import tasker_service
-from .service.ml_models import get_params, path_status_model
+from .service.ml_models import get_params, patch_model_status
 
 logger = get_logger(__name__)
 
@@ -73,7 +70,7 @@ async def to_work():
                     status_info="Задача принята воркером", 
                 )
 
-                await path_status_model(model_id, "training")
+                await patch_model_status(model_id, "training")
                 # Процесс обучения
                 await training_model(params, model_id)
 
@@ -83,14 +80,17 @@ async def to_work():
                     percentages=100,
                     status_info="Задача выполнена", 
                 )
-                await path_status_model(model_id, "completed")
+                await patch_model_status(model_id, "completed")
                 logger.info(f"Задача '{task_id}' по обучению модели '{model_id}' выполнена")
 
             except Exception as e:
+                logger.error(f"Ошибка task_id='{task_id}' model_id='{model_id}': {e}", exc_info=True)
                 await tasker_service.update_status_task(
-                    status="failed", 
-                    status_info="Задача завершена с ошибкой", 
+                    status="failed",
+                    status_info="Задача завершена с ошибкой",
                     error=f"Ошибка: {str(e)}"
                 )
-                await path_status_model(model_id, "draft")
-                logger.error(f"Ошибка task_id='{task_id}' model_id='{model_id}'\n{str(e)}\n{e}")
+                try:
+                    await patch_model_status(model_id, "draft")
+                except Exception as status_error:
+                    logger.error(f"Не удалось вернуть модель '{model_id}' в статус draft: {status_error}")

@@ -1,4 +1,5 @@
-import requests
+import asyncio
+import httpx
 from typing import Optional
 from pathlib import Path
 
@@ -10,84 +11,48 @@ logger = get_logger(__name__)
 
 ML_MODELS_URL = config_services.ML_MODELS['url']
 
+# Общий async-клиент сервиса (живёт всё время работы воркера)
+_client = httpx.AsyncClient(timeout=30.0)
+
 async def get_params(
     model_id: str
-) -> TaskParams: 
+) -> TaskParams:
     """Получение параметров обучения"""
     try:
-        res = requests.get(
-            f"{ML_MODELS_URL}/models/{model_id}",
-            timeout=30
-        )
+        res = await _client.get(f"{ML_MODELS_URL}/models/{model_id}")
         res.raise_for_status()
         params = res.json()['train_params']
         return TaskParams.model_validate(params)
 
-    except requests.exceptions.Timeout as e:
-        mes = f"Таймаут при запросе параметров модели {model_id}"
-        logger.error(mes, exc_info=True)
-        raise Exception(mes) from e
+    except httpx.TimeoutException as e:
+        raise RuntimeError(f"Таймаут при запросе параметров модели {model_id}") from e
 
-    except requests.exceptions.ConnectionError as e:
-        mes = f"Ошибка соединения при запросе модели {model_id}"
-        logger.error(mes, exc_info=True)
-        raise Exception(mes) from e
+    except httpx.HTTPError as e:
+        raise RuntimeError(f"Ошибка при запросе параметров модели {model_id}: {e}") from e
 
-    except requests.exceptions.RequestException as e:
-        mes = f"Ошибка при запросе параметров модели {model_id}: {str(e)}"
-        logger.error(mes, exc_info=True)
-        raise Exception(mes) from e
+    except (KeyError, ValueError) as e:
+        raise RuntimeError(f"Некорректный ответ ml_models для модели {model_id}: {e}") from e
 
-    except ValueError as e:
-        mes = f"Ошибка парсинга JSON для модели {model_id}: {str(e)}"
-        logger.error(mes, exc_info=True)
-        raise Exception(mes) from e
-
-    except Exception as e:
-        mes = f"Неожиданная ошибка при получении параметров модели {model_id}: {str(e)}"
-        logger.error(mes, exc_info=True)
-        raise Exception(mes) from e
-
-async def path_status_model(
+async def patch_model_status(
     model_id: str,
     status: str
-): 
-    """Получение параметров обучения"""
+):
+    """Обновление статуса модели"""
     try:
-
-        data = {
-            "status": status
-        }
-
-        res = requests.patch(
+        res = await _client.patch(
             f"{ML_MODELS_URL}/models/{model_id}",
-            json=data,
-            timeout=30
+            json={"status": status}
         )
         res.raise_for_status()
 
-    except requests.exceptions.Timeout as e:
-        mes = f"Таймаут при обновлении статуса модели {model_id}"
-        logger.error(mes, exc_info=True)
-        raise Exception(mes) from e
+    except httpx.TimeoutException as e:
+        raise RuntimeError(f"Таймаут при обновлении статуса модели {model_id}") from e
 
-    except requests.exceptions.ConnectionError as e:
-        mes = f"Ошибка соединения при обновлении статуса модели {model_id}"
-        logger.error(mes, exc_info=True)
-        raise Exception(mes) from e
-
-    except requests.exceptions.RequestException as e:
-        mes = f"Ошибка при обновлении статуса модели {model_id}: {str(e)}"
-        logger.error(mes, exc_info=True)
-        raise Exception(mes) from e
-
-    except Exception as e:
-        mes = f"Неожиданная ошибка при обновлении статуса модели {model_id}: {str(e)}"
-        logger.error(mes, exc_info=True)
-        raise Exception(mes) from e
+    except httpx.HTTPError as e:
+        raise RuntimeError(f"Ошибка при обновлении статуса модели {model_id}: {e}") from e
 
 async def upload_file_model_in_ml_models(
-    model_id: str, 
+    model_id: str,
     file_path: str,
     filename: Optional[str] = None
 ):
@@ -109,14 +74,14 @@ async def upload_file_model_in_ml_models(
 
         url = f"{ML_MODELS_URL}/models/{model_id}/files"
 
-        with open(file_path, 'rb') as f:
-            files = {'files': (filename, f, 'application/octet-stream')}
-            response = requests.post(url, files=files, timeout=60)
-
+        # Файл может быть большим — читаем в отдельном потоке
+        content = await asyncio.to_thread(path.read_bytes)
+        files = {'files': (filename, content, 'application/octet-stream')}
+        response = await _client.post(url, files=files, timeout=60.0)
         response.raise_for_status()
+
         file_size = path.stat().st_size / (1024**2)
         logger.info(f"✅ Файл '{filename}' отправлен в ml_models, размер: {file_size:.2f} MB")
 
-    except Exception as e:
-        logger.error(f"❌ Ошибка при отправке файла: {e}")
-        return False
+    except (httpx.HTTPError, OSError) as e:
+        raise RuntimeError(f"Не удалось отправить файл модели {model_id} в ml_models: {e}") from e

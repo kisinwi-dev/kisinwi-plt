@@ -8,8 +8,10 @@ logger = get_logger(__name__)
 class TaskerClient():
     def __init__(self) -> None:
         """Класс для общения с сервисом задач"""
-        self._domen = config_services.TASKER['url']
-    
+        self._domain = config_services.TASKER['url']
+        self.task_id: str | None = None
+
+
     def set_client(
             self,
             client: httpx.AsyncClient
@@ -21,7 +23,7 @@ class TaskerClient():
         """Возвращает задачу или None при ошибке"""
         try:
             # Запрос к сервису
-            resp = await self._client.get(f"{self._domen}/tasks/next")
+            resp = await self._client.get(f"{self._domain}/tasks/next")
             resp.raise_for_status()
 
             if resp.status_code == 204:
@@ -50,7 +52,11 @@ class TaskerClient():
         if task_id is None:
             task_id = self.task_id
 
-        url = f"{self._domen}/tasks/{task_id}/status"
+        if task_id is None:
+            logger.warning("Попытка обновить статус задачи без активной задачи")
+            return False
+
+        url = f"{self._domain}/tasks/{task_id}/status"
         data_json = {
             k: v for k, v in {
                 "status": status,
