@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { mlModelsService } from '../services/mlModelsService';
 import { datasetService } from '../services/datasetService';
 import { useNotification } from '../contexts/NotificationContext';
-import type { MLModel, MLModelFile } from '../types/mlModels';
+import type { MLModelVersion, MLModelFile } from '../types/mlModels';
 import type { Dataset } from '../types/dataset';
 import { formatBytes, formatDateTime } from '../utils/format';
 import { useCopyToClipboard } from '../hooks';
@@ -18,7 +18,7 @@ const ModelDetail: React.FC = () => {
   const navigate = useNavigate();
   const { showNotification } = useNotification();
 
-  const [model, setModel] = useState<MLModel | null>(null);
+  const [model, setModel] = useState<MLModelVersion | null>(null);
   const [files, setFiles] = useState<MLModelFile[]>([]);
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,8 +32,8 @@ const ModelDetail: React.FC = () => {
     setLoading(true);
 
     Promise.all([
-      mlModelsService.getModel(id),
-      mlModelsService.getModelFiles(id).catch(() => ({ files: [] })),
+      mlModelsService.getVersion(id),
+      mlModelsService.getVersionFiles(id).catch(() => ({ files: [] })),
     ])
       .then(([modelData, filesData]) => {
         if (cancelled) return;
