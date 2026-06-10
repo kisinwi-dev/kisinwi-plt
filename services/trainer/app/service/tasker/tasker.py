@@ -43,6 +43,37 @@ class TaskerClient():
             logger.error(f"Некорректный ответ сервиса задач: {e!r}")
             return None
         
+    async def get_task_status(self, task_id: str | None = None) -> str | None:
+        """Возвращает статус задачи или None при ошибке"""
+        if task_id is None:
+            task_id = self.task_id
+
+        if task_id is None:
+            return None
+
+        try:
+            resp = await self._client.get(f"{self._domain}/tasks/{task_id}")
+            resp.raise_for_status()
+            return resp.json()["status"]
+        except Exception as e:
+            logger.error(f"Не удалось получить статус задачи {task_id}: {e!r}")
+            return None
+
+    async def get_tasks(self, status: str | None = None) -> list[dict]:
+        """Возвращает список задач (опционально по статусу), пустой список при ошибке"""
+        try:
+            params = {"status": status} if status else None
+            resp = await self._client.get(f"{self._domain}/tasks", params=params)
+            resp.raise_for_status()
+
+            if resp.status_code == 204:
+                return []
+
+            return resp.json()["tasks"]
+        except Exception as e:
+            logger.error(f"Не удалось получить список задач: {e!r}")
+            return []
+
     async def update_status_task(
             self,
             status: str = "running",
