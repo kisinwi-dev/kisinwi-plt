@@ -14,11 +14,27 @@ from .service.ml_models import get_params, patch_model_status
 
 logger = get_logger(__name__)
 
+openapi_tags = [
+    {
+        "name": "Information",
+        "description": "Справочная информация для подготовки конфигурации обучения: "
+                       "пример конфига, доступные модели, оптимизаторы, планировщики, "
+                       "метрики, аугментации, вычислительные устройства и health-check.",
+    },
+]
+
 # Создание объекта fastapi
 app = FastAPI(
     title="Trainer service",
     version="1.0.0",
-    description="Занимается обучением DL моделей"
+    description="""
+Сервис обучения DL моделей (классификация изображений).
+
+Работает как воркер: опрашивает tasker, забирает задачи, обучает модель (PyTorch),
+отправляет метрики в metrics и веса в ml_models. HTTP API предоставляет
+справочную информацию для составления конфигурации обучения.
+""",
+    openapi_tags=openapi_tags,
 )
 
 # Добавление роутеров
