@@ -55,6 +55,17 @@ def simple_zip_bytes() -> bytes:
     return buffer.getvalue()
 
 @pytest.fixture
+def wrapped_zip_bytes() -> bytes:
+    """Zip, где всё содержимое лежит внутри единственной корневой папки"""
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("my_dataset/train/cat/img1.jpg", b"fake image")
+        zf.writestr("my_dataset/val/cat/img2.jpg", b"fake image")
+        zf.writestr("my_dataset/test/cat/img3.jpg", b"fake image")
+    buffer.seek(0)
+    return buffer.getvalue()
+
+@pytest.fixture
 def malicious_zip_bytes() -> bytes:
     """Zip с path traversal (../)"""
     buffer = BytesIO()

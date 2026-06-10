@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 
 from app.logs import get_logger
 from app.core.services import DatasetManager
+from app.core.exception.base import CoreException
 from app.api.deps import get_dataset_manager
 from app.api.schemas.dataset import VersionResponse, SplitSummaryResponse
 from app.api.schemas.splits import (
@@ -157,7 +158,15 @@ def delete_version(
 )
 def create_version(
     dataset_id: str,
-    new_dataset: NewVersion, 
+    new_dataset: NewVersion,
     dm: DatasetManager = Depends(get_dataset_manager),
 ):
-    return dm.add_new_version(dataset_id, new_dataset)
+    try:
+        return dm.add_new_version(dataset_id, new_dataset)
+    except CoreException as e:
+        logger.error(f"\nОшибка: {e.message}\nДетали: {e.detail}")
+        dm.drop_cache()
+        raise HTTPException(
+            status_code=e.status_code,
+            detail=f"{e.message} {e.detail}" if e.detail else e.message
+        )

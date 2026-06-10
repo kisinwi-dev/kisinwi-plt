@@ -100,6 +100,6 @@ def create_dataset(
         logger.error(f"\nОшибка: {e.message}\nДетали: {e.detail}")
         dm.drop_cache()
         raise HTTPException(
-            status_code=e.status_code, 
-            detail=e.message
+            status_code=e.status_code,
+            detail=f"{e.message} {e.detail}" if e.detail else e.message
         )

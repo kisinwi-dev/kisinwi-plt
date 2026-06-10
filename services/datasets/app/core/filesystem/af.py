@@ -74,8 +74,9 @@ class ArchiveManager:
         result = handler(archive_path, extract_folder)
 
         Path.unlink(archive_path)
+        self._flatten_single_root(result)
 
-        return result 
+        return result
 
     def _unpack_zip(self, zip_path: Path, extract_folder: Path) -> Path:
         """Распаковка ZIP-архива"""
@@ -94,6 +95,22 @@ class ArchiveManager:
 
         logger.info(f"ZIP успешно распакован в: {extract_folder.name}")
         return extract_folder
+
+    def _flatten_single_root(self, extract_folder: Path):
+        """
+        Если архив содержит единственную корневую папку (архив папки целиком),
+        поднимает её содержимое на уровень extract_folder и удаляет обёртку
+        """
+        items = list(extract_folder.iterdir())
+        if len(items) != 1 or not items[0].is_dir():
+            return
+
+        root_dir = items[0]
+        logger.info(f"Архив содержит единственную папку `{root_dir.name}` — разворачиваем её содержимое")
+
+        for item in root_dir.iterdir():
+            shutil.move(str(item), extract_folder / item.name)
+        root_dir.rmdir()
 
     def _create_temp_subfolder(self, folder_name: str) -> Path:
         """Создаёт уникальную подпапку внутри temp_folder"""
