@@ -56,6 +56,26 @@ class ModelMetricAdds(BaseModel):
         examples=["2026-06-11T10:00:00Z"],
     )
 
+class CheckpointInfo(BaseModel):
+    """Сохранённые веса модели: эпоха чекпоинта и early-stop-метрика выбора лучшей эпохи"""
+    epoch: int = Field(
+        ...,
+        ge=1,
+        description="Эпоха, веса которой сохранены (нумерация с 1)",
+        examples=[13],
+    )
+    metric: str = Field(
+        ...,
+        description="Early-stop-метрика выбора лучшей эпохи (чистое имя, val-выборка)",
+        examples=["loss"],
+    )
+    value: Optional[float] = Field(
+        None,
+        description="Значение метрики на эпохе чекпоинта; None — улучшение не "
+                    "фиксировалось, сохранены веса финальной эпохи",
+        examples=[0.42],
+    )
+
 class ModelMetrics(BaseModel):
     """ID модели и её метрики, разбитые по выборкам"""
     model_id: str = Field(..., description="ID модели", examples=["model-42"])
@@ -63,6 +83,10 @@ class ModelMetrics(BaseModel):
         None,
         description="Статус обучения; None у моделей, обученных до ввода статусов",
         examples=["in_progress"],
+    )
+    checkpoint: Optional[CheckpointInfo] = Field(
+        None,
+        description="Информация о сохранённых весах; None у моделей, обученных до ввода чекпоинтов",
     )
     train: List[ModelMetricData] = Field(default_factory=list, description="Метрики тренировочной выборки")
     val: List[ModelMetricData] = Field(default_factory=list, description="Метрики валидационной выборки")
@@ -179,6 +203,10 @@ class ModelMetricsSummary(BaseModel):
         default_factory=list,
         description="Разрывы train/val по метрикам, присутствующим в обеих выборках",
     )
+    checkpoint: Optional[CheckpointInfo] = Field(
+        None,
+        description="Информация о сохранённых весах; None у моделей, обученных до ввода чекпоинтов",
+    )
 
 class ModelsCompareRequest(BaseModel):
     """Запрос сравнения нескольких моделей"""
@@ -202,16 +230,30 @@ class ModelComparisonEntry(BaseModel):
     best_value: float = Field(..., description="Лучшее значение с учётом направления метрики")
     best_epoch: int = Field(..., description="Эпоха лучшего значения (нумерация с 1)")
     epochs: int = Field(..., description="Число эпох с записанными значениями")
+    weights_value: float = Field(
+        ...,
+        description="Значение на эпохе сохранённых весов (чекпоинта); при отсутствии "
+                    "checkpoint-информации — final_value",
+    )
+    checkpoint_epoch: Optional[int] = Field(
+        None,
+        description="Эпоха сохранённых весов; None — модель без записанного чекпоинта",
+    )
+    checkpoint_value: Optional[float] = Field(
+        None,
+        description="Значение этой метрики на эпохе чекпоинта; None — чекпоинт "
+                    "неизвестен или эпоха вне диапазона значений",
+    )
     delta_best: float = Field(
         ...,
-        description="Отставание best_value от лидера по этой метрике (0 у лидера)",
+        description="Отставание weights_value от лидера по этой метрике (0 у лидера)",
     )
 
 class MetricComparison(BaseModel):
     """Сравнение моделей по одной метрике"""
     metric: str = Field(..., description="Название метрики", examples=["accuracy"])
     higher_is_better: bool = Field(..., description="Направление метрики")
-    best_model_id: Optional[str] = Field(None, description="ID модели-лидера по лучшему значению")
+    best_model_id: Optional[str] = Field(None, description="ID модели-лидера по weights_value")
     models: List[ModelComparisonEntry] = Field(
         default_factory=list,
         description="Показатели каждой модели, у которой есть эта метрика",

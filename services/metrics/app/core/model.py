@@ -159,9 +159,11 @@ class CVMetricManager(ManagerBase):
     def _doc_to_model_metrics(model_doc: dict) -> ModelMetrics:
         """Сборка ответа из документа: метрики по выборкам"""
         splits = model_doc.get('splits', {})
+        checkpoint = model_doc.get('checkpoint')
         return ModelMetrics(
             model_id=model_doc['model_id'],
             status=model_doc.get('status'),
+            checkpoint=CheckpointInfo(**checkpoint) if checkpoint else None,
             **{
                 split: [
                     ModelMetricData(
@@ -236,6 +238,27 @@ class CVMetricManager(ManagerBase):
             return True
         except PyMongoError as e:
             logger.error(f"Ошибка установки статуса обучения модели(id:{model_id}): {e}")
+            return False
+
+    def set_checkpoint(
+            self,
+            model_id: str,
+            checkpoint: CheckpointInfo
+    ) -> bool:
+        """Сохранение информации о чекпоинте — эпохе сохранённых весов (идемпотентная перезапись)"""
+        try:
+            self.collection.update_one(
+                {'model_id': model_id},
+                {
+                    '$set': {'checkpoint': checkpoint.model_dump()},
+                    '$setOnInsert': {'splits': {split: [] for split in SPLITS}},
+                },
+                upsert=True,
+            )
+            logger.debug(f"Checkpoint модели(id:{model_id}) сохранён: эпоха {checkpoint.epoch}")
+            return True
+        except PyMongoError as e:
+            logger.error(f"Ошибка сохранения checkpoint модели(id:{model_id}): {e}")
             return False
 
     def set_class_report(
