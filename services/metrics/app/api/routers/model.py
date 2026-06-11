@@ -65,7 +65,7 @@ async def get_models_metrics(
                 "разбитые по выборкам (train/val/test)",
     response_description="Метрики модели",
 )
-async def get_task_metrics(
+async def get_model_metrics(
     model_id: str,
     manager: CVMetricManager = Depends(get_cv_training_metrics_manager)
 ):
@@ -80,7 +80,7 @@ async def get_task_metrics(
     description="Проверяет, есть ли в системе сохранённые метрики для указанной модели",
     response_description="Флаг наличия метрик модели",
 )
-async def task_exists(
+async def model_metrics_exists(
     model_id: str,
     manager: CVMetricManager = Depends(get_cv_training_metrics_manager)
 ):
@@ -94,7 +94,7 @@ async def task_exists(
     description="Удаляет все сохранённые метрики указанной модели из системы",
     response_description="Идентификатор модели и признак удаления",
 )
-async def task_delete(
+async def delete_model_metrics(
     model_id: str,
     manager: CVMetricManager = Depends(get_cv_training_metrics_manager)
 ):

@@ -121,7 +121,7 @@ class CVMetricManager(ManagerBase):
             model_doc = self.model_metrics_exists(metrics.model_id)
 
             if model_doc:
-                # Задача существует
+                # Модель существует
                 for metric in metrics.metrics:
                     self._push_metric(metrics.model_id, metric)
             else:
@@ -136,7 +136,7 @@ class CVMetricManager(ManagerBase):
             return True
 
         except PyMongoError as e:
-            logger.error(f"Ошибка добавления метрик модели(id{metrics.model_id}): {e}")
+            logger.error(f"Ошибка добавления метрик модели(id:{metrics.model_id}): {e}")
             return False
 
     @staticmethod
