@@ -5,6 +5,3 @@ export const MODELS_PAGE_SIZE = 12;
 
 // Интервал опроса прогресса активной дискуссии (meta и лента сообщений).
 export const POLL_INTERVAL_DISCUSSION_MS = 3000;
-
-// Интервал опроса метрик модели на странице деталей.
-export const POLL_INTERVAL_METRICS_MS = 5000;

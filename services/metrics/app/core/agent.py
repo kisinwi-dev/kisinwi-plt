@@ -9,32 +9,31 @@ logger = get_logger(__name__)
 
 class AgentsResponseManager(ManagerBase):
 
+    def ensure_indexes(self):
+        """Уникальный индекс по response_id: защита от дубликатов и ускорение поиска"""
+        try:
+            self.collection.create_index('response_id', unique=True)
+        except PyMongoError as e:
+            logger.error(f"Не удалось создать индекс response_id: {e}")
+
     def add_response(
-        self, 
+        self,
         response: AgentResponse
     ) -> bool:
-        """Добавление нового ответа агента"""
-        try:
-            # Проверяем, существования response
-            existing = self.collection.find_one(
-                {'response_id': response.response_id},
-                {'_id': 1}
-            )
-            
-            if existing:
-                logger.warning(f"Метрики для ответа (id:'{response.response_id}') уже существуют")
-                return False
-            
-            result = self.collection.insert_one(response.model_dump())
-            
-            if result.inserted_id:
-                logger.debug(f"✅ Добавлены метрики ответа(id:'{response.response_id}')")
-                return True
+        """Добавление нового ответа агента; False — метрики ответа уже существуют"""
+        # Проверяем, существования response
+        existing = self.collection.find_one(
+            {'response_id': response.response_id},
+            {'_id': 1}
+        )
+
+        if existing:
+            logger.warning(f"Метрики для ответа (id:'{response.response_id}') уже существуют")
             return False
-            
-        except PyMongoError as e:
-            logger.error(f"Ошибка добавления метрик ответа(id:'{response.response_id}'): {e}")
-            return False
+
+        self.collection.insert_one(response.model_dump())
+        logger.debug(f"✅ Добавлены метрики ответа(id:'{response.response_id}')")
+        return True
 
     def get_response_by_id(
             self, 
@@ -61,12 +60,9 @@ class AgentsResponseManager(ManagerBase):
     ) -> AgentDiscussionMetrics:
         """Метрики всех агентов дискуссии и суммарная сводка по числовым полям"""
         responses: List[AgentResponse] = []
-        try:
-            for doc in self.collection.find({'discussion_id': discussion_id}):
-                doc.pop('_id', None)
-                responses.append(AgentResponse(**doc))
-        except PyMongoError as e:
-            logger.error(f"Ошибка получения метрик дискуссии(id:'{discussion_id}'): {e}")
+        for doc in self.collection.find({'discussion_id': discussion_id}):
+            doc.pop('_id', None)
+            responses.append(AgentResponse(**doc))
 
         summary: dict = {"responses_count": len(responses)}
         for response in responses:

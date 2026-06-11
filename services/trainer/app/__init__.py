@@ -12,6 +12,7 @@ from .core import training_model
 from .core.exceptions import TaskCancelledError
 from .logs import get_logger
 from .service.tasker import tasker_service
+from .service.metrices import send_training_status
 from .service.ml_models import get_params, patch_model_status
 
 logger = get_logger(__name__)
@@ -102,16 +103,19 @@ async def to_work():
                 )
 
                 await patch_model_status(model_id, "training")
+                # in_progress сбрасывает финальный статус при переобучении той же модели
+                await send_training_status(model_id, "in_progress")
                 # Процесс обучения
                 await training_model(params, model_id)
 
                 # Завершение
                 await tasker_service.update_status_task(
-                    status="completed", 
+                    status="completed",
                     percentages=100,
-                    status_info="Задача выполнена", 
+                    status_info="Задача выполнена",
                 )
                 await patch_model_status(model_id, "completed")
+                await send_training_status(model_id, "completed")
                 logger.info(f"Задача '{task_id}' по обучению модели '{model_id}' выполнена")
 
             except torch.cuda.OutOfMemoryError as e:
@@ -121,6 +125,7 @@ async def to_work():
                     task_id,
                     error="Не хватило памяти GPU: уменьшите batch_size или разрешение изображений"
                 )
+                await send_training_status(model_id, "failed")
                 try:
                     await patch_model_status(model_id, "draft")
                 except Exception as status_error:
@@ -129,6 +134,7 @@ async def to_work():
             except TaskCancelledError:
                 # Статус задачи уже cancelled (его поставил tasker), не перетираем
                 logger.info(f"Задача '{task_id}' отменена пользователем, модель '{model_id}' возвращена в draft")
+                await send_training_status(model_id, "cancelled")
                 try:
                     await patch_model_status(model_id, "draft")
                 except Exception as status_error:
@@ -137,6 +143,7 @@ async def to_work():
             except Exception as e:
                 logger.error(f"Ошибка task_id='{task_id}' model_id='{model_id}': {e}", exc_info=True)
                 await report_task_failed(task_id, error=f"Ошибка: {str(e)}")
+                await send_training_status(model_id, "failed")
                 try:
                     await patch_model_status(model_id, "draft")
                 except Exception as status_error:
@@ -164,6 +171,7 @@ async def recover_orphaned_tasks():
             task_id,
             error="Обучение прервано перезапуском trainer"
         )
+        await send_training_status(model_id, "failed")
         try:
             await patch_model_status(model_id, "draft")
         except Exception as status_error:

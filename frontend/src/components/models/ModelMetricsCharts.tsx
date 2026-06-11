@@ -8,37 +8,71 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { metricsService } from '../../services/metricsService';
-import { usePolling } from '../../hooks';
-import { POLL_INTERVAL_METRICS_MS } from '../../constants';
+import type { ModelMetrics, Split } from '../../services/metricsService';
+import { useModelMetricsStream } from '../../hooks';
 import { ICONS } from '../../constants/icons';
 
 interface Props {
   modelId: string;
 }
 
-const CHART_COLOR = '#b15e6b';
+const SPLITS: Split[] = ['train', 'val', 'test'];
+
+const SPLIT_COLORS: Record<Split, string> = {
+  train: '#b15e6b',
+  val: '#5e8ab1',
+  test: '#8a93a3',
+};
 const GRID_COLOR = 'rgba(255,255,255,0.06)';
 const AXIS_COLOR = '#b0b8c5';
 
-const toChartData = (values: number[]) =>
-  values.map((v, i) => ({ epoch: i + 1, value: v }));
+interface MetricChart {
+  name: string;
+  splits: Split[];
+  // Строки графика: эпоха + значение каждой выборки, у которой она есть.
+  rows: Array<{ epoch: number } & Partial<Record<Split, number>>>;
+  maxPoints: number;
+}
+
+// Группировка метрик по имени: один график на метрику, линия на выборку.
+const toMetricCharts = (data: ModelMetrics): MetricChart[] => {
+  const byName = new Map<string, Partial<Record<Split, number[]>>>();
+  for (const split of SPLITS) {
+    for (const metric of data[split]) {
+      if (metric.values.length === 0) continue;
+      const series = byName.get(metric.name) ?? {};
+      series[split] = metric.values;
+      byName.set(metric.name, series);
+    }
+  }
+
+  return Array.from(byName.entries()).map(([name, series]) => {
+    const splits = SPLITS.filter((split) => series[split] !== undefined);
+    const maxPoints = Math.max(...splits.map((split) => series[split]!.length));
+    const rows = Array.from({ length: maxPoints }, (_, i) => {
+      const row: MetricChart['rows'][number] = { epoch: i + 1 };
+      for (const split of splits) {
+        const value = series[split]![i];
+        if (value !== undefined) row[split] = value;
+      }
+      return row;
+    });
+    return { name, splits, rows, maxPoints };
+  });
+};
 
 const formatValue = (v: number) =>
   Number.isInteger(v) ? String(v) : v.toFixed(4);
 
 const ModelMetricsCharts: React.FC<Props> = ({ modelId }) => {
-  const { data, loading, error } = usePolling(
-    () => metricsService.getModelMetrics(modelId),
-    { intervalMs: POLL_INTERVAL_METRICS_MS, deps: [modelId] },
-  );
+  const { data, loading, error } = useModelMetricsStream(modelId);
 
-  const metrics = data?.metrics ?? [];
+  const charts = data ? toMetricCharts(data) : [];
   // Ошибку показываем только если так и не получили данные (первая загрузка упала).
   const status: 'loading' | 'empty' | 'error' | 'ready' =
-    loading && data === undefined ? 'loading'
+    loading ? 'loading'
     : error && data === undefined ? 'error'
-    : metrics.length === 0 ? 'empty'
+    : charts.length === 0 ? 'empty'
     : 'ready';
 
   if (status === 'loading') {
@@ -67,11 +101,20 @@ const ModelMetricsCharts: React.FC<Props> = ({ modelId }) => {
 
   return (
     <div className="metrics-charts">
-      {metrics.map((metric) => (
-        <div key={metric.name} className="metrics-chart-block">
-          <p className="metrics-chart-title">{metric.name}</p>
+      {charts.map((chart) => (
+        <div key={chart.name} className="metrics-chart-block">
+          <p className="metrics-chart-title">
+            {chart.name}
+            <span style={{ marginLeft: 12, fontSize: 11 }}>
+              {chart.splits.map((split) => (
+                <span key={split} style={{ color: SPLIT_COLORS[split], marginRight: 8 }}>
+                  ● {split}
+                </span>
+              ))}
+            </span>
+          </p>
           <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={toChartData(metric.values)} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
+            <LineChart data={chart.rows} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} />
               <XAxis
                 dataKey="epoch"
@@ -96,17 +139,20 @@ const ModelMetricsCharts: React.FC<Props> = ({ modelId }) => {
                   fontSize: 12,
                   color: 'var(--color-text-primary)',
                 }}
-                formatter={(value) => [formatValue(Number(value)), metric.name]}
+                formatter={(value, name) => [formatValue(Number(value)), String(name)]}
                 labelFormatter={(label) => `Эпоха ${label}`}
               />
-              <Line
-                type="monotone"
-                dataKey="value"
-                stroke={CHART_COLOR}
-                strokeWidth={2}
-                dot={metric.values.length <= 40}
-                activeDot={{ r: 4, fill: CHART_COLOR }}
-              />
+              {chart.splits.map((split) => (
+                <Line
+                  key={split}
+                  type="monotone"
+                  dataKey={split}
+                  stroke={SPLIT_COLORS[split]}
+                  strokeWidth={2}
+                  dot={chart.maxPoints <= 40}
+                  activeDot={{ r: 4, fill: SPLIT_COLORS[split] }}
+                />
+              ))}
             </LineChart>
           </ResponsiveContainer>
         </div>

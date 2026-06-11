@@ -42,7 +42,7 @@ async def training_model(config: TaskParams, model_id: str):
     metric_client = MetricesClient(
         model_id=model_id,
         metrices_params=config.metrices_params,
-        num_class=len(classes),
+        classes=classes,
         device=device,
         early_stop_params=config.trainer_params.early_stop
     )

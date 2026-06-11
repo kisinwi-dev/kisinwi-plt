@@ -1,6 +1,11 @@
 from fastapi import APIRouter, HTTPException, Depends
 
-from app.api.schemas import AgentResponse, AgentDiscussionMetrics
+from app.api.schemas import (
+    AgentResponse,
+    AgentDiscussionMetrics,
+    AgentAddResponse,
+    AgentDeleteResponse,
+)
 from app.api.deps import get_agent_metrics_manager, AgentsResponseManager
 from app.logs import get_logger
 
@@ -10,9 +15,14 @@ router = APIRouter(prefix="/agents", tags=["agents"])
 
 @router.post(
     "/add",
+    response_model=AgentAddResponse,
     summary="Добавить метрики ответа агента",
     description="Сохраняет метрики использования (токены и т.п.) одного ответа агента",
     response_description="Идентификатор ответа и признак добавления",
+    responses={
+        409: {"description": "Метрики ответа уже существуют"},
+        500: {"description": "Ошибка записи метрик в БД"},
+    },
 )
 async def add_agent_response(
     response: AgentResponse,
@@ -29,7 +39,7 @@ async def add_agent_response(
             status_code=409,
             detail=f"Метрики ответа {response.response_id} уже существуют"
         )
-    return {"response_id": response.response_id, "added": True}
+    return AgentAddResponse(response_id=response.response_id, added=True)
 
 @router.get(
     "/discussions/{discussion_id}",
@@ -37,6 +47,9 @@ async def add_agent_response(
     summary="Получить метрики дискуссии",
     description="Возвращает метрики всех ответов агентов дискуссии и суммарную сводку по токенам",
     response_description="Метрики ответов дискуссии и их сводка",
+    responses={
+        500: {"description": "Ошибка чтения метрик из БД"},
+    },
 )
 async def get_discussion_metrics(
     discussion_id: str,
@@ -54,6 +67,10 @@ async def get_discussion_metrics(
     summary="Получить метрики ответа агента",
     description="Возвращает метрики указанного ответа агента по его идентификатору",
     response_description="Метрики ответа агента",
+    responses={
+        404: {"description": "Метрики ответа не найдены"},
+        500: {"description": "Ошибка чтения метрик из БД"},
+    },
 )
 async def get_agent_response(
     response_id: str,
@@ -71,9 +88,14 @@ async def get_agent_response(
 
 @router.delete(
     "/{response_id}",
+    response_model=AgentDeleteResponse,
     summary="Удалить метрики ответа агента",
     description="Удаляет сохранённые метрики указанного ответа агента из системы",
     response_description="Идентификатор ответа и признак удаления",
+    responses={
+        404: {"description": "Метрики ответа не найдены"},
+        500: {"description": "Ошибка удаления метрик из БД"},
+    },
 )
 async def delete_agent_response(
     response_id: str,
@@ -87,4 +109,4 @@ async def delete_agent_response(
 
     if not deleted:
         raise HTTPException(status_code=404, detail=f"Метрики ответа {response_id} не найдены")
-    return {"response_id": response_id, "deleted": True}
+    return AgentDeleteResponse(response_id=response_id, deleted=True)
