@@ -7,12 +7,12 @@ from app.api.schemas import TaskParams, ConfigValidationResponse
 
 logger = get_logger(__name__)
 
-routers = APIRouter(
+router = APIRouter(
     prefix='/config',
     tags=['Validation']
 )
 
-@routers.post(
+@router.post(
         "/validate",
         response_model=ConfigValidationResponse,
         summary="Проверить конфигурацию обучения"
