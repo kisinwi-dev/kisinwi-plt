@@ -469,6 +469,54 @@
   margin-bottom: 1rem;
 }
 
+/* Раздельные секции по выборкам: train / val / test */
+.metrics-split-section {
+  margin-bottom: 1.25rem;
+}
+
+.metrics-split-title {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+}
+
+/* Скалярные карточки для одиночных финальных значений (test) */
+.metrics-scalar-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.metrics-scalar-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 140px;
+  padding: 0.85rem 1rem;
+  background: var(--color-bg-deep);
+  border: var(--border-soft);
+  border-radius: var(--radius-input);
+}
+
+.metrics-scalar-card-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+}
+
+.metrics-scalar-card-value {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
 .metrics-chart-block {
   background: var(--color-bg-deep);
   border: var(--border-soft);
@@ -496,6 +544,88 @@
 
 .metrics-charts-placeholder--error {
   color: var(--color-danger);
+}
+
+/* Training status badge */
+.metrics-status-row {
+  margin-bottom: 0.75rem;
+}
+
+.metrics-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-input);
+  border: var(--border-soft);
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-deep);
+}
+
+.metrics-status-badge--completed {
+  color: var(--color-success);
+}
+
+.metrics-status-badge--failed {
+  color: var(--color-danger);
+}
+
+.metrics-status-badge--cancelled {
+  color: var(--color-text-secondary);
+}
+
+/* Class report: confusion matrix + per-class metrics */
+.class-report {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-top: 0.75rem;
+}
+
+.class-report-block {
+  background: var(--color-bg-deep);
+  border: var(--border-soft);
+  border-radius: var(--radius-input);
+  padding: 0.85rem 0.75rem;
+  min-width: 0;
+}
+
+.class-report-table-wrap {
+  overflow-x: auto;
+}
+
+.class-report-table {
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  color: var(--color-text-primary);
+}
+
+.class-report-table th,
+.class-report-table td {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.class-report-table th {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  text-align: left;
+}
+
+.class-report-table thead th {
+  text-align: right;
+}
+
+.class-report-table thead th:first-child {
+  text-align: left;
+}
+
+.class-report-corner {
+  font-weight: 400;
+  font-size: 0.72rem;
 }
 
 /* Collapsible text report */
