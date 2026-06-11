@@ -208,11 +208,11 @@ class Trainer:
             if is_batch_scheduler:
                 self.scheduler.step()
 
-            # Обновление метрик
-            _, predicted = torch.max(outputs, dim=1)
+            # Обновление метрик: передаём логиты [N, C] — label-метрики берут
+            # argmax сами, AUROC требует именно логиты/вероятности
             self._metric_service.update(
                 type='train',
-                preds=predicted,
+                preds=outputs.detach().float(),
                 targets=labels,
                 loss=loss
             )
@@ -328,12 +328,11 @@ class Trainer:
                 # Рассчёт loss
                 loss_targets = self._prepare_labels_for_loss(outputs, labels)
                 loss = self.loss_fn(outputs, loss_targets)
-                _, predicted = torch.max(outputs, dim=1)
 
-                # Обновление метрик
+                # Обновление метрик (логиты [N, C], см. _train_one_epoch)
                 self._metric_service.update(
                     type='val',
-                    preds=predicted,
+                    preds=outputs,
                     targets=labels,
                     loss=loss
                 )
@@ -360,10 +359,9 @@ class Trainer:
                 labels = labels.to(self.device)
                 outputs = self.model(inputs)
 
-                _, predicted = torch.max(outputs, dim=1)
                 self._metric_service.update(
                     'test',
-                    preds=predicted,
+                    preds=outputs,
                     targets=labels
                 )
 
