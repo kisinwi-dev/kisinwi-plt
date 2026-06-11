@@ -12,6 +12,9 @@ from app.api.schemas import (
     ModelMetricsSummary,
     ModelsCompareRequest,
     ModelsCompareResponse,
+    StatusResponse,
+    ModelExistsResponse,
+    ModelDeleteResponse,
 )
 from app.api.deps import (
     get_cv_training_metrics_manager,
@@ -32,11 +35,15 @@ KEEPALIVE_INTERVAL_S = 15.0
 
 @router.post(
     "/add",
+    response_model=StatusResponse,
     summary="Добавить метрику модели",
     description="Добавляет значения одной метрики модели в её выборку (train/val/test); "
                 "выборка берётся из поля split или из префикса названия; "
                 "при отсутствии модели создаёт запись",
     response_description="Статус операции",
+    responses={
+        500: {"description": "Ошибка записи метрики в БД"},
+    },
 )
 async def add_metric(
     metric: ModelMetricAdd,
@@ -47,14 +54,18 @@ async def add_metric(
     if not success:
         raise HTTPException(status_code=500, detail="Ошибка добавления метрики")
     broker.publish(metric.model_id)
-    return {"status": "ok"}
+    return StatusResponse(status="ok")
 
 @router.post(
     "/adds",
+    response_model=StatusResponse,
     summary="Добавить несколько метрик модели",
     description="Добавляет значения сразу нескольких метрик модели за один запрос (используется при обучении); "
                 "каждая метрика попадает в свою выборку (train/val/test)",
     response_description="Статус операции",
+    responses={
+        500: {"description": "Ошибка записи метрик в БД"},
+    },
 )
 async def add_metrics(
     metric: ModelMetricAdds,
@@ -65,7 +76,7 @@ async def add_metrics(
     if not success:
         raise HTTPException(status_code=500, detail="Ошибка добавления метрик")
     broker.publish(metric.model_id)
-    return {"status": "ok"}
+    return StatusResponse(status="ok")
 
 @router.post(
     "/batch",
@@ -106,6 +117,9 @@ async def compare_models_metrics(
     description="Возвращает все метрики указанной модели с их значениями по эпохам, "
                 "разбитые по выборкам (train/val/test)",
     response_description="Метрики модели",
+    responses={
+        404: {"description": "Метрики модели не найдены"},
+    },
 )
 async def get_model_metrics(
     model_id: str,
@@ -126,6 +140,19 @@ async def get_model_metrics(
                 "Для модели без метрик отдаётся пустой снимок — подключаться можно до первой эпохи. "
                 "Сервис не знает о завершении обучения: поток открыт до отключения клиента",
     response_description="Поток событий text/event-stream",
+    responses={
+        200: {
+            "description": "Поток SSE: события metrics с JSON-телом схемы ModelMetrics",
+            "content": {
+                "text/event-stream": {
+                    "schema": {"type": "string"},
+                    "example": 'event: metrics\n'
+                               'data: {"model_id": "model-42", "train": [{"name": "loss", '
+                               '"split": "train", "values": [0.91, 0.55]}], "val": [], "test": []}\n\n',
+                }
+            },
+        },
+    },
 )
 async def stream_model_metrics(
     model_id: str,
@@ -168,6 +195,9 @@ async def stream_model_metrics(
                 "Направление метрики определяется по названию: loss/error-подобные — "
                 "чем меньше, тем лучше, остальные — чем больше",
     response_description="Сводка метрик модели по выборкам",
+    responses={
+        404: {"description": "Метрики модели не найдены"},
+    },
 )
 async def get_model_metrics_summary(
     model_id: str,
@@ -180,6 +210,7 @@ async def get_model_metrics_summary(
 
 @router.get(
     "/{model_id}/exists",
+    response_model=ModelExistsResponse,
     summary="Проверить наличие метрик модели",
     description="Проверяет, есть ли в системе сохранённые метрики для указанной модели",
     response_description="Флаг наличия метрик модели",
@@ -189,14 +220,18 @@ async def model_metrics_exists(
     manager: CVMetricManager = Depends(get_cv_training_metrics_manager)
 ):
     exists = manager.model_metrics_exists(model_id)
-    return {"model_id": model_id, "exists": exists}
+    return ModelExistsResponse(model_id=model_id, exists=exists)
 
 
 @router.delete(
     "/{model_id}",
+    response_model=ModelDeleteResponse,
     summary="Удалить метрики модели",
     description="Удаляет все сохранённые метрики указанной модели из системы",
     response_description="Идентификатор модели и признак удаления",
+    responses={
+        404: {"description": "Метрики модели не найдены"},
+    },
 )
 async def delete_model_metrics(
     model_id: str,
@@ -207,4 +242,4 @@ async def delete_model_metrics(
     if not deleted:
         raise HTTPException(status_code=404, detail=f"Метрики модели {model_id} не найдены")
     broker.publish(model_id)
-    return {"model_id": model_id, "deleted": True}
+    return ModelDeleteResponse(model_id=model_id, deleted=True)

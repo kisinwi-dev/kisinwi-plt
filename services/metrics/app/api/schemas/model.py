@@ -5,33 +5,64 @@ Split = Literal["train", "val", "test"]
 
 class ModelMetricData(BaseModel):
     """Схема метрик"""
-    name: str = Field(..., description="Название метрики")
+    name: str = Field(..., description="Название метрики", examples=["loss"])
     split: Optional[Split] = Field(
         None,
-        description="Выборка (train/val/test); если не задана — выводится из префикса названия"
+        description="Выборка (train/val/test); если не задана — выводится из префикса названия",
+        examples=["train"],
     )
-    values: List[Any] = Field(default_factory=list, description="Значения метрик")
+    values: List[Any] = Field(
+        default_factory=list,
+        description="Значения метрик",
+        examples=[[0.91, 0.55, 0.42]],
+    )
 
 class ModelMetricAdd(BaseModel):
     """Схема на добавление метрики"""
-    model_id: str = Field(..., description="ID модели")
+    model_id: str = Field(..., description="ID модели", examples=["model-42"])
     metric: ModelMetricData = Field(..., description="Метрика")
 
 class ModelMetricAdds(BaseModel):
     """Схема на добавление нескольких метрик"""
-    model_id: str = Field(..., description="ID модели")
-    metrics: List[ModelMetricData] = Field(default_factory=list, description="Список метрик")
+    model_id: str = Field(..., description="ID модели", examples=["model-42"])
+    metrics: List[ModelMetricData] = Field(
+        default_factory=list,
+        description="Список метрик",
+        examples=[[
+            {"name": "train_loss", "values": [0.91]},
+            {"name": "val_loss", "values": [1.02]},
+            {"name": "val_accuracy", "values": [0.63]},
+        ]],
+    )
 
 class ModelMetrics(BaseModel):
     """ID модели и её метрики, разбитые по выборкам"""
-    model_id: str = Field(..., description="ID модели")
+    model_id: str = Field(..., description="ID модели", examples=["model-42"])
     train: List[ModelMetricData] = Field(default_factory=list, description="Метрики тренировочной выборки")
     val: List[ModelMetricData] = Field(default_factory=list, description="Метрики валидационной выборки")
     test: List[ModelMetricData] = Field(default_factory=list, description="Метрики тестовой выборки")
 
 class ModelMetricsBatchRequest(BaseModel):
     """Запрос метрик сразу нескольких моделей"""
-    model_ids: List[str] = Field(default_factory=list, description="Список ID моделей")
+    model_ids: List[str] = Field(
+        default_factory=list,
+        description="Список ID моделей",
+        examples=[["model-42", "model-43"]],
+    )
+
+class StatusResponse(BaseModel):
+    """Статус выполнения операции"""
+    status: str = Field(..., description="Статус операции", examples=["ok"])
+
+class ModelExistsResponse(BaseModel):
+    """Признак наличия метрик модели"""
+    model_id: str = Field(..., description="ID модели", examples=["model-42"])
+    exists: bool = Field(..., description="Есть ли сохранённые метрики модели")
+
+class ModelDeleteResponse(BaseModel):
+    """Результат удаления метрик модели"""
+    model_id: str = Field(..., description="ID модели", examples=["model-42"])
+    deleted: bool = Field(..., description="Признак удаления метрик")
 
 class MetricSummary(BaseModel):
     """Сводка по одной метрике в рамках выборки"""
