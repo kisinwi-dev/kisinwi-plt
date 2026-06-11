@@ -4,6 +4,8 @@ from typing import List, Any, Literal, Optional
 
 Split = Literal["train", "val", "test"]
 
+TrainingStatus = Literal["in_progress", "completed", "failed", "cancelled"]
+
 class ModelMetricData(BaseModel):
     """Схема метрик"""
     name: str = Field(..., description="Название метрики", examples=["loss"])
@@ -57,9 +59,28 @@ class ModelMetricAdds(BaseModel):
 class ModelMetrics(BaseModel):
     """ID модели и её метрики, разбитые по выборкам"""
     model_id: str = Field(..., description="ID модели", examples=["model-42"])
+    status: Optional[TrainingStatus] = Field(
+        None,
+        description="Статус обучения; None у моделей, обученных до ввода статусов",
+        examples=["in_progress"],
+    )
     train: List[ModelMetricData] = Field(default_factory=list, description="Метрики тренировочной выборки")
     val: List[ModelMetricData] = Field(default_factory=list, description="Метрики валидационной выборки")
     test: List[ModelMetricData] = Field(default_factory=list, description="Метрики тестовой выборки")
+
+class ModelTrainingStatusUpdate(BaseModel):
+    """Установка статуса обучения модели"""
+    status: TrainingStatus = Field(
+        ...,
+        description="Статус обучения: in_progress ставится на старте (в т.ч. сбрасывает "
+                    "финальный статус при переобучении), completed/failed/cancelled — финальные",
+        examples=["completed"],
+    )
+
+class ModelTrainingStatusResponse(BaseModel):
+    """Текущий статус обучения модели"""
+    model_id: str = Field(..., description="ID модели", examples=["model-42"])
+    status: TrainingStatus = Field(..., description="Статус обучения", examples=["completed"])
 
 class ModelMetricsBatchRequest(BaseModel):
     """Запрос метрик сразу нескольких моделей"""

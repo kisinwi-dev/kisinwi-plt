@@ -1,3 +1,4 @@
+import httpx
 import requests
 from datetime import datetime, timezone
 from typing import Dict, Any
@@ -10,6 +11,34 @@ from app.config import config_services
 from app.logs import get_logger
 
 logger = get_logger(__name__)
+
+METRICS_URL = config_services.METRICS['url']
+
+# Общий async-клиент для статусов обучения (живёт всё время работы воркера)
+_status_client = httpx.AsyncClient(timeout=30.0)
+
+async def send_training_status(
+    model_id: str,
+    status: str
+) -> bool:
+    """
+    Отправка статуса обучения в сервис метрик
+    (in_progress / completed / failed / cancelled).
+
+    Ошибки не пробрасываются: репортинг в metrics
+    не должен ломать поток статусов tasker.
+    """
+    try:
+        res = await _status_client.post(
+            f"{METRICS_URL}/models/{model_id}/status",
+            json={"status": status}
+        )
+        res.raise_for_status()
+        logger.debug(f"✅ Статус обучения '{status}' модели {model_id} отправлен в сервис метрик")
+        return True
+    except httpx.HTTPError as e:
+        logger.error(f"😡 Не удалось отправить статус обучения модели {model_id}: {e}")
+        return False
 
 class MetricesClient:
     """

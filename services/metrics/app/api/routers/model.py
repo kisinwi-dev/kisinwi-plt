@@ -1,4 +1,5 @@
 import asyncio
+import json
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -12,6 +13,8 @@ from app.api.schemas import (
     ModelMetricsSummary,
     ModelsCompareRequest,
     ModelsCompareResponse,
+    ModelTrainingStatusUpdate,
+    ModelTrainingStatusResponse,
     StatusResponse,
     ModelExistsResponse,
     ModelDeleteResponse,
@@ -22,6 +25,7 @@ from app.api.deps import (
     get_metric_stream_broker,
     MetricStreamBroker,
 )
+from app.core.model import FINAL_TRAINING_STATUSES
 from app.core.stats import compute_model_summary, compare_models
 from app.core.stream import format_sse
 from app.logs import get_logger
@@ -136,19 +140,26 @@ async def get_model_metrics(
     description="Server-Sent Events: при подключении отправляет событие metrics с текущим "
                 "снимком метрик модели (схема ModelMetrics), затем шлёт такое же событие "
                 "при каждом добавлении метрик (раз в эпоху от trainer). "
+                "Когда trainer ставит финальный статус (completed/failed/cancelled), после снимка "
+                "отправляется событие end с телом {model_id, status} — один раз на соединение; "
+                "подписчику уже завершённой модели снимок и end приходят сразу при подключении. "
+                "После end поток не закрывается сервером — клиент закрывает EventSource сам. "
                 "Каждые 15 секунд отправляется keepalive-комментарий. "
-                "Для модели без метрик отдаётся пустой снимок — подключаться можно до первой эпохи. "
-                "Сервис не знает о завершении обучения: поток открыт до отключения клиента",
+                "Для модели без метрик отдаётся пустой снимок — подключаться можно до первой эпохи",
     response_description="Поток событий text/event-stream",
     responses={
         200: {
-            "description": "Поток SSE: события metrics с JSON-телом схемы ModelMetrics",
+            "description": "Поток SSE: события metrics с JSON-телом схемы ModelMetrics "
+                           "и событие end по завершении обучения",
             "content": {
                 "text/event-stream": {
                     "schema": {"type": "string"},
                     "example": 'event: metrics\n'
-                               'data: {"model_id": "model-42", "train": [{"name": "loss", '
-                               '"split": "train", "values": [0.91, 0.55]}], "val": [], "test": []}\n\n',
+                               'data: {"model_id": "model-42", "status": "completed", '
+                               '"train": [{"name": "loss", "split": "train", "values": [0.91, 0.55]}], '
+                               '"val": [], "test": []}\n\n'
+                               'event: end\n'
+                               'data: {"model_id": "model-42", "status": "completed"}\n\n',
                 }
             },
         },
@@ -159,21 +170,37 @@ async def stream_model_metrics(
     manager: CVMetricManager = Depends(get_cv_training_metrics_manager),
     broker: MetricStreamBroker = Depends(get_metric_stream_broker),
 ):
-    def snapshot() -> str:
-        metrics = manager.get_model_metrics(model_id) or ModelMetrics(model_id=model_id)
-        return format_sse("metrics", metrics.model_dump_json())
+    def snapshot() -> ModelMetrics:
+        return manager.get_model_metrics(model_id) or ModelMetrics(model_id=model_id)
 
     async def event_generator():
         queue = broker.subscribe(model_id)
+        end_sent = False
+
+        def frames() -> str:
+            """Кадр снимка + однократный кадр end при финальном статусе"""
+            nonlocal end_sent
+            metrics = snapshot()
+            out = format_sse("metrics", metrics.model_dump_json())
+            if not end_sent and metrics.status in FINAL_TRAINING_STATUSES:
+                out += format_sse(
+                    "end",
+                    json.dumps({"model_id": model_id, "status": metrics.status}),
+                )
+                end_sent = True
+            return out
+
         try:
-            yield snapshot()
+            yield frames()
+            # После end поток не закрываем: текущие клиенты EventSource
+            # иначе уйдут в бесконечный цикл переподключений
             while True:
                 try:
                     await asyncio.wait_for(queue.get(), timeout=KEEPALIVE_INTERVAL_S)
                     # Схлопываем накопившиеся уведомления — снимок всё равно полный
                     while not queue.empty():
                         queue.get_nowait()
-                    yield snapshot()
+                    yield frames()
                 except asyncio.TimeoutError:
                     yield ": ping\n\n"
         finally:
@@ -222,6 +249,30 @@ async def model_metrics_exists(
     exists = manager.model_metrics_exists(model_id)
     return ModelExistsResponse(model_id=model_id, exists=exists)
 
+@router.post(
+    "/{model_id}/status",
+    response_model=ModelTrainingStatusResponse,
+    summary="Установить статус обучения модели",
+    description="Вызывается trainer'ом: in_progress — на старте обучения (сбрасывает финальный "
+                "статус при переобучении той же модели), completed/failed/cancelled — по итогу. "
+                "Финальный статус доставляется подписчикам SSE-потока событием end. "
+                "Если метрик у модели ещё нет, документ создаётся (upsert)",
+    response_description="Установленный статус обучения",
+    responses={
+        500: {"description": "Ошибка записи статуса в БД"},
+    },
+)
+async def set_training_status(
+    model_id: str,
+    body: ModelTrainingStatusUpdate,
+    manager: CVMetricManager = Depends(get_cv_training_metrics_manager),
+    broker: MetricStreamBroker = Depends(get_metric_stream_broker),
+):
+    success = manager.set_training_status(model_id, body.status)
+    if not success:
+        raise HTTPException(status_code=500, detail="Ошибка установки статуса обучения")
+    broker.publish(model_id)
+    return ModelTrainingStatusResponse(model_id=model_id, status=body.status)
 
 @router.delete(
     "/{model_id}",

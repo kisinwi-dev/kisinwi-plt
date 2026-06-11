@@ -10,6 +10,8 @@ logger = get_logger(__name__)
 
 SPLITS = ("train", "val", "test")
 
+FINAL_TRAINING_STATUSES = ("completed", "failed", "cancelled")
+
 def parse_split(name: str) -> Tuple[str, str]:
     """
     Определение выборки по префиксу названия метрики.
@@ -90,6 +92,7 @@ class CVMetricManager(ManagerBase):
             })
         return {
             'model_id': model_id,
+            'status': 'in_progress',
             'splits': splits,
         }
 
@@ -158,6 +161,7 @@ class CVMetricManager(ManagerBase):
         splits = model_doc.get('splits', {})
         return ModelMetrics(
             model_id=model_doc['model_id'],
+            status=model_doc.get('status'),
             **{
                 split: [
                     ModelMetricData(
@@ -207,6 +211,32 @@ class CVMetricManager(ManagerBase):
         """Проверка существования метрик для модели"""
         task = self.collection.find_one({'model_id': model_id}, {'_id': 1})
         return task is not None
+
+    def set_training_status(
+            self,
+            model_id: str,
+            status: str
+    ) -> bool:
+        """
+        Установка статуса обучения модели.
+
+        Upsert: если обучение упало до записи первой метрики,
+        документ создаётся с пустыми выборками.
+        """
+        try:
+            self.collection.update_one(
+                {'model_id': model_id},
+                {
+                    '$set': {'status': status},
+                    '$setOnInsert': {'splits': {split: [] for split in SPLITS}},
+                },
+                upsert=True,
+            )
+            logger.debug(f"Статус обучения модели(id:{model_id}) установлен: {status}")
+            return True
+        except PyMongoError as e:
+            logger.error(f"Ошибка установки статуса обучения модели(id:{model_id}): {e}")
+            return False
 
     def delete_metric(
             self,
