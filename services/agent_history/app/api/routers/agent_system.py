@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Response, status
 
 from app.api.schemas import SystemMessage
-from app.api.deps import system_storage
+from app.api.deps import system_storage, discussion_stream_broker
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -27,6 +27,7 @@ async def post_system_message(
             discussion_id=discussion_id,
             message=message
         )
+        discussion_stream_broker.publish(discussion_id)
 
         return Response(status_code=status.HTTP_201_CREATED)
     except Exception as e:
