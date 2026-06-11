@@ -42,6 +42,30 @@ export interface StreamEndEvent {
   status: TrainingStatus;
 }
 
+export interface CompareModelEntry {
+  model_id: string;
+  final_value: number;
+  best_value: number;
+  best_epoch: number;
+  epochs: number;
+  // Отставание от лидера по best_value (0 у лидера).
+  delta_best: number;
+}
+
+export interface CompareMetric {
+  metric: string;
+  higher_is_better: boolean;
+  best_model_id: string | null;
+  models: CompareModelEntry[];
+}
+
+export interface ModelsCompareResponse {
+  split: Split;
+  metrics: CompareMetric[];
+  // Модели без сохранённых метрик (не ошибка).
+  missing: string[];
+}
+
 interface MetricsStreamHandlers {
   onMetrics: (metrics: ModelMetrics) => void;
   onEnd?: (event: StreamEndEvent) => void;
@@ -53,6 +77,16 @@ export const metricsService = {
     const response = await fetch(`${BASE}/models/${modelId}`);
     if (response.status === 404) return null;
     return handleResponse<ModelMetrics>(response);
+  },
+
+  /** Сравнение моделей (мин. 2) по метрикам выборки; модели без метрик попадают в missing. */
+  async compareModels(modelIds: string[], split: Split = 'val'): Promise<ModelsCompareResponse> {
+    const response = await fetch(`${BASE}/models/compare`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model_ids: modelIds, split }),
+    });
+    return handleResponse<ModelsCompareResponse>(response);
   },
 
   /** Отчёт по классам на test; null — отчёта ещё нет (появляется после обучения). */
