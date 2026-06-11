@@ -1,4 +1,4 @@
-from typing import Dict, Set
+from typing import Dict
 from torchmetrics import MetricCollection, Metric, MeanMetric
 from torchmetrics.classification import (
     Accuracy, Recall, Precision, F1Score, ConfusionMatrix,
@@ -6,7 +6,6 @@ from torchmetrics.classification import (
 )
 from torch import device
 
-from app.api.schemas import MetricesParams, MetricesParamCollections
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -24,17 +23,19 @@ METRICS_REGISTRY = {
 }
 
 def create_classification_metrics(
-    metric_params: MetricesParams,
     num_classes: int,
     device: device,
     prefix: str,
     include_loss: bool = True,
 ) -> MetricCollection:
     """
-    Создание коллекции метрик для классификации
-    
+    Создание коллекции метрик для классификации.
+
+    Считаются все скалярные метрики из METRICS_REGISTRY (confusion_matrix
+    не включается: поэпоховый канал принимает только скаляры, матрица
+    уходит через class report после теста).
+
     Args:
-        metric_params: Название метрик и average
         num_classes: Количество классов
         device: cpu/cuda
         prefix: Префикс для названий метрик
@@ -42,21 +43,15 @@ def create_classification_metrics(
     Returns:
         MetricCollection: Коллекция метрик
     """
-    
+
     # Создаём словарь метрик
     metrics_dict: Dict[str, Metric | MetricCollection] = {} # MetricCollection добавлен, чтоб синтаксис не ругался
 
-    for metric_name in metric_params.metrics_list:
-        if metric_name not in METRICS_REGISTRY:
-            error_text = (
-                f"Неизвестная метрика '{metric_name}'. "
-                f"Список доступных метрик: {list(METRICS_REGISTRY.keys())}"
-            )
-            logger.error(error_text)
-            logger.warning(f"Метрика '{metric_name}' не буедт учитываться.")
+    for metric_name, metric_class in METRICS_REGISTRY.items():
+        if metric_name == 'confusion_matrix':
             continue
 
-        base_metric_params = {
+        metric_params = {
             'task': 'multiclass',
             'num_classes': num_classes,
             'sync_on_compute': False,
@@ -64,33 +59,22 @@ def create_classification_metrics(
 
         # Добавляем average для метрик, которые его поддерживают
         if metric_name in ['precision', 'recall', 'f1']:
-            base_metric_params['average'] = metric_params.average
+            metric_params['average'] = 'macro'
 
-        # Получаем класс
-        metric_class = METRICS_REGISTRY[metric_name]
-        
-        # Настраиваем обьект
-        if metric_name == 'confusion_matrix':
-            metrics_dict[metric_name] = metric_class(
-                task='multiclass',
-                num_classes=num_classes,
-                normalize=None
-            )
-        else:
-            metrics_dict[metric_name] = metric_class(**base_metric_params)
-    
+        metrics_dict[metric_name] = metric_class(**metric_params)
+
     if include_loss:
         metrics_dict['loss'] = MeanMetric(
-            sync_on_compute=base_metric_params['sync_on_compute'],
+            sync_on_compute=False,
             nan_strategy='ignore'
         )
 
     # Создание коллекции
     collection = MetricCollection(
-        metrics_dict, 
+        metrics_dict,
         prefix=prefix
     )
-    
+
     for metric in collection.keys():
         logger.debug(f'✅ Создана метрика: {metric}')
 
@@ -98,11 +82,10 @@ def create_classification_metrics(
     # Переносим на устройство
     if device:
         collection = collection.to(device)
-    
+
     return collection
 
 def create_classification_collections(
-        metric_param_collections: MetricesParamCollections,
         num_classes: int,
         device: device,
     ) -> Dict[str, MetricCollection]:
@@ -110,33 +93,29 @@ def create_classification_collections(
     Создание колекций метрик для всех выборок
 
     Args:
-        metric_param_collections: Схема параметров
         num_classes: Количество классов
         device: cpu/cuda
-    
+
     Returns:
         Словарь с коллекциями
     """
-    # train и val считают один и тот же набор метрик (train_val) —
+    # train/val/test считают один и тот же полный набор метрик —
     # каждая метрика сравнима между выборками для контроля переобучения
     return {
         'train': create_classification_metrics(
-            metric_params=metric_param_collections.train_val,
             num_classes=num_classes,
             device=device,
             prefix='train_'
         ),
         'val': create_classification_metrics(
-            metric_params=metric_param_collections.train_val,
             num_classes=num_classes,
             device=device,
             prefix='val_'
         ),
         'test': create_classification_metrics(
-            metric_params=metric_param_collections.test,
             num_classes=num_classes,
             device=device,
             prefix='test_',
             include_loss=False
-        )      
+        )
     }

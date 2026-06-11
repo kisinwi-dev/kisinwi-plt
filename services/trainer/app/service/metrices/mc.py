@@ -8,7 +8,7 @@ from torchmetrics.classification import ConfusionMatrix, Precision, Recall, F1Sc
 
 from .collection import create_classification_collections
 
-from app.api.schemas import MetricesParamCollections, EarlyStop
+from app.api.schemas import EarlyStop
 from app.config import config_services
 from app.logs import get_logger
 
@@ -50,7 +50,6 @@ class MetricesClient:
 
     Args:
         model_id: Id модели
-        metrices_params: Заданные параметры метрик(какие метрик и с чем)
         classes: Названия классов (количество выводится из длины списка)
         device: Устройство на котором раполагается весь pipeline обучения
         early_stop_params: Параметры для трекинга остановки
@@ -59,7 +58,6 @@ class MetricesClient:
     def __init__(
         self,
         model_id: str,
-        metrices_params: MetricesParamCollections,
         classes: List[str],
         device: device,
         early_stop_params: EarlyStop = EarlyStop(),
@@ -69,8 +67,8 @@ class MetricesClient:
         self._url = config_services.METRICS['url']
         self._classes = list(classes)
         num_class = len(self._classes)
+        # Всегда полный набор метрик из METRICS_REGISTRY — конфигом не задаётся
         self._collections = create_classification_collections(
-            metrices_params,
             num_class,
             device
         )

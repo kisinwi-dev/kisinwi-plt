@@ -41,7 +41,6 @@ async def training_model(config: TaskParams, model_id: str):
     await tasker_service.update_status_task(percentages=11, status_info="Настройка метрик...")
     metric_client = MetricesClient(
         model_id=model_id,
-        metrices_params=config.metrices_params,
         classes=classes,
         device=device,
         early_stop_params=config.trainer_params.early_stop
