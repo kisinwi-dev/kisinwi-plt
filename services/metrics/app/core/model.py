@@ -32,6 +32,13 @@ def resolve_split(metric: ModelMetricData) -> Tuple[str, str]:
 
 class CVMetricManager(ManagerBase):
 
+    def ensure_indexes(self):
+        """Уникальный индекс по model_id: защита от дубликатов и ускорение поиска"""
+        try:
+            self.collection.create_index('model_id', unique=True)
+        except PyMongoError as e:
+            logger.error(f"Не удалось создать индекс model_id: {e}")
+
     def _push_metric(
         self,
         model_id: str,

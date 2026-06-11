@@ -9,6 +9,13 @@ logger = get_logger(__name__)
 
 class AgentsResponseManager(ManagerBase):
 
+    def ensure_indexes(self):
+        """Уникальный индекс по response_id: защита от дубликатов и ускорение поиска"""
+        try:
+            self.collection.create_index('response_id', unique=True)
+        except PyMongoError as e:
+            logger.error(f"Не удалось создать индекс response_id: {e}")
+
     def add_response(
         self,
         response: AgentResponse
