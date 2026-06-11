@@ -9,7 +9,9 @@ from app.services.trainer import (
     GetDeviceInfoTool,
     GetOptimizersTool,
     GetSchedulersTool,
-    GetMetricsForTrainerTool
+    GetMetricsForTrainerTool,
+    GetAugmentationsTool,
+    ValidateTrainingConfigTool
 )
 
 _tool_instances = [
@@ -19,6 +21,8 @@ _tool_instances = [
     GetOptimizersTool(),
     GetSchedulersTool(),
     GetMetricsForTrainerTool(),
+    GetAugmentationsTool(),
+    ValidateTrainingConfigTool(),
     GetDatasetDetailsTool(),
     ListAllDatasetsTool()
 ]

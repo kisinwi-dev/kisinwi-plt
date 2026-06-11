@@ -2,7 +2,7 @@ import asyncio
 from typing import Dict, Any
 from crewai.tools import BaseTool
 
-from ..utils import tool_response, get_json
+from ..utils import tool_response, get_json, post_json, parse_in_json
 from app.config import config_url
 from app.logs import get_logger
 
@@ -210,9 +210,77 @@ class GetMetricsForTrainerTool(BaseTool):
     """
 
     @tool_response(TRAINER_URL)
-    def _run(self) -> str: 
+    def _run(self) -> str:
         url = f"{TRAINER_URL}/info/metrics"
         return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
     async def _arun(self) -> str:
         return await asyncio.to_thread(self._run)
+
+
+class GetAugmentationsTool(BaseTool):
+    """Инструмент для получения списка доступных методов аугментации"""
+
+    name: str = "GetAugmentations"
+    description: str = """
+    НАЗНАЧЕНИЕ: Получить список всех доступных методов аугментации данных.
+
+    КОГДА ИСПОЛЬЗОВАТЬ:
+    - При настройке трансформаций данных в конфигурации обучения
+    - Когда датасет небольшой и нужно увеличить разнообразие данных
+    - Для изучения доступных аугментаций перед составлением конфигурации
+
+    ВХОДНЫЕ ДАННЫЕ:
+    - Нет входных параметров
+
+    ВОЗВРАЩАЕТ:
+    - список доступных аугментаций
+
+    ВАЖНЫЕ ЗАМЕЧАНИЯ:
+    - Названия аугментаций чувствительны к регистру (используй точно как в ответе)
+    - В конфигурации можно использовать только аугментации из этого списка
+    - Аугментации основаны на трансформациях torchvision
+    """
+
+    @tool_response(TRAINER_URL)
+    def _run(self) -> str:
+        url = f"{TRAINER_URL}/info/augmentations"
+        return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
+
+    async def _arun(self) -> str:
+        return await asyncio.to_thread(self._run)
+
+
+class ValidateTrainingConfigTool(BaseTool):
+    """Инструмент для валидации конфигурации обучения без запуска"""
+
+    name: str = "ValidateTrainingConfig"
+    description: str = """
+    НАЗНАЧЕНИЕ: Проверить конфигурацию обучения без запуска тренировки.
+
+    КОГДА ИСПОЛЬЗОВАТЬ:
+    - ОБЯЗАТЕЛЬНО перед тем, как отдать финальную конфигурацию обучения
+    - После исправления конфигурации, чтобы убедиться, что ошибка устранена
+    - При сомнениях в корректности названий модели, оптимизатора, планировщика или метрик
+
+    ВХОДНЫЕ ДАННЫЕ:
+    - config (str): Конфигурация обучения в виде JSON-строки.
+      Структура — как в GetExampleTrainingConfig.
+
+    ВОЗВРАЩАЕТ:
+    - dict с полями: valid (bool) и errors (список найденных проблем)
+
+    ВАЖНЫЕ ЗАМЕЧАНИЯ:
+    - Проверяет соответствие схеме, существование модели, функции потерь,
+      оптимизатора, планировщика, метрик, трансформаций и доступность устройства
+    - Если valid=False — исправь конфигурацию по списку errors и проверь снова
+    - Валидация ничего не запускает и не изменяет
+    """
+
+    @tool_response(TRAINER_URL)
+    def _run(self, config: str) -> str:
+        url = f"{TRAINER_URL}/config/validate"
+        return post_json(url, parse_in_json(config)) # type: ignore[return-value]  Декоратор преобразет ответ в str
+
+    async def _arun(self, config: str) -> str:
+        return await asyncio.to_thread(self._run, config)
