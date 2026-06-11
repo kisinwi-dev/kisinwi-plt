@@ -68,16 +68,6 @@ def validate_task_params(config: Dict[str, Any]) -> List[Dict[str, str]]:
             'msg': f"Планировщик '{scheduler_name}' не найден среди доступных"
         })
 
-    # Метрики
-    for split in ('train_val', 'test'):
-        metrics_params = getattr(params.metrices_params, split)
-        for metric_name in metrics_params.metrics_list:
-            if metric_name not in METRICS_REGISTRY:
-                errors.append({
-                    'loc': f'metrices_params.{split}.metrics_list',
-                    'msg': f"Неизвестная метрика '{metric_name}'"
-                })
-
     # Метрика ранней остановки ('loss' добавляется автоматически)
     early_stop_metric = params.trainer_params.early_stop.metric_name
     if early_stop_metric != 'loss' and early_stop_metric not in METRICS_REGISTRY:

@@ -1,5 +1,6 @@
 import asyncio
-from app import server, to_work, config_services
+from app import server, config_services
+from app.core.worker import to_work
 
 async def main():
     # Проверка доступа к вспомогательным сервисам

@@ -12,12 +12,12 @@ from app.api.schemas import TaskParams, HealthResponse
 
 logger = get_logger(__name__)
 
-routers = APIRouter(
+router = APIRouter(
     prefix='/info',
     tags=['Information']
 )
 
-@routers.get(
+@router.get(
         "/example_config",
         response_model=Dict[str, Any],
         summary="Получить пример конфигураций для запуска обучения"
@@ -37,7 +37,7 @@ async def get_example_config() -> Dict[str, Any]:
         )
 
 
-@routers.get(
+@router.get(
         "/ml_models",
         response_model=List[str],
         summary="Получить список доступных ML моделей"
@@ -58,7 +58,7 @@ async def get_available_models(
             detail="Не удалось получить список доступных моделей"
         )
 
-@routers.get(
+@router.get(
         "/device",
         response_model=Dict[str, Any],
         summary="Получить информация о технических возможностях обучения"
@@ -77,7 +77,7 @@ async def get_system_info():
             detail="Не удалось получить список имеющихся вычислительных устройств"
         )
 
-@routers.get(
+@router.get(
         "/optimizers",
         response_model=List[str],
         summary="Получить список оптимизаторов"
@@ -95,7 +95,7 @@ async def get_optimizers():
             detail="Не удалось получить список имеющихся оптимизаторов"
         )
 
-@routers.get(
+@router.get(
         "/schedulers",
         response_model=List[str],
         summary="Получить список планировщиков"
@@ -113,7 +113,7 @@ async def get_schedulers():
             detail="Не удалось получить список имеющихся планировщиков"
         )
 
-@routers.get(
+@router.get(
         "/health",
         response_model=HealthResponse,
         summary="Работоспособность сервиса"
@@ -122,7 +122,7 @@ async def health():
     """Проверка работоспособности сервиса"""
     return await config_services.check_services()
 
-@routers.get(
+@router.get(
         "/metrics",
         response_model=List[str],
         summary="Получить список доступных метрик"
@@ -140,7 +140,7 @@ async def get_available_metrics():
             detail="Не удалось получить список доступных метрик"
         )
 
-@routers.get(
+@router.get(
         "/augmentations",
         response_model=List[str],
         summary="Получить список доступных методов аугментации"

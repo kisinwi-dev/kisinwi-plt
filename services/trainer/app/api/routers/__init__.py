@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from .train_settings import routers as tr
-from .validate_config import routers as vc
+from .train_settings import router as tr
+from .validate_config import router as vc
 
 api_routers = APIRouter()
 

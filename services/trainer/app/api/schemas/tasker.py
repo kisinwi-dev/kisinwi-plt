@@ -4,7 +4,6 @@ from pydantic import BaseModel, Field
 from .ml_models import ModelParams
 from .data import DataLoaderParams
 from .trainer import TrainerParams
-from .metrices import MetricesParamCollections
 
 class TaskStatus(str, Enum):
     PENDING = "pending"
@@ -15,7 +14,6 @@ class TaskStatus(str, Enum):
 class TaskParams(BaseModel):
     data_loader_params: DataLoaderParams = Field(..., description="Параметры данных")
     model_params: ModelParams = Field(..., description="Параметры используемой модели")
-    metrices_params: MetricesParamCollections = Field(..., description="Параметры используемой коллекции метрик")
     trainer_params: TrainerParams = Field(..., description="Параметры обучения моделии")
     device: str = Field(..., description="На каком устройстве проходит вычисление")
 
@@ -68,16 +66,6 @@ class TaskParams(BaseModel):
                 "model_params": {
                     "type": "resnet50",
                     "pretrained": True
-                },
-                "metrices_params": {
-                    "train_val": {
-                        "metrics_list": ["accuracy", "precision", "recall", "f1"],
-                        "average": "macro"
-                    },
-                    "test": {
-                        "metrics_list": ["accuracy", "precision", "recall", "f1"],
-                        "average": "macro"
-                    }
                 },
                 "trainer_params": {
                     "loss_fn": {
