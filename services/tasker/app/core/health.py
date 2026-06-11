@@ -2,7 +2,7 @@ import psycopg2
 from psycopg2 import OperationalError
 
 from app.api.schemas.info import HealthResponse, HealthStatus
-from app.service.ml_models import check_healt_ml_models
+from app.service.ml_models import check_health_ml_models
 from app.config import postgresql_config
 from app.logs import get_logger
 
@@ -58,7 +58,7 @@ def check_health_all() -> HealthResponse:
     }
 
     logger.info("Проверяем состояние подключения к сторонним сервисам...")
-    services["ml models"] = check_healt_ml_models()
+    services["ml models"] = check_health_ml_models()
 
     for service_val in services.values():
         if service_val != status:

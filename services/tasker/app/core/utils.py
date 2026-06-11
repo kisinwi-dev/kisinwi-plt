@@ -13,7 +13,7 @@ def valid_uuid(
         on_error: Если включить выбрасывает ошибку. По умолчанию выключен.
 
     Raises:
-        HTTPException_409: Если raise_on_error=True и значение невалидный UUID
+        HTTPException_400: Если on_error=True и значение невалидный UUID
     """
     try:
         uuid.UUID(str(val))
@@ -21,7 +21,7 @@ def valid_uuid(
     except (ValueError, AttributeError, TypeError):
         if on_error:
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Некорректный формат UUID: {val}"
             )
         return False
