@@ -19,6 +19,7 @@ import DatasetDetail from './pages/DatasetDetail';
 import DatasetCompare from './pages/DatasetCompare';
 import Models from './pages/Models';
 import ModelDetail from './pages/ModelDetail';
+import ModelCompare from './pages/ModelCompare';
 import Agents from './pages/Agents';
 import AgentDiscussion from './pages/AgentDiscussion';
 
@@ -41,6 +42,7 @@ function App() {
               <Route path="/datasets/:id" element={<DatasetDetail />} />
               <Route path="/datasets/:id/compare" element={<DatasetCompare />} />
               <Route path="/models" element={<Models />} />
+              <Route path="/models/compare" element={<ModelCompare />} />
               <Route path="/models/:id" element={<ModelDetail />} />
               <Route path="/agents" element={<Agents />} />
               <Route path="/agents/discussion/:discussionId" element={<AgentDiscussion />} />

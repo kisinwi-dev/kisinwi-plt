@@ -103,6 +103,12 @@ const ModelDetail: React.FC = () => {
           <h1>{model.name}</h1>
           <span className="model-version"><i className={`fas ${ICONS.version}`}></i> v{model.version}</span>
           <span className={`status-badge status-${model.status}`}>{model.status}</span>
+          <button
+            className="button secondary small"
+            onClick={() => navigate(`/models/compare?from=${model.id}`)}
+          >
+            <i className={`fas ${ICONS.compare}`}></i> Сравнить
+          </button>
         </div>
         <Tooltip content="Нажмите, чтобы скопировать ID">
           <span

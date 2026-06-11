@@ -40,6 +40,7 @@ export const ICONS = {
   success: 'fa-circle-check',
   warning: 'fa-triangle-exclamation',
   error: 'fa-circle-exclamation',
+  cancelled: 'fa-ban',         // отменённое обучение
   notFound: 'fa-triangle-exclamation',
   question: 'fa-circle-question',
   empty: 'fa-box-open',        // пустой список результатов
@@ -63,6 +64,7 @@ export const ICONS = {
   metrics: 'fa-chart-line',
   datasetStats: 'fa-chart-bar', // статистика splits версии датасета
   report: 'fa-file-lines',
+  classReport: 'fa-table-cells', // отчёт по классам (confusion matrix)
   weights: 'fa-file-arrow-down',
   file: 'fa-file',
 

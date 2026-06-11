@@ -70,11 +70,7 @@ class TaskParams(BaseModel):
                     "pretrained": True
                 },
                 "metrices_params": {
-                    "train": {
-                        "metrics_list": ["accuracy", "loss"],
-                        "average": "macro"
-                    },
-                    "val": {
+                    "train_val": {
                         "metrics_list": ["accuracy", "precision", "recall", "f1"],
                         "average": "macro"
                     },

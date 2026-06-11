@@ -117,15 +117,17 @@ def create_classification_collections(
     Returns:
         Словарь с коллекциями
     """
+    # train и val считают один и тот же набор метрик (train_val) —
+    # каждая метрика сравнима между выборками для контроля переобучения
     return {
         'train': create_classification_metrics(
-            metric_params=metric_param_collections.train,
+            metric_params=metric_param_collections.train_val,
             num_classes=num_classes,
             device=device,
             prefix='train_'
         ),
         'val': create_classification_metrics(
-            metric_params=metric_param_collections.val,
+            metric_params=metric_param_collections.train_val,
             num_classes=num_classes,
             device=device,
             prefix='val_'
