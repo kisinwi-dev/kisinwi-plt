@@ -15,6 +15,8 @@ from app.api.schemas import (
     ModelsCompareResponse,
     ModelTrainingStatusUpdate,
     ModelTrainingStatusResponse,
+    ClassReportAdd,
+    ClassReport,
     StatusResponse,
     ModelExistsResponse,
     ModelDeleteResponse,
@@ -273,6 +275,51 @@ async def set_training_status(
         raise HTTPException(status_code=500, detail="Ошибка установки статуса обучения")
     broker.publish(model_id)
     return ModelTrainingStatusResponse(model_id=model_id, status=body.status)
+
+@router.post(
+    "/{model_id}/class-report",
+    response_model=StatusResponse,
+    summary="Сохранить отчёт по классам",
+    description="Вызывается trainer'ом один раз после оценки на тестовой выборке: "
+                "confusion matrix и per-class precision/recall/f1/support. "
+                "Повторная запись перезаписывает отчёт (идемпотентно)",
+    response_description="Статус операции",
+    responses={
+        500: {"description": "Ошибка записи отчёта в БД"},
+    },
+)
+async def set_class_report(
+    model_id: str,
+    body: ClassReportAdd,
+    manager: CVMetricManager = Depends(get_cv_training_metrics_manager),
+):
+    success = manager.set_class_report(model_id, body)
+    if not success:
+        raise HTTPException(status_code=500, detail="Ошибка сохранения class report")
+    return StatusResponse(status="ok")
+
+@router.get(
+    "/{model_id}/class-report",
+    response_model=ClassReport,
+    summary="Получить отчёт по классам",
+    description="Возвращает отчёт по классам на тестовой выборке: confusion matrix "
+                "(строки — истинные классы, столбцы — предсказанные) и precision/recall/f1/support "
+                "по каждому классу. Появляется после завершения обучения "
+                "(в SSE-снимок метрик не входит — запрашивать после события end)",
+    response_description="Отчёт по классам модели",
+    responses={
+        404: {"description": "Отчёт по классам модели не найден"},
+    },
+)
+async def get_class_report(
+    model_id: str,
+    manager: CVMetricManager = Depends(get_cv_training_metrics_manager),
+):
+    report = manager.get_class_report(model_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail=f"Class report модели {model_id} не найден")
+    return report
+
 
 @router.delete(
     "/{model_id}",

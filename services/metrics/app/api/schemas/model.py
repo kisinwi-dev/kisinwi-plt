@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import List, Any, Literal, Optional
 
 Split = Literal["train", "val", "test"]
@@ -81,6 +81,46 @@ class ModelTrainingStatusResponse(BaseModel):
     """Текущий статус обучения модели"""
     model_id: str = Field(..., description="ID модели", examples=["model-42"])
     status: TrainingStatus = Field(..., description="Статус обучения", examples=["completed"])
+
+class PerClassMetrics(BaseModel):
+    """Метрики качества по одному классу на тестовой выборке"""
+    label: str = Field(..., description="Название класса", examples=["cat"])
+    precision: float = Field(..., description="Precision класса", examples=[0.89])
+    recall: float = Field(..., description="Recall класса", examples=[0.8])
+    f1: float = Field(..., description="F1 класса", examples=[0.84])
+    support: int = Field(..., description="Число примеров класса в тестовой выборке", examples=[10])
+
+class ClassReportAdd(BaseModel):
+    """Отчёт по классам на тестовой выборке: confusion matrix и per-class метрики"""
+    labels: List[str] = Field(
+        ...,
+        description="Названия классов; порядок задаёт строки/столбцы confusion matrix",
+        examples=[["cat", "dog"]],
+    )
+    confusion_matrix: List[List[int]] = Field(
+        ...,
+        description="Confusion matrix (без нормализации): строки — истинные классы, "
+                    "столбцы — предсказанные, порядок как в labels",
+        examples=[[[8, 2], [1, 9]]],
+    )
+    per_class: List[PerClassMetrics] = Field(
+        ...,
+        description="Метрики по каждому классу, порядок как в labels",
+    )
+
+    @model_validator(mode="after")
+    def check_dimensions(self):
+        """Квадратная матрица, согласованная с labels и per_class"""
+        n = len(self.labels)
+        if len(self.confusion_matrix) != n or any(len(row) != n for row in self.confusion_matrix):
+            raise ValueError(f"confusion_matrix должна быть квадратной {n}x{n} (по числу labels)")
+        if len(self.per_class) != n:
+            raise ValueError("per_class должен содержать запись на каждый класс из labels")
+        return self
+
+class ClassReport(ClassReportAdd):
+    """Отчёт по классам с ID модели"""
+    model_id: str = Field(..., description="ID модели", examples=["model-42"])
 
 class ModelMetricsBatchRequest(BaseModel):
     """Запрос метрик сразу нескольких моделей"""

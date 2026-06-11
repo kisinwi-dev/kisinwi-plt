@@ -368,6 +368,7 @@ class Trainer:
                 )
 
         self._metric_service.compute('test')
+        self._metric_service.send_class_report()
 
     def _tqdm_loader(self, data_loader: DataLoader, desc: str = "process") -> tqdm:
         """Получение обьекта tqdm"""

@@ -238,6 +238,44 @@ class CVMetricManager(ManagerBase):
             logger.error(f"Ошибка установки статуса обучения модели(id:{model_id}): {e}")
             return False
 
+    def set_class_report(
+            self,
+            model_id: str,
+            report: ClassReportAdd
+    ) -> bool:
+        """Сохранение отчёта по классам (идемпотентная перезапись; upsert для модели без метрик)"""
+        try:
+            self.collection.update_one(
+                {'model_id': model_id},
+                {
+                    '$set': {'class_report': report.model_dump()},
+                    '$setOnInsert': {'splits': {split: [] for split in SPLITS}},
+                },
+                upsert=True,
+            )
+            logger.debug(f"Class report модели(id:{model_id}) сохранён")
+            return True
+        except PyMongoError as e:
+            logger.error(f"Ошибка сохранения class report модели(id:{model_id}): {e}")
+            return False
+
+    def get_class_report(
+            self,
+            model_id: str
+    ) -> Optional[ClassReport]:
+        """Получение отчёта по классам модели"""
+        try:
+            doc = self.collection.find_one(
+                {'model_id': model_id},
+                {'class_report': 1}
+            )
+            if doc is None or 'class_report' not in doc:
+                return None
+            return ClassReport(model_id=model_id, **doc['class_report'])
+        except PyMongoError as e:
+            logger.error(f"Ошибка получения class report модели(id:{model_id}): {e}")
+            return None
+
     def delete_metric(
             self,
             model_id: str
