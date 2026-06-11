@@ -15,6 +15,9 @@ from app.api.schemas import TrainerParams, LossConfig, OptimizerConfig, Schedule
 from app.core.exceptions import TaskCancelledError
 from app.logs import get_logger
 
+from .label_preparation import prepare_labels_for_loss
+from .validation import validate_trainer_inputs
+
 logger = get_logger(__name__)
 
 class Trainer:
@@ -54,7 +57,9 @@ class Trainer:
         self.test_loader = test_loader
 
         # Валидация полученных данных
-        self._validate_input()
+        validate_trainer_inputs(
+            self.model, self.train_loader, self.val_loader, self.test_loader
+        )
 
         # Параметры обучения
         self.epochs = train_params.epochs
@@ -80,28 +85,6 @@ class Trainer:
         self.checkpoint_path = Path(tempfile.gettempdir()) / "checkpoints" / f"model_{model_id}.pt"
 
         logger.debug("🏁 Инициализация успешно завершена")
-
-    # __WARNING__ В БУДУЮЩЕМ НУЖНО ОБЯЗАТЕЛЬНО ВЫНЕСТИ ВСЮ ВАЛИДАЦИЮ ИЗ КЛАССА И СДЕЛАТЬ ОТДЕЛЬНЫМИ ФУНКЦИЯМИ ВАЛИДАЦИИ
-    def _validate_input(self) -> None:
-        """Валидация полученных параметров"""
-
-        required_checks = [
-            (self.model, nn.Module, "model"),
-            (self.train_loader, DataLoader, "train_loader"),
-            (self.val_loader, DataLoader, "val_loader"),
-            (self.test_loader, DataLoader, "test_loader")
-        ]
-
-        for obj, expected_type, name in required_checks:
-            if not isinstance(obj, expected_type):
-                logger.error(f"{name} должен быть `{expected_type}`")
-                raise TypeError(f"{name} должен быть `{expected_type}`")
-
-            if isinstance(obj, DataLoader) and len(obj) == 0:
-                logger.error(f"{name} не должен быть пустым")
-                raise ValueError(f"{name} не должен быть пустым")
-
-            logger.debug(f"✅ {name}: OK")
 
     def _setup_loss_fn(
             self,
@@ -165,17 +148,26 @@ class Trainer:
 
         logger.debug(f"Планировщик `{scheduler_type}` создан с параметрами: {scheduler_params}")
 
-    def _train_one_epoch(self):
-        """Тренировка(одна эпоха)"""
-
-        # __WARNING__ Требуется создать отдельную функцию для работы scheduler
-
-        self.model.train()
-
-        is_batch_scheduler = isinstance(
+    def _is_batch_scheduler(self) -> bool:
+        """Batch-планировщики шагают после каждого батча, остальные — после эпохи"""
+        return isinstance(
             self.scheduler,
             (lr_scheduler.OneCycleLR, lr_scheduler.CyclicLR)
         )
+
+    def _step_scheduler(self, after_epoch: bool) -> None:
+        """Шаг планировщика: вызывается после батча (after_epoch=False) и после эпохи"""
+        if after_epoch:
+            if self.scheduler is not None and not self._is_batch_scheduler():
+                logger.debug("Обновление scheduler")
+                self.scheduler.step()
+        elif self._is_batch_scheduler():
+            self.scheduler.step()
+
+    def _train_one_epoch(self):
+        """Тренировка(одна эпоха)"""
+
+        self.model.train()
 
         for batch in self._tqdm_loader(self.train_loader, "Тренировка"):
 
@@ -192,7 +184,7 @@ class Trainer:
 
                 # Расчёт loss (labels для loss готовятся отдельно,
                 # в метрики уходят исходные индексы классов)
-                loss_targets = self._prepare_labels_for_loss(outputs, labels)
+                loss_targets = prepare_labels_for_loss(self.loss_fn, outputs, labels)
                 loss = self.loss_fn(outputs, loss_targets)
 
             # Backward pass
@@ -205,8 +197,7 @@ class Trainer:
             self._scaler.step(self.optimizer)
             self._scaler.update()
 
-            if is_batch_scheduler:
-                self.scheduler.step()
+            self._step_scheduler(after_epoch=False)
 
             # Обновление метрик: передаём логиты [N, C] — label-метрики берут
             # argmax сами, AUROC требует именно логиты/вероятности
@@ -218,9 +209,7 @@ class Trainer:
             )
 
         # Обновление scheduler
-        if self.scheduler is not None and not is_batch_scheduler:
-            logger.debug("Обновление scheduler")
-            self.scheduler.step()
+        self._step_scheduler(after_epoch=True)
 
         # Расчёт метрик
         self._metric_service.compute('train')
@@ -228,85 +217,6 @@ class Trainer:
         # Очистка кэша
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-
-    def _prepare_labels_for_loss(
-            self,
-            outputs: Tensor,
-            labels: Tensor
-        ) -> Tensor:
-        """
-        Подготавливает labels в зависимости от типа loss функции
-
-        Args:
-            outputs: Выход модели [batch_size, num_classes] или [batch_size, 1]
-            labels: Исходные метки (могут быть в разных форматах)
-
-        Returns:
-            Tensor: Подготовленные метки для loss функции
-        """
-
-        loss_type = self.loss_fn.__class__.__name__
-
-        # Для CrossEntropyLoss - нужны индексы классов
-        if loss_type in ['CrossEntropyLoss', 'CrossEntropyLoss2d']:
-            if labels.dim() == 2 and labels.size(1) > 1:
-                labels = labels.argmax(dim=1)
-            return labels.long()
-
-        # Для BCEWithLogitsLoss и BCELoss
-        elif loss_type in ['BCEWithLogitsLoss', 'BCELoss']:
-            if outputs.size(1) == 1:
-                if labels.dim() == 1:
-                    return labels.float().unsqueeze(1)
-                elif labels.dim() == 2 and labels.size(1) > 1:
-                    return labels.argmax(dim=1).float().unsqueeze(1)
-                else:
-                    return labels.float()
-
-            # Бинарная классификация с двумя выходами [batch, 2]
-            elif outputs.size(1) == 2:
-                if labels.dim() == 1:
-                    labels_one_hot = torch.zeros(
-                        labels.size(0), outputs.size(1),
-                        device=labels.device
-                    )
-                    labels_one_hot.scatter_(1, labels.unsqueeze(1).long(), 1)
-                    return labels_one_hot.float()
-                elif labels.dim() == 2 and labels.size(1) == 2:
-                    return labels.float()
-                elif labels.dim() == 2 and labels.size(1) == 1:
-                    labels_one_hot = torch.zeros(
-                        labels.size(0), outputs.size(1),
-                        device=labels.device
-                    )
-                    labels_one_hot.scatter_(1, labels.long(), 1)
-                    return labels_one_hot.float()
-
-            # Мульти классификация [batch, num_classes]
-            else:
-                if labels.dim() == 1:
-                    labels_one_hot = torch.zeros(
-                        labels.size(0), outputs.size(1),
-                        device=labels.device
-                    )
-                    labels_one_hot.scatter_(1, labels.unsqueeze(1).long(), 1)
-                    return labels_one_hot.float()
-                elif labels.dim() == 2 and labels.size(1) == outputs.size(1):
-                    return labels.float()
-
-        # Для MSE Loss (регрессия)
-        elif loss_type in ['MSELoss', 'L1Loss']:
-            if labels.dim() != outputs.dim():
-                if labels.dim() == 1 and outputs.dim() == 2:
-                    return labels.float().unsqueeze(1)
-            return labels.float()
-
-        # Не обработанная функция потерь
-        else:
-            logger.warning(f"Неизвестная loss функция: {loss_type}")
-            return labels
-
-        return labels
 
     def _validate_one_epoch(self) -> bool:
         """
@@ -326,7 +236,7 @@ class Trainer:
                 outputs = self.model(inputs)
 
                 # Рассчёт loss
-                loss_targets = self._prepare_labels_for_loss(outputs, labels)
+                loss_targets = prepare_labels_for_loss(self.loss_fn, outputs, labels)
                 loss = self.loss_fn(outputs, loss_targets)
 
                 # Обновление метрик (логиты [N, C], см. _train_one_epoch)
