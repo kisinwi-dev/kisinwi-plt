@@ -57,6 +57,7 @@ class TaskerClient():
         try:
             response = self.session.get(
                 f"{self.URL}/tasks/{task_id}",
+                timeout=30
             )
             response.raise_for_status()
             task = response.json()
@@ -79,8 +80,8 @@ class TaskerClient():
             task_status = task.get("status", "failed")
             if task_status == "completed":
                 return True, task
-            elif task_status == "failed":
-                logger.error(f"Задача `{task_id}` завершена с ошибкой")
+            elif task_status in ("failed", "cancelled"):
+                logger.error(f"Задача `{task_id}` завершена со статусом `{task_status}`")
                 return False, task
             
             time.sleep(2)

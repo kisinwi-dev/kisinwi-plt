@@ -84,12 +84,18 @@ def training(
         logger.info("✅ Модель обучена")
         models_context.add_model(version_id)
     else:
+        # При cancelled error_message пустой — причина лежит в status_info
+        error = task["error_message"] or task.get("status_info")
         logger.info(
             "🟥 Модель не была обучена."
-            f"\nПроизошла ошибка в процесе обучения. Причина: {task['error_message']}"
+            f"\nПроизошла ошибка в процесе обучения. Причина: {error}"
+        )
+        return TrainingOut(
+            is_completed_successfully=False,
+            error=error
         )
 
     return TrainingOut(
-        is_completed_successfully=is_complete,
+        is_completed_successfully=True,
         error=task["error_message"]
     )
