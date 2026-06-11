@@ -1,14 +1,25 @@
+import asyncio
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.responses import StreamingResponse
 
 from app.api.schemas import ModelMetricAdd, ModelMetricAdds, ModelMetrics, ModelMetricsBatchRequest
-from app.api.deps import get_cv_training_metrics_manager, CVMetricManager
+from app.api.deps import (
+    get_cv_training_metrics_manager,
+    CVMetricManager,
+    get_metric_stream_broker,
+    MetricStreamBroker,
+)
+from app.core.stream import format_sse
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/models", tags=["metrics"])
+
+# Интервал keepalive-комментариев SSE, чтобы соединение не закрывали прокси
+KEEPALIVE_INTERVAL_S = 15.0
 
 @router.post(
     "/add",
@@ -20,11 +31,13 @@ router = APIRouter(prefix="/models", tags=["metrics"])
 )
 async def add_metric(
     metric: ModelMetricAdd,
-    manager: CVMetricManager = Depends(get_cv_training_metrics_manager)
+    manager: CVMetricManager = Depends(get_cv_training_metrics_manager),
+    broker: MetricStreamBroker = Depends(get_metric_stream_broker),
 ):
     success = manager.add_metric(metric)
     if not success:
         raise HTTPException(status_code=500, detail="Ошибка добавления метрики")
+    broker.publish(metric.model_id)
     return {"status": "ok"}
 
 @router.post(
@@ -36,11 +49,13 @@ async def add_metric(
 )
 async def add_metrics(
     metric: ModelMetricAdds,
-    manager: CVMetricManager = Depends(get_cv_training_metrics_manager)
+    manager: CVMetricManager = Depends(get_cv_training_metrics_manager),
+    broker: MetricStreamBroker = Depends(get_metric_stream_broker),
 ):
     success = manager.add_metrics(metric)
     if not success:
         raise HTTPException(status_code=500, detail="Ошибка добавления метрик")
+    broker.publish(metric.model_id)
     return {"status": "ok"}
 
 @router.post(
@@ -75,6 +90,48 @@ async def get_model_metrics(
     return metrics
 
 @router.get(
+    "/{model_id}/stream",
+    summary="Поток метрик модели (SSE)",
+    description="Server-Sent Events: при подключении отправляет событие metrics с текущим "
+                "снимком метрик модели (схема ModelMetrics), затем шлёт такое же событие "
+                "при каждом добавлении метрик (раз в эпоху от trainer). "
+                "Каждые 15 секунд отправляется keepalive-комментарий. "
+                "Для модели без метрик отдаётся пустой снимок — подключаться можно до первой эпохи. "
+                "Сервис не знает о завершении обучения: поток открыт до отключения клиента",
+    response_description="Поток событий text/event-stream",
+)
+async def stream_model_metrics(
+    model_id: str,
+    manager: CVMetricManager = Depends(get_cv_training_metrics_manager),
+    broker: MetricStreamBroker = Depends(get_metric_stream_broker),
+):
+    def snapshot() -> str:
+        metrics = manager.get_model_metrics(model_id) or ModelMetrics(model_id=model_id)
+        return format_sse("metrics", metrics.model_dump_json())
+
+    async def event_generator():
+        queue = broker.subscribe(model_id)
+        try:
+            yield snapshot()
+            while True:
+                try:
+                    await asyncio.wait_for(queue.get(), timeout=KEEPALIVE_INTERVAL_S)
+                    # Схлопываем накопившиеся уведомления — снимок всё равно полный
+                    while not queue.empty():
+                        queue.get_nowait()
+                    yield snapshot()
+                except asyncio.TimeoutError:
+                    yield ": ping\n\n"
+        finally:
+            broker.unsubscribe(model_id, queue)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+@router.get(
     "/{model_id}/exists",
     summary="Проверить наличие метрик модели",
     description="Проверяет, есть ли в системе сохранённые метрики для указанной модели",
@@ -96,9 +153,11 @@ async def model_metrics_exists(
 )
 async def delete_model_metrics(
     model_id: str,
-    manager: CVMetricManager = Depends(get_cv_training_metrics_manager)
+    manager: CVMetricManager = Depends(get_cv_training_metrics_manager),
+    broker: MetricStreamBroker = Depends(get_metric_stream_broker),
 ):
     deleted = manager.delete_metric(model_id)
     if not deleted:
         raise HTTPException(status_code=404, detail=f"Метрики модели {model_id} не найдены")
+    broker.publish(model_id)
     return {"model_id": model_id, "deleted": True}
