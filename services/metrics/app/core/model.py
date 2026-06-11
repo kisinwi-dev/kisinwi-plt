@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Optional, Tuple
 from pymongo.errors import PyMongoError
 
@@ -42,10 +43,12 @@ class CVMetricManager(ManagerBase):
     def _push_metric(
         self,
         model_id: str,
-        metric: ModelMetricData
+        metric: ModelMetricData,
+        timestamp: datetime,
     ):
-        """Дозапись значений метрики в массив её выборки (метрика создаётся при отсутствии)"""
+        """Дозапись значений метрики и меток времени в массивы её выборки (метрика создаётся при отсутствии)"""
         split, name = resolve_split(metric)
+        timestamps = [timestamp] * len(metric.values)
 
         result = self.collection.update_one(
             {
@@ -54,7 +57,10 @@ class CVMetricManager(ManagerBase):
             },
             {
                 '$push': {
-                    f'splits.{split}.$.values': {'$each': metric.values}
+                    f'splits.{split}.$.values': {'$each': metric.values},
+                    # На старых документах без timestamps $push создаст массив сам:
+                    # он окажется короче values, чтение выравнивает их с конца
+                    f'splits.{split}.$.timestamps': {'$each': timestamps},
                 }
             }
         )
@@ -64,6 +70,7 @@ class CVMetricManager(ManagerBase):
             new_metric = {
                 'metric': name,
                 'values': metric.values,
+                'timestamps': timestamps,
             }
             self.collection.update_one(
                 {'model_id': model_id},
@@ -71,7 +78,7 @@ class CVMetricManager(ManagerBase):
             )
 
     @staticmethod
-    def _new_document(model_id: str, metrics: list) -> dict:
+    def _new_document(model_id: str, metrics: list, timestamp: datetime) -> dict:
         """Документ новой модели с метриками, разнесёнными по выборкам"""
         splits = {split: [] for split in SPLITS}
         for metric in metrics:
@@ -79,6 +86,7 @@ class CVMetricManager(ManagerBase):
             splits[split].append({
                 'metric': name,
                 'values': metric.values,
+                'timestamps': [timestamp] * len(metric.values),
             })
         return {
             'model_id': model_id,
@@ -91,16 +99,18 @@ class CVMetricManager(ManagerBase):
     ) -> bool:
         """Добавление новой метрики для модели"""
         try:
+            ts = metric.timestamp or datetime.now(timezone.utc)
+
             # Поиск модели
             model_doc = self.model_metrics_exists(metric.model_id)
 
             if model_doc:
                 # Модель существует
-                self._push_metric(metric.model_id, metric.metric)
+                self._push_metric(metric.model_id, metric.metric, ts)
             else:
                 # Новая модель, создаем документ
                 self.collection.insert_one(
-                    self._new_document(metric.model_id, [metric.metric])
+                    self._new_document(metric.model_id, [metric.metric], ts)
                 )
 
             logger.debug(f"Добавлена метрика {metric.metric.name}={metric.metric.values} для модели {metric.model_id}")
@@ -117,17 +127,20 @@ class CVMetricManager(ManagerBase):
     ) -> bool:
         """Добавление нескольких метрик для модели"""
         try:
+            # Одна метка времени на весь батч (все метрики эпохи записаны одновременно)
+            ts = metrics.timestamp or datetime.now(timezone.utc)
+
             # Поиск модели
             model_doc = self.model_metrics_exists(metrics.model_id)
 
             if model_doc:
                 # Модель существует
                 for metric in metrics.metrics:
-                    self._push_metric(metrics.model_id, metric)
+                    self._push_metric(metrics.model_id, metric, ts)
             else:
                 # Если не найдена модель создаем документ
                 self.collection.insert_one(
-                    self._new_document(metrics.model_id, metrics.metrics)
+                    self._new_document(metrics.model_id, metrics.metrics, ts)
                 )
 
             metric_name = ",".join(metric.name for metric in metrics.metrics)
@@ -151,6 +164,7 @@ class CVMetricManager(ManagerBase):
                         name=m['metric'],
                         split=split,
                         values=m['values'],
+                        timestamps=m.get('timestamps', []),
                     )
                     for m in splits.get(split, [])
                 ]

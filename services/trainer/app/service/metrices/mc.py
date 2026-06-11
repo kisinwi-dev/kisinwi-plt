@@ -1,4 +1,5 @@
 import requests
+from datetime import datetime, timezone
 from typing import Dict, Any
 from torch import device, Tensor
 
@@ -148,6 +149,7 @@ class MetricesClient:
         try:
             metrics_data = {
                 "model_id": self._model_id,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "metrics": [
                     {
                         "name": name,

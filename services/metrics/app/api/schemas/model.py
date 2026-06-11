@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel, Field
 from typing import List, Any, Literal, Optional
 
@@ -16,11 +17,23 @@ class ModelMetricData(BaseModel):
         description="Значения метрик",
         examples=[[0.91, 0.55, 0.42]],
     )
+    timestamps: List[datetime] = Field(
+        default_factory=list,
+        description="Метки времени записи значений (UTC), параллельны values; "
+                    "у моделей, обученных до ввода timestamps, массив может быть "
+                    "короче values — выравнивать с конца",
+        examples=[["2026-06-11T10:00:00Z", "2026-06-11T10:01:30Z", "2026-06-11T10:03:00Z"]],
+    )
 
 class ModelMetricAdd(BaseModel):
     """Схема на добавление метрики"""
     model_id: str = Field(..., description="ID модели", examples=["model-42"])
     metric: ModelMetricData = Field(..., description="Метрика")
+    timestamp: Optional[datetime] = Field(
+        None,
+        description="Метка времени записи (UTC); если не задана — проставляется серверное время",
+        examples=["2026-06-11T10:00:00Z"],
+    )
 
 class ModelMetricAdds(BaseModel):
     """Схема на добавление нескольких метрик"""
@@ -33,6 +46,12 @@ class ModelMetricAdds(BaseModel):
             {"name": "val_loss", "values": [1.02]},
             {"name": "val_accuracy", "values": [0.63]},
         ]],
+    )
+    timestamp: Optional[datetime] = Field(
+        None,
+        description="Общая метка времени записи для всех метрик батча (UTC); "
+                    "если не задана — проставляется серверное время",
+        examples=["2026-06-11T10:00:00Z"],
     )
 
 class ModelMetrics(BaseModel):
