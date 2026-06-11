@@ -47,30 +47,34 @@ async def training_model(config: TaskParams, model_id: str):
     )
     await tasker_service.update_status_task(percentages=12, status_info="Метрики настроены.")
 
-    # Запуск обучения
-    await tasker_service.update_status_task(percentages=13, status_info="Формирование процесса обучения...")
-    trainer = Trainer(
-        # ID модели
-        model_id=model_id,
-        # Вспомогательные сервисы
-        tasker_service=tasker_service,
-        metric_service=metric_client,
-        # Модель
-        model=model,
-        # Данные
-        train_loader=train_loader,
-        val_loader=val_loader,
-        test_loader=test_loader,
-        classes=classes,
-        # Устройство
-        device=device,
-        # Конфигурация
-        train_params=config.trainer_params
-    )
-    await tasker_service.update_status_task(percentages=19, status_info="Процесс обучения сформирован")
-    await tasker_service.update_status_task(percentages=20, status_info="Обучение...")
-    model = await trainer.train(20, 80)
-    await tasker_service.update_status_task(percentages=80, status_info="Модель обучена.")
+    # Останавливаем фоновый поток метрик и при успехе, и при ошибке/отмене
+    try:
+        # Запуск обучения
+        await tasker_service.update_status_task(percentages=13, status_info="Формирование процесса обучения...")
+        trainer = Trainer(
+            # ID модели
+            model_id=model_id,
+            # Вспомогательные сервисы
+            tasker_service=tasker_service,
+            metric_service=metric_client,
+            # Модель
+            model=model,
+            # Данные
+            train_loader=train_loader,
+            val_loader=val_loader,
+            test_loader=test_loader,
+            classes=classes,
+            # Устройство
+            device=device,
+            # Конфигурация
+            train_params=config.trainer_params
+        )
+        await tasker_service.update_status_task(percentages=19, status_info="Процесс обучения сформирован")
+        await tasker_service.update_status_task(percentages=20, status_info="Обучение...")
+        model = await trainer.train(20, 80)
+        await tasker_service.update_status_task(percentages=80, status_info="Модель обучена.")
+    finally:
+        metric_client.close()
 
     await tasker_service.update_status_task(percentages=81, status_info="Сохранение модели...")
     sample_img = train_loader.dataset[0][0]

@@ -1,8 +1,9 @@
 import httpx
 import requests
+from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Dict, Any, List
-from torch import device, Tensor
+from torch import device, device as torch_device, Tensor
 from torchmetrics import MetricCollection
 from torchmetrics.classification import ConfusionMatrix, Precision, Recall, F1Score
 
@@ -67,10 +68,29 @@ class MetricesClient:
         self._url = config_services.METRICS['url']
         self._classes = list(classes)
         num_class = len(self._classes)
+
+        # Обучение на GPU → метрики на CPU и параллельно (фоновый поток):
+        # состояние метрик (AUROC хранит все логиты эпохи) не занимает VRAM,
+        # а накопление не блокирует цикл обучения.
+        # Обучение на CPU → метрики на том же устройстве и последовательно:
+        # фоновый поток лишь конкурировал бы за ядра с обучением.
+        self._parallel = device.type != 'cpu'
+        self._metrics_device = torch_device('cpu') if self._parallel else device
+        # Один воркер — порядок update/compute между батчами сохраняется
+        self._executor = (
+            ThreadPoolExecutor(max_workers=1, thread_name_prefix='metrics')
+            if self._parallel else None
+        )
+        self._pending_updates: List[Future] = []
+        logger.info(
+            f"Метрики считаются на {self._metrics_device.type}"
+            f"{' (параллельно с обучением)' if self._parallel else ''}"
+        )
+
         # Всегда полный набор метрик из METRICS_REGISTRY — конфигом не задаётся
         self._collections = create_classification_collections(
             num_class,
-            device
+            self._metrics_device
         )
 
         # Отчёт по классам на test: считается всегда, независимо от метрик конфига
@@ -89,7 +109,7 @@ class MetricesClient:
             'precision': Precision(average='none', **class_report_params),
             'recall': Recall(average='none', **class_report_params),
             'f1': F1Score(average='none', **class_report_params),
-        }).to(device)
+        }).to(self._metrics_device)
 
         # Информация для определения логики досрочного окончания
         self._early_stop = early_stop_params
@@ -106,7 +126,31 @@ class MetricesClient:
         targets: Tensor,
         loss: Tensor|None = None,
     ):
-        """Добавление значений для расчёта метрик"""
+        """
+        Добавление значений для расчёта метрик.
+
+        При обучении на GPU копирует тензоры на CPU и накапливает метрики
+        в фоновом потоке — цикл обучения не ждёт расчёта.
+        """
+        if self._parallel:
+            preds = preds.detach().to(self._metrics_device)
+            targets = targets.detach().to(self._metrics_device)
+            if loss is not None:
+                loss = loss.detach().to(self._metrics_device)
+            self._pending_updates.append(
+                self._executor.submit(self._update_sync, type, preds, targets, loss)
+            )
+        else:
+            self._update_sync(type, preds, targets, loss)
+
+    def _update_sync(
+        self,
+        type: str,
+        preds: Tensor,
+        targets: Tensor,
+        loss: Tensor|None,
+    ):
+        """Непосредственное накопление метрик (в потоке-воркере при GPU-обучении)"""
         self._collections[type].update(
             preds=preds,
             target=targets,
@@ -116,6 +160,15 @@ class MetricesClient:
         if type == 'test':
             self._class_report_collection.update(preds, targets)
 
+    def _drain_pending_updates(self):
+        """
+        Дожидается фоновых update() перед compute: метрики эпохи должны
+        быть посчитаны по всем батчам. Ошибки фоновых задач пробрасываются здесь.
+        """
+        for future in self._pending_updates:
+            future.result()
+        self._pending_updates.clear()
+
     def compute(
         self,
         type_: str,
@@ -124,8 +177,11 @@ class MetricesClient:
         Рассчёт метрик и их очистка. Проверка актуальности обучения.
         
         Returns:
-            bool: где True - обучение актуально. False - требуется остановка обучения 
+            bool: где True - обучение актуально. False - требуется остановка обучения
         """
+        # Все фоновые update должны завершиться до расчёта
+        self._drain_pending_updates()
+
         # Расчёт метрик
         metrics = self._collections[type_].compute()
         logger.debug('✅ Метрики расчитаны')
@@ -241,6 +297,7 @@ class MetricesClient:
         его потеря не должна ронять обучение.
         """
         try:
+            self._drain_pending_updates()
             computed = self._class_report_collection.compute()
             cm = computed['confusion_matrix'].int().tolist()
             precision = computed['precision'].tolist()
@@ -275,3 +332,13 @@ class MetricesClient:
             logger.error(f"😡 Не удалось передать class report в сервис метрик: {e}")
         finally:
             self._class_report_collection.reset()
+
+    def close(self):
+        """
+        Остановка фонового потока метрик. Вызывать по окончании обучения
+        (в т.ч. при ошибке), иначе воркер-процесс накапливает потоки.
+        """
+        if self._executor is not None:
+            self._executor.shutdown(wait=True)
+            self._executor = None
+            self._pending_updates.clear()
