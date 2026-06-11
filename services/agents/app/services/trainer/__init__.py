@@ -4,7 +4,9 @@ from .tools import (
     GetDeviceInfoTool,
     GetOptimizersTool,
     GetSchedulersTool,
-    GetMetricsForTrainerTool
+    GetMetricsForTrainerTool,
+    GetAugmentationsTool,
+    ValidateTrainingConfigTool
 )
 
 __all__ = [
@@ -13,5 +15,7 @@ __all__ = [
     'GetDeviceInfoTool',
     'GetOptimizersTool',
     'GetSchedulersTool',
-    'GetMetricsForTrainerTool'
+    'GetMetricsForTrainerTool',
+    'GetAugmentationsTool',
+    'ValidateTrainingConfigTool'
 ]

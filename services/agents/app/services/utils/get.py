@@ -51,6 +51,15 @@ def get_json(url: str, params: dict | None = None) -> dict:
     return resp.json()
 
 
+def post_json(url: str, data: dict | None = None) -> dict:
+    resp = requests.post(
+        url,
+        json=data
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
 def tool_response(domain: str):
     """
     Декоратор для инструментов агентов: ловит ошибки и ВСЕГДА возвращает
