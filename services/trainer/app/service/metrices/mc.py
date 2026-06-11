@@ -165,8 +165,12 @@ class MetricesClient:
         elif type_ == 'test':
             logger.info('Метрики на тестовых даннных')
             for key, value in metrics.items():
-                name_metric = "".join(key.split('_')[1:])
-                logger.info(f"{name_metric:^20}: {value:.5}")
+                # Не-скалярные тензоры (confusion_matrix, average='none')
+                # числом не форматируются — в лог идут только скаляры
+                if value.numel() != 1:
+                    continue
+                name_metric = "_".join(key.split('_')[1:])
+                logger.info(f"{name_metric:^20}: {value.item():.5}")
             return True
 
         # Проверяем актуальность на валидационных метриках
