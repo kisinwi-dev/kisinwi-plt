@@ -1,55 +1,72 @@
 import json
 from typing import List, Dict, Any
-from psycopg2.extras import Json
 
-from .postresql import PostgresManager
+from .postgresql import PostgresManager
 from app.config import postgresql_config
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 
+FINAL_STATUSES = ('completed', 'failed', 'cancelled')
+
+# Общий список полей задачи (одинаковый порядок ключей во всех выборках)
+TASK_FIELDS = """
+    t.id,
+    t.name,
+    t.model_id,
+    t.discussion_id,
+    t.agent_respons_ids,
+    t.status_id,
+    s.status AS status,
+    s.description AS status_description,
+    t.percentages,
+    t.status_info,
+    t.error_message,
+    t.created_at,
+    t.started_at,
+    t.updated_at,
+    t.completed_at
+"""
+
+
 class TrainingTaskManager:
     def __init__(self):
         self.db = PostgresManager(postgresql_config.URL)
         self._table = "train_models_tasks"
-        self._status_tables = "task_statuses"
+        self._status_table = "task_statuses"
 
     def count_task(self) -> int:
         """Выводит количество имеющихся задач"""
         query = f"""
-            SELECT COUNT(id)
-            FROM {self._table} 
+            SELECT COUNT(id) AS count
+            FROM {self._table}
         """
-        with self.db as db:
+        with self.db.session() as db:
             result = db.fetch_one(query)
-            return result[0] if result else 0
+            return result["count"] if result else 0
 
     def create(
-            self, 
-            model_id: str, 
-            name: str | None = None,
+            self,
+            model_id: str,
+            name: str,
             discussion_id: str | None = None
     ) -> str:
         """Создание задачи"""
-
-        if name is None:
-            pass
-
         query = f"""
             INSERT INTO {self._table} (model_id, name, discussion_id)
             VALUES (%s, %s, %s)
             RETURNING id
         """
-        with self.db as db:
+        with self.db.session() as db:
             result = db.fetch_one(query, (model_id, name, discussion_id))
 
             if not result:
                 raise RuntimeError(f"Ошибка создания задачи для обучения модели({model_id})")
-            
-            task_id = result[0]
+
+            task_id = result["id"]
             logger.info(f"✅ Создана задача {task_id} для модели {model_id}")
             return task_id
-        
+
     def delete(
         self,
         task_id: str,
@@ -60,285 +77,165 @@ class TrainingTaskManager:
             WHERE id = %s
             RETURNING id
         """
-        params = (task_id,)
-        with self.db as db:
-            row = db.fetch_one(query, params)
+        with self.db.session() as db:
+            row = db.fetch_one(query, (task_id,))
             return row is not None
 
     def update_status(
-        self, 
-        task_id: str, 
-        status: str, 
+        self,
+        task_id: str,
+        status: str,
         status_info: str,
         percentages: int | None = None,
         error: str | None = None
     ):
         """Обновить статус"""
-        
-        with self.db as db:
+        with self.db.session() as db:
 
-            # Получаем status_id
-            status_result = db.fetch_one(
-                f"SELECT id FROM {self._status_tables} WHERE status = %s",
+            status_row = db.fetch_one(
+                f"SELECT id FROM {self._status_table} WHERE status = %s",
                 (status,)
             )
 
-            if not status_result:
+            if not status_row:
                 raise ValueError(f"Неизвестный статус: {status}")
 
-            status_id = status_result[0]
-
-            # Задачу в финальном статусе обновлять нельзя
-            # (иначе progress-апдейты воркера перетирают cancelled/completed/failed)
-            current = db.fetch_one(
-                f"""
-                SELECT s.status FROM {self._table} t
-                LEFT JOIN {self._status_tables} s ON t.status_id = s.id
-                WHERE t.id = %s
-                """,
-                (task_id,)
-            )
-
-            if current is None:
-                raise ValueError(f"Задача с ID {task_id} не найдена")
-
-            if current[0] in ('completed', 'failed', 'cancelled'):
-                raise ValueError(
-                    f"Задача в финальном статусе '{current[0]}' не может быть обновлена"
-                )
-
-            # Обновляем задачу
+            # Условный UPDATE: задача в финальном статусе не обновляется
+            # (иначе progress-апдейты воркера перетирают cancelled/completed/failed).
+            # updated_at / started_at / completed_at проставляет триггер БД.
             query = f"""
-                UPDATE {self._table} 
-                SET status_id = %s, 
-                    status_info = %s, 
-                    error_message = %s,
-                    percentages = COALESCE(%s, percentages),
-                    updated_at = CURRENT_TIMESTAMP
+                UPDATE {self._table}
+                SET status_id = %s,
+                    status_info = %s,
+                    error_message = COALESCE(%s, error_message),
+                    percentages = COALESCE(%s, percentages)
                 WHERE id = %s
+                  AND status_id NOT IN (
+                      SELECT id FROM {self._status_table} WHERE status IN %s
+                  )
                 RETURNING id
             """
-            
-            result = db.fetch_one(query, (status_id, status_info, error, percentages, task_id))
-            
-            if not result:
-                raise ValueError(f"Задача с ID {task_id} не найдена")
-            
+            result = db.fetch_one(
+                query,
+                (status_row["id"], status_info, error, percentages, task_id, FINAL_STATUSES)
+            )
+
+            if result is None:
+                current = db.fetch_one(
+                    f"""
+                    SELECT s.status FROM {self._table} t
+                    LEFT JOIN {self._status_table} s ON t.status_id = s.id
+                    WHERE t.id = %s
+                    """,
+                    (task_id,)
+                )
+                if current is None:
+                    raise ValueError(f"Задача с ID {task_id} не найдена")
+                raise ValueError(
+                    f"Задача в финальном статусе '{current['status']}' не может быть обновлена"
+                )
+
             logger.info(f"Статус задачи {task_id} обновлён на '{status}'")
 
-    def add_agent_response(
-        self, 
-        task_id: str, 
-        agent_response_id: str
-    ) -> bool:
-        """Добавить ID ответа агента к задаче"""
-        
-        with self.db as db:
-            # Получаем имющиеся ID
-            row = db.fetch_one(
-                f"SELECT agent_respons_ids FROM {self._table} WHERE id = %s",
-                (task_id,)
-            )
-            
-            if not row:
-                logger.warning(f"Задача {task_id} не найдена")
-                return False
-            
-            # Получаем массив ID или пустой список
-            response_ids = row[0] if row[0] is not None else []
-            
-            # Добавляем новый ID
-            if agent_response_id not in response_ids:
-                response_ids.append(agent_response_id)
-            
-            # Обновляем
-            db.execute(
-                f"UPDATE {self._table} SET agent_respons_ids = %s WHERE id = %s",
-                (Json(response_ids), task_id)
-            )
-            
-            logger.info(f"Добавлен ответ {agent_response_id} к задаче {task_id}")
-            return True
-        
     def get_task(
-            self, 
+            self,
             task_id: str
     ) -> Dict | None:
         """Получить информацию о задаче"""
-
         query = f"""
-            SELECT 
-                t.id,
-                t.name,
-                t.model_id,
-                t.discussion_id,
-                t.agent_respons_ids,
-                t.status_id,
-                s.status as status_name,
-                s.description as status_description,
-                t.percentages,
-                t.status_info,
-                t.error_message,
-                t.created_at,
-                t.started_at,
-                t.updated_at,
-                t.completed_at
+            SELECT {TASK_FIELDS}
             FROM {self._table} t
-            LEFT JOIN {self._status_tables} s ON t.status_id = s.id
+            LEFT JOIN {self._status_table} s ON t.status_id = s.id
             WHERE t.id = %s
         """
-
-        with self.db as db:
+        with self.db.session() as db:
             row = db.fetch_one(query, (task_id,))
-            
-            if row is None:
-                return None
-            
-            return {
-                'id': row[0],
-                'name': row[1],
-                'model_id': row[2],
-                'discussion_id': row[3],
-                'agent_respons_ids': row[4],
-                'status_id': row[5],
-                'status': row[6],
-                'status_description': row[7],
-                "percentages": row[8],
-                'status_info': row[9],
-                'error_message': row[10],
-                'created_at': row[11],
-                'started_at': row[12],
-                'updated_at': row[13],
-                'completed_at': row[14]
-            }
-        
+            return dict(row) if row is not None else None
+
     def get_tasks(
             self
-    ) -> List[Dict] | None:
+    ) -> List[Dict]:
         """Получить информацию о задачах"""
-
         query = f"""
-            SELECT 
-                t.id,
-                t.name,
-                t.model_id,
-                t.discussion_id,
-                t.agent_respons_ids,
-                t.status_id,
-                s.status as status_name,
-                s.description as status_description,
-                t.percentages,
-                t.status_info,
-                t.error_message,
-                t.created_at,
-                t.started_at,
-                t.updated_at,
-                t.completed_at
+            SELECT {TASK_FIELDS}
             FROM {self._table} t
-            LEFT JOIN {self._status_tables} s ON t.status_id = s.id
+            LEFT JOIN {self._status_table} s ON t.status_id = s.id
+            ORDER BY t.created_at ASC
         """
-
-        with self.db as db:
+        with self.db.session() as db:
             rows = db.fetch_all(query)
-            
-            if len(rows) == 0:
-                return None
-            
-            return [
-                {
-                    'id': row[0],
-                    'name': row[1],
-                    'model_id': row[2],
-                    'discussion_id': row[3],
-                    'agent_respons_ids': row[4],
-                    'status_id': row[5],
-                    'status': row[6],
-                    'status_description': row[7],
-                    "percentages": row[8],
-                    'status_info': row[9],
-                    'error_message': row[10],
-                    'created_at': row[11],
-                    'started_at': row[12],
-                    'updated_at': row[13],
-                    'completed_at': row[14]
-                }
-                for row in rows
-            ]
+            return [dict(row) for row in rows]
 
     def get_status_values(self) -> List[Dict[str, Any]]:
         """Получить все возможные значения статуса"""
         query = f"""
             SELECT id, status, description
-            FROM {self._status_tables}
+            FROM {self._status_table}
         """
-        with self.db as db:
+        with self.db.session() as db:
             rows = db.fetch_all(query)
-            return [
-                {
-                    "id": row[0],
-                    "status": row[1],
-                    "description": row[2]
-                }
-                for row in rows
-            ]
+            return [dict(row) for row in rows]
 
     def get_task_with_status(
         self,
         status: str
-    ) -> List[Dict] | None:
+    ) -> List[Dict]:
         """Получить задачи c заданным статусом"""
         query = f"""
-            SELECT 
-                t.id, 
-                t.name,
-                t.model_id,
-                s.status,
-                t.status_id,
-                s.description as status_description,
-                t.discussion_id,
-                t.agent_respons_ids,
-                t.percentages,
-                t.status_info,
-                t.error_message,
-                t.created_at,
-                t.started_at,
-                t.updated_at,
-                t.completed_at
-            FROM {self._table} t 
-            LEFT JOIN {self._status_tables} s ON t.status_id = s.id
+            SELECT {TASK_FIELDS}
+            FROM {self._table} t
+            LEFT JOIN {self._status_table} s ON t.status_id = s.id
             WHERE s.status = %s
-            ORDER BY created_at ASC
+            ORDER BY t.created_at ASC
         """
-
-        with self.db as db:
+        with self.db.session() as db:
             rows = db.fetch_all(query, (status,))
-
-            if len(rows) == 0:
-                return None
-
-            columns = [
-                'id', 'name', 'model_id', 'status', 'status_id', 'status_description',
-                'discussion_id', 'agent_respons_ids', 'percentages',
-                'status_info', 'error_message',
-                'created_at', 'started_at', 'updated_at', 
-                'completed_at'
-            ]
-
-            return [dict(zip(columns, row)) for row in rows]
+            return [dict(row) for row in rows]
 
     def get_next_task(self) -> Dict[str, Any] | None:
-        "Получить первую задачу в очереди на выполнение"
-        tasks = self.get_task_with_status('waiting')
+        """Атомарно забрать первую задачу из очереди.
 
-        if tasks is None:
-            return None
-        return tasks[0]
+        Задача сразу переводится в running (FOR UPDATE SKIP LOCKED),
+        поэтому два воркера не получат одну и ту же задачу.
+        """
+        claim_query = f"""
+            UPDATE {self._table}
+            SET status_id = (SELECT id FROM {self._status_table} WHERE status = 'running'),
+                status_info = 'Задача принята воркером'
+            WHERE id = (
+                SELECT t.id
+                FROM {self._table} t
+                JOIN {self._status_table} s ON t.status_id = s.id
+                WHERE s.status = 'waiting'
+                ORDER BY t.created_at ASC
+                LIMIT 1
+                FOR UPDATE SKIP LOCKED
+            )
+            RETURNING id
+        """
+        with self.db.session() as db:
+            claimed = db.fetch_one(claim_query)
 
-    def add_agent_respons(
-            self, 
-            task_id: str, 
-            agent_respons_id: str
-        ):
+            if claimed is None:
+                return None
+
+            task = db.fetch_one(
+                f"""
+                SELECT {TASK_FIELDS}
+                FROM {self._table} t
+                LEFT JOIN {self._status_table} s ON t.status_id = s.id
+                WHERE t.id = %s
+                """,
+                (claimed["id"],)
+            )
+            logger.info(f"Задача {claimed['id']} выдана воркеру")
+            return dict(task) if task is not None else None
+
+    def add_agent_response(
+            self,
+            task_id: str,
+            agent_response_id: str
+    ) -> bool:
         """Добавление id ответа агента в задачу"""
         query = f"""
             UPDATE {self._table}
@@ -346,8 +243,8 @@ class TrainingTaskManager:
             WHERE id = %s
             RETURNING id
         """
-        params = (json.dumps(agent_respons_id), task_id)
-        
-        with self.db as db:
+        params = (json.dumps(agent_response_id), task_id)
+
+        with self.db.session() as db:
             result = db.fetch_one(query, params)
             return result is not None

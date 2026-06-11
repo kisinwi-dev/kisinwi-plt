@@ -33,7 +33,7 @@ def models_is_exists(model_id: str):
             detail="Ошибка проверки существования модели"
         )
     
-def check_healt_ml_models():
+def check_health_ml_models():
     """Проверка работоспособности сервиса ML-моделей"""
     try:
         response = requests.get(

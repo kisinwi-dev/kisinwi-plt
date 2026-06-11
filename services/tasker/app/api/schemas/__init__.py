@@ -1,2 +1,6 @@
-from .info import HealthResponse
-from .task import *
+from .info import HealthResponse, HealthStatus
+from .task import (
+    TaskResponse, TasksResponse, TaskResponseMin,
+    TaskCreate, TaskUpdate, AddAgentResponse,
+    Status, StatusesInfo, TaskStatistics,
+)

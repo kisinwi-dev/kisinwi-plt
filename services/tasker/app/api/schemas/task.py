@@ -2,9 +2,6 @@ from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, Field
 
-class TasksResponse(BaseModel):
-    tasks: List[TaskResponse] = Field(..., description="Список задач с полной информацией о них")
-
 class TaskResponse(BaseModel):
     id: str
     name: str
@@ -21,6 +18,9 @@ class TaskResponse(BaseModel):
     started_at: Optional[datetime]
     updated_at: Optional[datetime]
     completed_at: Optional[datetime]
+
+class TasksResponse(BaseModel):
+    tasks: List[TaskResponse] = Field(..., description="Список задач с полной информацией о них")
 
 class TaskResponseMin(BaseModel):
     id: str
@@ -41,13 +41,13 @@ class AddAgentResponse(BaseModel):
     task_id: str
     agent_response_id: str
 
-class StatusesInfo(BaseModel):
-    statuses: List[Status] = Field(..., description="Список статусов")
-
 class Status(BaseModel):
     id: int = Field(..., description="Id статуса")
     status: str = Field(..., description="Название статуса")
     description: str = Field(..., description="Описание статуса")
+
+class StatusesInfo(BaseModel):
+    statuses: List[Status] = Field(..., description="Список статусов")
 
 class TaskStatistics(BaseModel):
     count: int = Field(..., description="Количество задач")

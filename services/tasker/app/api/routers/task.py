@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Depends, Query, Response, HTTPException, status
 
 from app.api.schemas import (
-    TaskCreate, TaskUpdate, TaskStatistics, 
-    TaskResponse, TasksResponse,
-    TaskResponseMin
+    TaskCreate, TaskUpdate, TaskStatistics,
+    TaskResponse, TasksResponse
 )
 from app.core.train_models_tasks import TrainingTaskManager
 from app.api.deps import get_training_task_manager
@@ -30,80 +29,60 @@ routers = APIRouter(
     status_code=status.HTTP_201_CREATED
 )
 async def create_task(
-    task: TaskCreate, 
+    task: TaskCreate,
     manager: TrainingTaskManager = Depends(get_training_task_manager)
 ):
-    try:
-        # Валидация данных
-        valid_uuid(task.model_id, on_error=True)
-        if task.discussion_id:
-            valid_uuid(task.discussion_id, on_error=True)
-        
-        # Проверка существования модели в сервисе метрик
-        if not models_is_exists(task.model_id):
-            logger.warning(f"МЛ модель '{task.model_id}' не существует")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Модель с ID {task.model_id} не найдена"
-            )
+    # Валидация данных
+    valid_uuid(task.model_id, on_error=True)
+    if task.discussion_id:
+        valid_uuid(task.discussion_id, on_error=True)
 
-        task_id = manager.create(
-            name=task.task_name,
-            model_id=task.model_id,
-            discussion_id=task.discussion_id
-        )
-        return {"task_id": task_id}
-    except HTTPException:
-        raise
-    except ValueError as e:
+    # Проверка существования модели в сервисе моделей
+    if not models_is_exists(task.model_id):
+        logger.warning(f"МЛ модель '{task.model_id}' не существует")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Невалидный UUID: {e}"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Модель с ID {task.model_id} не найдена"
         )
-    
+
+    task_id = manager.create(
+        name=task.task_name,
+        model_id=task.model_id,
+        discussion_id=task.discussion_id
+    )
+    return {"task_id": task_id}
+
 @routers.get(
     "",
     summary="Получение всех задач",
     response_model=TasksResponse,
     responses={
-        200: {"description": "Задачи успешно получены"},
-        204: {"description": "Задачи не найдены"},
+        200: {"description": "Задачи успешно получены (список может быть пустым)"},
         503: {"description": "Ошибка подключения к БД"}
-    },
-    status_code=status.HTTP_201_CREATED
+    }
 )
 async def get_tasks(
     status_filter: str | None = Query(None, alias="status", description="Фильтр по статусу задачи"),
     manager: TrainingTaskManager = Depends(get_training_task_manager)
 ):
-    try:
+    if status_filter:
+        tasks = manager.get_task_with_status(status_filter)
+    else:
+        tasks = manager.get_tasks()
 
-        if status_filter:
-            tasks = manager.get_task_with_status(status_filter)
-        else:
-            tasks = manager.get_tasks()
-
-        if tasks is None:
-            raise HTTPException(
-                status_code=status.HTTP_204_NO_CONTENT,
-                detail="Задачи не найдены"
-            )
-
-        return TasksResponse(
-            tasks=[
-                TaskResponse(**task)
-                for task in tasks
-            ]
-        )
-    except HTTPException:
-        raise
+    return TasksResponse(
+        tasks=[
+            TaskResponse(**task)
+            for task in tasks
+        ]
+    )
 
 @routers.get(
     "/next",
     summary="Получение первой задачи в очереди",
     response_model=TaskResponse,
     responses={
-        200: {"description": "Задача успешно получена"},
+        200: {"description": "Задача успешно получена и переведена в running"},
         204: {"description": "Нет задач в очереди"},
         503: {"description": "Ошибка подключения к БД"}
     }
@@ -111,20 +90,13 @@ async def get_tasks(
 async def next_task(
     manager: TrainingTaskManager = Depends(get_training_task_manager)
 ):
-    """Воркер вызывает этот endpoint, чтобы получить следующую задачу."""
-    try:
-        task = manager.get_next_task()
-        
-        if task is None:
-            raise HTTPException(
-                status_code=status.HTTP_204_NO_CONTENT,
-                detail="Нет задач с статусом ожидания"
-            )
-        
-        return TaskResponse(**task)
+    """Воркер вызывает этот endpoint, чтобы атомарно забрать следующую задачу."""
+    task = manager.get_next_task()
 
-    except HTTPException:
-        raise
+    if task is None:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    return TaskResponse(**task)
 
 
 @routers.get(
@@ -158,32 +130,26 @@ async def delete_task(
     task_id: str,
     manager: TrainingTaskManager = Depends(get_training_task_manager)
 ):
-    try:
-        valid_uuid(task_id, True)
+    valid_uuid(task_id, True)
 
-        deleted = manager.delete(task_id)
-        
-        if not deleted:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Задача с ID {task_id} не найдена"
-            )
-        
-        return Response(
-            status_code=status.HTTP_204_NO_CONTENT
+    deleted = manager.delete(task_id)
+
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Задача с ID {task_id} не найдена"
         )
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Ошибка удаления задачи {task_id}: {e}")
-        raise
+
+    return Response(
+        status_code=status.HTTP_204_NO_CONTENT
+    )
 
 @routers.get(
     "/{task_id}",
     summary="Получить информацию о задаче",
     response_model=TaskResponse,
     responses={
-        201: {"description": "Задача получена"},
+        200: {"description": "Задача получена"},
         400: {"description": "Полученные данные не валидны"},
         404: {"description": "Задача не найдена"},
         503: {"description": "Ошибка подключения к БД"}
@@ -194,23 +160,23 @@ async def get_task_for_id(
     manager: TrainingTaskManager = Depends(get_training_task_manager)
 ):
     valid_uuid(task_id, True)
-    
+
     task = manager.get_task(task_id)
-    
+
     if not task:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Задача с ID {task_id} не найдена"
         )
     return TaskResponse(**task)
-  
+
 
 @routers.post(
     "/{task_id}/status",
     summary="Обновить статус задачи",
     responses={
         200: {"description": "Задача обновлена"},
-        400: {"description": "Задача/статус не найдены"},
+        400: {"description": "Невалидный UUID, задача/статус не найдены или задача в финальном статусе"},
         503: {"description": "Ошибка подключения к БД"}
     },
 )
@@ -219,6 +185,8 @@ async def update_task_status(
     update: TaskUpdate,
     manager: TrainingTaskManager = Depends(get_training_task_manager)
 ):
+    valid_uuid(task_id, True)
+
     try:
         manager.update_status(
             task_id=task_id,
@@ -275,33 +243,31 @@ async def cancel_task(
     summary="Добавление id ответа агента к задаче",
     responses={
         200: {"description": "ID ответа агента успешно добавлен"},
-        400: {"description": "Невалидный UUID или agent_response_id"},
+        400: {"description": "Невалидный UUID"},
         404: {"description": "Задача не найдена"},
         503: {"description": "Ошибка подключения к БД"}
     }
 )
 async def add_agent_response(
     task_id: str,
-    agent_respons_id: str,
+    agent_response_id: str,
     manager: TrainingTaskManager = Depends(get_training_task_manager)
 ):
-    try:
-        # Валидация UUID
-        valid_uuid(task_id, True)
-        valid_uuid(agent_respons_id, True)
-        result = manager.add_agent_respons(
-            task_id=task_id,
-            agent_respons_id=agent_respons_id
+    # Валидация UUID
+    valid_uuid(task_id, True)
+    valid_uuid(agent_response_id, True)
+
+    result = manager.add_agent_response(
+        task_id=task_id,
+        agent_response_id=agent_response_id
+    )
+
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Задача с ID {task_id} не найдена"
         )
-        
-        if not result:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Задача с ID {task_id} не найдена"
-            )
-        
-        return Response(
-            status_code=status.HTTP_200_OK
-        )
-    except HTTPException:
-        raise
+
+    return Response(
+        status_code=status.HTTP_200_OK
+    )
