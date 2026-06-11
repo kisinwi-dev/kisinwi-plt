@@ -69,7 +69,7 @@ def validate_task_params(config: Dict[str, Any]) -> List[Dict[str, str]]:
         })
 
     # Метрики
-    for split in ('train', 'val', 'test'):
+    for split in ('train_val', 'test'):
         metrics_params = getattr(params.metrices_params, split)
         for metric_name in metrics_params.metrics_list:
             if metric_name not in METRICS_REGISTRY:
