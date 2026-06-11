@@ -4,13 +4,22 @@ from typing import List
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 
-from app.api.schemas import ModelMetricAdd, ModelMetricAdds, ModelMetrics, ModelMetricsBatchRequest
+from app.api.schemas import (
+    ModelMetricAdd,
+    ModelMetricAdds,
+    ModelMetrics,
+    ModelMetricsBatchRequest,
+    ModelMetricsSummary,
+    ModelsCompareRequest,
+    ModelsCompareResponse,
+)
 from app.api.deps import (
     get_cv_training_metrics_manager,
     CVMetricManager,
     get_metric_stream_broker,
     MetricStreamBroker,
 )
+from app.core.stats import compute_model_summary, compare_models
 from app.core.stream import format_sse
 from app.logs import get_logger
 
@@ -72,6 +81,24 @@ async def get_models_metrics(
 ):
     return manager.get_models_metrics(body.model_ids)
 
+@router.post(
+    "/compare",
+    response_model=ModelsCompareResponse,
+    summary="Сравнить модели по метрикам",
+    description="Сравнивает несколько моделей (минимум 2) по метрикам выбранной выборки "
+                "(по умолчанию val): лучшее и финальное значения, эпоха лучшего значения, "
+                "лидер и отставание от него. Направление метрики определяется по названию: "
+                "loss/error-подобные — чем меньше, тем лучше, остальные — чем больше. "
+                "Модели без сохранённых метрик попадают в missing (это не ошибка)",
+    response_description="Таблица сравнения моделей по каждой метрике",
+)
+async def compare_models_metrics(
+    body: ModelsCompareRequest,
+    manager: CVMetricManager = Depends(get_cv_training_metrics_manager)
+):
+    all_metrics = manager.get_models_metrics(body.model_ids)
+    return compare_models(all_metrics, body.model_ids, body.split, body.metrics)
+
 @router.get(
     "/{model_id}",
     response_model=ModelMetrics,
@@ -130,6 +157,26 @@ async def stream_model_metrics(
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+@router.get(
+    "/{model_id}/summary",
+    response_model=ModelMetricsSummary,
+    summary="Сводная статистика метрик модели",
+    description="Возвращает по каждой метрике каждой выборки финальное и лучшее значения, "
+                "эпоху лучшего значения, min/max и число эпох, а также разрывы train/val "
+                "на последней эпохе (gap > 0 — на валидации хуже, признак переобучения). "
+                "Направление метрики определяется по названию: loss/error-подобные — "
+                "чем меньше, тем лучше, остальные — чем больше",
+    response_description="Сводка метрик модели по выборкам",
+)
+async def get_model_metrics_summary(
+    model_id: str,
+    manager: CVMetricManager = Depends(get_cv_training_metrics_manager)
+):
+    metrics = manager.get_model_metrics(model_id)
+    if metrics is None:
+        raise HTTPException(status_code=404, detail=f"Модель {model_id} не найдена")
+    return compute_model_summary(metrics)
 
 @router.get(
     "/{model_id}/exists",
