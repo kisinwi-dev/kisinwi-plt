@@ -84,6 +84,13 @@ class Trainer:
         # Чекпоинт лучшей эпохи
         self.checkpoint_path = Path(tempfile.gettempdir()) / "checkpoints" / f"model_{model_id}.pt"
 
+        # Итог обучения: эпоха/значение лучшего чекпоинта (None — улучшение
+        # не фиксировалось, сохранены веса финальной эпохи) и фактически
+        # последняя отученная эпоха (early stop может прервать цикл раньше).
+        self.best_epoch: Optional[int] = None
+        self.best_value: Optional[float] = None
+        self.last_epoch: int = 0
+
         logger.debug("🏁 Инициализация успешно завершена")
 
     def _setup_loss_fn(
@@ -342,12 +349,12 @@ class Trainer:
         progress_value = float(progress_value_start)
         progress_per_epoch = (progress_value_end - progress_value_start) / self.epochs
 
-        # Лучшая эпоха по метрике ранней остановки
-        best_value: Optional[float] = None
+        # Лучшая эпоха по метрике ранней остановки (эпоха/значение — в self,
+        # их после обучения отправляют в metrics; здесь только веса)
         best_state: Optional[Dict[str, Tensor]] = None
-        best_epoch: Optional[int] = None
 
         for epoch in range(1, self.epochs + 1):
+            self.last_epoch = epoch
             # Проверка отмены задачи (на границе эпох)
             if await self._tasker_service.get_task_status() == "cancelled":
                 logger.info("🛑 Задача отменена пользователем, обучение остановлено")
@@ -369,16 +376,16 @@ class Trainer:
 
             # Трекинг лучшей эпохи (веса храним на CPU, чтобы не занимать память GPU)
             current_value = self._metric_service.last_early_stop_value
-            if current_value is not None and self._is_better(current_value, best_value):
-                best_value = current_value
-                best_epoch = epoch
+            if current_value is not None and self._is_better(current_value, self.best_value):
+                self.best_value = current_value
+                self.best_epoch = epoch
                 best_state = {
                     k: v.detach().cpu().clone()
                     for k, v in self.model.state_dict().items()
                 }
                 logger.info(f"🏅 Новая лучшая эпоха: {epoch} (метрика: {current_value:.6f})")
                 await asyncio.to_thread(
-                    self._save_checkpoint, best_state, best_epoch, best_value
+                    self._save_checkpoint, best_state, self.best_epoch, self.best_value
                 )
 
             # Логгирование конца эпохи
@@ -397,7 +404,7 @@ class Trainer:
         # Восстановление весов лучшей эпохи
         if best_state is not None:
             self.model.load_state_dict(best_state)
-            logger.info(f"♻️ Восстановлены веса лучшей эпохи [{best_epoch}] (метрика: {best_value:.6f})")
+            logger.info(f"♻️ Восстановлены веса лучшей эпохи [{self.best_epoch}] (метрика: {self.best_value:.6f})")
 
         logger.info("🦾 Тестирование модели...")
         await asyncio.to_thread(self._test_model)

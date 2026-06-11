@@ -43,6 +43,31 @@ async def send_training_status(
         logger.error(f"😡 Не удалось отправить статус обучения модели {model_id}: {e}")
         return False
 
+async def send_checkpoint_info(
+    model_id: str,
+    epoch: int,
+    metric: str,
+    value: float | None,
+) -> bool:
+    """
+    Отправка в сервис метрик информации о сохранённых весах: эпоха чекпоинта
+    (лучшая по early-stop-метрике, либо финальная — тогда value = None),
+    early-stop-метрика (чистое имя, подразумевается val) и её значение.
+
+    Ошибки не пробрасываются: репортинг в metrics не должен ломать обучение.
+    """
+    try:
+        res = await _status_client.post(
+            f"{METRICS_URL}/models/{model_id}/checkpoint",
+            json={"epoch": epoch, "metric": metric, "value": value}
+        )
+        res.raise_for_status()
+        logger.debug(f"✅ Checkpoint модели {model_id} (эпоха {epoch}) отправлен в сервис метрик")
+        return True
+    except httpx.HTTPError as e:
+        logger.error(f"😡 Не удалось отправить checkpoint модели {model_id}: {e}")
+        return False
+
 class MetricesClient:
     """
     Клиент метрик отвечает за работу с метриками.
