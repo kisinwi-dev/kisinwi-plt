@@ -247,14 +247,7 @@
   opacity: 0.8;
 }
 
-/* Поле, занимающее всю ширину сетки (классы) */
-.detail-field--full {
-  grid-column: 1 / -1;
-}
-
-.detail-field--full .tag-list {
-  margin-top: 0.1rem;
-}
+/* .detail-field--full — общий примитив, см. styles/components.css */
 
 .versions-section-head {
   display: flex;

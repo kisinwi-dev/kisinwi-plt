@@ -266,6 +266,11 @@ button:disabled,
   color: var(--color-danger);
 }
 
+.status-cancelled {
+  background: var(--color-surface-faint);
+  color: var(--color-text-secondary);
+}
+
 /* ── Теги / чипы ─────────────────────────────────────────────────────────────── */
 .tag {
   background: var(--color-accent-soft);
@@ -358,6 +363,15 @@ button:disabled,
 
 .detail-field .mono {
   word-break: break-all;
+}
+
+/* Поле, занимающее всю ширину сетки (например, классы) */
+.detail-field--full {
+  grid-column: 1 / -1;
+}
+
+.detail-field--full .tag-list {
+  margin-top: 0.1rem;
 }
 
 .detail-empty {

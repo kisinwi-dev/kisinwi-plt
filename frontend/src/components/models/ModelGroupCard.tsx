@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { MLModel, MLModelVersion } from '../../types/mlModels';
-import { formatDateParts, formatDateTime } from '../../utils/format';
+import { formatDateParts, formatDateTime, pluralRu } from '../../utils/format';
 import { mlModelsService } from '../../services/mlModelsService';
 import { useNotification } from '../../contexts/NotificationContext';
 import ConfirmModal from '../common/ConfirmModal';
 import { Tooltip } from '../common/Tooltip';
 import { ICONS } from '../../constants/icons';
+import { modelStatusLabel, statusBadgeClass } from '../../constants';
 
 interface Props {
   model: MLModel;
@@ -61,7 +62,7 @@ const ModelGroupCard: React.FC<Props> = ({ model, onReload }) => {
             <div className="model-title-group">
               <h2>{model.name}</h2>
               <span className="model-group-count">
-                <i className={`fas ${ICONS.version}`}></i> {model.versions.length} {model.versions.length === 1 ? 'версия' : model.versions.length < 5 ? 'версии' : 'версий'}
+                <i className={`fas ${ICONS.version}`}></i> {model.versions.length} {pluralRu(model.versions.length, ['версия', 'версии', 'версий'])}
               </span>
             </div>
             <Tooltip content="Удалить модель со всеми версиями">
@@ -146,7 +147,7 @@ const ModelGroupCard: React.FC<Props> = ({ model, onReload }) => {
                     <i className={`fas ${ICONS.version}`}></i> v{v.version}
                   </td>
                   <td className="model-version-type">{v.model_type ?? '—'}</td>
-                  <td><span className={`status-badge status-${v.status}`}>{v.status}</span></td>
+                  <td><span className={statusBadgeClass(v.status)}>{modelStatusLabel(v.status)}</span></td>
                   <td className="model-version-date">
                     {(() => { const { date, time } = formatDateParts(v.created_at); return <><span>{date}</span>{time && <span className="model-version-time">{time}</span>}</>; })()}
                   </td>
@@ -186,7 +187,7 @@ const ModelGroupCard: React.FC<Props> = ({ model, onReload }) => {
         title={pending?.kind === 'model' ? 'Удалить модель?' : 'Удалить версию?'}
         message={
           pending?.kind === 'model'
-            ? `Модель «${pending.name}» и все её ${pending.count} ${pending.count === 1 ? 'версия' : pending.count < 5 ? 'версии' : 'версий'} будут удалены безвозвратно.`
+            ? `Модель «${pending.name}» и все её ${pending.count} ${pluralRu(pending.count, ['версия', 'версии', 'версий'])} будут удалены безвозвратно.`
             : pending?.kind === 'version'
             ? `Версия v${pending.version.version} модели «${model.name}» будет удалена безвозвратно.`
             : undefined
