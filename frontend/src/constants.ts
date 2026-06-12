@@ -6,6 +6,9 @@ export const MODELS_PAGE_SIZE = 12;
 // Интервал опроса прогресса активной дискуссии (meta и лента сообщений).
 export const POLL_INTERVAL_DISCUSSION_MS = 3000;
 
+// Интервал опроса задачи обучения в tasker (виджет прогресса на странице модели).
+export const POLL_INTERVAL_TASK_MS = 3000;
+
 // Человекочитаемые статусы версии модели. Источник статуса — только реестр
 // ml_models; справочник значений отдаёт GET /info/models/status.
 export const MODEL_STATUS_LABELS: Record<string, string> = {
