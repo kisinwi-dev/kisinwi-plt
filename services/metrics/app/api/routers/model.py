@@ -15,6 +15,7 @@ from app.api.schemas import (
     ModelsCompareResponse,
     ModelTrainingStatusUpdate,
     ModelTrainingStatusResponse,
+    CheckpointInfo,
     ClassReportAdd,
     ClassReport,
     StatusResponse,
@@ -275,6 +276,32 @@ async def set_training_status(
         raise HTTPException(status_code=500, detail="Ошибка установки статуса обучения")
     broker.publish(model_id)
     return ModelTrainingStatusResponse(model_id=model_id, status=body.status)
+
+@router.post(
+    "/{model_id}/checkpoint",
+    response_model=StatusResponse,
+    summary="Сохранить информацию о чекпоинте",
+    description="Вызывается trainer'ом после обучения: эпоха, веса которой сохранены "
+                "(лучшая по early-stop-метрике, либо финальная — тогда value = null), "
+                "имя early-stop-метрики (чистое, val-выборка) и её значение. "
+                "Повторная запись перезаписывает (идемпотентно); checkpoint входит "
+                "в SSE-снимок метрик",
+    response_description="Статус операции",
+    responses={
+        500: {"description": "Ошибка записи checkpoint в БД"},
+    },
+)
+async def set_checkpoint(
+    model_id: str,
+    body: CheckpointInfo,
+    manager: CVMetricManager = Depends(get_cv_training_metrics_manager),
+    broker: MetricStreamBroker = Depends(get_metric_stream_broker),
+):
+    success = manager.set_checkpoint(model_id, body)
+    if not success:
+        raise HTTPException(status_code=500, detail="Ошибка сохранения checkpoint")
+    broker.publish(model_id)
+    return StatusResponse(status="ok")
 
 @router.post(
     "/{model_id}/class-report",

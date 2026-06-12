@@ -1,6 +1,6 @@
 from app.api.schemas import TaskParams
 from app.service.tasker import tasker_service
-from app.service.metrices import MetricesClient
+from app.service.metrices import MetricesClient, send_checkpoint_info
 from app.service.ml_models import upload_file_model_in_ml_models
 from app.logs import get_logger
 
@@ -91,6 +91,14 @@ async def training_model(config: TaskParams, model_id: str):
         await tasker_service.update_status_task(percentages=PROGRESS_TRAINING_START, status_info="Обучение...")
         model = await trainer.train(PROGRESS_TRAINING_START, PROGRESS_TRAINING_END)
         await tasker_service.update_status_task(percentages=PROGRESS_TRAINING_END, status_info="Модель обучена.")
+        # Инфа о сохранённых весах: лучшая эпоха по early-stop-метрике,
+        # либо финальная, если улучшение не фиксировалось (best_value = None)
+        await send_checkpoint_info(
+            model_id=model_id,
+            epoch=trainer.best_epoch or trainer.last_epoch,
+            metric=config.trainer_params.early_stop.metric_name,
+            value=trainer.best_value,
+        )
     finally:
         metric_client.close()
 

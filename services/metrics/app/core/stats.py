@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, NamedTuple, Optional
 
 from app.api.schemas import (
     ModelMetricData,
@@ -82,6 +82,7 @@ def compute_model_summary(metrics: ModelMetrics) -> ModelMetricsSummary:
     return ModelMetricsSummary(
         model_id=metrics.model_id,
         overfitting=_overfitting_gaps(summaries["train"], summaries["val"]),
+        checkpoint=metrics.checkpoint,
         **summaries,
     )
 
@@ -94,61 +95,89 @@ def compare_models(
     """Сравнение моделей по метрикам выбранной выборки.
 
     Модели без сохранённых метрик попадают в missing; лидер по метрике
-    определяется лучшим best_value с учётом направления метрики.
+    определяется лучшим weights_value — значением на эпохе сохранённых весов
+    (чекпоинт по early-stop-метрике), с фолбэком на final_value у моделей
+    без записанного чекпоинта, — с учётом направления метрики.
     """
     found_ids = {m.model_id for m in all_metrics}
     missing = [model_id for model_id in requested_ids if model_id not in found_ids]
 
-    # Сводки метрик выбранной выборки по каждой модели
-    summaries_by_model = {
+    # Сводки и числовые значения метрик выбранной выборки по каждой модели:
+    # сырые values нужны для среза на эпохе чекпоинта.
+    stats_by_model = {
         model.model_id: {
-            summary.name: summary
+            summary.name: (summary, _numeric(metric.values))
             for metric in getattr(model, split)
             if (summary := summarize_metric(metric)) is not None
         }
         for model in all_metrics
     }
+    checkpoint_by_model = {m.model_id: m.checkpoint for m in all_metrics}
 
     metric_names = sorted({
         name
-        for summaries in summaries_by_model.values()
-        for name in summaries
+        for stats in stats_by_model.values()
+        for name in stats
     })
     if metric_filter is not None:
         allowed = set(metric_filter)
         metric_names = [name for name in metric_names if name in allowed]
 
+    class _Participant(NamedTuple):
+        model_id: str
+        summary: MetricSummary
+        checkpoint_epoch: Optional[int]
+        checkpoint_value: Optional[float]
+        weights_value: float
+
     comparisons = []
     for name in metric_names:
         higher_is_better = is_higher_better(name)
-        participants = [
-            (model_id, summaries[name])
-            for model_id, summaries in summaries_by_model.items()
-            if name in summaries
-        ]
+        participants = []
+        for model_id, stats in stats_by_model.items():
+            if name not in stats:
+                continue
+            summary, values = stats[name]
+            ckpt = checkpoint_by_model.get(model_id)
+            checkpoint_value = (
+                values[ckpt.epoch - 1]
+                if ckpt is not None and 1 <= ckpt.epoch <= len(values)
+                else None
+            )
+            participants.append(_Participant(
+                model_id=model_id,
+                summary=summary,
+                checkpoint_epoch=ckpt.epoch if ckpt is not None else None,
+                # На одноточечном test чекпоинт-среза нет (values уже измерены
+                # на сохранённых весах) — фолбэк на final_value корректен.
+                checkpoint_value=checkpoint_value,
+                weights_value=checkpoint_value if checkpoint_value is not None else summary.final_value,
+            ))
 
         best = (max if higher_is_better else min)(
-            participants, key=lambda pair: pair[1].best_value
+            participants, key=lambda p: p.weights_value
         )
-        best_model_id, best_summary = best
 
         entries = [
             ModelComparisonEntry(
-                model_id=model_id,
-                final_value=summary.final_value,
-                best_value=summary.best_value,
-                best_epoch=summary.best_epoch,
-                epochs=summary.epochs,
-                delta_best=abs(summary.best_value - best_summary.best_value),
+                model_id=p.model_id,
+                final_value=p.summary.final_value,
+                best_value=p.summary.best_value,
+                best_epoch=p.summary.best_epoch,
+                epochs=p.summary.epochs,
+                weights_value=p.weights_value,
+                checkpoint_epoch=p.checkpoint_epoch,
+                checkpoint_value=p.checkpoint_value,
+                delta_best=abs(p.weights_value - best.weights_value),
             )
-            for model_id, summary in participants
+            for p in participants
         ]
         entries.sort(key=lambda entry: entry.delta_best)
 
         comparisons.append(MetricComparison(
             metric=name,
             higher_is_better=higher_is_better,
-            best_model_id=best_model_id,
+            best_model_id=best.model_id,
             models=entries,
         ))
 
