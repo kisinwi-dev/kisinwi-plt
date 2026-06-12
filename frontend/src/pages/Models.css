@@ -1,20 +1,5 @@
 /* Стили, специфичные для страниц моделей. Общие примитивы — в styles/components.css. */
 
-/* ── Toolbar (фильтры + переключатель вида) ───────────────────────────────────── */
-.models-toolbar {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.models-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  flex: 1;
-}
-
 /* ── Переключатель вида ───────────────────────────────────────────────────────── */
 .view-toggle {
   display: flex;

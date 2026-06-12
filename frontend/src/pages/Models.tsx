@@ -1,9 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { mlModelsService } from '../services/mlModelsService';
 import { datasetService } from '../services/datasetService';
 import { useNotification } from '../contexts/NotificationContext';
 import { useModelFilters, useDebouncedValue } from '../hooks';
-import { MODELS_PAGE_SIZE } from '../constants';
+import { MODELS_PAGE_SIZE, modelStatusLabel } from '../constants';
 import { ModelCard, ModelGroupCard } from '../components/models';
 import Select from '../components/common/Select';
 import { Tooltip } from '../components/common/Tooltip';
@@ -27,12 +27,17 @@ const Models: React.FC = () => {
   const [models, setModels] = useState<MLModel[]>([]);
   const [groupedTotal, setGroupedTotal] = useState(0);
 
-  const [loading, setLoading] = useState(false);
-
   // Фильтры и пагинация.
   const { filters, offset, setFilter, setOffset, resetPage } = useModelFilters();
   // Имя дебаунсим, чтобы не слать запрос на каждое нажатие клавиши.
   const debouncedName = useDebouncedValue(filters.name);
+  // Принудительная перезагрузка списка (после удаления модели/версии).
+  const [reloadKey, setReloadKey] = useState(0);
+  // loading выводится из ключа запроса: пока загруженный ключ отстаёт
+  // от текущего (смена вида/фильтров/страницы), список считается устаревшим.
+  const requestKey = [viewMode, debouncedName, filters.status, filters.dataset, offset, reloadKey].join('|');
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const loading = loadedKey !== requestKey;
   const [statuses, setStatuses] = useState<MLModelStatus[]>([]);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
 
@@ -45,51 +50,37 @@ const Models: React.FC = () => {
       .catch(() => { /* фильтр по датасету опционален */ });
   }, []);
 
-  const loadFlat = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await mlModelsService.getVersions({
-        name: debouncedName || undefined,
-        status: filters.status || undefined,
-        dataset_id: filters.dataset || undefined,
-        limit: MODELS_PAGE_SIZE,
-        offset,
-      });
-      setVersions(data.versions);
-      setFlatTotal(data.total);
-    } catch (error) {
-      showNotification(error instanceof Error ? error.message : 'Не удалось загрузить модели', 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [debouncedName, filters.status, filters.dataset, offset, showNotification]);
-
-  const loadGrouped = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await mlModelsService.getModels({
-        name: debouncedName || undefined,
-        status: filters.status || undefined,
-        dataset_id: filters.dataset || undefined,
-        limit: MODELS_PAGE_SIZE,
-        offset,
-      });
-      setModels(data.models);
-      setGroupedTotal(data.total);
-    } catch (error) {
-      showNotification(error instanceof Error ? error.message : 'Не удалось загрузить модели', 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [debouncedName, filters.status, filters.dataset, offset, showNotification]);
-
   useEffect(() => {
-    if (viewMode === 'flat') {
-      loadFlat();
-    } else {
-      loadGrouped();
-    }
-  }, [viewMode, loadFlat, loadGrouped]);
+    let cancelled = false;
+    const params = {
+      name: debouncedName || undefined,
+      status: filters.status || undefined,
+      dataset_id: filters.dataset || undefined,
+      limit: MODELS_PAGE_SIZE,
+      offset,
+    };
+    const load =
+      viewMode === 'flat'
+        ? mlModelsService.getVersions(params).then((data) => {
+            if (cancelled) return;
+            setVersions(data.versions);
+            setFlatTotal(data.total);
+          })
+        : mlModelsService.getModels(params).then((data) => {
+            if (cancelled) return;
+            setModels(data.models);
+            setGroupedTotal(data.total);
+          });
+    load
+      .catch((error) => {
+        if (cancelled) return;
+        showNotification(error instanceof Error ? error.message : 'Не удалось загрузить модели', 'error');
+      })
+      .finally(() => {
+        if (!cancelled) setLoadedKey(requestKey);
+      });
+    return () => { cancelled = true; };
+  }, [requestKey, viewMode, debouncedName, filters.status, filters.dataset, offset, showNotification]);
 
   const switchView = (mode: ViewMode) => {
     resetPage();
@@ -115,8 +106,8 @@ const Models: React.FC = () => {
         </p>
       </div>
 
-      <div className="models-toolbar">
-        <div className="models-filters">
+      <div className="list-toolbar">
+        <div className="list-filters">
           <div className="filter-field">
             <i className={`fas ${ICONS.search}`}></i>
             <input
@@ -132,7 +123,7 @@ const Models: React.FC = () => {
             ariaLabel="Фильтр по статусу"
             placeholder="Все статусы"
             value={filters.status}
-            options={statuses.map((s) => ({ value: s.status, label: s.status }))}
+            options={statuses.map((s) => ({ value: s.status, label: modelStatusLabel(s.status) }))}
             onChange={(v) => setFilter('status', v)}
           />
 
@@ -181,7 +172,7 @@ const Models: React.FC = () => {
           <div className={`models-grid${loading ? ' is-refreshing' : ''}`}>
             {viewMode === 'flat'
               ? versions.map((version) => <ModelCard key={version.id} model={version} />)
-              : models.map((model) => <ModelGroupCard key={model.id} model={model} onReload={loadGrouped} />)
+              : models.map((model) => <ModelGroupCard key={model.id} model={model} onReload={() => setReloadKey((k) => k + 1)} />)
             }
           </div>
 
