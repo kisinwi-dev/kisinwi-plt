@@ -11,7 +11,7 @@ import { CollapseChevron, getDisclosureProps } from '../components/common/Collap
 import ConfirmModal from '../components/common/ConfirmModal';
 import { Tooltip } from '../components/common/Tooltip';
 import Select from '../components/common/Select';
-import { ModelMetricsCharts } from '../components/models';
+import { ModelMetricsCharts, TrainingTaskProgress } from '../components/models';
 import { ICONS } from '../constants/icons';
 import { modelStatusLabel, statusBadgeClass } from '../constants';
 import './Models.css';
@@ -318,6 +318,8 @@ const ModelDetail: React.FC = () => {
       </section>
 
       {model.description && <ModelDescription key={model.id} text={model.description} />}
+
+      <TrainingTaskProgress modelId={model.id} />
 
       <section className="detail-section">
         <h3 className="detail-section-title"><i className={`fas ${ICONS.metrics}`}></i> Метрики</h3>

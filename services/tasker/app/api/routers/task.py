@@ -63,12 +63,13 @@ async def create_task(
 )
 async def get_tasks(
     status_filter: str | None = Query(None, alias="status", description="Фильтр по статусу задачи"),
+    model_id: str | None = Query(None, description="Фильтр по ID модели"),
     manager: TrainingTaskManager = Depends(get_training_task_manager)
 ):
-    if status_filter:
-        tasks = manager.get_task_with_status(status_filter)
-    else:
-        tasks = manager.get_tasks()
+    if model_id:
+        valid_uuid(model_id, on_error=True)
+
+    tasks = manager.get_tasks(status=status_filter, model_id=model_id)
 
     return TasksResponse(
         tasks=[

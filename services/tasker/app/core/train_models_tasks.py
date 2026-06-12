@@ -153,17 +153,30 @@ class TrainingTaskManager:
             return dict(row) if row is not None else None
 
     def get_tasks(
-            self
+            self,
+            status: str | None = None,
+            model_id: str | None = None
     ) -> List[Dict]:
-        """Получить информацию о задачах"""
+        """Получить информацию о задачах (с опциональными фильтрами)"""
+        conditions = []
+        params: list[Any] = []
+        if status:
+            conditions.append("s.status = %s")
+            params.append(status)
+        if model_id:
+            conditions.append("t.model_id = %s")
+            params.append(model_id)
+
+        where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
         query = f"""
             SELECT {TASK_FIELDS}
             FROM {self._table} t
             LEFT JOIN {self._status_table} s ON t.status_id = s.id
+            {where}
             ORDER BY t.created_at ASC
         """
         with self.db.session() as db:
-            rows = db.fetch_all(query)
+            rows = db.fetch_all(query, tuple(params) if params else None)
             return [dict(row) for row in rows]
 
     def get_status_values(self) -> List[Dict[str, Any]]:
@@ -174,22 +187,6 @@ class TrainingTaskManager:
         """
         with self.db.session() as db:
             rows = db.fetch_all(query)
-            return [dict(row) for row in rows]
-
-    def get_task_with_status(
-        self,
-        status: str
-    ) -> List[Dict]:
-        """Получить задачи c заданным статусом"""
-        query = f"""
-            SELECT {TASK_FIELDS}
-            FROM {self._table} t
-            LEFT JOIN {self._status_table} s ON t.status_id = s.id
-            WHERE s.status = %s
-            ORDER BY t.created_at ASC
-        """
-        with self.db.session() as db:
-            rows = db.fetch_all(query, (status,))
             return [dict(row) for row in rows]
 
     def get_next_task(self) -> Dict[str, Any] | None:

@@ -255,9 +255,15 @@ button:disabled,
 
 .status-training,
 .status-in-progress,
+.status-running,
 .status-active {
   background: var(--color-info-soft);
   color: var(--color-info);
+}
+
+.status-waiting {
+  background: var(--color-surface-faint);
+  color: var(--color-text-secondary);
 }
 
 .status-failed,
@@ -269,6 +275,73 @@ button:disabled,
 .status-cancelled {
   background: var(--color-surface-faint);
   color: var(--color-text-secondary);
+}
+
+/* ── Прогресс задачи обучения ────────────────────────────────────────────────── */
+.progress-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-faint);
+  border: var(--border-subtle);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-info);
+  transition: width 0.6s ease;
+}
+
+.training-task {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.training-task-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.training-task-info {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.training-task-cancel {
+  margin-left: auto;
+}
+
+.training-task-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.training-task-percent {
+  min-width: 3rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.training-task-error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 0.9rem;
+}
+
+.training-task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
 }
 
 /* ── Теги / чипы ─────────────────────────────────────────────────────────────── */

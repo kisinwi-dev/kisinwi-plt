@@ -8,3 +8,4 @@ export { default as ModelCompareCurves } from './ModelCompareCurves';
 export { default as ModelCompareMetaDiff } from './ModelCompareMetaDiff';
 export { default as ModelCompareClassReport } from './ModelCompareClassReport';
 export { default as CompareDeltaChip } from './CompareDeltaChip';
+export { default as TrainingTaskProgress } from './TrainingTaskProgress';
