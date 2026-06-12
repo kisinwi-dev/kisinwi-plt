@@ -1047,41 +1047,7 @@
   color: var(--color-danger);
 }
 
-/* ========================
-   Model Compare
-   ======================== */
-
-.mcmp-split-toggle {
-  margin-left: auto;
-  align-self: flex-end;
-}
-
-.mcmp-metric-block {
-  margin-bottom: 1rem;
-}
-
-.mcmp-direction {
-  margin-left: 0.5rem;
-  font-size: 0.9rem;
-  color: var(--color-text-secondary);
-  cursor: help;
-}
-
-.mcmp-table th:first-child {
-  min-width: 220px;
-}
-
-.mcmp-row--best th,
-.mcmp-row--best td {
-  color: var(--color-text-primary);
-  background: color-mix(in srgb, var(--color-success) 8%, transparent);
-}
-
-.mcmp-best-icon {
-  color: var(--color-success);
-  margin-right: 0.4rem;
-  font-size: 0.75rem;
-}
+/* Стили сравнения моделей (mcmp-*) — в ModelCompare.css */
 
 /* Collapsible text report */
 .metrics-report-details {
