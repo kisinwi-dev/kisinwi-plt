@@ -60,7 +60,14 @@ export interface CompareModelEntry {
   best_value: number;
   best_epoch: number;
   epochs: number;
-  // Отставание от лидера по best_value (0 у лидера).
+  // Значение на эпохе сохранённых весов; без checkpoint-инфы — final_value.
+  weights_value: number;
+  // Эпоха сохранённых весов; null — модель без записанного чекпоинта.
+  checkpoint_epoch?: number | null;
+  // Значение этой метрики на эпохе чекпоинта; null — чекпоинт неизвестен
+  // или эпоха вне диапазона значений.
+  checkpoint_value?: number | null;
+  // Отставание от лидера по weights_value (0 у лидера).
   delta_best: number;
 }
 

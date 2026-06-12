@@ -1,0 +1,519 @@
+/* Страница сравнения моделей (mcmp-*).
+   Переиспользует vcmp-* (DatasetCompare.css), class-report-table и
+   metrics-* / общие mcmp-элементы графиков (Models.css);
+   здесь — только специфика сравнения моделей. */
+
+/* ---------- Пикер моделей ---------- */
+
+.mcmp-picker {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.mcmp-picker-rows {
+  flex: 1;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mcmp-picker-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.mcmp-picker-row .vcmp-picker-field {
+  flex: 1;
+}
+
+.mcmp-row-action {
+  margin-bottom: 0.3rem;
+}
+
+.mcmp-add-model {
+  align-self: flex-start;
+}
+
+/* ---------- Описания секций ---------- */
+
+/* Однострочное пояснение под заголовком секции — что показано и как читать. */
+.mcmp-section-desc {
+  margin: 0.2rem 0 0.85rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+  max-width: 760px;
+}
+
+/* ---------- Сводка-вердикт ---------- */
+
+.mcmp-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mcmp-summary-models {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.mcmp-summary-model {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.8rem;
+  background: var(--color-bg-deep);
+  border: var(--border-soft);
+  border-radius: var(--radius-pill);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.mcmp-summary-model-role {
+  margin-left: 0.6rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+}
+
+.mcmp-summary-vs {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.mcmp-summary-verdict {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.mcmp-summary-verdict i {
+  color: var(--color-success);
+  font-size: 0.85rem;
+}
+
+/* Сноска о базисе сравнения (эпоха сохранённых весов). */
+.mcmp-summary-basis {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+.mcmp-summary-wins {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.mcmp-summary-wins-row {
+  display: flex;
+  align-items: baseline;
+}
+
+/* ---------- Рамка таблиц сравнения ---------- */
+
+/* Скруглённая рамка вокруг таблиц сравнения: на самой таблице радиус не
+   работает (border-collapse: collapse), поэтому скругляем обёртку — она же
+   скролл-контейнер и обрезает углы. Внешние границы ячеек убраны, чтобы
+   не двоились с рамкой. */
+.mcmp-table-wrap {
+  width: fit-content;
+  max-width: 100%;
+  border: var(--border-soft);
+  border-radius: var(--radius-input);
+}
+
+.mcmp-table-wrap > table tr > :first-child {
+  border-left: none;
+}
+
+.mcmp-table-wrap > table tr > :last-child {
+  border-right: none;
+}
+
+.mcmp-table-wrap > table thead tr:first-child > * {
+  border-top: none;
+}
+
+.mcmp-table-wrap > table tbody tr:last-child > * {
+  border-bottom: none;
+}
+
+/* ---------- Сводная таблица метрик ---------- */
+
+.mcmp-table th:first-child {
+  min-width: 160px;
+}
+
+/* Подписи в шапках таблиц сравнения («Метрика», «Класс», «Support») —
+   приглушённый uppercase-ярлык, чтобы не спорить с именами моделей.
+   Фон шапки и первой колонки темнее фона карточки — структура таблицы
+   (что — заголовок, что — данные) видна с одного взгляда. */
+.mcmp-table thead th,
+.mcmp-class-table thead th,
+.mcmp-meta-table thead th {
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  vertical-align: bottom;
+  padding-top: 0.6rem;
+  padding-bottom: 0.55rem;
+  background: var(--color-bg-deep);
+}
+
+/* Первая колонка (критерий строки: метрика / класс / параметр) — тот же
+   тёмный фон, что у шапки. */
+.mcmp-table tbody th,
+.mcmp-class-table tbody th,
+.mcmp-meta-table tbody th {
+  background: var(--color-bg-deep);
+}
+
+/* Цветная полоса-акцент сверху колонки (inset box-shadow цветом модели)
+   задаётся инлайном в CompareSideHeader — border схлопнулся бы при collapse. */
+.mcmp-th-model {
+  min-width: 150px;
+}
+
+/* Шапка колонки модели: имя, версия и подстроки — на отдельных строках.
+   Имя — главный элемент шапки, не ярлык: обычный регистр и основной цвет. */
+.mcmp-th-name {
+  display: block;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* Бейдж базовой модели — от неё считаются дельты остальных. */
+.mcmp-th-role {
+  margin-left: 0.5rem;
+  padding: 0.08rem 0.45rem;
+  border: var(--border-soft);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg-deep);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  vertical-align: middle;
+  cursor: help;
+}
+
+.mcmp-th-version {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--color-text-secondary);
+}
+
+/* Подстрока шапки колонки: с какой эпохи взяты сохранённые веса модели. */
+.mcmp-th-weights {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+  cursor: help;
+}
+
+/* Критерий сравнения (строка сводной таблицы): иконка в тонированной
+   плашке + имя метрики основным цветом — читается с одного взгляда. */
+.mcmp-metric-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  cursor: help;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.mcmp-metric-name i {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  color: var(--color-accent);
+  font-size: 0.68rem;
+  flex-shrink: 0;
+}
+
+/* Направление метрики: ↑ больше — лучше, ↓ меньше — лучше (loss). */
+.mcmp-direction {
+  padding: 0.02rem 0.32rem;
+  border-radius: 4px;
+  background: var(--color-bg-deep);
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+.mcmp-cell-value {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.mcmp-cell--best {
+  background: color-mix(in srgb, var(--color-success) 8%, transparent);
+}
+
+.mcmp-best-icon {
+  color: var(--color-success);
+  margin-right: 0.4rem;
+  font-size: 0.7rem;
+}
+
+/* Треугольник направления изменения в чипе дельты: ▲ выросло, ▼ упало.
+   Дублирует цвет чипа — смысл читается без различения цветов. */
+.mcmp-delta-dir {
+  margin-right: 0.25em;
+  font-size: 0.78em;
+}
+
+/* Дельта от базовой модели — вторая строка ячейки небазовых колонок. */
+.mcmp-cell-delta {
+  display: block;
+  margin-top: 0.25rem;
+  min-width: 110px;
+}
+
+/* ---------- Кривые обучения ---------- */
+
+/* Темизация графиков, легенда, drag-ручка и увеличенный график в оверлее
+   (mcmp-chart-*, mcmp-curve-legend, mcmp-zoom-*, mcmp-tooltip*, mcmp-side-dot)
+   — общие с графиками метрик ModelDetail, перенесены в Models.css. */
+
+.mcmp-curves-note {
+  margin: 0.6rem 0 0;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+/* ---------- Diff конфигураций ---------- */
+
+.mcmp-meta-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.mcmp-meta-head .metrics-split-title {
+  margin: 0;
+}
+
+.mcmp-meta-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.mcmp-meta-table-wrap {
+  margin-top: 0.75rem;
+}
+
+.mcmp-meta-table th:first-child {
+  min-width: 160px;
+  max-width: 220px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Значения конфига могут быть очень длинными (списки аугментаций и т.п.):
+   ограничиваем ширину колонки и переносим по словам, длинные значения
+   сворачиваются до превью (.mcmp-param-long). */
+.mcmp-meta-table td {
+  text-align: left;
+  max-width: 340px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+
+.mcmp-param-long code {
+  display: block;
+}
+
+/* Развёрнутое длинное значение: моноширинный блок с сохранением переносов. */
+.mcmp-param-long--expanded {
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 16rem;
+  overflow-y: auto;
+  padding: 0.35rem 0.5rem;
+  background: var(--color-bg-deep);
+  border-radius: 6px;
+}
+
+.mcmp-param-toggle {
+  display: block;
+  margin-top: 0.25rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 0.72rem;
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.mcmp-param-toggle:hover {
+  text-decoration: underline;
+}
+
+/* Различающиеся значения — основной сигнал diff'а (специфичность —
+   выше тёмного фона первой колонки mcmp-таблиц). */
+.mcmp-meta-table .mcmp-meta-row--diff th,
+.mcmp-meta-table .mcmp-meta-row--diff td {
+  background: color-mix(in srgb, var(--color-warning) 7%, transparent);
+}
+
+.mcmp-meta-row--diff td {
+  color: var(--color-text-primary);
+}
+
+.mcmp-meta-subhead th {
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-deep);
+}
+
+/* ---------- Сравнение по классам ---------- */
+
+/* Подсекция внутри «Метрики (test)»: отступ от сводной таблицы метрик. */
+.mcmp-class-report {
+  margin-top: 1.1rem;
+}
+
+/* Скролл-контейнер: при многих классах таблица скроллится, шапка и колонка
+   классов закреплены (sticky), чтобы не терять контекст. */
+.mcmp-class-table-wrap {
+  max-height: 440px;
+  overflow: auto;
+}
+
+.mcmp-class-table td {
+  text-align: right;
+  vertical-align: top;
+}
+
+/* Имена классов — критерий сравнения, а не служебная подпись. */
+.mcmp-class-table tbody th {
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+.mcmp-class-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.mcmp-class-table th:first-child,
+.mcmp-class-table td:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--color-bg-deep);
+}
+
+.mcmp-class-table thead th:first-child {
+  z-index: 3;
+}
+
+.mcmp-class-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--color-text-primary) 4%, var(--color-bg-secondary));
+}
+
+.mcmp-class-table tbody tr:hover th {
+  background: color-mix(in srgb, var(--color-text-primary) 4%, var(--color-bg-deep));
+}
+
+/* Подсветка лидера строки поверх sticky/hover-фона (фон ячейки — сигнал). */
+.mcmp-class-table td.mcmp-cell--best,
+.mcmp-class-table tbody tr:hover td.mcmp-cell--best {
+  background: color-mix(in srgb, var(--color-success) 8%, var(--color-bg-secondary));
+}
+
+/* Мини-бар величины метрики (∈ [0, 1]) под значением: быстрое визуальное
+   сравнение колонок; цвет — те же пороги качества, что у цифры. */
+.mcmp-class-bar {
+  display: block;
+  margin-top: 0.3rem;
+  height: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--color-text-secondary) 18%, transparent);
+  overflow: hidden;
+}
+
+.mcmp-class-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-text-secondary);
+}
+
+.mcmp-class-bar-fill--good {
+  background: var(--color-success);
+}
+
+.mcmp-class-bar-fill--fair {
+  background: var(--color-warning);
+}
+
+.mcmp-class-bar-fill--poor {
+  background: var(--color-danger);
+}
+
+/* Дельта-чип здесь без процента — короче, чем в сводной таблице. */
+.mcmp-class-table .mcmp-cell-delta {
+  min-width: 0;
+}
+
+/* Support — справочная колонка, приглушена относительно значений метрик. */
+.mcmp-class-support {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Адаптив ---------- */
+
+@media (max-width: 768px) {
+  .mcmp-summary-models {
+    gap: 0.5rem;
+  }
+}
