@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { datasetService } from '../services/datasetService';
 import { useNotification } from '../contexts/NotificationContext';
 import { useCopyToClipboard } from '../hooks';
@@ -23,6 +23,7 @@ const EMPTY_VERSION = () => ({
 const DatasetDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { showNotification } = useNotification();
   const copyToClipboard = useCopyToClipboard();
 
@@ -30,7 +31,8 @@ const DatasetDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [showVersionForm, setShowVersionForm] = useState(false);
-  const [versionFilter, setVersionFilter] = useState('');
+  // Фильтр версий можно предзаполнить через ?version=<имя> (переход со страницы модели).
+  const [versionFilter, setVersionFilter] = useState(() => searchParams.get('version') ?? '');
   const [newVersion, setNewVersion] = useState(EMPTY_VERSION);
   // Версия, для которой открыта модалка с полной статистикой.
   const [statsVersion, setStatsVersion] = useState<Version | null>(null);

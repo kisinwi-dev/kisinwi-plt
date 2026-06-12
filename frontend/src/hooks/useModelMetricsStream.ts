@@ -4,9 +4,13 @@ import type { ModelMetrics, TrainingStatus } from '../services/metricsService';
 
 const FINAL_STATUSES: TrainingStatus[] = ['completed', 'failed', 'cancelled'];
 
-interface UseModelMetricsStreamResult {
+export interface UseModelMetricsStreamResult {
   data: ModelMetrics | undefined;
-  status: TrainingStatus | null | undefined;
+  /**
+   * Стрим дошёл до финального статуса обучения. Это сигнал «новых снимков
+   * не будет», а не статус модели — «обучена/не обучена» знает только
+   * реестр ml_models.
+   */
   finished: boolean;
   loading: boolean;
   error: boolean;
@@ -25,10 +29,19 @@ export function useModelMetricsStream(modelId: string): UseModelMetricsStreamRes
   const [finished, setFinished] = useState(false);
   const [error, setError] = useState(false);
 
-  useEffect(() => {
+  // Сброс при смене модели — синхронно в рендере (паттерн «storing information
+  // from previous renders» из доков React), чтобы между сменой id и подпиской
+  // не отдавались данные прошлой модели.
+  const [prevModelId, setPrevModelId] = useState(modelId);
+  if (prevModelId !== modelId) {
+    setPrevModelId(modelId);
     setData(undefined);
     setFinished(false);
     setError(false);
+  }
+
+  useEffect(() => {
+    if (!modelId) return;
 
     let cancelled = false;
     let gotData = false;
@@ -60,7 +73,13 @@ export function useModelMetricsStream(modelId: string): UseModelMetricsStreamRes
         metricsService
           .getModelMetrics(modelId)
           .then((metrics) => {
-            if (cancelled || gotData || metrics === null) return;
+            if (cancelled || gotData) return;
+            if (metrics === null) {
+              // 404 — метрик у модели нет: это «пусто», а не ошибка сервиса.
+              setData({ model_id: modelId, train: [], val: [], test: [] });
+              setError(false);
+              return;
+            }
             applyMetrics(metrics);
           })
           .catch(() => undefined);
@@ -75,7 +94,6 @@ export function useModelMetricsStream(modelId: string): UseModelMetricsStreamRes
 
   return {
     data,
-    status: data?.status,
     finished,
     loading: data === undefined && !error,
     error,

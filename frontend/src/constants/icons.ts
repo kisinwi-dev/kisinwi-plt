@@ -31,6 +31,8 @@ export const ICONS = {
   menuClose: 'fa-xmark',       // закрыть мобильное меню (бургер в открытом состоянии)
   compare: 'fa-code-compare',  // сравнение версий датасета
   swap: 'fa-right-left',       // поменять местами базовую и сравниваемую версии
+  dragHandle: 'fa-grip-vertical', // ручка перетаскивания (смена порядка графиков)
+  enlarge: 'fa-up-right-and-down-left-from-center', // развернуть график в большой оверлей
   arrowRight: 'fa-arrow-right', // направление сравнения «базовая → сравниваемая»
   minus: 'fa-minus',           // удалённые элементы в diff (пара к add)
 
@@ -86,6 +88,16 @@ export const ICONS = {
   duration: 'fa-clock',
   iteration: 'fa-rotate',
   history: 'fa-clock-rotate-left',
+
+  // --- метрики обучения (карточки финальных значений) ---
+  metricAccuracy: 'fa-bullseye',
+  metricPrecision: 'fa-crosshairs',
+  metricRecall: 'fa-magnifying-glass',
+  metricF1: 'fa-scale-balanced',
+  metricAuroc: 'fa-chart-area',
+  metricSpecificity: 'fa-filter',
+  metricKappa: 'fa-handshake',
+  metricLoss: 'fa-arrow-trend-down',
 
   // --- файлы (FileUploader) ---
   upload: 'fa-cloud-arrow-up',

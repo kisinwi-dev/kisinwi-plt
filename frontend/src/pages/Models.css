@@ -31,7 +31,16 @@
   color: #fff;
 }
 
-/* .filter-field — общий примитив, см. styles/components.css */
+/* Компактный вариант — для маленьких заголовков блоков (confusion matrix и т.п.) */
+.view-toggle--compact {
+  padding: 0.15rem;
+  gap: 0.15rem;
+}
+
+.view-toggle--compact .view-toggle-btn {
+  padding: 0.2rem 0.55rem;
+  font-size: 0.78rem;
+}
 
 /* ── Сетка карточек ──────────────────────────────────────────────────────────── */
 .models-grid {
@@ -118,8 +127,53 @@
 }
 
 /* ── Детальный просмотр ──────────────────────────────────────────────────────── */
+/* Шапка: заголовок и ID слева, действия справа, разделитель снизу
+   (как .dataset-detail-header на странице датасета). */
 .model-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
   margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: var(--border-subtle);
+}
+
+.model-detail-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.model-detail-heading .tooltip-trigger {
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+.model-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+/* На узких экранах действия уходят под заголовок */
+@media (max-width: 640px) {
+  .model-detail-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .model-detail-actions {
+    align-self: flex-start;
+  }
+}
+
+/* Ссылки на датасет в «Общей информации» обёрнуты в Tooltip:
+   не даём обёртке растянуться на всю колонку. */
+.model-detail .detail-field .tooltip-trigger {
+  align-self: flex-start;
+  max-width: 100%;
 }
 
 .model-detail-title {
@@ -127,6 +181,22 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.8rem;
+}
+
+/* Select растягивается под фильтры — в шапке ему нужна компактная ширина. */
+.model-detail-version-select {
+  width: 240px;
+  max-width: 100%;
+}
+
+.model-detail-version-select .select {
+  flex: none;
+  width: 100%;
+}
+
+.model-detail-version-select .select-trigger {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.85rem;
 }
 
 .model-detail-title h1 {
@@ -169,8 +239,44 @@
 }
 
 .model-detail-description {
-  margin-top: 0.5rem;
+  margin: 0;
   color: var(--color-text-secondary);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Очень длинное описание сворачиваем до нескольких строк */
+.model-detail-description--clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.model-detail-description-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  padding: 0.25rem 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-family: var(--font-primary);
+  font-size: 0.85rem;
+  transition: color 0.15s;
+}
+
+.model-detail-description-toggle:hover {
+  color: var(--color-accent);
+}
+
+.model-detail-description-toggle i {
+  font-size: 0.7rem;
 }
 
 .detail-pre--params,
@@ -468,6 +574,20 @@
   color: var(--color-text-secondary);
 }
 
+/* Строка о сохранённых весах: эпоха чекпоинта по early-stop-метрике */
+.metrics-checkpoint-note {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.metrics-checkpoint-note i {
+  color: var(--color-accent);
+}
+
 /* Скалярные карточки для одиночных финальных значений (test) */
 .metrics-scalar-cards {
   display: flex;
@@ -477,14 +597,46 @@
 }
 
 .metrics-scalar-card {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  min-width: 140px;
-  padding: 0.85rem 1rem;
+  gap: 0.35rem;
+  min-width: 150px;
+  padding: 0.9rem 1.1rem;
   background: var(--color-bg-deep);
   border: var(--border-soft);
   border-radius: var(--radius-input);
+  transition: var(--transition);
+}
+
+/* Акцентная полоска слева: цвет качества метрики, иначе цвет сплита
+   (--split-color задаётся инлайн, --quality-color — модификаторами ниже) */
+.metrics-scalar-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--quality-color, var(--split-color));
+}
+
+/* Окраска по качеству результата метрики (пороги — constants/metrics.ts) */
+.metrics-scalar-card--good { --quality-color: var(--color-success); }
+.metrics-scalar-card--fair { --quality-color: var(--color-warning); }
+.metrics-scalar-card--poor { --quality-color: var(--color-danger); }
+
+.metrics-scalar-card:hover {
+  border-color: var(--color-border-strong);
+  transform: translateY(-1px);
+}
+
+.metrics-scalar-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
 }
 
 .metrics-scalar-card-name {
@@ -495,10 +647,27 @@
   color: var(--color-text-secondary);
 }
 
-.metrics-scalar-card-value {
-  font-size: 1.35rem;
+.metrics-scalar-card-name i {
+  font-size: 0.7rem;
+  opacity: 0.8;
+  margin-right: 0.15rem;
+}
+
+.metrics-scalar-card-split {
+  font-size: 0.62rem;
   font-weight: 600;
-  color: var(--color-text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--radius-pill);
+  color: var(--split-color);
+  background: color-mix(in srgb, var(--split-color) 16%, transparent);
+}
+
+.metrics-scalar-card-value {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--quality-color, var(--color-text-primary));
   font-variant-numeric: tabular-nums;
 }
 
@@ -531,33 +700,262 @@
   color: var(--color-danger);
 }
 
-/* Training status badge */
-.metrics-status-row {
-  margin-bottom: 0.75rem;
+/* ========================
+   Общие элементы графиков (mcmp-*)
+   Родом со страницы сравнения, теперь общие для ModelMetricsCharts
+   (ModelDetail) и ModelCompareCurves: темизация recharts, легенда,
+   drag-ручка, увеличенный график в оверлее.
+   ======================== */
+
+/* Точка цвета серии (модель/выборка): маркер в тултипах, сводках и легендах. */
+.mcmp-side-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 0.45rem;
+  vertical-align: baseline;
+  flex-shrink: 0;
 }
 
-.metrics-status-badge {
-  display: inline-flex;
+/* Темизация recharts: SVG-атрибуты не резолвят var(), поэтому цвета сетки и
+   осей задаются CSS-правилами — каскад перебивает presentation-атрибуты. */
+.mcmp-chart-themed .recharts-cartesian-grid line {
+  stroke: var(--color-border-soft);
+}
+
+.mcmp-chart-themed .recharts-cartesian-axis-line {
+  stroke: var(--color-border-soft);
+}
+
+.mcmp-chart-themed .recharts-cartesian-axis-tick-value,
+.mcmp-chart-themed .recharts-label {
+  fill: var(--color-text-secondary);
+}
+
+/* Brush увеличенного графика: фон/выделение в токенах темы. */
+.mcmp-chart-themed .recharts-brush > rect:first-of-type {
+  fill: var(--color-surface-faint);
+  stroke: var(--color-border-soft);
+}
+
+.mcmp-chart-themed .recharts-brush-slide {
+  fill: var(--color-accent-soft);
+  fill-opacity: 1;
+}
+
+/* Встроенные SVG-числа эпох у ползунков вылезают за край графика —
+   выбранный диапазон показывается подсказкой под графиком. */
+.mcmp-chart-themed .recharts-brush-texts {
+  display: none;
+}
+
+.mcmp-brush-traveller {
+  fill: var(--color-text-secondary);
+}
+
+.mcmp-curve-legend {
+  margin-left: 12px;
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.mcmp-curve-legend > span {
+  margin-right: 8px;
+  cursor: help;
+}
+
+/* Заголовок графика: имя, легенда и кнопка «развернуть» справа. */
+.mcmp-chart-title {
+  display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.25rem 0.65rem;
+  flex-wrap: wrap;
+  gap: 0.1rem 0;
+}
+
+.mcmp-chart-zoom {
+  margin-left: auto;
+}
+
+/* Ручка перетаскивания графика: drag начинается только с неё, чтобы не
+   мешать hover-тултипам recharts внутри блока. */
+.mcmp-chart-grip {
+  margin-right: 0.55rem;
+  color: var(--color-text-secondary);
+  opacity: 0.5;
+  cursor: grab;
+}
+
+.mcmp-chart-grip:hover {
+  opacity: 1;
+}
+
+.mcmp-chart-grip:active {
+  cursor: grabbing;
+}
+
+/* Перетаскиваемый блок: полупрозрачный с акцентной рамкой — видно, что и
+   куда встанет (порядок применяется на лету при наведении). */
+.mcmp-chart--dragging {
+  opacity: 0.45;
+  outline: 1px dashed var(--color-accent);
+  outline-offset: 2px;
   border-radius: var(--radius-input);
+}
+
+/* ---------- Увеличенный график (оверлей) ---------- */
+
+/* Паттерн overlay/pop-in — как у VersionStatsModal/ConfirmModal. */
+.mcmp-zoom-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--color-overlay);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.5rem;
+  animation: mcmp-zoom-fade 0.15s ease;
+}
+
+.mcmp-zoom-modal {
+  background: var(--color-bg-secondary);
   border: var(--border-soft);
-  font-size: 0.8rem;
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+  width: min(1280px, 100%);
+  padding: 1.1rem 1.35rem 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  animation: mcmp-zoom-pop 0.18s ease;
+}
+
+.mcmp-zoom-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.mcmp-zoom-head .metrics-chart-title {
+  flex: 1;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Высота увеличенного графика: почти вся высота окна, но с потолком,
+   чтобы на больших мониторах кривые не растягивались до нечитаемости. */
+.mcmp-zoom-chart {
+  height: min(68vh, 640px);
+}
+
+/* Сводка по кривым в оверлее: карточка на серию — лучшее значение (с эпохой),
+   финал и эпоха сохранённых весов. Сетка, чтобы на широком экране карточки
+   стояли ровными колонками, а не текли строкой. */
+.mcmp-zoom-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.6rem;
+  font-size: 0.78rem;
   color: var(--color-text-secondary);
-  background: var(--color-bg-deep);
+  font-variant-numeric: tabular-nums;
 }
 
-.metrics-status-badge--completed {
-  color: var(--color-success);
+.mcmp-zoom-stat {
+  background: var(--color-surface-faint);
+  border: var(--border-subtle);
+  border-left: 3px solid; /* цвет серии — inline style */
+  border-radius: var(--radius-input);
+  padding: 0.5rem 0.85rem 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
-.metrics-status-badge--failed {
-  color: var(--color-danger);
+.mcmp-zoom-stat-label {
+  margin: 0;
+  font-weight: 600;
+  color: var(--color-text-primary);
 }
 
-.metrics-status-badge--cancelled {
+/* Значения карточки: мини-колонки «подпись над числом». */
+.mcmp-zoom-stat-values {
+  display: flex;
+  gap: 1.4rem;
+}
+
+.mcmp-zoom-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.mcmp-zoom-stat-key {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.8;
+}
+
+.mcmp-zoom-stat-sub {
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+
+.mcmp-zoom-stat b {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+}
+
+/* Tooltip увеличенного графика: маркеры цвета серий, значения по убыванию. */
+.mcmp-tooltip {
+  background: var(--color-bg-secondary);
+  border: var(--border-soft);
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow-md);
+  padding: 0.5rem 0.7rem;
+  font-size: 0.78rem;
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.mcmp-tooltip-label {
+  margin: 0 0 0.35rem;
+  font-weight: 600;
+}
+
+.mcmp-tooltip-row {
+  margin: 0.15rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.mcmp-tooltip-name {
   color: var(--color-text-secondary);
+  margin-right: 0.3rem;
+}
+
+/* Подсказка под графиком: как пользоваться brush'ем. */
+.mcmp-zoom-note {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+  opacity: 0.85;
+}
+
+@keyframes mcmp-zoom-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mcmp-zoom-pop {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 /* Class report: confusion matrix + per-class metrics */
@@ -611,6 +1009,42 @@
 .class-report-corner {
   font-weight: 400;
   font-size: 0.72rem;
+}
+
+/* Шапка блока таблицы: заголовок слева, toggle counts/% справа */
+.class-report-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.class-report-block-head .metrics-chart-title {
+  margin: 0;
+}
+
+/* Итоговые строки (macro avg, accuracy) — как footer classification_report */
+.class-report-table tfoot tr:first-child th,
+.class-report-table tfoot tr:first-child td {
+  border-top: 2px solid rgba(255, 255, 255, 0.14);
+}
+
+.class-report-table tfoot th {
+  color: var(--color-text-primary);
+}
+
+/* Окраска значений по порогам качества метрики (см. constants/metrics.ts) */
+.class-report-score--good {
+  color: var(--color-success);
+}
+
+.class-report-score--fair {
+  color: var(--color-warning);
+}
+
+.class-report-score--poor {
+  color: var(--color-danger);
 }
 
 /* ========================
