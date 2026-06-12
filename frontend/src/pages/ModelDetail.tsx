@@ -1,17 +1,68 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { mlModelsService } from '../services/mlModelsService';
 import { datasetService } from '../services/datasetService';
 import { useNotification } from '../contexts/NotificationContext';
 import type { MLModelVersion, MLModelFile } from '../types/mlModels';
 import type { Dataset } from '../types/dataset';
-import { formatBytes, formatDateTime } from '../utils/format';
-import { useCopyToClipboard } from '../hooks';
+import { formatBytes, formatDateTime, formatDateParts } from '../utils/format';
+import { useCopyToClipboard, useModelMetricsStream } from '../hooks';
 import { CollapseChevron, getDisclosureProps } from '../components/common/Collapse';
+import ConfirmModal from '../components/common/ConfirmModal';
 import { Tooltip } from '../components/common/Tooltip';
+import Select from '../components/common/Select';
 import { ModelMetricsCharts } from '../components/models';
 import { ICONS } from '../constants/icons';
+import { modelStatusLabel, statusBadgeClass } from '../constants';
 import './Models.css';
+
+// Финальные статусы реестра: после них перечитывать версию уже незачем.
+const FINAL_REGISTRY_STATUSES = ['completed', 'failed', 'cancelled'];
+
+/**
+ * Описание модели: длинный текст сворачивается до clamp; кнопка-переключатель
+ * появляется, только если текст реально не помещается. Монтируется
+ * с key={model.id} — при смене версии состояние сбрасывается ремоунтом.
+ */
+const ModelDescription: React.FC<{ text: string }> = ({ text }) => {
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+  const ref = useRef<HTMLParagraphElement>(null);
+
+  // Переполнение проверяем через ResizeObserver: пересчитывается и при
+  // изменении ширины окна, когда clamp начинает/перестаёт резать текст.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      setOverflows(el.scrollHeight > el.clientHeight + 1);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <section className="detail-section">
+      <h3 className="detail-section-title"><i className={`fas ${ICONS.description}`}></i> Описание</h3>
+      <p
+        ref={ref}
+        className={`model-detail-description${expanded ? '' : ' model-detail-description--clamped'}`}
+      >
+        {text}
+      </p>
+      {(overflows || expanded) && (
+        <button
+          type="button"
+          className="model-detail-description-toggle"
+          onClick={() => setExpanded(v => !v)}
+        >
+          <i className={`fas ${expanded ? ICONS.collapse : ICONS.expand}`}></i>
+          {expanded ? 'Свернуть' : 'Показать полностью'}
+        </button>
+      )}
+    </section>
+  );
+};
 
 const ModelDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,17 +70,27 @@ const ModelDetail: React.FC = () => {
   const { showNotification } = useNotification();
 
   const [model, setModel] = useState<MLModelVersion | null>(null);
+  // Все версии родительской модели — для переключателя в шапке.
+  const [versions, setVersions] = useState<MLModelVersion[]>([]);
   const [files, setFiles] = useState<MLModelFile[]>([]);
   const [dataset, setDataset] = useState<Dataset | null>(null);
-  const [loading, setLoading] = useState(true);
+  // loading выводится из id: пока загруженный id отстаёт от текущего
+  // (первый заход, переключение версии), показываем лоадер.
+  const [loadedId, setLoadedId] = useState<string | null>(null);
+  const loading = !!id && loadedId !== id;
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [paramsOpen, setParamsOpen] = useState(false);
-  const [reportOpen, setReportOpen] = useState(false);
+
+  // SSE-стрим метрик живёт здесь: графикам нужны данные, а шапке — сигнал
+  // о завершении обучения. Одно соединение на страницу.
+  const metricsStream = useModelMetricsStream(id ?? '');
+  // Подтверждение удаления версии модели (модалка).
+  const [pendingDelete, setPendingDelete] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
-    setLoading(true);
 
     Promise.all([
       mlModelsService.getVersion(id),
@@ -42,19 +103,58 @@ const ModelDetail: React.FC = () => {
         datasetService.getDataset(modelData.dataset_id)
           .then((ds) => { if (!cancelled) setDataset(ds); })
           .catch(() => {});
+        // Список версий не критичен для страницы: при ошибке остаёмся с бейджем.
+        mlModelsService.getVersions({ model_id: modelData.model_id })
+          .then((res) => { if (!cancelled) setVersions(res.versions); })
+          .catch(() => {});
       })
       .catch((error) => {
         if (cancelled) return;
         showNotification(error instanceof Error ? error.message : 'Не удалось загрузить модель', 'error');
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setLoadedId(id);
       });
 
     return () => { cancelled = true; };
   }, [id, showNotification]);
 
+  // Статус «обучена / не обучена» — только из реестра ml_models: metrics видит
+  // лишь ход обучения. Завершение стрима — сигнал перечитать версию из реестра,
+  // чтобы бейдж обновился без перезагрузки страницы. Статус читаем через ref:
+  // зависимость от model зациклила бы запросы, если реестр отстаёт от стрима.
+  // Ref обновляется эффектом без deps, объявленным до эффекта перечитывания, —
+  // к моменту его запуска статус всегда свежий.
+  const modelStatusRef = useRef<string | null>(null);
+  useEffect(() => {
+    modelStatusRef.current = model?.status ?? null;
+  });
+  useEffect(() => {
+    if (!id || !metricsStream.finished) return;
+    const status = modelStatusRef.current;
+    if (!status || FINAL_REGISTRY_STATUSES.includes(status)) return;
+    let cancelled = false;
+    mlModelsService.getVersion(id)
+      .then((fresh) => { if (!cancelled) setModel(fresh); })
+      .catch(() => { /* реестр недоступен — остаёмся со старым снимком */ });
+    return () => { cancelled = true; };
+  }, [id, metricsStream.finished]);
+
   const handleCopyId = useCopyToClipboard();
+
+  const handleDeleteVersion = async () => {
+    if (!model) return;
+    setPendingDelete(false);
+    try {
+      setBusy(true);
+      await mlModelsService.deleteVersion(model.id);
+      showNotification('Версия модели удалена', 'success');
+      navigate('/models');
+    } catch (error) {
+      showNotification(error instanceof Error ? error.message : 'Не удалось удалить версию', 'error');
+      setBusy(false);
+    }
+  };
 
   const handleDownload = async (file: MLModelFile) => {
     setDownloadingId(file.id);
@@ -91,6 +191,14 @@ const ModelDetail: React.FC = () => {
   }
 
   const trainParams = Object.keys(model.train_params ?? {}).length > 0;
+  const datasetVersionName = dataset?.versions.find(v => v.id === model.dataset_version_id)?.name;
+
+  const versionOptions = [...versions]
+    .sort((a, b) => b.version - a.version)
+    .map((v) => ({
+      value: v.id,
+      label: `v${v.version} · ${formatDateParts(v.created_at).date} · ${modelStatusLabel(v.status)}`,
+    }));
 
   return (
     <div className="page model-detail">
@@ -98,91 +206,122 @@ const ModelDetail: React.FC = () => {
         <i className={`fas ${ICONS.back}`}></i> К списку моделей
       </button>
 
-      <div className="model-detail-header">
-        <div className="model-detail-title">
-          <h1>{model.name}</h1>
-          <span className="model-version"><i className={`fas ${ICONS.version}`}></i> v{model.version}</span>
-          <span className={`status-badge status-${model.status}`}>{model.status}</span>
+      <header className="model-detail-header">
+        <div className="model-detail-heading">
+          <div className="model-detail-title">
+            <h1>{model.name}</h1>
+            {versionOptions.length > 1 ? (
+              <div className="model-detail-version-select">
+                <Select
+                  icon={`fas ${ICONS.version}`}
+                  ariaLabel="Версия модели"
+                  value={model.id}
+                  options={versionOptions}
+                  onChange={(versionId) => {
+                    if (versionId !== model.id) navigate(`/models/${versionId}`);
+                  }}
+                />
+              </div>
+            ) : (
+              <span className="model-version"><i className={`fas ${ICONS.version}`}></i> v{model.version}</span>
+            )}
+            <span className={statusBadgeClass(model.status)}>
+              {(model.status === 'in_progress' || model.status === 'training') && (
+                <><i className={`fas ${ICONS.loading} fa-spin`}></i>{' '}</>
+              )}
+              {modelStatusLabel(model.status)}
+            </span>
+          </div>
+          <Tooltip content="Нажмите, чтобы скопировать ID">
+            <span
+              className="model-detail-id"
+              onClick={() => handleCopyId(model.id)}
+            >
+              <i className={`fas ${ICONS.id}`}></i>{model.id}
+              <i className={`fas ${ICONS.copy} model-detail-id-copy-icon`}></i>
+            </span>
+          </Tooltip>
+        </div>
+        <div className="model-detail-actions">
           <button
             className="button secondary small"
-            onClick={() => navigate(`/models/compare?from=${model.id}`)}
+            onClick={() => navigate(`/models/compare?ids=${model.id}`)}
           >
             <i className={`fas ${ICONS.compare}`}></i> Сравнить
           </button>
-        </div>
-        <Tooltip content="Нажмите, чтобы скопировать ID">
-          <span
-            className="model-detail-id"
-            onClick={() => handleCopyId(model.id)}
+          <button
+            className="button danger model-detail-delete"
+            onClick={() => setPendingDelete(true)}
+            disabled={busy}
           >
-            <i className={`fas ${ICONS.id}`}></i>{model.id}
-            <i className={`fas ${ICONS.copy} model-detail-id-copy-icon`}></i>
-          </span>
-        </Tooltip>
-        {model.description && <p className="model-detail-description">{model.description}</p>}
-      </div>
+            <i className={`fas ${ICONS.delete}`}></i> Удалить версию
+          </button>
+        </div>
+      </header>
 
       <section className="detail-section">
         <h3 className="detail-section-title"><i className={`fas ${ICONS.info}`}></i> Общая информация</h3>
         <div className="detail-fields">
-          <div className="detail-field"><span className="detail-label">Тип</span><span>{model.model_type || '—'}</span></div>
-          <div className="detail-field"><span className="detail-label">Framework</span><span>{model.framework ?? '—'}{model.framework_version ? ` ${model.framework_version}` : ''}</span></div>
-          <div className="detail-field"><span className="detail-label">Создана</span><span>{formatDateTime(model.created_at)}</span></div>
           <div className="detail-field">
-            <span className="detail-label">Датасет</span>
+            <span className="detail-label"><i className={`fas ${ICONS.tag}`}></i> Тип</span>
+            <span>{model.model_type || '—'}</span>
+          </div>
+          <div className="detail-field">
+            <span className="detail-label"><i className={`fas ${ICONS.dateCreated}`}></i> Создана</span>
+            <span>{formatDateTime(model.created_at)}</span>
+          </div>
+          <div className="detail-field">
+            <span className="detail-label"><i className={`fas ${ICONS.framework}`}></i> Framework</span>
+            <span>{model.framework ?? '—'}{model.framework_version ? ` ${model.framework_version}` : ''}</span>
+          </div>
+          <div className="detail-field">
+            <span className="detail-label"><i className={`fas ${ICONS.dataset}`}></i> Датасет</span>
             <Tooltip content={model.dataset_id}>
               <button
                 className="detail-link"
-                onClick={() => navigate('/datasets')}
+                onClick={() => navigate(`/datasets/${model.dataset_id}`)}
               >
-                <i className={`fas ${ICONS.dataset}`}></i>
+                <i className={`fas ${ICONS.external}`}></i>
                 {dataset ? dataset.name : model.dataset_id}
               </button>
             </Tooltip>
           </div>
           <div className="detail-field">
-            <span className="detail-label">Версия датасета</span>
+            <span className="detail-label"><i className={`fas ${ICONS.version}`}></i> Версия датасета</span>
             <Tooltip content={model.dataset_version_id}>
               <button
                 className="detail-link"
-                onClick={() => navigate('/datasets')}
+                onClick={() => navigate(
+                  datasetVersionName
+                    ? `/datasets/${model.dataset_id}?version=${encodeURIComponent(datasetVersionName)}`
+                    : `/datasets/${model.dataset_id}`,
+                )}
               >
-                <i className={`fas ${ICONS.version}`}></i>
-                {dataset?.versions.find(v => v.id === model.dataset_version_id)?.name ?? model.dataset_version_id}
+                <i className={`fas ${ICONS.external}`}></i>
+                {datasetVersionName ?? model.dataset_version_id}
               </button>
             </Tooltip>
+          </div>
+          <div className="detail-field detail-field--full">
+            <span className="detail-label"><i className={`fas ${ICONS.classes}`}></i> Классы ({model.classes.length})</span>
+            {model.classes.length > 0 ? (
+              <div className="tag-list">
+                {model.classes.map((cls) => (
+                  <span key={cls} className="tag">{cls}</span>
+                ))}
+              </div>
+            ) : (
+              <span className="detail-empty">Классы не указаны.</span>
+            )}
           </div>
         </div>
       </section>
 
-      <section className="detail-section">
-        <h3 className="detail-section-title"><i className={`fas ${ICONS.classes}`}></i> Классы ({model.classes.length})</h3>
-        {model.classes.length > 0 ? (
-          <div className="tag-list">
-            {model.classes.map((cls) => (
-              <span key={cls} className="tag">{cls}</span>
-            ))}
-          </div>
-        ) : (
-          <p className="detail-empty">Классы не указаны.</p>
-        )}
-      </section>
+      {model.description && <ModelDescription key={model.id} text={model.description} />}
 
       <section className="detail-section">
         <h3 className="detail-section-title"><i className={`fas ${ICONS.metrics}`}></i> Метрики</h3>
-        <ModelMetricsCharts modelId={model.id} />
-        {model.metrics_report && (
-          <div className="metrics-report-details">
-            <div
-              className="metrics-report-summary"
-              {...getDisclosureProps(reportOpen, () => setReportOpen(o => !o))}
-            >
-              <CollapseChevron open={reportOpen} />
-              <i className={`fas ${ICONS.report}`}></i> Текстовый отчёт
-            </div>
-            {reportOpen && <pre className="detail-pre metrics-report-pre">{model.metrics_report}</pre>}
-          </div>
-        )}
+        <ModelMetricsCharts modelId={model.id} metricsReport={model.metrics_report} stream={metricsStream} />
       </section>
 
       <section className="detail-section">
@@ -236,6 +375,17 @@ const ModelDetail: React.FC = () => {
           <p className="detail-empty">У модели нет файлов весов.</p>
         )}
       </section>
+
+      <ConfirmModal
+        open={pendingDelete}
+        danger
+        title="Удалить версию модели?"
+        message={`Версия v${model.version} модели «${model.name}» будет удалена безвозвратно вместе с файлами весов.`}
+        confirmLabel="Удалить"
+        cancelLabel="Отмена"
+        onConfirm={handleDeleteVersion}
+        onCancel={() => setPendingDelete(false)}
+      />
     </div>
   );
 };

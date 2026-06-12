@@ -32,6 +32,10 @@ export const pluralRu = (n: number, [one, few, many]: [string, string, string]):
   return many;
 };
 
+// Значение метрики обучения: целые — как есть, дробные — 4 знака.
+export const formatMetricValue = (v: number): string =>
+  Number.isInteger(v) ? String(v) : v.toFixed(4);
+
 // Форматирование длительности в мс/с (>= 1 с показываем в секундах).
 export const formatDuration = (ms: number): string =>
   ms >= 1000 ? `${(ms / 1000).toFixed(2)} с` : `${ms.toFixed(0)} мс`;

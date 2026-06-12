@@ -14,9 +14,21 @@ export interface MetricData {
   timestamps?: string[];
 }
 
+export interface CheckpointInfo {
+  // Эпоха, веса которой сохранены (нумерация с 1).
+  epoch: number;
+  // Early-stop-метрика выбора лучшей эпохи (чистое имя, val-выборка).
+  metric: string;
+  // Значение метрики на эпохе чекпоинта; null — улучшение не фиксировалось,
+  // сохранены веса финальной эпохи.
+  value: number | null;
+}
+
 export interface ModelMetrics {
   model_id: string;
   status?: TrainingStatus | null;
+  // null у моделей, обученных до ввода чекпоинтов.
+  checkpoint?: CheckpointInfo | null;
   train: MetricData[];
   val: MetricData[];
   test: MetricData[];

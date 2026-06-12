@@ -3,6 +3,7 @@ import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'reac
 // Escape для скрытия. Пузырёк рендерится порталом в body (position: fixed),
 // поэтому не обрезается overflow-контейнерами модалок и таблиц.
 import { createPortal } from 'react-dom';
+import { ICONS } from '../../constants/icons';
 import './Tooltip.css';
 
 const SHOW_DELAY_MS = 250;
@@ -26,6 +27,25 @@ interface BubblePos {
   placement: Placement;
   arrowLeft: number;
 }
+
+/**
+ * Иконка-подсказка «?» с тултипом — пояснение термина рядом с заголовком
+ * или ячейкой. Фокусируема с клавиатуры (tabIndex), клик не всплывает,
+ * чтобы не дёргать collapse-заголовки, внутри которых она может стоять.
+ */
+export const InfoHint: React.FC<{ text: string }> = ({ text }) => (
+  <Tooltip content={text}>
+    <span
+      className="info-hint"
+      tabIndex={0}
+      role="note"
+      aria-label={text}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <i className={`fas ${ICONS.question}`} aria-hidden="true"></i>
+    </span>
+  </Tooltip>
+);
 
 export const Tooltip: React.FC<TooltipProps> = ({
   content,

@@ -57,3 +57,19 @@
   top: -5px;
   transform: rotate(225deg);
 }
+
+/* Иконка-подсказка «?» рядом с заголовками и терминами */
+.info-hint {
+  display: inline-flex;
+  margin-left: 0.35rem;
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  opacity: 0.7;
+  cursor: help;
+}
+
+.info-hint:hover,
+.info-hint:focus-visible {
+  opacity: 1;
+  color: var(--color-text-primary);
+}
