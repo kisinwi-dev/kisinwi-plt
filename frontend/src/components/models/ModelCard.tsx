@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { MLModelVersion } from '../../types/mlModels';
 import { formatDateTime } from '../../utils/format';
 import { ICONS } from '../../constants/icons';
+import { modelStatusLabel, statusBadgeClass } from '../../constants';
 import { Tooltip } from '../common/Tooltip';
 
 interface Props {
@@ -33,7 +34,7 @@ const ModelCard: React.FC<Props> = ({ model }) => {
             <i className={`fas ${ICONS.version}`}></i> v{model.version}
           </Tooltip>
         </div>
-        <span className={`status-badge status-${model.status}`}>{model.status}</span>
+        <span className={statusBadgeClass(model.status)}>{modelStatusLabel(model.status)}</span>
       </div>
 
       <div className="model-meta">
