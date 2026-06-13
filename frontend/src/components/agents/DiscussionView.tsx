@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { agentHistoryService } from '../../services/agentHistoryService';
+import { taskerService } from '../../services/taskerService';
 import type { AgentResponse, SystemMessage, SystemMessageType } from '../../types/agentHistory';
+import type { TrainingTask } from '../../types/tasks';
 import { useNotification } from '../../contexts/NotificationContext';
 import { usePolling } from '../../hooks';
 import { POLL_INTERVAL_DISCUSSION_MS } from '../../constants';
-import { formatDateTime, statusClass } from '../../utils/format';
+import { formatDateTime, parseBackendDate, statusClass } from '../../utils/format';
 import MessageBubble from './MessageBubble';
+import TrainingTaskCard from '../models/TrainingTaskCard';
 import { ICONS } from '../../constants/icons';
 
 interface Props {
@@ -14,10 +18,11 @@ interface Props {
   active?: boolean;
 }
 
-// Элемент единой ленты: ответ агента или системное сообщение.
+// Элемент единой ленты: ответ агента, системное сообщение или этап обучения.
 type FeedItem =
   | { kind: 'response'; timestamp: string; data: AgentResponse }
-  | { kind: 'system'; timestamp: string; data: SystemMessage };
+  | { kind: 'system'; timestamp: string; data: SystemMessage }
+  | { kind: 'training'; timestamp: string; data: TrainingTask };
 
 // Иконка системного сообщения по типу.
 const SYSTEM_ICONS: Record<SystemMessageType, string> = {
@@ -28,18 +33,25 @@ const SYSTEM_ICONS: Record<SystemMessageType, string> = {
 
 const DiscussionView: React.FC<Props> = ({ discussionId, active = false }) => {
   const { showNotification } = useNotification();
+  const navigate = useNavigate();
 
   const { data, loading } = usePolling<FeedItem[]>(
     async () => {
-      const [responses, systemMessages] = await Promise.all([
+      // Задачи обучения дискуссии берём из tasker по discussion_id — это даёт
+      // живой прогресс этапа обучения и ссылку на модель прямо в ленте истории.
+      const [responses, systemMessages, { tasks }] = await Promise.all([
         agentHistoryService.getResponses(discussionId),
         agentHistoryService.getSystemMessages(discussionId),
+        taskerService.getTasks({ discussion_id: discussionId }),
       ]);
       const items: FeedItem[] = [
         ...responses.map((data): FeedItem => ({ kind: 'response', timestamp: data.timestamp, data })),
         ...systemMessages.map((data): FeedItem => ({ kind: 'system', timestamp: data.timestamp, data })),
+        ...tasks.map((data): FeedItem => ({ kind: 'training', timestamp: data.created_at, data })),
       ];
-      items.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      items.sort(
+        (a, b) => (parseBackendDate(a.timestamp) ?? 0) - (parseBackendDate(b.timestamp) ?? 0),
+      );
       return items;
     },
     {
@@ -55,6 +67,16 @@ const DiscussionView: React.FC<Props> = ({ discussionId, active = false }) => {
   );
 
   const feed = data ?? [];
+
+  // Живой таймер длительности для активного этапа обучения: пока дискуссия
+  // активна, «сейчас» тикает раз в секунду (карточка обучения считает elapsed).
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) return;
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [active]);
 
   if (loading && feed.length === 0) {
     // Скелетоны вместо текстовой заглушки — лента ощущается живой ещё до прихода данных.
@@ -86,17 +108,46 @@ const DiscussionView: React.FC<Props> = ({ discussionId, active = false }) => {
 
   return (
     <div className="discussion-timeline">
-      {feed.map(item =>
-        item.kind === 'response' ? (
-          <div key={item.data.response_id} className="timeline-row timeline-row--response">
-            <span className={`timeline-node ${statusClass(item.data.status)}`} aria-hidden="true">
-              <i className={`fas ${ICONS.agent}`}></i>
-            </span>
-            <div className="timeline-content">
-              <MessageBubble discussionId={discussionId} response={item.data} />
+      {feed.map(item => {
+        if (item.kind === 'response') {
+          return (
+            <div key={item.data.response_id} className="timeline-row timeline-row--response">
+              <span className={`timeline-node ${statusClass(item.data.status)}`} aria-hidden="true">
+                <i className={`fas ${ICONS.agent}`}></i>
+              </span>
+              <div className="timeline-content">
+                <MessageBubble discussionId={discussionId} response={item.data} />
+              </div>
             </div>
-          </div>
-        ) : (
+          );
+        }
+        if (item.kind === 'training') {
+          const task = item.data;
+          return (
+            <div key={`train-${task.id}`} className="timeline-row timeline-row--training">
+              <span className="timeline-node timeline-node--training" aria-hidden="true">
+                <i className={`fas ${ICONS.task}`}></i>
+              </span>
+              <div className="timeline-content">
+                <div className="training-stage">
+                  <div className="training-stage-header">
+                    <span className="training-stage-title">
+                      <i className={`fas ${ICONS.model}`}></i> {task.name}
+                    </span>
+                    <button
+                      className="button small training-stage-link"
+                      onClick={() => navigate(`/models/${task.model_id}`)}
+                    >
+                      <i className={`fas ${ICONS.external}`}></i> Открыть страницу модели
+                    </button>
+                  </div>
+                  <TrainingTaskCard task={task} now={now} />
+                </div>
+              </div>
+            </div>
+          );
+        }
+        return (
           <div
             key={`sys-${item.data.timestamp}-${item.data.type_}-${item.data.message.slice(0, 32)}`}
             className={`timeline-row timeline-row--system msg-${item.data.type_.toLowerCase()}`}
@@ -111,8 +162,8 @@ const DiscussionView: React.FC<Props> = ({ discussionId, active = false }) => {
               </div>
             </div>
           </div>
-        ),
-      )}
+        );
+      })}
 
       {active && (
         <div className="timeline-row timeline-row--active" role="status" aria-live="polite">

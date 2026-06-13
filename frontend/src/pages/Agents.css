@@ -620,6 +620,34 @@
   min-width: 0;
 }
 
+/* Этап обучения в ленте: карточка прогресса из tasker + ссылка на модель. */
+.timeline-node--training {
+  border-color: var(--color-accent, var(--color-info));
+  background: var(--color-info-soft);
+  color: var(--color-accent, var(--color-info));
+}
+.training-stage {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius, 10px);
+  padding: 0.75rem 1rem;
+  background: var(--color-surface, transparent);
+}
+.training-stage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+.training-stage-title {
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
 /* Активный узел в конце оси — «агенты работают». */
 .timeline-row--active { align-items: center; }
 
