@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { datasetService } from '../../services/datasetService';
 import { agentsService } from '../../services/agentsService';
+import { mlModelsService } from '../../services/mlModelsService';
 import type { Dataset } from '../../types/dataset';
+import type { MLModel } from '../../types/mlModels';
 import { useNotification } from '../../contexts/NotificationContext';
 import Combobox from '../common/Combobox';
 import ChipListEditor from '../common/ChipListEditor';
@@ -16,16 +18,52 @@ interface Props {
 // теги из сервиса истории агентов вместо этого хардкода.
 const SUGGESTED_TAGS = ['эксперимент', 'baseline', 'продакшн-кандидат', 'быстрый прогон'];
 
+type Workflow = 'development' | 'quick';
+type ModelMode = 'new' | 'existing';
+
+const MODEL_MODES: { id: ModelMode; label: string; hint: string }[] = [
+  {
+    id: 'new',
+    label: 'Создать новую',
+    hint: 'Модель появится в реестре под указанным именем.',
+  },
+  {
+    id: 'existing',
+    label: 'Продолжить существующую',
+    hint: 'Агенты обучат новые версии выбранной модели с учётом её истории.',
+  },
+];
+
+const WORKFLOWS: { id: Workflow; icon: string; label: string; hint: string }[] = [
+  {
+    id: 'development',
+    icon: ICONS.pipeline,
+    label: 'Полный цикл',
+    hint: 'Все агенты: анализ датасета, гипотезы, обучение с итерациями, дебаг и отчёт.',
+  },
+  {
+    id: 'quick',
+    icon: ICONS.quickRun,
+    label: 'Быстрый прогон',
+    hint: 'Только ML-инженер и аналитик метрик: конфигурация, обучение, разбор результата.',
+  },
+];
+
 const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
   const { showNotification } = useNotification();
 
   // Датасеты грузим один раз — для резолва имя→id и подсказок.
   const [datasets, setDatasets] = useState<Dataset[]>([]);
+  // Существующие модели — для выбора в режиме «продолжить существующую».
+  const [models, setModels] = useState<MLModel[]>([]);
 
   // Поля формы.
+  const [workflow, setWorkflow] = useState<Workflow>('development');
   const [datasetName, setDatasetName] = useState('');
   const [versionName, setVersionName] = useState('');
+  const [modelMode, setModelMode] = useState<ModelMode>('new');
   const [modelName, setModelName] = useState('');
+  const [existingModelName, setExistingModelName] = useState('');
   const [businessRequirements, setBusinessRequirements] = useState('');
   const [deploymentConstraints, setDeploymentConstraints] = useState('');
   const [title, setTitle] = useState('');
@@ -50,12 +88,31 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
       }
     };
     fetchDatasets();
+
+    const fetchModels = async () => {
+      try {
+        const data = await mlModelsService.getModels();
+        setModels(data.models);
+      } catch (err) {
+        showNotification(
+          err instanceof Error ? err.message : 'Ошибка загрузки моделей',
+          'error',
+        );
+      }
+    };
+    fetchModels();
   }, [showNotification]);
 
   // Датасет, совпавший по имени с введённым (для подсказок версий).
   const matchedDataset = useMemo(
     () => datasets.find(d => d.name.trim() === datasetName.trim()) ?? null,
     [datasets, datasetName],
+  );
+
+  // Существующая модель, совпавшая по имени с выбранной (для hint и резолва id).
+  const matchedModel = useMemo(
+    () => models.find(m => m.name.trim() === existingModelName.trim()) ?? null,
+    [models, existingModelName],
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,10 +131,21 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
       return;
     }
 
-    // Валидация обязательных текстовых полей.
-    if (!modelName.trim()) {
-      showNotification('Укажите имя модели', 'error');
-      return;
+    // Валидация модели: новая — по имени, существующая — резолв имя→id.
+    let modelPayload: { model_name?: string; model_id?: string };
+    if (modelMode === 'existing') {
+      const model = models.find(m => m.name.trim() === existingModelName.trim());
+      if (!model) {
+        showNotification(`Модель «${existingModelName}» не найдена`, 'error');
+        return;
+      }
+      modelPayload = { model_id: model.id, model_name: model.name };
+    } else {
+      if (!modelName.trim()) {
+        showNotification('Укажите имя модели', 'error');
+        return;
+      }
+      modelPayload = { model_name: modelName.trim() };
     }
     if (!businessRequirements.trim()) {
       showNotification('Укажите бизнес-требования', 'error');
@@ -90,17 +158,22 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
 
     setSubmitting(true);
     try {
-      const result = await agentsService.startDevelopment({
+      const commonPayload = {
         dataset_id: dataset.id,
         version_id: version.id,
-        model_name: modelName.trim(),
+        ...modelPayload,
         business_requirements: businessRequirements.trim(),
         deployment_constraints: deploymentConstraints.trim(),
-        denied_hypotheses_info: deniedList,
-        max_iter: maxIter,
         title: title.trim() || undefined,
         tags: tagList,
-      });
+      };
+      const result = workflow === 'quick'
+        ? await agentsService.startQuickTraining(commonPayload)
+        : await agentsService.startDevelopment({
+            ...commonPayload,
+            denied_hypotheses_info: deniedList,
+            max_iter: maxIter,
+          });
       showNotification('Пайплайн запущен', 'success');
       onStarted(result.discussion_id);
     } catch (err) {
@@ -116,6 +189,30 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
   return (
     <form className="run-pipeline-form" onSubmit={handleSubmit} autoComplete="off">
       <h2>Запуск пайплайна разработки</h2>
+
+      <div className="form-section">
+        <div className="form-section-head">
+          <h3><i className={`fas ${ICONS.pipeline}`}></i> Воркфлоу</h3>
+          <p className="form-section-hint">Какие агенты участвуют в запуске.</p>
+        </div>
+        <div className="workflow-selector" role="radiogroup" aria-label="Воркфлоу">
+          {WORKFLOWS.map(w => (
+            <button
+              key={w.id}
+              type="button"
+              role="radio"
+              aria-checked={workflow === w.id}
+              className={`workflow-option${workflow === w.id ? ' active' : ''}`}
+              onClick={() => setWorkflow(w.id)}
+              disabled={submitting}
+            >
+              <i className={`fas ${w.icon}`}></i>
+              <span className="workflow-option-label">{w.label}</span>
+              <span className="workflow-option-hint">{w.hint}</span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="form-section">
         <div className="form-section-head">
@@ -147,31 +244,72 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
               disabled={submitting}
             />
           </div>
-          <div className="form-field">
-            <label htmlFor="run-model">Имя модели <span className="required-star">*</span></label>
-            <input
-              id="run-model"
-              type="text"
-              autoComplete="off"
-              placeholder="придумайте сами, например: my-model"
-              value={modelName}
-              onChange={(e) => setModelName(e.target.value)}
-              disabled={submitting}
-            />
-            <span className="field-hint">Произвольное имя — под ним сохранится обученная модель.</span>
+          <div className="form-field full-width">
+            <label>Модель <span className="required-star">*</span></label>
+            <div className="model-mode-selector" role="radiogroup" aria-label="Модель">
+              {MODEL_MODES.map(m => (
+                <button
+                  key={m.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={modelMode === m.id}
+                  className={`model-mode-option${modelMode === m.id ? ' active' : ''}`}
+                  onClick={() => setModelMode(m.id)}
+                  disabled={submitting}
+                >
+                  <span className="workflow-option-label">{m.label}</span>
+                  <span className="workflow-option-hint">{m.hint}</span>
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="form-field">
-            <label htmlFor="run-max-iter">Попыток обучения</label>
-            <input
-              id="run-max-iter"
-              className="no-spinner"
-              type="number"
-              min={1}
-              value={maxIter}
-              onChange={(e) => setMaxIter(Math.max(1, Number(e.target.value) || 1))}
-              disabled={submitting}
-            />
-          </div>
+          {modelMode === 'new' ? (
+            <div className="form-field">
+              <label htmlFor="run-model">Имя модели <span className="required-star">*</span></label>
+              <input
+                id="run-model"
+                type="text"
+                autoComplete="off"
+                placeholder="придумайте сами, например: my-model"
+                value={modelName}
+                onChange={(e) => setModelName(e.target.value)}
+                disabled={submitting}
+              />
+              <span className="field-hint">Произвольное имя — под ним сохранится обученная модель.</span>
+            </div>
+          ) : (
+            <div className="form-field">
+              <label htmlFor="run-existing-model">Существующая модель <span className="required-star">*</span></label>
+              <Combobox
+                id="run-existing-model"
+                icon={`fas ${ICONS.model}`}
+                placeholder="выберите модель из реестра"
+                value={existingModelName}
+                options={models.map(m => m.name)}
+                onChange={setExistingModelName}
+                disabled={submitting}
+              />
+              <span className="field-hint">
+                {matchedModel
+                  ? `Версий: ${matchedModel.versions.length} — агенты обучат следующую.`
+                  : 'Новые версии будут созданы под выбранной моделью.'}
+              </span>
+            </div>
+          )}
+          {workflow === 'development' && (
+            <div className="form-field">
+              <label htmlFor="run-max-iter">Попыток обучения</label>
+              <input
+                id="run-max-iter"
+                className="no-spinner"
+                type="number"
+                min={1}
+                value={maxIter}
+                onChange={(e) => setMaxIter(Math.max(1, Number(e.target.value) || 1))}
+                disabled={submitting}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -205,17 +343,19 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
               disabled={submitting}
             />
           </div>
-          <div className="form-field full-width">
-            <label htmlFor="run-denied">Запрещённые гипотезы и практики</label>
-            <ChipListEditor
-              id="run-denied"
-              variant="row"
-              items={deniedList}
-              onChange={setDeniedList}
-              placeholder="Например: не использовать аугментацию поворотом"
-              disabled={submitting}
-            />
-          </div>
+          {workflow === 'development' && (
+            <div className="form-field full-width">
+              <label htmlFor="run-denied">Запрещённые гипотезы и практики</label>
+              <ChipListEditor
+                id="run-denied"
+                variant="row"
+                items={deniedList}
+                onChange={setDeniedList}
+                placeholder="Например: не использовать аугментацию поворотом"
+                disabled={submitting}
+              />
+            </div>
+          )}
         </div>
       </div>
 

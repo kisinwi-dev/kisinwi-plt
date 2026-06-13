@@ -60,6 +60,7 @@ export const ICONS = {
   discussion: 'fa-comments',    // обсуждение / ответы агентов
   noMessages: 'fa-comment-slash',
   pipeline: 'fa-diagram-project',
+  quickRun: 'fa-bolt',         // быстрый пайплайн (ML-инженер + аналитик метрик)
   task: 'fa-list-check',
   tools: 'fa-wrench',
   trainingParams: 'fa-sliders',
