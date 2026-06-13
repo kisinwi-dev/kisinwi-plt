@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { taskerService } from '../../services/taskerService';
 import { useNotification } from '../../contexts/NotificationContext';
 import { usePolling } from '../../hooks/usePolling';
 import ConfirmModal from '../common/ConfirmModal';
 import type { TrainingTask } from '../../types/tasks';
-import { formatDateTime } from '../../utils/format';
+import { formatDateTime, formatElapsed, parseBackendDate } from '../../utils/format';
 import { ICONS } from '../../constants/icons';
 import { statusBadgeClass, POLL_INTERVAL_TASK_MS } from '../../constants';
 
@@ -54,6 +54,17 @@ const TrainingTaskProgress: React.FC<TrainingTaskProgressProps> = ({ modelId }) 
     },
   );
 
+  const active = !!task && task.model_id === modelId && ACTIVE_TASK_STATUSES.includes(task.status);
+
+  // Живой таймер длительности: пока задача активна, «сейчас» тикает раз в секунду.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) return;
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [active]);
+
   const handleCancel = async () => {
     if (!task) return;
     setPendingCancel(false);
@@ -74,8 +85,17 @@ const TrainingTaskProgress: React.FC<TrainingTaskProgressProps> = ({ modelId }) 
   // версии usePolling отдаёт прежний результат до первого ответа нового опроса.
   if (!task || task.model_id !== modelId || task.status === 'completed') return null;
 
-  const active = ACTIVE_TASK_STATUSES.includes(task.status);
   const percent = Math.min(100, Math.max(0, task.percentages));
+  // В очереди прогресса ещё нет — показываем indeterminate-полосу вместо пустой.
+  const waiting = task.status === 'waiting';
+
+  const startedMs = parseBackendDate(task.started_at);
+  const completedMs = parseBackendDate(task.completed_at);
+  const elapsedMs = startedMs === null
+    ? null
+    : active ? now - startedMs
+    : completedMs !== null ? completedMs - startedMs
+    : null;
 
   return (
     <section className="detail-section">
@@ -87,7 +107,6 @@ const TrainingTaskProgress: React.FC<TrainingTaskProgressProps> = ({ modelId }) 
             {active && <><i className={`fas ${ICONS.loading} fa-spin`}></i>{' '}</>}
             {taskStatusLabel(task)}
           </span>
-          {task.status_info && <span className="training-task-info">{task.status_info}</span>}
           {active && (
             <button
               className="button danger small training-task-cancel"
@@ -103,27 +122,48 @@ const TrainingTaskProgress: React.FC<TrainingTaskProgressProps> = ({ modelId }) 
         {active && (
           <div className="training-task-progress">
             <div
-              className="progress-bar"
+              className={`progress-bar${waiting ? ' progress-bar--indeterminate' : ''}`}
               role="progressbar"
-              aria-valuenow={percent}
               aria-valuemin={0}
               aria-valuemax={100}
+              {...(waiting ? { 'aria-valuetext': 'В очереди' } : { 'aria-valuenow': percent })}
             >
-              <div className="progress-bar-fill" style={{ width: `${percent}%` }} />
+              {waiting
+                ? <div className="progress-bar-runner" />
+                : <div className="progress-bar-fill" style={{ width: `${percent}%` }} />}
             </div>
-            <span className="training-task-percent">{percent}%</span>
+            {!waiting && <span className="training-task-percent">{percent}%</span>}
           </div>
         )}
 
+        {task.status_info && <p className="training-task-status-info">{task.status_info}</p>}
+
         {task.status === 'failed' && task.error_message && (
           <p className="training-task-error">
-            <i className={`fas ${ICONS.error}`}></i> {task.error_message}
+            <i className={`fas ${ICONS.error}`}></i>
+            <span>{task.error_message}</span>
           </p>
         )}
 
         <div className="training-task-meta">
-          {task.started_at && <span><i className={`fas ${ICONS.duration}`}></i> Старт: {formatDateTime(task.started_at)}</span>}
-          {task.completed_at && <span>Завершение: {formatDateTime(task.completed_at)}</span>}
+          {task.started_at && (
+            <span className="training-task-meta-item">
+              <i className={`fas ${ICONS.duration}`}></i> Старт:
+              <span className="training-task-meta-value">{formatDateTime(task.started_at)}</span>
+            </span>
+          )}
+          {task.completed_at && (
+            <span className="training-task-meta-item">
+              <i className={`fas ${ICONS.dateFinished}`}></i> Завершение:
+              <span className="training-task-meta-value">{formatDateTime(task.completed_at)}</span>
+            </span>
+          )}
+          {elapsedMs !== null && (
+            <span className="training-task-meta-item">
+              <i className={`fas ${ICONS.elapsed}`}></i> Длительность:
+              <span className="training-task-meta-value">{formatElapsed(elapsedMs)}</span>
+            </span>
+          )}
         </div>
       </div>
 

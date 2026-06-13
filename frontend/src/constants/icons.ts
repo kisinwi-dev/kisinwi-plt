@@ -87,6 +87,7 @@ export const ICONS = {
   dateUpdated: 'fa-rotate',
   dateFinished: 'fa-flag-checkered',
   duration: 'fa-clock',
+  elapsed: 'fa-stopwatch',     // длительность процесса (таймер обучения)
   iteration: 'fa-rotate',
   history: 'fa-clock-rotate-left',
 
