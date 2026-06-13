@@ -18,6 +18,19 @@ class MLModelsClient():
         self.URL = ML_MODELS_URL
         self.session = requests.Session()
 
+    def get_model(self, model_id: str) -> dict | None:
+        """
+        Получить модель с версиями по id. None — если модель не найдена.
+        """
+        response = self.session.get(
+            f"{self.URL}/models/{model_id}",
+            timeout=30
+        )
+        if response.status_code == 404:
+            return None
+        response.raise_for_status()
+        return response.json()
+
     @handle_errors(ML_MODELS_URL)
     def create_model_version(
         self,
@@ -27,18 +40,22 @@ class MLModelsClient():
         classes: list,
         dataset_id: str,
         dataset_version_id: str,
-        train_params: dict | str
+        train_params: dict | str,
+        model_id: str | None = None
     ) -> dict:
         """
         Создать версию модели для запуска тренировки.
 
-        Родительская модель ищется по имени (get-or-create), номер версии
-        назначает сервис ml_models.
+        Если model_id не задан, родительская модель ищется по имени
+        (get-or-create). При заданном model_id версия создаётся строго под
+        этой моделью, её описание не трогаем. Номер версии назначает
+        сервис ml_models.
 
         Returns:
             dict: {"version_id": str, "version": int}
         """
-        model_id = self._get_or_create_model(name, description)
+        if model_id is None:
+            model_id = self._get_or_create_model(name, description)
 
         data = {
             "model_type": model_type,
