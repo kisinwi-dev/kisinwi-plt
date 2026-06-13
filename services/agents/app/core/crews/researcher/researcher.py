@@ -8,6 +8,7 @@ from crewai.project import CrewBase, agent, crew, task
 
 from .tools import get_tools
 from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput
+from app.services.ml_models import NO_MODEL_HISTORY
 from app.logs import get_logger
 from app.core.llm import llm
 
@@ -79,6 +80,7 @@ def run_researcher(
     business_requirements: str,
     dataset_info: str,
     denied_hypotheses_info: List[str],
+    model_history: str = NO_MODEL_HISTORY,
     verbose: bool = False
 ) -> ResearcherOutput:
     """
@@ -88,6 +90,7 @@ def run_researcher(
         business_requirements: Требования бизнеса
         dataset_info: Информация о датасете
         denied_hypotheses_info: Список гипотез, отстранённых ранее
+        model_history: История версий существующей модели (при продолжении обучения)
     """
     crew = ResearcherCrew().crew(verbose=verbose)
 
@@ -103,6 +106,7 @@ def run_researcher(
             "business_requirements": business_requirements,
             "dataset_info": dataset_info,
             "denied_hypotheses_info": denied_hypotheses_info_str,
+            "model_history": model_history,
         },
     )
 

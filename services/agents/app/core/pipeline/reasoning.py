@@ -3,6 +3,7 @@ from typing import List, Tuple
 from app.logs import get_logger
 from app.core.crews.researcher import run_researcher
 from app.core.crews.ml_engeneer import MlEngineerResponse, run_ml_engineering
+from app.services.ml_models import NO_MODEL_HISTORY
 
 logger = get_logger(__name__)
 
@@ -13,6 +14,7 @@ def reasoning(
     deployment_constraints: str,
     dataset_id: str,
     dataset_version_id: str,
+    model_history: str = NO_MODEL_HISTORY,
     verbose: bool = False,
     max_iterations: int = 3
 ) -> Tuple[MlEngineerResponse, List[str]]:
@@ -25,6 +27,7 @@ def reasoning(
         deployment_constraints: Наши технические возможности для модели в проде
         dataset_id: ID датасета
         dataset_version_id: ID версии датасета
+        model_history: История версий существующей модели (при продолжении обучения)
         max_iterations: Количество попыток исследователя создать предложения удовлетворяющие ML инженера
         verbose: Логирование
 
@@ -42,6 +45,7 @@ def reasoning(
             business_requirements=business_requirements,
             dataset_info=dataset_info,
             denied_hypotheses_info=denied_hypotheses_info,
+            model_history=model_history,
             verbose=verbose
         )
         logger.info("✅ Гипотезы сгенерированы")
@@ -55,6 +59,7 @@ def reasoning(
             researcher_proposals=researcher_output.to_history_text(),
             dataset_id=dataset_id,
             dataset_version_id=dataset_version_id,
+            model_history=model_history,
             verbose=verbose
         )
         logger.info(f"💾 Решение ML инженера: {'✅ Обучаем' if ml_engineer_output.decision else '🟥 Отказ'}")
