@@ -155,7 +155,8 @@ class TrainingTaskManager:
     def get_tasks(
             self,
             status: str | None = None,
-            model_id: str | None = None
+            model_id: str | None = None,
+            discussion_id: str | None = None
     ) -> List[Dict]:
         """Получить информацию о задачах (с опциональными фильтрами)"""
         conditions = []
@@ -166,6 +167,9 @@ class TrainingTaskManager:
         if model_id:
             conditions.append("t.model_id = %s")
             params.append(model_id)
+        if discussion_id:
+            conditions.append("t.discussion_id = %s")
+            params.append(discussion_id)
 
         where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
         query = f"""

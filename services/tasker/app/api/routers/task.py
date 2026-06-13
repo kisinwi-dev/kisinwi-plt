@@ -64,12 +64,15 @@ async def create_task(
 async def get_tasks(
     status_filter: str | None = Query(None, alias="status", description="Фильтр по статусу задачи"),
     model_id: str | None = Query(None, description="Фильтр по ID модели"),
+    discussion_id: str | None = Query(None, description="Фильтр по ID дискуссии"),
     manager: TrainingTaskManager = Depends(get_training_task_manager)
 ):
     if model_id:
         valid_uuid(model_id, on_error=True)
+    if discussion_id:
+        valid_uuid(discussion_id, on_error=True)
 
-    tasks = manager.get_tasks(status=status_filter, model_id=model_id)
+    tasks = manager.get_tasks(status=status_filter, model_id=model_id, discussion_id=discussion_id)
 
     return TasksResponse(
         tasks=[
