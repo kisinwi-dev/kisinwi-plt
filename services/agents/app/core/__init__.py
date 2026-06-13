@@ -3,6 +3,7 @@ from typing import List
 from app.logs import get_logger
 from app.core.crews.dataset_analyst import run_dataset_analyst
 from app.core.crews.reporter import run_reporter
+from app.core.defaults import DEFAULT_BUSINESS_REQUIREMENTS, DEFAULT_DEPLOYMENT_CONSTRAINTS
 from app.core.memory import iteration_context
 from app.services.agent_history import agent_history_client
 from app.services.ml_models import (
@@ -19,8 +20,8 @@ def development_models(
     dataset_id: str,
     dataset_version_id: str,
     model_name: str,
-    deployment_constraints: str,
-    business_requirements: str,
+    deployment_constraints: str | None = None,
+    business_requirements: str | None = None,
     denied_hypotheses_info: List[str] = [],
     max_iter: int = 2,
     model_id: str | None = None,
@@ -34,12 +35,16 @@ def development_models(
         dataset_version_id: Id версии датасета
         model_name: Как будет называться модель
         deployment_constraints: Наши технические возможности для модели в проде
+            (опционально; без них агенты минимизируют затраты сами)
         business_requirements: Требования бизнеса к модели
+            (опционально; без них агенты максимизируют качество сами)
         denied_hypotheses_info: Какие гипотезы стоит откинуть сразу (опицонально)
         max_iter: Количество версий разработанной модели (опицонально)
         model_id: ID существующей модели — новые версии создаются под ней (опицонально)
         verbose: Логирование (опицонально)
     """
+    business_requirements = (business_requirements or "").strip() or DEFAULT_BUSINESS_REQUIREMENTS
+    deployment_constraints = (deployment_constraints or "").strip() or DEFAULT_DEPLOYMENT_CONSTRAINTS
 
     model_history = NO_MODEL_HISTORY
     if model_id is not None:

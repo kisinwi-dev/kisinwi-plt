@@ -28,8 +28,8 @@ class QuickRequest(BaseModel):
     version_id: str = Field(..., description="ID версии датасета")
     model_name: Optional[str] = Field(None, description="Имя модели (обязательно, если model_id не указан)")
     model_id: Optional[str] = Field(None, description="ID существующей модели — новые версии создаются под ней")
-    deployment_constraints: str = Field(..., description="Технические возможности прода")
-    business_requirements: str = Field(..., description="Описание бизнес требований")
+    deployment_constraints: Optional[str] = Field(None, description="Технические возможности прода. Если не указано — агенты сами минимизируют затраты")
+    business_requirements: Optional[str] = Field(None, description="Описание бизнес требований. Если не указано — агенты сами максимизируют качество")
     title: Optional[str] = Field(None, description="Название запуска (опционально)")
     tags: List[str] = Field(default_factory=list, description="Теги запуска (опционально)")
 

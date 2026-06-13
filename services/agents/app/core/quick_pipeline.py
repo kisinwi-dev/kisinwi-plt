@@ -3,6 +3,7 @@ import json
 from app.logs import get_logger
 from app.core.crews.ml_engeneer import run_ml_engineering
 from app.core.crews.metrics_analyst import run_metrics_analyst
+from app.core.defaults import DEFAULT_BUSINESS_REQUIREMENTS, DEFAULT_DEPLOYMENT_CONSTRAINTS
 from app.core.memory import models_context
 from app.services.agent_history import agent_history_client
 from app.services.datasets import get_dataset_details, get_dataset_version_details
@@ -29,8 +30,8 @@ def quick_training_models(
     dataset_id: str,
     dataset_version_id: str,
     model_name: str,
-    deployment_constraints: str,
-    business_requirements: str,
+    deployment_constraints: str | None = None,
+    business_requirements: str | None = None,
     model_id: str | None = None,
     verbose: bool = False
 ):
@@ -46,10 +47,14 @@ def quick_training_models(
         dataset_version_id: Id версии датасета
         model_name: Как будет называться модель
         deployment_constraints: Наши технические возможности для модели в проде
+            (опционально; без них агенты минимизируют затраты сами)
         business_requirements: Требования бизнеса к модели
+            (опционально; без них агенты максимизируют качество сами)
         model_id: ID существующей модели — новые версии создаются под ней (опицонально)
         verbose: Логирование (опицонально)
     """
+    business_requirements = (business_requirements or "").strip() or DEFAULT_BUSINESS_REQUIREMENTS
+    deployment_constraints = (deployment_constraints or "").strip() or DEFAULT_DEPLOYMENT_CONSTRAINTS
 
     logger.info("Получение метаданных датасета...")
     agent_history_client.info(

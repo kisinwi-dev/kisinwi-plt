@@ -34,8 +34,8 @@ class DevelopmentRequest(BaseModel):
     version_id: str = Field(..., description="ID версии датасета")
     model_name: Optional[str] = Field(None, description="Имя модели (обязательно, если model_id не указан)")
     model_id: Optional[str] = Field(None, description="ID существующей модели — новые версии создаются под ней")
-    deployment_constraints: str = Field(..., description="Технические возможности прода")
-    business_requirements: str = Field(..., description="Описание бизнес требований")
+    deployment_constraints: Optional[str] = Field(None, description="Технические возможности прода. Если не указано — агенты сами минимизируют затраты")
+    business_requirements: Optional[str] = Field(None, description="Описание бизнес требований. Если не указано — агенты сами максимизируют качество")
     denied_hypotheses_info: List[str] = Field(default_factory=list, description="Гипотезы и практики, которые нужно избегать")
     max_iter: int = Field(2, description="Количество попыток обучения")
     title: Optional[str] = Field(None, description="Название запуска (опционально)")
@@ -99,8 +99,8 @@ def development(
     dataset_id: str = Query(..., description="ID датасета для анализа"),
     version_id: str = Query(..., description="ID версии датасета"),
     model_name: str = Query(..., description="Имя модели"),
-    deployment_constraints: str = Query(..., description="Технические возможности прода"),
-    business_requirements: str = Query(..., description="Описание бизнес требований"),
+    deployment_constraints: Optional[str] = Query(None, description="Технические возможности прода. Если не указано — агенты сами минимизируют затраты"),
+    business_requirements: Optional[str] = Query(None, description="Описание бизнес требований. Если не указано — агенты сами максимизируют качество"),
     denied_hypotheses_info: List[str] = Query(default_factory=list, description="Гипотезы и практики, которые нужно избегать"),
     max_iter: int = Query(2, description="Количество попыток обучения"),
     model_id: Optional[str] = Query(None, description="ID существующей модели — новые версии создаются под ней")
