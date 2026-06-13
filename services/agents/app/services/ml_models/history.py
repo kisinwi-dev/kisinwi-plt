@@ -1,5 +1,7 @@
 import json
 
+from .client import ml_models_client
+
 NO_MODEL_HISTORY = (
     "Это новая модель — предыдущих версий и истории обучения нет. "
     "Составь конфигурацию с нуля."
@@ -76,3 +78,23 @@ def build_model_history_context(
         lines.append("```")
 
     return "\n".join(lines)
+
+
+def load_model_history(model_id: str | None) -> str | None:
+    """
+    История версий модели для контекста агентов.
+
+    Returns:
+        NO_MODEL_HISTORY — model_id не задан (новая модель);
+        собранный контекст — модель найдена;
+        None — model_id задан, но модель не найдена в реестре (caller должен
+        остановить пайплайн).
+
+    Логирование и системные сообщения остаются на стороне caller.
+    """
+    if model_id is None:
+        return NO_MODEL_HISTORY
+    model = ml_models_client.get_model(model_id)
+    if model is None:
+        return None
+    return build_model_history_context(model)
