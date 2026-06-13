@@ -15,6 +15,7 @@ class TrainingOut(BaseModel):
 
 class TrainingInput(BaseModel):
     model_name: str = Field(description="Имя модели")
+    model_id: str | None = Field(None, description="ID существующей модели для продолжения обучения")
     dataset_id: str = Field(description="ID датасета")
     dataset_version_id: str = Field(description="ID версии датасета")
     ml_engin_out: MlEngineerResponse = Field(description="Полученная информация от ML инженера")
@@ -51,7 +52,8 @@ def training(
         dataset_id=training_input.dataset_id,
         dataset_version_id=training_input.dataset_version_id,
         train_params=ml_model.configuration,
-        classes=get_dataset_info_classes(training_input.dataset_id)
+        classes=get_dataset_info_classes(training_input.dataset_id),
+        model_id=training_input.model_id
     )
 
     # При ошибке create_model_version возвращает {"ERROR": ...}. Не отправляем

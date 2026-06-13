@@ -5,6 +5,9 @@ from app.core.crews.dataset_analyst import run_dataset_analyst
 from app.core.crews.reporter import run_reporter
 from app.core.memory import iteration_context
 from app.services.agent_history import agent_history_client
+from app.services.ml_models import (
+    ml_models_client, NO_MODEL_HISTORY, build_model_history_context
+)
 from .pipeline import (
     train_and_debug, reasoning,
     TrainingInput
@@ -20,6 +23,7 @@ def development_models(
     business_requirements: str,
     denied_hypotheses_info: List[str] = [],
     max_iter: int = 2,
+    model_id: str | None = None,
     verbose: bool = False
 ):
     """
@@ -33,8 +37,24 @@ def development_models(
         business_requirements: Требования бизнеса к модели
         denied_hypotheses_info: Какие гипотезы стоит откинуть сразу (опицонально)
         max_iter: Количество версий разработанной модели (опицонально)
+        model_id: ID существующей модели — новые версии создаются под ней (опицонально)
         verbose: Логирование (опицонально)
     """
+
+    model_history = NO_MODEL_HISTORY
+    if model_id is not None:
+        logger.info("Получение истории версий модели...")
+        agent_history_client.info(
+            "Продолжаем обучение существующей модели. Получение истории версий..."
+        )
+        model = ml_models_client.get_model(model_id)
+        if model is None:
+            logger.error(f"🟥 Модель {model_id} не найдена в реестре")
+            agent_history_client.error(
+                f"Модель {model_id} не найдена в реестре. Пайплайн остановлен."
+            )
+            return None
+        model_history = build_model_history_context(model)
 
     logger.info("Анализа датасета...")
     agent_history_client.info("Запуск пайплайна разработки модели. Анализ датасета...")
@@ -71,7 +91,8 @@ def development_models(
             verbose=verbose,
             deployment_constraints=deployment_constraints,
             dataset_id=dataset_id,
-            dataset_version_id=dataset_version_id
+            dataset_version_id=dataset_version_id,
+            model_history=model_history
         )
         if not ml_engin_out.decision:
             logger.info("🟥 МЛ инженер и исследователь не смогли придти к общему мнению.")
@@ -93,6 +114,7 @@ def development_models(
         # Создаём экземпляр модели для запуска тренировок
         training_input=TrainingInput(
             model_name=model_name,
+            model_id=model_id,
             ml_engin_out=ml_engin_out,
             dataset_id=dataset_id,
             dataset_version_id=dataset_version_id
