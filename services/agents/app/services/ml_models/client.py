@@ -1,7 +1,6 @@
-import requests
 from pydantic import BaseModel
 
-from ..utils import handle_errors, parse_in_json
+from ..utils import handle_errors, parse_in_json, BaseServiceClient
 from app.logs import get_logger
 from app.config import config_url
 
@@ -13,10 +12,9 @@ class ModelMeta(BaseModel):
     model_type: str
     description: str
 
-class MLModelsClient():
+class MLModelsClient(BaseServiceClient):
     def __init__(self) -> None:
-        self.URL = ML_MODELS_URL
-        self.session = requests.Session()
+        super().__init__(ML_MODELS_URL)
 
     def get_model(self, model_id: str) -> dict | None:
         """
@@ -150,11 +148,5 @@ class MLModelsClient():
 
         # Проверяем статус ответа
         response.raise_for_status()
-
-    def close(self):
-        self.session.close()
-
-    def __exit__(self):
-        self.close()
 
 ml_models_client = MLModelsClient()

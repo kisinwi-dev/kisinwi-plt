@@ -2,16 +2,15 @@ import requests
 import time
 from typing import Tuple
 
-from ..utils import parse_in_json
+from ..utils import parse_in_json, BaseServiceClient
 from app.logs import get_logger
 from app.config import config_url
 
 logger = get_logger(__name__)
 
-class TaskerClient():
+class TaskerClient(BaseServiceClient):
     def __init__(self) -> None:
-        self.URL = config_url.TASKER['url']
-        self.session = requests.Session()
+        super().__init__(config_url.TASKER['url'])
 
     def task_training_create(
         self,
@@ -85,11 +84,5 @@ class TaskerClient():
                 return False, task
             
             time.sleep(2)
-
-    def close(self):
-        self.session.close()
-
-    def __exit__(self):
-        self.close()
 
 tasker_client = TaskerClient()
