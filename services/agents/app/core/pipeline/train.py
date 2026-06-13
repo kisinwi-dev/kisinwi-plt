@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 
 from app.core.crews.ml_engeneer import MlEngineerResponse
 from app.core.memory import discussion_context, models_context
+from app.services.agent_history import agent_history_client
 from app.services.datasets import get_dataset_info_classes
 from app.services.ml_models import ml_models_client
 from app.services.tasker import tasker_client
@@ -11,6 +12,8 @@ logger = get_logger(__name__)
 
 class TrainingOut(BaseModel):
     is_completed_successfully: bool = Field(description="Задача успешно завершена")
+    is_cancelled: bool = Field(False, description="Обучение остановлено пользователем (не ошибка)")
+    version_id: str | None = Field(None, description="ID версии модели, по которой шло обучение")
     error: str | None = Field(None, description="Информация об ошибке, если задача завершена с ошибкой")
 
 class TrainingInput(BaseModel):
@@ -77,6 +80,9 @@ def training(
         discussion_id=discussion_context.get()
     )
     logger.info("✅ Задача создана")
+    agent_history_client.info(
+        f"Запущено обучение модели «{training_input.model_name}» (версия {version})"
+    )
 
     logger.info("Ожидаем конец выполнения задачи...")
     is_complete, task = tasker_client.waiting_completed(task_id)
@@ -84,20 +90,45 @@ def training(
     if is_complete:
         # занесение версии в список обученных моделей
         logger.info("✅ Модель обучена")
+        agent_history_client.info(
+            f"Обучение модели «{training_input.model_name}» (версия {version}) завершено успешно."
+        )
         models_context.add_model(version_id)
-    else:
-        # При cancelled error_message пустой — причина лежит в status_info
-        error = task["error_message"] or task.get("status_info")
-        logger.info(
-            "🟥 Модель не была обучена."
-            f"\nПроизошла ошибка в процесе обучения. Причина: {error}"
+        return TrainingOut(
+            is_completed_successfully=True,
+            version_id=version_id,
+            error=task["error_message"]
+        )
+
+    # При cancelled error_message пустой — причина лежит в status_info
+    error = task["error_message"] or task.get("status_info")
+
+    if task.get("status") == "cancelled":
+        # Это не сбой обучения, а сознательная остановка человеком. Отменённую
+        # версию не кладём в models_context (она не готовая модель), но version_id
+        # прокидываем — по нему потом достаём частичные метрики.
+        logger.info(f"🟦 Обучение остановлено пользователем. Причина: {error}")
+        agent_history_client.warning(
+            f"Обучение модели «{training_input.model_name}» (версия {version}) "
+            f"остановлено пользователем. {error or ''}".strip()
         )
         return TrainingOut(
             is_completed_successfully=False,
+            is_cancelled=True,
+            version_id=version_id,
             error=error
         )
 
+    logger.info(
+        "🟥 Модель не была обучена."
+        f"\nПроизошла ошибка в процесе обучения. Причина: {error}"
+    )
+    agent_history_client.error(
+        f"Обучение модели «{training_input.model_name}» (версия {version}) "
+        f"не завершено. Причина: {error}"
+    )
     return TrainingOut(
-        is_completed_successfully=True,
-        error=task["error_message"]
+        is_completed_successfully=False,
+        version_id=version_id,
+        error=error
     )

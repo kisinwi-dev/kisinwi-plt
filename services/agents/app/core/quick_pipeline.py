@@ -1,15 +1,13 @@
 import json
 
 from app.logs import get_logger
-from app.core.crews.ml_engeneer import run_ml_engineering
+from app.core.crews.ml_engeneer_quick import run_quick_ml_engineering
 from app.core.crews.metrics_analyst import run_metrics_analyst
 from app.core.defaults import DEFAULT_BUSINESS_REQUIREMENTS, DEFAULT_DEPLOYMENT_CONSTRAINTS
 from app.core.memory import models_context
 from app.services.agent_history import agent_history_client
 from app.services.datasets import get_dataset_details, get_dataset_version_details
-from app.services.ml_models import (
-    ml_models_client, NO_MODEL_HISTORY, build_model_history_context
-)
+from app.services.ml_models import load_model_history
 from .pipeline import training, TrainingInput
 
 logger = get_logger(__name__)
@@ -62,39 +60,35 @@ def quick_training_models(
     )
     dataset_info = _build_dataset_info(dataset_id, dataset_version_id)
 
-    model_history = NO_MODEL_HISTORY
     if model_id is not None:
         logger.info("Получение истории версий модели...")
         agent_history_client.info(
             "Продолжаем обучение существующей модели. Получение истории версий..."
         )
-        model = ml_models_client.get_model(model_id)
-        if model is None:
-            logger.error(f"🟥 Модель {model_id} не найдена в реестре")
-            agent_history_client.error(
-                f"Модель {model_id} не найдена в реестре. Пайплайн остановлен."
-            )
-            return None
-        model_history = build_model_history_context(model)
+    model_history = load_model_history(model_id)
+    if model_history is None:
+        logger.error(f"🟥 Модель {model_id} не найдена в реестре")
+        agent_history_client.error(
+            f"Модель {model_id} не найдена в реестре. Пайплайн остановлен."
+        )
+        return None
 
     agent_history_client.info("Метаданные получены. ML-инженер составляет конфигурацию обучения...")
-    ml_engin_out = run_ml_engineering(
+    ml_engin_out = run_quick_ml_engineering(
         dataset_info=dataset_info,
         business_requirements=business_requirements,
         deployment_constraints=deployment_constraints,
-        researcher_proposals=(
-            "Исследователь в этом пайплайне не участвует. "
-            "Предложи конфигурацию обучения самостоятельно."
-        ),
         dataset_id=dataset_id,
         dataset_version_id=dataset_version_id,
         model_history=model_history,
         verbose=verbose
     )
     if not ml_engin_out.decision:
-        logger.info("🟥 ML-инженер отказался от обучения.")
+        # В быстром прогоне отказ запрещён по качеству — decision=false означает,
+        # что обучать физически нечего (датасет/версия не найдены).
+        logger.info("🟥 Быстрый прогон: обучение невозможно (нет данных).")
         agent_history_client.error(
-            f"ML-инженер отказался от обучения: {ml_engin_out.reason}"
+            f"Обучение невозможно: датасет или версия не найдены. {ml_engin_out.reason}"
         )
         return None
     logger.info("✅ ML-инженер составил конфигурацию обучения.")
@@ -107,6 +101,24 @@ def quick_training_models(
         dataset_id=dataset_id,
         dataset_version_id=dataset_version_id
     ))
+    if training_res.is_cancelled:
+        # Человек остановил обучение — это не сбой. Разбираем частичные метрики
+        # отменённой версии и возвращаем анализ (а не помечаем как провал).
+        logger.info("🟦 Обучение остановлено пользователем. Разбор частичных метрик...")
+        agent_history_client.warning(
+            "Обучение остановлено пользователем. Разбираем частичные метрики на момент остановки."
+        )
+        if training_res.version_id is None:
+            agent_history_client.info("Метрики на момент остановки недоступны. Быстрый пайплайн завершён.")
+            return None
+        analysis = run_metrics_analyst(
+            model_id=training_res.version_id,
+            business_goal=business_requirements,
+            verbose=verbose
+        )
+        agent_history_client.info("Быстрый пайплайн завершён (обучение остановлено пользователем).")
+        return analysis
+
     if not training_res.is_completed_successfully:
         logger.info(f"🟥 Обучение провалилось: {training_res.error}")
         agent_history_client.error(f"Обучение провалилось: {training_res.error}")

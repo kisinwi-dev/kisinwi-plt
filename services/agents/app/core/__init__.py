@@ -2,13 +2,12 @@ from typing import List
 
 from app.logs import get_logger
 from app.core.crews.dataset_analyst import run_dataset_analyst
+from app.core.crews.metrics_analyst import run_metrics_analyst
 from app.core.crews.reporter import run_reporter
 from app.core.defaults import DEFAULT_BUSINESS_REQUIREMENTS, DEFAULT_DEPLOYMENT_CONSTRAINTS
 from app.core.memory import iteration_context
 from app.services.agent_history import agent_history_client
-from app.services.ml_models import (
-    ml_models_client, NO_MODEL_HISTORY, build_model_history_context
-)
+from app.services.ml_models import load_model_history
 from .pipeline import (
     train_and_debug, reasoning,
     TrainingInput
@@ -46,20 +45,18 @@ def development_models(
     business_requirements = (business_requirements or "").strip() or DEFAULT_BUSINESS_REQUIREMENTS
     deployment_constraints = (deployment_constraints or "").strip() or DEFAULT_DEPLOYMENT_CONSTRAINTS
 
-    model_history = NO_MODEL_HISTORY
     if model_id is not None:
         logger.info("Получение истории версий модели...")
         agent_history_client.info(
             "Продолжаем обучение существующей модели. Получение истории версий..."
         )
-        model = ml_models_client.get_model(model_id)
-        if model is None:
-            logger.error(f"🟥 Модель {model_id} не найдена в реестре")
-            agent_history_client.error(
-                f"Модель {model_id} не найдена в реестре. Пайплайн остановлен."
-            )
-            return None
-        model_history = build_model_history_context(model)
+    model_history = load_model_history(model_id)
+    if model_history is None:
+        logger.error(f"🟥 Модель {model_id} не найдена в реестре")
+        agent_history_client.error(
+            f"Модель {model_id} не найдена в реестре. Пайплайн остановлен."
+        )
+        return None
 
     logger.info("Анализа датасета...")
     agent_history_client.info("Запуск пайплайна разработки модели. Анализ датасета...")
@@ -139,6 +136,42 @@ def development_models(
                 f"\n{'='*100}"
             )
             agent_history_client.info(f"Цикл обучения №{iter} из {max_iter} завершён: модель успешно обучена.")
+
+        elif training_res.is_cancelled:
+            # Человек вручную остановил обучение — это не сбой. Пайплайн не прерываем:
+            # достаём частичные метрики отменённой версии, разбираем их и передаём
+            # следующей итерации как контекст, чтобы агенты сообразили, почему человек
+            # мог остановить, и предложили другую конфигурацию.
+            logger.info(
+                f"\n{'='*100}"
+                f"\n{info_final_iter_1_line:^100}"
+                f"\n{'обучение остановлено пользователем':^100}"
+                f"\n{'='*100}"
+            )
+            agent_history_client.warning(
+                f"Цикл обучения №{iter} из {max_iter}: обучение остановлено пользователем. "
+                "Разбираем частичные метрики, чтобы понять причину."
+            )
+
+            ml_model = ml_engin_out.ml_model
+            what_trained = f"{ml_model.type} — {ml_model.description_model}" if ml_model else "модель"
+
+            # Разбор частичных метрик отменённой версии (переиспользуем аналитика метрик).
+            metrics_analysis = "Метрики на момент остановки недоступны."
+            if training_res.version_id is not None:
+                metrics_analysis = run_metrics_analyst(
+                    model_id=training_res.version_id,
+                    business_goal=business_requirements,
+                    verbose=verbose
+                )
+
+            denied_hypotheses_info.append(
+                "Человек вручную остановил обучение этой конфигурации (это не ошибка обучения).\n"
+                f"Что обучали: {what_trained}\n"
+                f"Метрики и анализ на момент остановки:\n{metrics_analysis}\n"
+                "Сделай вывод, почему человек мог остановить обучение, и предложи другую "
+                "конфигурацию с учётом этого."
+            )
 
         else:
             logger.info(
