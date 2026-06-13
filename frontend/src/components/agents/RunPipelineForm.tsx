@@ -147,23 +147,14 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
       }
       modelPayload = { model_name: modelName.trim() };
     }
-    if (!businessRequirements.trim()) {
-      showNotification('Укажите бизнес-требования', 'error');
-      return;
-    }
-    if (!deploymentConstraints.trim()) {
-      showNotification('Укажите ограничения прода', 'error');
-      return;
-    }
-
     setSubmitting(true);
     try {
       const commonPayload = {
         dataset_id: dataset.id,
         version_id: version.id,
         ...modelPayload,
-        business_requirements: businessRequirements.trim(),
-        deployment_constraints: deploymentConstraints.trim(),
+        business_requirements: businessRequirements.trim() || undefined,
+        deployment_constraints: deploymentConstraints.trim() || undefined,
         title: title.trim() || undefined,
         tags: tagList,
       };
@@ -316,15 +307,15 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
       <div className="form-section">
         <div className="form-section-head">
           <h3><i className={`fas ${ICONS.info}`}></i> Контекст для агентов</h3>
-          <p className="form-section-hint">Эту информацию агенты используют при подборе решения.</p>
+          <p className="form-section-hint">Эту информацию агенты используют при подборе решения. Поля опциональны: без них агенты минимизируют затраты и максимизируют качество сами.</p>
         </div>
         <div className="form-grid">
           <div className="form-field full-width">
-            <label htmlFor="run-business">Бизнес-требования <span className="required-star">*</span></label>
+            <label htmlFor="run-business">Бизнес-требования</label>
             <textarea
               id="run-business"
               autoComplete="off"
-              placeholder="Что нужно бизнесу от модели"
+              placeholder="Что нужно бизнесу от модели. Если не указать — агенты сами максимизируют качество"
               value={businessRequirements}
               onChange={(e) => setBusinessRequirements(e.target.value)}
               rows={3}
@@ -332,11 +323,11 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
             />
           </div>
           <div className="form-field full-width">
-            <label htmlFor="run-deployment">Ограничения прода <span className="required-star">*</span></label>
+            <label htmlFor="run-deployment">Ограничения прода</label>
             <textarea
               id="run-deployment"
               autoComplete="off"
-              placeholder="Технические ограничения, например: только CPU, ≤100 МБ"
+              placeholder="Технические ограничения, например: только CPU, ≤100 МБ. Если не указать — агенты сами минимизируют затраты"
               value={deploymentConstraints}
               onChange={(e) => setDeploymentConstraints(e.target.value)}
               rows={3}

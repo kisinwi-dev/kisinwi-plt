@@ -13,8 +13,10 @@ export interface StartDevelopmentPayload {
   model_name?: string;
   /** ID существующей модели — агенты обучат новые версии под ней. */
   model_id?: string;
-  deployment_constraints: string;
-  business_requirements: string;
+  /** Если не указано — агенты сами минимизируют затраты. */
+  deployment_constraints?: string;
+  /** Если не указано — агенты сами максимизируют качество. */
+  business_requirements?: string;
   denied_hypotheses_info?: string[];
   max_iter?: number;
   title?: string;
@@ -29,8 +31,10 @@ export interface StartQuickPayload {
   model_name?: string;
   /** ID существующей модели — агенты обучат новые версии под ней. */
   model_id?: string;
-  deployment_constraints: string;
-  business_requirements: string;
+  /** Если не указано — агенты сами минимизируют затраты. */
+  deployment_constraints?: string;
+  /** Если не указано — агенты сами максимизируют качество. */
+  business_requirements?: string;
   title?: string;
   tags?: string[];
 }
