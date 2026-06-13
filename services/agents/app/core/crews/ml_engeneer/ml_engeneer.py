@@ -4,10 +4,12 @@ from pydantic import BaseModel, Field
 from crewai import Agent, Crew, Process, Task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
-from crewai.tools import tool
 
 from .tools import get_tools
-from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput
+from ..utils import (
+    get_agent_role_from_config, run_crew_with_tracking, AgentOutput,
+    extract_raw_text, first_task_pydantic,
+)
 from app.services.ml_models import NO_MODEL_HISTORY
 from app.logs import get_logger
 from app.core.llm import llm
@@ -97,7 +99,7 @@ def run_ml_engineering(
         verbose: bool = False
     ) -> MlEngineerResponse:
     """
-    Агент ML инженер
+    Агент ML инженер (полный прогон)
 
     Args:
         dataset_info: Информация о датасете
@@ -125,70 +127,13 @@ def run_ml_engineering(
         },
     )
 
-    if crew_output is None:
-        return MlEngineerResponse(
-            decision=False,
-            reason="",
-            recommendations="Ошибка в ML Engineer, предупреди пользователя"
-        )
-
-    try:
-        result = crew_output.tasks_output[0].pydantic  # type: ignore[index]
-    except Exception as e:
-        logger.warning(f"Не удалось получить pydantic output: {e}. Используем fallback.")
+    result = first_task_pydantic(crew_output)
+    if result is None:
         result = MlEngineerResponse(
             decision=False,
-            reason=extract_result(crew_output),
+            reason=extract_raw_text(crew_output),
             recommendations="Ошибка при обработке ответа ML Enginner, предупреди пользователя"
         )
 
     logger.info(f"ML Engineer отработал | Задача принята в обработку: {result.decision}")
     return result
-
-def extract_result(crew_output):
-    if hasattr(crew_output, "raw"):
-        return crew_output.raw
-
-    if hasattr(crew_output, "tasks_output"):
-        return crew_output.tasks_output[0].raw
-
-    return str(crew_output)
-
-@tool("MLEngineer")
-def tool_run_ml_engineering(
-    dataset_info: str,
-    business_requirements: str,
-    deployment_constraints: str,
-    researcher_proposals: str,
-) -> str:
-    """
-    НАЗНАЧЕНИЕ: Получить информацию от ML инженера о том, стоит ли начинать обучение.
-
-    КОГДА ИСПОЛЬЗОВАТЬ:
-    - Когда нужно принять решение о запуске обучения
-    - Для оценки предложений Researcher
-    - Перед отправкой задачи в сервис тренировок
-
-    ВХОДНЫЕ ДАННЫЕ:
-    - dataset_info: Информация о датасете
-    - business_requirements: Бизнес требования к модели
-    - deployment_constraints: УСЛОВИЮ ЭКСПЛУАТАЦИИ модели
-    - researcher_proposals: Предложение конфигураций обучения
-
-    ВОЗВРАЩАЕТ:
-    - Структурированный ответ с решением и обоснованием
-    """
-    result = run_ml_engineering(
-        dataset_info=dataset_info,
-        business_requirements=business_requirements,
-        deployment_constraints=deployment_constraints,
-        researcher_proposals=researcher_proposals
-    ) 
-
-    result_str = "# Решение ML инженера"
-    result_str += f"## Обучать\n {'ДА ✅' if result.decision else 'НЕТ ❌'}"
-    result_str += f"\n## Развёрнутое обоснование решения\n{result.reason}"
-    result_str += f"\n## Конфигурация обучения\n{result.ml_model.configuration if result.ml_model is not None else 'Не требуется'}"
-    result_str += f"\n## Рекомендации\n{result.recommendations}"
-
-    return result_str

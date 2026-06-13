@@ -7,7 +7,7 @@ from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
 from .tools import get_tools
-from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput
+from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput, extract_raw_text
 from app.core.memory import models_context
 from app.logs import get_logger
 from app.core.llm import llm
@@ -114,22 +114,13 @@ def run_ml_models_searcher(
     except Exception as e:
         logger.warning(f"Не удалось получить pydantic output: {e}. Используем fallback.")
         result = MLModelsSearcherOutput(
-            text=extract_result(crew_output),
+            text=extract_raw_text(crew_output),
             summary="",
             metrics_summary=[]
         )
 
     logger.info(f"ML Models Searcher завершён | Моделей разобрано: {len(model_ids)}")
     return result
-
-def extract_result(crew_output):
-    if hasattr(crew_output, "raw"):
-        return crew_output.raw
-
-    if hasattr(crew_output, "tasks_output"):
-        return crew_output.tasks_output[0].raw
-
-    return str(crew_output)
 
 @tool("MLModelsSearcher")
 def tool_run_ml_models_searcher(
