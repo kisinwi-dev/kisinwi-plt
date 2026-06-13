@@ -40,9 +40,18 @@ export interface DiscussionMeta {
   agents?: AgentModelInfo[];
 }
 
+// Человекочитаемые названия пайплайнов; для неизвестных показываем сырое значение.
+const PIPELINE_LABELS: Record<string, string> = {
+  development: 'Полный цикл',
+  quick_training: 'Быстрый прогон',
+};
+
+export const getPipelineLabel = (pipeline: string): string =>
+  PIPELINE_LABELS[pipeline] ?? pipeline;
+
 // Заголовок дискуссии: название → пайплайн → запасной вариант.
 export const getDiscussionTitle = (d: Pick<DiscussionMeta, 'title' | 'pipeline'>): string =>
-  d.title ?? d.pipeline ?? 'Без названия';
+  d.title ?? (d.pipeline ? getPipelineLabel(d.pipeline) : null) ?? 'Без названия';
 
 // Список агентов: из агрегата, иначе из заявленных ролей meta.
 export const getDiscussionAgents = (

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { DiscussionMeta } from '../../types/agentHistory';
-import { DISCUSSION_STATUS_LABELS, getDiscussionTitle, getDiscussionAgents } from '../../types/agentHistory';
+import { DISCUSSION_STATUS_LABELS, getDiscussionTitle, getDiscussionAgents, getPipelineLabel } from '../../types/agentHistory';
 import { formatDateTime } from '../../utils/format';
 import { ICONS } from '../../constants/icons';
 import { Tooltip } from '../common/Tooltip';
@@ -57,7 +57,7 @@ const DiscussionInfo: React.FC<Props> = ({ discussion, discussionId }) => {
 
           <div className="discussion-info-meta">
             {discussion.pipeline && (
-              <span><i className={`fas ${ICONS.pipeline}`}></i> {discussion.pipeline}</span>
+              <span><i className={`fas ${ICONS.pipeline}`}></i> {getPipelineLabel(discussion.pipeline)}</span>
             )}
             <span><i className={`fas ${ICONS.dateCreated}`}></i> Создано: {formatDateTime(discussion.created_at)}</span>
             {discussion.finished_at && (
