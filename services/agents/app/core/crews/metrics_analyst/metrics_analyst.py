@@ -5,9 +5,9 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 
 from .tools import get_tools
-from ..utils import get_agent_role_from_config, run_crew_with_tracking, extract_raw_text
+from ..utils import get_agent_role_from_config, run_crew_with_tracking, extract_raw_text, with_modifier
 from app.logs import get_logger
-from app.core.llm import llm
+from app.core.llm import get_llm_precise
 
 logger = get_logger(__name__)
 
@@ -28,9 +28,9 @@ class MetricAnalystCrew:
     @agent
     def metrics_analyst(self) -> Agent:
         return Agent(
-            config=self.agents_config["metrics_analyst"],  # type: ignore[index]
+            config=with_modifier(self.agents_config["metrics_analyst"]),  # type: ignore[index]
             verbose=True,
-            llm=llm,
+            llm=get_llm_precise(),
             tools=get_tools(AGENT_ROLE),
             allow_delegation=False,
             max_iter=8,

@@ -1,6 +1,7 @@
+import json
 from pathlib import Path
 from typing import List, Dict, Any, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from crewai import Agent, Crew, Process, Task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
@@ -8,11 +9,11 @@ from crewai.project import CrewBase, agent, crew, task
 from .tools import get_tools
 from ..utils import (
     get_agent_role_from_config, run_crew_with_tracking, AgentOutput,
-    extract_raw_text, first_task_pydantic,
+    extract_raw_text, first_task_pydantic, with_modifier,
 )
 from app.services.ml_models import NO_MODEL_HISTORY
 from app.logs import get_logger
-from app.core.llm import llm
+from app.core.llm import get_llm_precise
 
 logger = get_logger(__name__)
 
@@ -27,6 +28,13 @@ class MlModel(BaseModel):
     configuration: str = Field(
         description="Конфигурация для сервиса обучения"
     )
+
+    @field_validator("configuration", mode="before")
+    @classmethod
+    def _stringify_configuration(cls, v):
+        if isinstance(v, (dict, list)):
+            return json.dumps(v, ensure_ascii=False)
+        return v
 
 class MlEngineerResponse(AgentOutput):
     """Формат ответа ML Инженера"""
@@ -61,9 +69,9 @@ class MLEngineerCrew:
     @agent
     def ml_engineer(self) -> Agent:
         return Agent(
-            config=self.agents_config["ml_engineer"],  # type: ignore[index]
+            config=with_modifier(self.agents_config["ml_engineer"]),  # type: ignore[index]
             verbose=True,
-            llm=llm,
+            llm=get_llm_precise(),
             tools=get_tools(AGENT_ROLE),
             allow_delegation=False,
             max_iter=8,

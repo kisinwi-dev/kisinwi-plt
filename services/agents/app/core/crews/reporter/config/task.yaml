@@ -1,56 +1,55 @@
 reporter_task:
   agent: reporter
   description: |
-    Подведи ИТОГОВЫЙ результат цикла итерационного обучения.
+    Summarize the FINAL result of the iterative training cycle.
 
-    ДОСТУПНЫЕ ДАННЫЕ:
-    - ID обученных моделей: {models_id}
-    - ID дискуссии: {discussion_id}
-    - Исходные бизнес-требования / целевые метрики: {business_requirements}
-    - Технические возможности production сервера: {deployment_constraints}
+    AVAILABLE DATA:
+    - Trained model IDs: {models_id}
+    - Discussion ID: {discussion_id}
+    - Original business requirements / target metrics: {business_requirements}
+    - Production server technical capabilities: {deployment_constraints}
 
-    АЛГОРИТМ СБОРА ДАННЫХ (строго по порядку, ТОЛЬКО через инструменты):
+    DATA-GATHERING ALGORITHM (strictly in order, ONLY via tools):
 
-    1. Вызови GetAgentHistory с discussion_id={discussion_id} — получи ход
-       рассуждений агентов и историю итераций (что и почему меняли).
-    2. Для КАЖДОЙ модели из {models_id}:
-       - сначала DoesModelHaveMetrics — есть ли метрики;
-       - если есть — GetMetricsForModel (метрики по эпохам, train/val/test);
-       - GetModelDetails — архитектура и конфигурация обучения.
-    3. Сопоставь полученные метрики с бизнес-требованиями и условиями прода.
+    1. Call GetAgentHistory with discussion_id={discussion_id} — get the agents'
+       reasoning and the iteration history (what was changed and why).
+    2. For EACH model in {models_id}:
+       - first DoesModelHaveMetrics — whether it has metrics;
+       - if it does — GetMetricsForModel (per-epoch metrics, train/val/test);
+       - GetModelDetails — architecture and training configuration.
+    3. Compare the obtained metrics against the business requirements and production constraints.
 
-    Если по модели нет метрик или произошла ошибка инструмента — укажи это явно
-    и продолжай разбирать остальные модели.
+    If a model has no metrics or a tool error occurs, state it explicitly and continue
+    analyzing the remaining models.
 
-    ТВОИ ЗАДАЧИ:
+    YOUR TASKS:
 
-    1. ОЦЕНКА ВЫПОЛНЕНИЯ ЗАДАЧ:
-      - Насколько хорошо обучены модели в каждой итерации
-      - Прогресс или регресс между итерациями
-      - Какие задачи НЕ выполнены или выполнены плохо
+    1. TASK FULFILLMENT ASSESSMENT:
+      - How well the models were trained in each iteration
+      - Progress or regression between iterations
+      - Which tasks were NOT achieved or achieved poorly
 
-    2. ИСТОРИЯ ОБУЧЕНИЯ (краткий пересказ):
-      - Что делали в каждой итерации (какие изменения)
-      - Какие результаты получили
-      - Ключевые точки улучшения/ухудшения
+    2. TRAINING HISTORY (short recap):
+      - What was done in each iteration (which changes)
+      - What results were obtained
+      - Key points of improvement/degradation
 
-    3. PRODUCTION-ВЕРДИКТ:
-     - ГОТОВА модель к проду? ДА/НЕТ/УСЛОВНО
-     - Какие критерии выполнены
-      - Какие критерии НЕ выполнены
-      - Риски при использовании в проде
+    3. PRODUCTION VERDICT:
+      - Is the model production-ready? Use one of the Russian values: "ДА" / "НЕТ" / "УСЛОВНО"
+      - Which criteria are met
+      - Which criteria are NOT met
+      - Risks of using it in production
 
-    КРИТЕРИИ PRODUCTION-ГОТОВНОСТИ:
-    - Достигнуты целевые метрики (accuracy, f1 и т.д.)
-    - Нет переобучения (разрыв train/val не более 5-7%)
-    - Стабильность на тестовой выборке
-    - Нет критического дисбаланса по классам
+    PRODUCTION-READINESS CRITERIA:
+    - Target metrics achieved (accuracy, f1, etc.)
+    - No overfitting (train/val gap no more than 5-7%)
+    - Stability on the test split
+    - No critical class imbalance
 
-    ВАЖНО:
-    - Вердикт ДОЛЖЕН быть чётким: "ДА" / "НЕТ" / "УСЛОВНО"
-    - Если "УСЛОВНО" или "НЕТ" — указать причины
-    - Краткий пересказ истории — не более 5-7 предложений
-    - ТЫ НЕ ПРЕДУМЫВАЕШЬ ДАННЫЕ! ТЫ ИСПОЛЬЗУЕШЬ ИМЕЮЩИЕСЯ ИНСТРУМЕНТЫ
+    IMPORTANT:
+    - The verdict MUST be clear: "ДА" / "НЕТ" / "УСЛОВНО"
+    - If "УСЛОВНО" or "НЕТ" — state the reasons
+    - The short history recap is no more than 5-7 sentences
 
   expected_output: |
-    Твой ответ должен быть строго в формате JSON, соответствующем схеме ReporterOut
+    Your answer must be strictly valid JSON matching the ReporterOut schema.

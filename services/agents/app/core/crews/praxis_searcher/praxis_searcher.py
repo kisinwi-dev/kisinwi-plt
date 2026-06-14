@@ -1,14 +1,14 @@
 from pathlib import Path
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from crewai import Agent, Crew, Task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
-from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput, extract_raw_text
+from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput, extract_raw_text, with_modifier
 from app.logs import get_logger
-from app.core.llm import llm
+from app.core.llm import get_llm_precise
 from .tools import get_tools
 
 logger = get_logger(__name__)
@@ -22,7 +22,17 @@ class SearchSource(BaseModel):
     url: str = Field(..., description="Ссылка на источник")
     title: Optional[str] = Field(None, description="Заголовок статьи / репозитория")
     short_description: str = Field(..., description="Краткое описание, почему этот источник полезен")
-    relevance_score: Optional[int] = Field(None, ge=1, le=10, description="Оценка релевантности от 1 до 10")
+    # Диапазон описан в description, но НЕ через ge/le: Pydantic превратил бы их в
+    # minimum/maximum в JSON Schema, а Anthropic-провайдеры (через OpenRouter) такую
+    # схему integer-поля отвергают (400). Корректность подстраховываем валидатором.
+    relevance_score: Optional[int] = Field(None, description="Оценка релевантности от 1 до 10")
+
+    @field_validator("relevance_score")
+    @classmethod
+    def _clamp_relevance(cls, v: Optional[int]) -> Optional[int]:
+        if v is None:
+            return None
+        return max(1, min(10, v))
 
 class PraxisSearchOutput(AgentOutput):
     """Стандартизированный вывод Praxis Searcher"""
@@ -57,9 +67,9 @@ class PraxisSearcherCrew:
     @agent
     def praxis_searcher(self) -> Agent:
         return Agent(
-            config=self.agents_config["praxis_searcher"],  # type: ignore[index]
+            config=with_modifier(self.agents_config["praxis_searcher"]),  # type: ignore[index]
             verbose=True,
-            llm=llm,
+            llm=get_llm_precise(),
             allow_delegation=False,
             max_iter=15,
             tools=get_tools(AGENT_ROLE)

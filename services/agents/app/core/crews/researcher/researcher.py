@@ -7,10 +7,10 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 
 from .tools import get_tools
-from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput, extract_raw_text
+from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput, extract_raw_text, with_modifier
 from app.services.ml_models import NO_MODEL_HISTORY
 from app.logs import get_logger
-from app.core.llm import llm
+from app.core.llm import get_llm_creative
 
 logger = get_logger(__name__)
 
@@ -53,9 +53,9 @@ class ResearcherCrew:
     @agent
     def researcher(self) -> Agent:
         return Agent(
-            config=self.agents_config["researcher"],  # type: ignore[index]
+            config=with_modifier(self.agents_config["researcher"]),  # type: ignore[index]
             verbose=True,
-            llm=llm,
+            llm=get_llm_creative(),
             allow_delegation=False,
             max_iter=15,
             tools= get_tools(AGENT_ROLE)
@@ -80,6 +80,7 @@ def run_researcher(
     business_requirements: str,
     dataset_info: str,
     denied_hypotheses_info: List[str],
+    deployment_constraints: str = "",
     model_history: str = NO_MODEL_HISTORY,
     verbose: bool = False
 ) -> ResearcherOutput:
@@ -90,6 +91,7 @@ def run_researcher(
         business_requirements: Требования бизнеса
         dataset_info: Информация о датасете
         denied_hypotheses_info: Список гипотез, отстранённых ранее
+        deployment_constraints: Ограничения прода (инференс), чтобы гипотезы их учитывали
         model_history: История версий существующей модели (при продолжении обучения)
     """
     crew = ResearcherCrew().crew(verbose=verbose)
@@ -106,6 +108,7 @@ def run_researcher(
             "business_requirements": business_requirements,
             "dataset_info": dataset_info,
             "denied_hypotheses_info": denied_hypotheses_info_str,
+            "deployment_constraints": deployment_constraints,
             "model_history": model_history,
         },
     )

@@ -7,10 +7,10 @@ from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
 from .tools import get_tools
-from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput, extract_raw_text
+from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput, extract_raw_text, with_modifier
 from app.core.memory import models_context
 from app.logs import get_logger
-from app.core.llm import llm
+from app.core.llm import get_llm_precise
 
 logger = get_logger(__name__)
 
@@ -56,9 +56,9 @@ class MLModelsSearcherCrew:
     @agent
     def ml_models_searcher(self) -> Agent:
         return Agent(
-            config=self.agents_config["ml_models_searcher"],  # type: ignore[index]
+            config=with_modifier(self.agents_config["ml_models_searcher"]),  # type: ignore[index]
             verbose=True,
-            llm=llm,
+            llm=get_llm_precise(),
             max_iter=2,
             tools=get_tools(AGENT_ROLE)
         )

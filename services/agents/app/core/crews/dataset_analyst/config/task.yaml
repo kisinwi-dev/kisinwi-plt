@@ -1,33 +1,31 @@
 dataset_analyst_task:
   agent: dataset_analyst
   description: |
-    Проведи анализ датасета.
+    Analyze the dataset.
 
-    Используй следующие параметры:
+    Use the following parameters:
 
-    ID датасета: {dataset_id}
-    ID версии датасета: {dataset_version_id}
+    Dataset ID: {dataset_id}
+    Dataset version ID: {dataset_version_id}
 
-    ТВОИ ЗАДАЧИ:
-    - Оценить качество датасета
-    - Найти возможные проблемы
-    - Оценить готовность к обучению
-    - Указать ограничения и риски
-    - Дать рекомендации
+    YOUR TASKS:
+    - Assess dataset quality
+    - Find possible problems
+    - Assess training readiness
+    - Point out limitations and risks
+    - Provide recommendations
 
-    ВАЖНО:
-    - Если не удалось найти указанную версию это значит, что датасет не готов к обучению
-    - Используй доступные инструменты
-    - Не придумывай данные
-    - Работай ТОЛЬКО с указанным датасетом
-    - Если информации недостаточно - сообщи об этом
-    - В кратком описании данных ОБЯЗАТЕЛЬНО укажи id датасета и id версии датасета
+    IMPORTANT:
+    - If the specified version cannot be found, the dataset is NOT ready for training
+    - Use the available tools
+    - Work ONLY with the specified dataset
+    - In the short data description you MUST include the dataset id and the
+      dataset version id
 
   expected_output: |
-    Твой ответ должен быть строго в формате JSON, соответствующем схеме DatasetAnalystOut.
-    
-    ВАЖНО:
-    - readiness_assessment: true если датасет готов к обучению, false если не готов
-    - found_issues и recommendations — это МАССИВЫ строк: каждый пункт отдельным
-      элементом списка (не склеивай их в одну строку и не нумеруй вручную)
-      
+    Your answer must be strictly valid JSON matching the DatasetAnalystOut schema.
+
+    IMPORTANT:
+    - readiness_assessment: true if the dataset is ready for training, false otherwise
+    - found_issues and recommendations are ARRAYS of strings: one item per point
+      (do not merge them into a single string and do not number them manually)

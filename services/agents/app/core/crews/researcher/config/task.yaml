@@ -1,58 +1,70 @@
 researcher_task:
   agent: researcher
   description: |
-    Сгенерируй гипотезы для улучшения ML модели на основе предоставленных данных.
+    Generate hypotheses to improve the ML model based on the provided data.
 
-    # ВХОДНЫЕ ПАРАМЕТРЫ:
-    
-    ## Бизнес требования к модели (это то, что ожидает бизнес от модели)
+    # INPUT PARAMETERS:
+
+    ## Business requirements for the model (what the business expects from the model)
 
     {business_requirements}
 
-    ## Информация о датасете (контекст для понимания тобой чем мы занимаемся)
-    
+    ## Deployment constraints (how and where the model will run in production)
+
+    {deployment_constraints}
+
+    These describe inference in production (hardware, speed, memory). Your hypotheses
+    must respect them: do not propose architectures that cannot meet these constraints,
+    so the ML Engineer does not have to reject your proposal.
+
+    ## Dataset information (context so you understand what we are working on)
+
     {dataset_info}
 
-    ## Список гипотез, которые требуется избегать (опционально):
+    ## Hypotheses to avoid (optional):
 
     {denied_hypotheses_info}
 
-    ## История предыдущих версий модели
+    If this section is not empty, the ML Engineer already rejected those hypotheses.
+    Read the engineer's reasons carefully and propose DIFFERENT hypotheses that
+    address them — do not repeat rejected ideas.
+
+    ## History of previous model versions
 
     {model_history}
 
-    Если история не пуста — мы развиваем СУЩЕСТВУЮЩУЮ модель (новая версия).
-    Учитывай прошлые эксперименты: не предлагай гипотезы, повторяющие конфигурации
-    провальных версий, и опирайся на результаты лучшей версии.
+    If the history is not empty, we are improving an EXISTING model (a new version).
+    Take past experiments into account: do not propose hypotheses that repeat the
+    configurations of failed versions, and build on the results of the best version.
 
-    ## АЛГОРИТМ ДЕЙСТВИЙ
+    ## YOUR ALGORITHM
 
-    1. Вызови инструмент MLModelsSearcher, чтобы узнать информацию об обученных нами ранее моделях
-    2. Сравни текущие метрики с бизнес-требованиями - определи разрыв (gap).
-    ЕСЛИ обученных моделей ещё нет (первая итерация) — это нормально: метрик для
-    сравнения нет, оценивай разрыв относительно бизнес-целей и опирайся на анализ
-    датасета и лучшие практики.
-    3. При необходимости используй инструмент PraxisSearcher и узнай лучшие практики из интернета
-    4. Вызови инструмент GetExampleTrainingConfig, что бы понять на что мы можем влиять
-    5. Сформулируй 3 конкретные гипотезы для улучшения
-    6. Учитывай полученную информацию от ML инженера (если есть) - он эксперт по запуску обучения и 
-    может отклонять твои предложения
+    1. Call the MLModelsSearcher tool to learn about the models we trained earlier.
+    2. Compare the current metrics with the business requirements — identify the gap.
+       IF there are no trained models yet (first iteration), that is normal: there are
+       no metrics to compare, so assess the gap relative to the business goals and rely
+       on the dataset analysis and best practices.
+    3. If needed, use the PraxisSearcher tool to learn best practices from the internet.
+    4. Call the GetExampleTrainingConfig tool to understand what we can influence.
+    5. Formulate 3 concrete hypotheses for improvement.
+    6. Take into account the feedback from the ML Engineer (if any) — they are the
+       expert on launching training and may reject your proposals.
 
-    ФОРМАТ ГИПОТЕЗЫ:
-    - Гипотеза: что именно предлагаешь изменить
-    - Обоснование: почему это сработает
-    - Ожидаемый прирост: в % 
+    HYPOTHESIS FORMAT:
+    - Hypothesis: what exactly you propose to change
+    - Justification: why it will work
+    - Expected gain: in %
 
-    КРИТЕРИИ ХОРОШЕЙ ГИПОТЕЗЫ:
-    - Конкретная и проверяемая
-    - Основана на реальных данных из инструментов
-    - Указывает ожидаемый эффект
-    - Учитывает бизнес-требования
+    CRITERIA OF A GOOD HYPOTHESIS:
+    - Concrete and testable
+    - Based on real data from the tools
+    - States the expected effect
+    - Respects the business requirements and deployment constraints
 
   expected_output: |
-    Верни результат на русском в формате ResearcherOutput.
+    Return the result in the ResearcherOutput format.
 
-    ВАЖНО: в поля hypotheses_1, hypotheses_2, hypotheses_3 пиши ТОЛЬКО текст
-    гипотезы (описание, обоснование, ожидаемый прирост). НЕ начинай значение с
-    префикса "Гипотеза 1:", "Гипотеза 2:" и т.п. — нумерация добавляется
-    автоматически, иначе она задвоится.
+    IMPORTANT: in the fields hypotheses_1, hypotheses_2, hypotheses_3 write ONLY the
+    hypothesis text (description, justification, expected gain). Do NOT start the value
+    with a prefix like "Hypothesis 1:", "Hypothesis 2:", etc. — the numbering is added
+    automatically, otherwise it will be duplicated.
