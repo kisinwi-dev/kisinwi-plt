@@ -25,6 +25,12 @@ def debugging(
     if training_res.is_completed_successfully:
         return training_res
 
+    # Отмену человеком не дебажим: это не сбой конфигурации, чинить нечего.
+    # Возвращаем результат как есть — повторно обучение не запускаем.
+    if training_res.is_cancelled:
+        logger.info("Обучение остановлено пользователем — дебаг не запускается")
+        return training_res
+
     logger.info("Проверка данных для включения дебаг режима...")
     # проверка входных данных
     if training_res.error is None:

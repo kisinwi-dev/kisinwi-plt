@@ -28,4 +28,5 @@ export interface TrainingTasks {
 export interface TasksQuery {
   status?: string;
   model_id?: string;
+  discussion_id?: string;
 }

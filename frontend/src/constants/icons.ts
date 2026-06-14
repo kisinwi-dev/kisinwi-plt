@@ -60,6 +60,7 @@ export const ICONS = {
   discussion: 'fa-comments',    // обсуждение / ответы агентов
   noMessages: 'fa-comment-slash',
   pipeline: 'fa-diagram-project',
+  quickRun: 'fa-bolt',         // быстрый пайплайн (ML-инженер + аналитик метрик)
   task: 'fa-list-check',
   tools: 'fa-wrench',
   trainingParams: 'fa-sliders',
@@ -86,6 +87,7 @@ export const ICONS = {
   dateUpdated: 'fa-rotate',
   dateFinished: 'fa-flag-checkered',
   duration: 'fa-clock',
+  elapsed: 'fa-stopwatch',     // длительность процесса (таймер обучения)
   iteration: 'fa-rotate',
   history: 'fa-clock-rotate-left',
 

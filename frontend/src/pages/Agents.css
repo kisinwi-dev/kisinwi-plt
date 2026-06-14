@@ -95,6 +95,99 @@
   opacity: 0.8;
 }
 
+/* Селектор воркфлоу — radio-карточки */
+.workflow-selector {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.workflow-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    'icon label'
+    'icon hint';
+  column-gap: 0.75rem;
+  row-gap: 0.2rem;
+  align-items: center;
+  text-align: left;
+  padding: 0.9rem 1rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 12px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: none;
+}
+
+.workflow-option:hover {
+  border-color: var(--color-accent);
+  transform: none;
+  box-shadow: none;
+}
+
+.workflow-option.active {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.workflow-option > i {
+  grid-area: icon;
+  font-size: 1.1rem;
+  color: var(--color-text-secondary);
+}
+
+.workflow-option.active > i {
+  color: var(--color-accent);
+}
+
+.workflow-option-label {
+  grid-area: label;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.workflow-option-hint {
+  grid-area: hint;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+/* Селектор режима модели — компактные radio-карточки без иконки */
+.model-mode-selector {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.model-mode-option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-align: left;
+  padding: 0.6rem 0.85rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 12px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: none;
+}
+
+.model-mode-option:hover {
+  border-color: var(--color-accent);
+  transform: none;
+  box-shadow: none;
+}
+
+.model-mode-option.active {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
 .run-pipeline-actions {
   display: flex;
   justify-content: flex-end;
@@ -102,6 +195,11 @@
 
 @media (max-width: 640px) {
   .run-pipeline-form .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-selector,
+  .model-mode-selector {
     grid-template-columns: 1fr;
   }
 }
@@ -519,6 +617,34 @@
 .msg-error .timeline-node--system { border-color: var(--color-danger); color: var(--color-danger); }
 
 .timeline-content {
+  min-width: 0;
+}
+
+/* Этап обучения в ленте: карточка прогресса из tasker + ссылка на модель. */
+.timeline-node--training {
+  border-color: var(--color-accent, var(--color-info));
+  background: var(--color-info-soft);
+  color: var(--color-accent, var(--color-info));
+}
+.training-stage {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius, 10px);
+  padding: 0.75rem 1rem;
+  background: var(--color-surface, transparent);
+}
+.training-stage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+.training-stage-title {
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   min-width: 0;
 }
 

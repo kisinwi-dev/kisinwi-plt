@@ -40,6 +40,24 @@ export const formatMetricValue = (v: number): string =>
 export const formatDuration = (ms: number): string =>
   ms >= 1000 ? `${(ms / 1000).toFixed(2)} с` : `${ms.toFixed(0)} мс`;
 
+// Длительность процесса в человекочитаемом виде: «2 ч 14 мин», «5 мин 38 с», «38 с».
+export const formatElapsed = (ms: number): string => {
+  const totalSec = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h} ч ${m} мин`;
+  if (m > 0) return `${m} мин ${s} с`;
+  return `${s} с`;
+};
+
+// Парсит ISO-время бэкенда (наивное UTC, см. formatDateTime) в epoch-мс; null — если невалидно.
+export const parseBackendDate = (value: string | null | undefined): number | null => {
+  if (!value) return null;
+  const ms = new Date(hasTimezone(value) ? value : `${value}Z`).getTime();
+  return Number.isNaN(ms) ? null : ms;
+};
+
 // CSS-класс статуса для бейджа: 'IN PROGRESS' -> 'status-in-progress'.
 export const statusClass = (status: string): string =>
   `status-${status.toLowerCase().replace(/\s+/g, '-')}`;

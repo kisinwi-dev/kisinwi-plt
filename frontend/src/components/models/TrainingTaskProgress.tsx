@@ -1,27 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { taskerService } from '../../services/taskerService';
 import { useNotification } from '../../contexts/NotificationContext';
 import { usePolling } from '../../hooks/usePolling';
 import ConfirmModal from '../common/ConfirmModal';
+import TrainingTaskCard, { ACTIVE_TASK_STATUSES } from './TrainingTaskCard';
 import type { TrainingTask } from '../../types/tasks';
-import { formatDateTime } from '../../utils/format';
 import { ICONS } from '../../constants/icons';
-import { statusBadgeClass, POLL_INTERVAL_TASK_MS } from '../../constants';
-
-// Статусы, в которых задача ещё живая: опрашиваем и даём отменить.
-const ACTIVE_TASK_STATUSES = ['waiting', 'running'];
-
-// Человекочитаемые статусы задачи; для неизвестных — описание из tasker.
-const TASK_STATUS_LABELS: Record<string, string> = {
-  waiting: 'В очереди',
-  running: 'Обучается',
-  completed: 'Завершена',
-  failed: 'Ошибка',
-  cancelled: 'Отменена',
-};
-
-const taskStatusLabel = (task: TrainingTask): string =>
-  TASK_STATUS_LABELS[task.status] ?? task.status_description ?? task.status;
+import { POLL_INTERVAL_TASK_MS } from '../../constants';
 
 interface TrainingTaskProgressProps {
   modelId: string;
@@ -54,6 +39,17 @@ const TrainingTaskProgress: React.FC<TrainingTaskProgressProps> = ({ modelId }) 
     },
   );
 
+  const active = !!task && task.model_id === modelId && ACTIVE_TASK_STATUSES.includes(task.status);
+
+  // Живой таймер длительности: пока задача активна, «сейчас» тикает раз в секунду.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) return;
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [active]);
+
   const handleCancel = async () => {
     if (!task) return;
     setPendingCancel(false);
@@ -74,58 +70,16 @@ const TrainingTaskProgress: React.FC<TrainingTaskProgressProps> = ({ modelId }) 
   // версии usePolling отдаёт прежний результат до первого ответа нового опроса.
   if (!task || task.model_id !== modelId || task.status === 'completed') return null;
 
-  const active = ACTIVE_TASK_STATUSES.includes(task.status);
-  const percent = Math.min(100, Math.max(0, task.percentages));
-
   return (
     <section className="detail-section">
       <h3 className="detail-section-title"><i className={`fas ${ICONS.task}`}></i> Процесс обучения</h3>
 
-      <div className="training-task">
-        <div className="training-task-header">
-          <span className={statusBadgeClass(task.status)}>
-            {active && <><i className={`fas ${ICONS.loading} fa-spin`}></i>{' '}</>}
-            {taskStatusLabel(task)}
-          </span>
-          {task.status_info && <span className="training-task-info">{task.status_info}</span>}
-          {active && (
-            <button
-              className="button danger small training-task-cancel"
-              onClick={() => setPendingCancel(true)}
-              disabled={cancelling}
-            >
-              <i className={`fas ${ICONS.cancelled}`}></i>
-              {cancelling ? 'Отмена…' : 'Отменить обучение'}
-            </button>
-          )}
-        </div>
-
-        {active && (
-          <div className="training-task-progress">
-            <div
-              className="progress-bar"
-              role="progressbar"
-              aria-valuenow={percent}
-              aria-valuemin={0}
-              aria-valuemax={100}
-            >
-              <div className="progress-bar-fill" style={{ width: `${percent}%` }} />
-            </div>
-            <span className="training-task-percent">{percent}%</span>
-          </div>
-        )}
-
-        {task.status === 'failed' && task.error_message && (
-          <p className="training-task-error">
-            <i className={`fas ${ICONS.error}`}></i> {task.error_message}
-          </p>
-        )}
-
-        <div className="training-task-meta">
-          {task.started_at && <span><i className={`fas ${ICONS.duration}`}></i> Старт: {formatDateTime(task.started_at)}</span>}
-          {task.completed_at && <span>Завершение: {formatDateTime(task.completed_at)}</span>}
-        </div>
-      </div>
+      <TrainingTaskCard
+        task={task}
+        now={now}
+        onCancel={() => setPendingCancel(true)}
+        cancelling={cancelling}
+      />
 
       <ConfirmModal
         open={pendingCancel}

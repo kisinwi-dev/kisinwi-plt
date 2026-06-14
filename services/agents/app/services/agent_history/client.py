@@ -14,6 +14,33 @@ class AgentHistoryClient:
     def __init__(self):
         self.base_url = config_url.AGENT_HISTORY['url']
 
+    def _request(
+        self,
+        method: str,
+        url: str,
+        json: Dict[str, Any],
+        *,
+        ok_status: int,
+        success_msg: str,
+        error_label: str,
+    ) -> bool:
+        """
+        Отправка fire-and-forget запроса в историю агентов.
+
+        История не должна ронять пайплайн, поэтому любая ошибка логируется и
+        возвращается False (без проброса исключения).
+        """
+        try:
+            response = requests.request(method, url, json=json)
+            if response.status_code == ok_status:
+                logger.debug(success_msg)
+                return True
+            logger.error(f"{error_label}: {response.status_code} - {response.text}")
+            return False
+        except Exception as e:
+            logger.error(f"{error_label} (непредвиденная ошибка): {e}")
+            return False
+
     def create_discussion(
         self,
         discussion_id: str,
@@ -33,16 +60,12 @@ class AgentHistoryClient:
             data["title"] = title
         if tags is not None:
             data["tags"] = tags
-        try:
-            response = requests.post(url, json=data)
-            if response.status_code == 201:
-                logger.debug(f"✅ Дискуссия создана discussion_id=`{discussion_id}`")
-                return True
-            logger.error(f"Ошибка создания дискуссии: {response.status_code} - {response.text}")
-            return False
-        except Exception as e:
-            logger.error(f"Непредвиденная ошибка при создании дискуссии: {e}")
-            return False
+        return self._request(
+            "POST", url, data,
+            ok_status=201,
+            success_msg=f"✅ Дискуссия создана discussion_id=`{discussion_id}`",
+            error_label="Ошибка создания дискуссии",
+        )
 
     def update_discussion_meta(
         self,
@@ -51,16 +74,12 @@ class AgentHistoryClient:
     ) -> bool:
         """Обновить метаданные дискуссии (например, статус)"""
         url = f"{self.base_url}/discussions/{discussion_id}/meta"
-        try:
-            response = requests.patch(url, json={"status": status})
-            if response.status_code == 200:
-                logger.debug(f"✅ Статус дискуссии обновлён: {status}")
-                return True
-            logger.error(f"Ошибка обновления мета: {response.status_code} - {response.text}")
-            return False
-        except Exception as e:
-            logger.error(f"Непредвиденная ошибка при обновлении мета: {e}")
-            return False
+        return self._request(
+            "PATCH", url, {"status": status},
+            ok_status=200,
+            success_msg=f"✅ Статус дискуссии обновлён: {status}",
+            error_label="Ошибка обновления мета",
+        )
 
     def _make_discussion_request(
         self,
@@ -82,19 +101,12 @@ class AgentHistoryClient:
 
         url = f"{self.base_url}/discussions/{discussion_id}/{endpoint}"
 
-        try:
-            response = requests.post(url, json=data)
-
-            if response.status_code == 201:
-                logger.debug(f"✅ Событие сохранено в историю discussion_id=`{discussion_id}`")
-                return True
-            else:
-                logger.error(f"Ошибка отправки: {response.status_code} - {response.text}")
-                return False
-
-        except Exception as e:
-            logger.error(f"Непредвиденная ошибка: {str(e)}")
-            return False
+        return self._request(
+            "POST", url, data,
+            ok_status=201,
+            success_msg=f"✅ Событие сохранено в историю discussion_id=`{discussion_id}`",
+            error_label="Ошибка отправки",
+        )
 
     def _add_agent(
         self,

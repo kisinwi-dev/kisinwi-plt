@@ -19,6 +19,14 @@ def parse_in_json(
 
     try:
         return json.loads(cleaned)
+    except json.JSONDecodeError:
+        pass
+
+    # LLM иногда отдаёт дважды экранированную JSON-строку (литеральные \n и \").
+    # Снимаем один слой экранирования, декодировав её как JSON-строку, и парсим повторно.
+    try:
+        unescaped = json.loads(f'"{cleaned}"')
+        return json.loads(unescaped)
     except json.JSONDecodeError as e:
         logger.error(f"Ошибка парсинга JSON. \nПолученный текст:\n{cleaned}\nОшибка: {e}")
         raise

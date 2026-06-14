@@ -1,6 +1,6 @@
 import React from 'react';
 import type { DiscussionMeta } from '../../types/agentHistory';
-import { DISCUSSION_STATUS_LABELS, getDiscussionTitle, getDiscussionAgents } from '../../types/agentHistory';
+import { DISCUSSION_STATUS_LABELS, getDiscussionTitle, getDiscussionAgents, getPipelineLabel } from '../../types/agentHistory';
 import { formatDateTime } from '../../utils/format';
 import { useCopyToClipboard } from '../../hooks';
 import { ICONS } from '../../constants/icons';
@@ -45,7 +45,7 @@ const DiscussionCard: React.FC<Props> = ({ discussion, onSelect, onDelete }) => 
         <div className="discussion-title-group">
           {discussion.pipeline && (
             <span className="discussion-badge">
-              <i className={`fas ${ICONS.pipeline}`}></i> {discussion.pipeline}
+              <i className={`fas ${ICONS.pipeline}`}></i> {getPipelineLabel(discussion.pipeline)}
             </span>
           )}
           <h2>{title}</h2>

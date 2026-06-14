@@ -6,7 +6,7 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
-from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput
+from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput, extract_raw_text
 from app.logs import get_logger
 from app.core.llm import llm
 from .tools import get_tools
@@ -113,21 +113,12 @@ def run_praxis_searcher(
     except Exception as e:
         logger.warning(f"Не удалось получить pydantic output: {e}. Используем fallback.")
         result = PraxisSearchOutput(
-            text=extract_result(crew_output),
+            text=extract_raw_text(crew_output),
             sources=[],
             summary="Не удалось структурировать вывод. Используйте сырой текст выше."
         )
 
     return result
-
-def extract_result(crew_output):
-    if hasattr(crew_output, "raw"):
-        return crew_output.raw
-
-    if hasattr(crew_output, "tasks_output"):
-        return crew_output.tasks_output[0].raw
-
-    return str(crew_output)
 
 @tool("PraxisSearcher")
 def tool_run_praxis_searcher(

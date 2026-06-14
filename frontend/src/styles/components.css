@@ -279,8 +279,9 @@ button:disabled,
 
 /* ── Прогресс задачи обучения ────────────────────────────────────────────────── */
 .progress-bar {
+  position: relative;
   flex: 1;
-  height: 8px;
+  height: 12px;
   border-radius: var(--radius-pill);
   background: var(--color-surface-faint);
   border: var(--border-subtle);
@@ -288,16 +289,65 @@ button:disabled,
 }
 
 .progress-bar-fill {
+  position: relative;
   height: 100%;
   border-radius: var(--radius-pill);
-  background: var(--color-info);
+  background: linear-gradient(90deg, var(--color-info), var(--color-info-bright));
   transition: width 0.6s ease;
+  overflow: hidden;
+}
+
+/* Бегущий блик по заполненной части: процесс жив, даже если процент стоит. */
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: progress-shimmer 1.8s linear infinite;
+}
+
+@keyframes progress-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -100% 0; }
+}
+
+/* Задача в очереди: прогресса ещё нет, по бару бегает короткая полоска. */
+.progress-bar-runner {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 30%;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, transparent, var(--color-info-soft), var(--color-info), var(--color-info-soft), transparent);
+  animation: progress-indeterminate 1.6s ease-in-out infinite;
+}
+
+@keyframes progress-indeterminate {
+  from { left: -30%; }
+  to { left: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar-fill::after {
+    animation: none;
+  }
+  .progress-bar-runner {
+    animation: none;
+    left: 0;
+    width: 100%;
+  }
 }
 
 .training-task {
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  gap: 1rem;
 }
 
 .training-task-header {
@@ -305,11 +355,6 @@ button:disabled,
   align-items: center;
   flex-wrap: wrap;
   gap: 0.8rem;
-}
-
-.training-task-info {
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
 }
 
 .training-task-cancel {
@@ -323,25 +368,56 @@ button:disabled,
 }
 
 .training-task-percent {
-  min-width: 3rem;
+  min-width: 3.2rem;
   text-align: right;
   font-variant-numeric: tabular-nums;
+  color: var(--color-text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* Динамическая строка состояния от tasker (например, текущая эпоха). */
+.training-task-status-info {
+  margin: -0.4rem 0 0;
   color: var(--color-text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
 }
 
 .training-task-error {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
   margin: 0;
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius-input);
+  background: var(--color-danger-soft);
   color: var(--color-danger);
   font-size: 0.9rem;
+  overflow-wrap: anywhere;
 }
 
 .training-task-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.2rem;
+  gap: 0.4rem 1.5rem;
   color: var(--color-text-secondary);
   font-size: 0.85rem;
+}
+
+.training-task-meta-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.training-task-meta-item i {
+  color: var(--color-accent);
+  font-size: 0.8rem;
+}
+
+.training-task-meta-value {
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Теги / чипы ─────────────────────────────────────────────────────────────── */

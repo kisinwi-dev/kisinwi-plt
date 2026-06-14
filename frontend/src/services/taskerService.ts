@@ -10,12 +10,13 @@ const TASKER_URL = serviceUrl(import.meta.env.VITE_TASKER, 'localhost:6110');
 export const taskerService = {
   /**
    * Получить задачи обучения с фильтрами.
-   * GET /tasks?status&model_id
+   * GET /tasks?status&model_id&discussion_id
    */
   async getTasks(query: TasksQuery = {}): Promise<TrainingTasks> {
     const url = new URL(`${TASKER_URL}/tasks`);
     if (query.status) url.searchParams.append('status', query.status);
     if (query.model_id) url.searchParams.append('model_id', query.model_id);
+    if (query.discussion_id) url.searchParams.append('discussion_id', query.discussion_id);
     const response = await fetch(url.toString());
     return handleResponse<TrainingTasks>(response);
   },
