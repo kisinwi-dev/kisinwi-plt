@@ -3,6 +3,8 @@ import time
 from typing import Tuple
 
 from ..utils import parse_in_json, BaseServiceClient
+from app.core.cancellation import cancellation_registry
+from app.core.memory import discussion_context
 from app.logs import get_logger
 from app.config import config_url
 
@@ -66,14 +68,32 @@ class TaskerClient(BaseServiceClient):
             logger.error(f"Ошибка при проверке статуса задачи {task_id}: {e}")
             raise requests.RequestException(e)
 
+    def cancel_task(self, task_id: str) -> None:
+        """Отмена задачи обучения (trainer останавливается на границе эпохи)."""
+        try:
+            response = self.session.post(
+                f"{self.URL}/tasks/{task_id}/cancel",
+                timeout=30
+            )
+            response.raise_for_status()
+            logger.info(f"Запрошена отмена задачи обучения `{task_id}`")
+        except requests.RequestException as e:
+            logger.error(f"Ошибка при отмене задачи {task_id}: {e}")
+            raise requests.RequestException(e)
+
     def waiting_completed(self, task_id: str) -> Tuple[bool, dict]:
         """
         Ожидание завершения задачи
-        
+
+        Пока ждём, отслеживаем запрос на остановку пайплайна: если пользователь
+        остановил агентов во время обучения — один раз отменяем задачу в tasker
+        и продолжаем ждать её терминальный статус (`cancelled`).
+
         Returns:
             bool: true - задача завершена успешно, false - получена ошибка в процессе обучения
             dict: информация о задаче
         """
+        cancel_requested = False
         while True:
             task = self.get_task(task_id)
             task_status = task.get("status", "failed")
@@ -82,7 +102,13 @@ class TaskerClient(BaseServiceClient):
             elif task_status in ("failed", "cancelled"):
                 logger.error(f"Задача `{task_id}` завершена со статусом `{task_status}`")
                 return False, task
-            
+
+            if not cancel_requested and discussion_context.is_set() \
+                    and cancellation_registry.is_stop_requested(discussion_context.get()):
+                logger.info(f"🟦 Остановка пайплайна: отменяем активную задачу обучения `{task_id}`")
+                self.cancel_task(task_id)
+                cancel_requested = True
+
             time.sleep(2)
 
 tasker_client = TaskerClient()

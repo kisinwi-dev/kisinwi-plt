@@ -22,20 +22,16 @@ def run_ml_engineer(
     dataset_version_id: str = Query(description="ID версии датасета")
 ):
     try:
-
-        discussion_context.set(discussion_id)
-        agent_history_client.create_discussion(discussion_id, pipeline="ml_engineer", agent_roles=[ML_ENGINEER_ROLE])
-
-        result = run_ml_engineering(
-            dataset_info=dataset_info,
-            business_requirements=business_requirements,
-            deployment_constraints=deployment_constraints,
-            researcher_proposals=researcher_proposals,
-            dataset_id=dataset_id,
-            dataset_version_id=dataset_version_id,
-            verbose=True
-        )
-
+        with track_discussion(discussion_id, "ml_engineer", "Рассуждения ML-инженера", [ML_ENGINEER_ROLE]):
+            result = run_ml_engineering(
+                dataset_info=dataset_info,
+                business_requirements=business_requirements,
+                deployment_constraints=deployment_constraints,
+                researcher_proposals=researcher_proposals,
+                dataset_id=dataset_id,
+                dataset_version_id=dataset_version_id,
+                verbose=True
+            )
         return result
     except Exception as e:
         raise HTTPException(

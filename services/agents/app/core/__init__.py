@@ -6,6 +6,7 @@ from app.core.crews.metrics_analyst import run_metrics_analyst
 from app.core.crews.reporter import run_reporter
 from app.core.defaults import DEFAULT_BUSINESS_REQUIREMENTS, DEFAULT_DEPLOYMENT_CONSTRAINTS
 from app.core.memory import iteration_context
+from app.core.cancellation import raise_if_cancelled
 from app.services.agent_history import agent_history_client
 from app.services.ml_models import load_model_history
 from .pipeline import (
@@ -74,6 +75,7 @@ def development_models(
     agent_history_client.info("Анализ датасета завершён: данные готовы к обучению.")
 
     for iter in range(1, max_iter+1):
+        raise_if_cancelled()
         iteration_context.set(iter)
 
         info_start_iter = f"Полный цикл обучения №{iter} из {max_iter}"
@@ -197,6 +199,7 @@ def development_models(
             )
 
     # Подводим итоги обучений
+    raise_if_cancelled()
     agent_history_client.info("Все циклы обучения завершены. Формирование итогового отчёта...")
     result = run_reporter(
         business_requirements=business_requirements,

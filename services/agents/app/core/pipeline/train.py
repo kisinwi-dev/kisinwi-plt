@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
 from app.core.crews.ml_engeneer import MlEngineerResponse
+from app.core.cancellation import raise_if_cancelled
 from app.core.memory import discussion_context, models_context
 from app.services.agent_history import agent_history_client
 from app.services.datasets import get_dataset_info_classes
@@ -86,6 +87,10 @@ def training(
 
     logger.info("Ожидаем конец выполнения задачи...")
     is_complete, task = tasker_client.waiting_completed(task_id)
+
+    # Если обучение завершилось из-за остановки всего пайплайна — не продолжаем
+    # дальше (в отличие от одиночной отмены обучения), а прерываем пайплайн.
+    raise_if_cancelled()
 
     if is_complete:
         # занесение версии в список обученных моделей
