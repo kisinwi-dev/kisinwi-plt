@@ -6,7 +6,7 @@ from app.logs import get_logger
 
 from .utils.save_model import save_model_to_onnx
 from .datas import create_dataloaders
-from .models import get_model
+from .models import get_model, predownload_weights
 from .trainer import Trainer
 from .utils import setup_device
 
@@ -18,7 +18,9 @@ PROGRESS_DEVICE_CHECK = 1
 PROGRESS_DEVICE_READY = 2
 PROGRESS_DATA_LOADING = 3
 PROGRESS_DATA_READY = 5
-PROGRESS_MODEL_LOADING = 6
+PROGRESS_WEIGHTS_DOWNLOAD = 6
+PROGRESS_WEIGHTS_READY = 8
+PROGRESS_MODEL_LOADING = 9
 PROGRESS_MODEL_READY = 10
 PROGRESS_METRICS_SETUP = 11
 PROGRESS_METRICS_READY = 12
@@ -48,7 +50,16 @@ async def training_model(config: TaskParams, model_id: str):
     train_loader, val_loader, test_loader, classes = create_dataloaders(config.data_loader_params)
     await tasker_service.update_status_task(percentages=PROGRESS_DATA_READY, status_info="Данные загружены.")
 
-    # Загружаем модель
+    # Предзагрузка весов pretrained-модели в кэш (отдельный этап с видимым прогрессом)
+    if config.model_params.pretrained:
+        await predownload_weights(
+            model_name=config.model_params.type,
+            tasker_service=tasker_service,
+            progress_start=PROGRESS_WEIGHTS_DOWNLOAD,
+            progress_end=PROGRESS_WEIGHTS_READY,
+        )
+
+    # Загружаем модель (веса берутся из кэша мгновенно)
     await tasker_service.update_status_task(percentages=PROGRESS_MODEL_LOADING, status_info="Загрузка модели...")
     model = get_model(
         config.model_params,
