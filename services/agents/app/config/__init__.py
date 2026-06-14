@@ -90,6 +90,9 @@ class ConfigBaseLLM:
     OPENAI_MODEL_NAME = str(os.getenv("OPENAI_MODEL_NAME"))
     OPENAI_API_BASE = os.getenv("OPENAI_API_BASE")
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+    # Некоторые модели (напр. gpt-5*) принимают только temperature=1.
+    # Если модель не поддерживает кастомный temperature — выставить в "false".
+    LLM_TEMPERATURE_SUPPORTED = os.getenv("LLM_TEMPERATURE_SUPPORTED", "true").lower() != "false"
 
 config_url = ConfigServices()
 config_base_llm = ConfigBaseLLM()

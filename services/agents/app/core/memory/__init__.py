@@ -111,7 +111,32 @@ class IterationContext:
         self._iteration.set(None)
 
 
+class LlmModelContext:
+    """
+    Override LLM-модели на конкретный запуск пайплайна.
+
+    Если установлен — имеет приоритет над глобально выбранной моделью.
+    Используется в app.core.llm.resolve_model_id().
+    """
+    def __init__(self):
+        self._model_id: ContextVar[Optional[str]] = ContextVar('llm_model', default=None)
+
+    def set(self, model_id: str) -> None:
+        self._model_id.set(model_id)
+        logger.info(f"LlmModelContext: установлен llm_model={model_id}")
+
+    def get(self) -> Optional[str]:
+        return self._model_id.get()
+
+    def clear(self) -> None:
+        self._model_id.set(None)
+
+    def is_set(self) -> bool:
+        return self._model_id.get() is not None
+
+
 models_context = ModelsContext()
 discussion_context = Discussion()
 agent_response_context = AgentResponseContext()
 iteration_context = IterationContext()
+llm_model_context = LlmModelContext()
