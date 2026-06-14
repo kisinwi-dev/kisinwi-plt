@@ -72,7 +72,9 @@ class DiscussionStorage(BaseStorage):
         if update.agent_roles is not None:
             meta.agent_roles = update.agent_roles
 
-        if meta.finished_at is None and meta.status in (DiscussionStatus.COMPLETED, DiscussionStatus.FAILED):
+        if meta.finished_at is None and meta.status in (
+            DiscussionStatus.COMPLETED, DiscussionStatus.FAILED, DiscussionStatus.CANCELLED
+        ):
             meta.finished_at = datetime.now()
         await self._write_meta(discussion_id, meta)
         return meta

@@ -29,7 +29,9 @@ router = APIRouter(tags=["discussion"])
 KEEPALIVE_INTERVAL_S = 15.0
 
 # Статусы, после которых дискуссия не обновляется
-FINAL_DISCUSSION_STATUSES = (DiscussionStatus.COMPLETED, DiscussionStatus.FAILED)
+FINAL_DISCUSSION_STATUSES = (
+    DiscussionStatus.COMPLETED, DiscussionStatus.FAILED, DiscussionStatus.CANCELLED
+)
 
 
 @router.post(
