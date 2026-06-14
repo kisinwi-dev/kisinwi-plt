@@ -178,6 +178,7 @@ services:
               capabilities: [gpu]
     volumes:
       - ./db/datasets_storage:/app/datasets
+      - ./db/hf_cache:/app/hf_cache        # кэш весов pretrained-моделей (HF Hub + torch.hub)
     ports:
       - "${TRAINER_SERVICE_PORT}:${TRAINER_SERVICE_PORT}"
     environment:
@@ -185,6 +186,13 @@ services:
       - TASKER_DOMAIN=tasker:${TASKER_PORT}
       - METRICS_DOMAIN=metrics:${METRICS_SERVICE_PORT}
       - ML_MODELS_DOMAIN=ml_models:${ML_MODELS_SERVICE_PORT}
+      - HF_HOME=/app/hf_cache/huggingface
+      - TORCH_HOME=/app/hf_cache/torch
+      - HF_HUB_DOWNLOAD_TIMEOUT=${HF_HUB_DOWNLOAD_TIMEOUT:-30}
+      - HF_TOKEN=${HF_TOKEN:-}
+      # Xet-бэкенд (hf_xet) виснет без маршрута к cas-server.xethub.hf.co —
+      # форсим классический HTTP-путь, он уважает HF_HUB_DOWNLOAD_TIMEOUT и докачку.
+      - HF_HUB_DISABLE_XET=1
     depends_on:
       metrics:
         condition: service_healthy
