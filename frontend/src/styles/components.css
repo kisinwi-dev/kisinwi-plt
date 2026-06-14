@@ -202,6 +202,18 @@ button:disabled,
 
 /* Лёгкая ссылка-возврат в стиле breadcrumb над шапкой детальной страницы.
    Стрелка сдвигается влево при наведении, фон не подсвечивается. */
+.discussion-detail-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.discussion-detail-toolbar .detail-back-link {
+  margin-bottom: 0;
+}
+
 .detail-back-link {
   display: inline-flex;
   align-items: center;
