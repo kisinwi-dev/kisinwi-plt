@@ -71,13 +71,17 @@ CMD ["python", "main.py"]
 
 Загружаются через `dotenv` из `.env`. Источник - [app/config/__init__.py](app/config/__init__.py).
 
-| Переменная              | Назначение                                  | По умолчанию       |
-|-------------------------|---------------------------------------------|--------------------|
-| `HF_TOKEN`              | токен Hugging Face для pretrained-весов timm | - (warning в логах) |
-| `TASKER_DOMAIN`         | host:port сервиса tasker                    | `localhost:6110`   |
-| `ML_MODELS_DOMAIN`      | host:port сервиса ml_models                 | `localhost:6300`   |
-| `METRICS_DOMAIN`        | host:port сервиса metrics                   | `localhost:6310`   |
-| `TRAINER_SERVICE_PORT`  | порт HTTP API trainer                       | `6200`             |
+| Переменная                 | Назначение                                  | По умолчанию       |
+|----------------------------|---------------------------------------------|--------------------|
+| `HF_TOKEN`                 | токен Hugging Face для pretrained-весов timm (нужен для gated-моделей) | - (warning в логах) |
+| `HF_HOME`                  | кэш весов huggingface_hub (в Docker - bind-mount `./db/hf_cache`) | `~/.cache/huggingface` |
+| `TORCH_HOME`               | кэш весов torch.hub (legacy-модели timm)    | `~/.cache/torch`   |
+| `HF_HUB_DOWNLOAD_TIMEOUT`  | таймаут (сек) на скачивание весов с HF Hub  | `30`               |
+| `HF_HUB_DISABLE_XET`       | `1` - отключить Xet-бэкенд (см. «Загрузка pretrained-весов») | `1` (в compose)    |
+| `TASKER_DOMAIN`            | host:port сервиса tasker                    | `localhost:6110`   |
+| `ML_MODELS_DOMAIN`         | host:port сервиса ml_models                 | `localhost:6300`   |
+| `METRICS_DOMAIN`           | host:port сервиса metrics                   | `localhost:6310`   |
+| `TRAINER_SERVICE_PORT`     | порт HTTP API trainer                       | `6200`             |
 
 ## HTTP API
 
@@ -148,7 +152,7 @@ optimizer / scheduler / метрик / трансформаций + доступ
 
 | Прогресс | Этап |
 |----------|------|
-| 0–19     | подготовка: `setup_device` → `create_dataloaders` (ImageFolder train/val/test) → `get_model` (timm) → `MetricesClient` → сборка `Trainer` |
+| 0–19     | подготовка: `setup_device` → `create_dataloaders` (ImageFolder train/val/test) → **pre-download весов** (если `pretrained`, этап 6–8) → `get_model` (timm) → `MetricesClient` → сборка `Trainer` |
 | 20–80    | `Trainer.train()` - цикл эпох: forward/backward, AMP (GPU), grad clipping, шаг scheduler, метрики, early stop, чекпоинт лучшей эпохи |
 | -        | восстановление лучших весов из чекпоинта → прогон на test → `send_checkpoint_info` в metrics |
 | 81–95    | экспорт в ONNX (`save_model_to_onnx`, классы в metadata) → upload в ml_models → удаление чекпоинта |
@@ -156,6 +160,31 @@ optimizer / scheduler / метрик / трансформаций + доступ
 
 Класс `Trainer` - [app/core/trainer/train_model.py](app/core/trainer/train_model.py).
 Синхронная часть обучения выполняется в `asyncio.to_thread`, чтобы воркер мог проверять отмену.
+
+## Загрузка pretrained-весов
+
+При `model_params.pretrained = true` веса скачиваются с Hugging Face Hub. Скачивание вынесено в
+**отдельный этап pre-download** (прогресс 6–8) ДО `get_model`
+([app/core/models/downloader.py](app/core/models/downloader.py)::`predownload_weights`), после чего
+`timm.create_model(pretrained=True)` берёт веса из кэша мгновенно. Зачем так:
+
+- **Видимый прогресс.** Раньше между «Загрузка модели...» и «модель загружена» была тишина, и было
+  непонятно, идёт ли скачивание или всё зависло. Теперь `_LoggingTqdm` пишет в логи строки вида
+  `Скачивание весов: 49% (6.1/12.3 МБ)`, а в `status_info` задачи идёт «Скачивание весов модели...».
+- **Кэш на volume.** `HF_HOME` / `TORCH_HOME` указывают в bind-mount `./db/hf_cache`. Без него веса
+  качались в эфемерный слой контейнера и скачивались **заново при каждом пересоздании**; теперь модель
+  качается один раз и переживает рестарты.
+- **Отключённый Xet (`HF_HUB_DISABLE_XET=1`).** По умолчанию `huggingface_hub` качает через Xet-бэкенд
+  (`hf_xet`, ходит на `cas-server.xethub.hf.co`). В нашем окружении этот хост недоступен, и скачивание
+  **виснет без обрыва** (это и был «бесконечный цикл») - при этом обычный `huggingface.co` доступен.
+  Флаг форсит классический HTTP-путь, который уважает `HF_HUB_DOWNLOAD_TIMEOUT` и умеет докачку (resume)
+  после read-timeout. Если на другой машине Xet работает - флаг можно убрать (Xet быстрее).
+- **Fallback.** Модель не на HF Hub (legacy torch.hub) → pre-download пропускается, `get_model` качает
+  её сам в `TORCH_HOME`. Сетевая ошибка/таймаут → исключение пробрасывается, задача уходит в `failed`
+  (через воркер), а не висит вечно.
+
+Тест: [tests/test_predownload.py](tests/test_predownload.py) (запуск в контейнере
+`python -m tests.test_predownload`, модель переопределяется через env `HF_TEST_MODEL`).
 
 ## Жизненный цикл задачи и модели
 
@@ -210,7 +239,11 @@ optimizer / scheduler / метрик / трансформаций + доступ
 ## Отладка
 
 - **Логи**: `app/logs/app_json.log`, уровень `DEBUG` ([app/logs/config.py](app/logs/config.py)).
-- **Нет `HF_TOKEN`** → warning в логах, pretrained-веса timm могут не скачаться.
+- **Нет `HF_TOKEN`** → warning в логах, pretrained-веса timm могут не скачаться (gated-модели).
+- **Скачивание весов «зависло»** → почти всегда Xet-бэкенд: проверь, что выставлен `HF_HUB_DISABLE_XET=1`
+  (см. «Загрузка pretrained-весов»). В логах ищи `Скачивание весов: N%` - если их нет и висит на
+  «Скачивание весов модели...», значит соединение не идёт. Кэш в `db/hf_cache` создаётся под root -
+  чистить застрявшие `*.incomplete` через контейнер, не с хоста.
 - **Сервис недоступен на старте** → `check_services` пометит его `unhealthy` в `/info/health`.
 - **Нет папки датасета** (`datasets/{dataset_id}/{version_id}/...`) → ошибка при `create_dataloaders`;
   путь сейчас относительный - запускать из корня сервиса.
@@ -231,7 +264,7 @@ app/
 │   ├── __init__.py    training_model() - оркестратор
 │   ├── worker.py      to_work() - воркер-цикл
 │   ├── trainer/       класс Trainer (цикл эпох, AMP, early stop, чекпоинт)
-│   ├── models/        get_model (timm)
+│   ├── models/        get_model (timm), predownload_weights (downloader.py - кэш/прогресс весов)
 │   ├── datas/         create_dataloaders, ALLOWED_TRANSFORMS
 │   └── utils/         setup_device, validate_task_params, save_model_to_onnx
 ├── service/           HTTP-клиенты: tasker / ml_models / metrices
