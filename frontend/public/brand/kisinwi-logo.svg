@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="282" height="64" viewBox="0 0 282 64" role="img" aria-label="KiSinWi">
+  <defs>
+    <linearGradient id="lBg" x1="6" y1="2" x2="58" y2="62" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#a8485a"/>
+      <stop offset="0.5" stop-color="#bf6072"/>
+      <stop offset="1" stop-color="#e3a0ab"/>
+    </linearGradient>
+    <radialGradient id="lSheen" cx="20" cy="12" r="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.40"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="lDepth" x1="0" y1="34" x2="0" y2="62" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#5a2a32" stop-opacity="0.22"/>
+    </linearGradient>
+  </defs>
+  <!-- glassy mark -->
+  <rect x="2" y="2" width="60" height="60" rx="17" fill="url(#lBg)"/>
+  <rect x="2" y="2" width="60" height="60" rx="17" fill="url(#lDepth)"/>
+  <rect x="2" y="2" width="60" height="60" rx="17" fill="url(#lSheen)"/>
+  <rect x="2.6" y="2.6" width="58.8" height="58.8" rx="15.6" fill="none" stroke="#ffffff" stroke-opacity="0.28" stroke-width="1.1"/>
+  <g stroke="#ffffff" stroke-width="6.4" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <line x1="24" y1="16" x2="24" y2="48"/>
+    <line x1="24" y1="33" x2="43" y2="16"/>
+    <line x1="24" y1="33" x2="44" y2="48"/>
+  </g>
+  <!-- wordmark (для тёмного фона) -->
+  <text x="78" y="44" font-family="'Clash Display','Poppins','Inter',system-ui,sans-serif" font-size="40" font-weight="600" letter-spacing="-1.2" fill="#f0f4fa">KiSinWi</text>
+</svg>
