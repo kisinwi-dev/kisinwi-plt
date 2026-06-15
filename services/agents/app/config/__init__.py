@@ -85,6 +85,22 @@ class ConfigServices:
             logger.error(f" 🟥 Ошибка при обращении к сервису `{service_name}`: {e}")
             return HealthStatus.UNHEALTHY
 
+def _env_float(name: str, default: float) -> float:
+    """Прочитать float из env с fallback на дефолт при пустом/битом значении."""
+    try:
+        return float(os.getenv(name) or default)
+    except (TypeError, ValueError):
+        return default
+
+
+def _env_int(name: str, default: int) -> int:
+    """Прочитать int из env с fallback на дефолт при пустом/битом значении."""
+    try:
+        return int(os.getenv(name) or default)
+    except (TypeError, ValueError):
+        return default
+
+
 @dataclass
 class ConfigBaseLLM:
     OPENAI_MODEL_NAME = str(os.getenv("OPENAI_MODEL_NAME"))
@@ -93,6 +109,11 @@ class ConfigBaseLLM:
     # Некоторые модели (напр. gpt-5*) принимают только temperature=1.
     # Если модель не поддерживает кастомный temperature — выставить в "false".
     LLM_TEMPERATURE_SUPPORTED = os.getenv("LLM_TEMPERATURE_SUPPORTED", "true").lower() != "false"
+    # Таймаут одного LLM-запроса (сек). Без него litellm ждёт ответ бесконечно,
+    # и подвисший запрос к провайдеру вешает весь шаг пайплайна.
+    LLM_REQUEST_TIMEOUT = _env_float("LLM_REQUEST_TIMEOUT", 600)
+    # Сколько раз litellm автоматически повторит запрос при таймауте/временной ошибке.
+    LLM_NUM_RETRIES = _env_int("LLM_NUM_RETRIES", 2)
 
 config_url = ConfigServices()
 config_base_llm = ConfigBaseLLM()

@@ -2,6 +2,7 @@ import time
 from dataclasses import dataclass
 from typing import List, Optional
 
+import litellm
 import requests
 from crewai import LLM
 
@@ -10,6 +11,14 @@ from app.core.memory import llm_model_context
 from app.logs import get_logger
 
 logger = get_logger(__name__)
+
+# Авто-повтор LLM-запроса при таймауте/временной ошибке задаём глобально для
+# litellm, а НЕ через additional_params у LLM. Через additional_params параметр
+# попадает в общий dict запроса и при structured output (output_pydantic) утекает
+# в нативный вызов OpenAI SDK (Completions.create/parse), который аргумент
+# num_retries не принимает — и весь шаг агента падает. Глобальный litellm.num_retries
+# потребляет retry-обёртка litellm и в провайдерский вызов он не просачивается.
+litellm.num_retries = config_base_llm.LLM_NUM_RETRIES
 
 
 @dataclass(frozen=True)
@@ -191,12 +200,18 @@ def make_llm(temperature: float) -> LLM:
     в рантайме или per-request override применяются при построении crew.
     Если модель не поддерживает кастомный temperature — параметр не передаётся
     и используется дефолт провайдера.
+
+    timeout ограничивает длительность одного LLM-запроса (без него litellm ждёт
+    ответ бесконечно — подвисший запрос вешает весь шаг пайплайна). Авто-повтор
+    при таймауте/временной ошибке задаётся глобально через litellm.num_retries
+    (см. выше) — не через additional_params, иначе ломается structured output.
     """
     model_id = resolve_model_id()
     kwargs = dict(
         model=to_openrouter_model(model_id),
         base_url=config_base_llm.OPENAI_API_BASE,
         api_key=config_base_llm.OPENROUTER_API_KEY,
+        timeout=config_base_llm.LLM_REQUEST_TIMEOUT,
     )
     if model_supports_temperature(model_id):
         kwargs["temperature"] = temperature
