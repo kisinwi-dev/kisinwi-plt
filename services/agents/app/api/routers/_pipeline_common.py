@@ -4,7 +4,10 @@ from typing import Callable, List, Optional
 from fastapi import BackgroundTasks, HTTPException
 from pydantic import BaseModel, Field, model_validator
 
-from app.core.memory import models_context, discussion_context, llm_model_context
+from app.core.memory import (
+    models_context, discussion_context, llm_model_context, id_alias_context,
+    dataset_context,
+)
 from app.core.cancellation import cancellation_registry, PipelineCancelled
 from app.services.agent_history import agent_history_client
 from app.services.datasets import get_dataset_details, get_dataset_version_details
@@ -65,12 +68,18 @@ def run_pipeline_background(
     discussion_id: str,
     pipeline: Callable[[], object],
     pipeline_label: str,
+    dataset_id: str,
+    version_id: str,
     llm_model: Optional[str] = None,
+    id_aliases: Optional[dict] = None,
 ) -> None:
     """Фоновое выполнение пайплайна с финализацией статуса дискуссии."""
     discussion_context.set(discussion_id)
+    dataset_context.set(dataset_id, version_id)
     if llm_model:
         llm_model_context.set(llm_model)
+    if id_aliases:
+        id_alias_context.set_aliases(id_aliases)
     try:
         result = pipeline()
         agent_history_client.update_discussion_meta(
@@ -86,8 +95,10 @@ def run_pipeline_background(
     finally:
         cancellation_registry.discard(discussion_id)
         discussion_context.clear()
+        dataset_context.clear()
         models_context.clear()
         llm_model_context.clear()
+        id_alias_context.clear()
 
 
 def start_pipeline(
@@ -114,6 +125,15 @@ def start_pipeline(
         f"Версия: {version_name}",
     ]))
 
+    # Карта UUID → читаемое имя, чтобы скраб клиента истории не пропускал сырые
+    # идентификаторы датасета/версии/модели в историю агентов.
+    id_aliases = {
+        req.dataset_id: f"датасет «{dataset_name}»",
+        req.version_id: f"версия «{version_name}»",
+    }
+    if req.model_id:
+        id_aliases[req.model_id] = f"модель «{model_name}»"
+
     agent_history_client.create_discussion(
         discussion_id=discussion_id,
         pipeline=pipeline_name,
@@ -123,7 +143,10 @@ def start_pipeline(
     )
 
     cancellation_registry.register(discussion_id)
-    background_tasks.add_task(run_pipeline_background, discussion_id, pipeline, pipeline_name, req.llm_model)
+    background_tasks.add_task(
+        run_pipeline_background, discussion_id, pipeline, pipeline_name,
+        req.dataset_id, req.version_id, req.llm_model, id_aliases
+    )
     return StartResponse(discussion_id=discussion_id, status="started")
 
 

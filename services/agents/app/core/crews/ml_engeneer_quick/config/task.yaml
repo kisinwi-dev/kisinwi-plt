@@ -28,8 +28,10 @@ ml_engineer_quick_task:
 
     ## Dataset and version IDs
 
-    Use them both to call GetDatasetDetails and to fill the training configuration
-    (the fields that reference the dataset and its version).
+    Use them to call GetDatasetDetails / GetDatasetVersionDetails and confirm the
+    dataset is available. You do NOT need to put the real ids into the training
+    configuration — the platform writes the authoritative dataset/version ids into
+    the config itself. Keep the placeholder ids from the example as-is.
 
     - Dataset ID: {dataset_id}
     - Dataset version ID: {dataset_version_id}
@@ -75,8 +77,8 @@ ml_engineer_quick_task:
     6. Review the available metrics with GetMetricsForTrainer.
     7. Create the configuration via GetExampleTrainingConfig and fill it in:
        - model name — from GetAllAvailableModels (timm);
-       - put the real {dataset_id} and {dataset_version_id} into the dataset/version
-         fields (not the placeholder values from the example);
+       - leave the dataset/version id fields as the example placeholders — the
+         platform overwrites them with the real {dataset_id} and {dataset_version_id};
        - device — from step 1 ("cuda" or "cpu");
        - optimizers/schedulers/metrics — strictly from the tool responses.
     8. You MUST validate the finished configuration with ValidateTrainingConfig.
@@ -105,8 +107,9 @@ ml_engineer_quick_task:
     - configuration is valid JSON following the structure from GetExampleTrainingConfig
       (do not invent the structure — take it from the tool response)
     - configuration must pass ValidateTrainingConfig (valid == true) before you return it
-    - In configuration put the real {dataset_id} and {dataset_version_id} into the
-      dataset/version fields, and set the device to "cuda" or "cpu" (not "cuda:0")
+    - In configuration keep the example placeholder dataset/version id fields (the
+      platform sets the real {dataset_id}/{dataset_version_id}); set the device to
+      "cuda" or "cpu" (not "cuda:0")
     - Use ONLY the optimizers and schedulers returned by the tools
     - Do not add any explanation outside the JSON — only a clean JSON object
 
@@ -117,7 +120,7 @@ ml_engineer_quick_task:
       "ml_model": {
         "description_model": "ResNet50 for image classification",
         "type": "CNN",
-        "configuration": "<full JSON from GetExampleTrainingConfig with real dataset_id/version_id and device>"
+        "configuration": "<full JSON from GetExampleTrainingConfig with the example dataset/version ids kept and the real device>"
       },
       "recommendations": "Use data augmentation"
     }

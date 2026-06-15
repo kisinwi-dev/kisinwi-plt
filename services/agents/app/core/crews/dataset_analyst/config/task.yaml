@@ -19,8 +19,8 @@ dataset_analyst_task:
     - If the specified version cannot be found, the dataset is NOT ready for training
     - Use the available tools
     - Work ONLY with the specified dataset
-    - In the short data description you MUST include the dataset id and the
-      dataset version id
+    - Do NOT copy the dataset/version ids into your description — the platform
+      tracks them itself; focus the description on the data and its quality
 
   expected_output: |
     Your answer must be strictly valid JSON matching the DatasetAnalystOut schema.

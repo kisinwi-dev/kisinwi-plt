@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 
 from app.config import config_url
 from app.core.memory import discussion_context
+from app.services.agent_history.sanitize import scrub
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -59,7 +60,7 @@ class AgentHistoryClient:
         if title is not None:
             data["title"] = title
         if tags is not None:
-            data["tags"] = tags
+            data["tags"] = [scrub(tag) for tag in tags]
         return self._request(
             "POST", url, data,
             ok_status=201,
@@ -124,7 +125,7 @@ class AgentHistoryClient:
             "response_id": response_id,
             "status": status,
             "agent_role": agent_role,
-            "text": text,
+            "text": scrub(text),
         }
         if duration_ms is not None:
             data["duration_ms"] = duration_ms
@@ -201,17 +202,17 @@ class AgentHistoryClient:
             "agent_role": agent_role,
             "name": name,
             "status": status,
-            "message": message,
+            "message": scrub(message),
         }
 
         if input_args is not None:
-            data["input_args"] = input_args
+            data["input_args"] = scrub(input_args)
         if output is not None:
-            data["output"] = output
+            data["output"] = scrub(output)
         if duration_ms is not None:
             data["duration_ms"] = duration_ms
         if error_traceback is not None:
-            data["error_traceback"] = error_traceback
+            data["error_traceback"] = scrub(error_traceback)
         if response_id is not None:
             data["response_id"] = response_id
 
@@ -301,7 +302,7 @@ class AgentHistoryClient:
         """
         data = {
             "type_": type_,
-            "message": message
+            "message": scrub(message)
         }
 
         return self._make_discussion_request("system_messages", data)
