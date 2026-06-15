@@ -7,12 +7,12 @@ from crewai.project import CrewBase, agent, crew, task
 from .tools import get_tools
 from ..utils import (
     get_agent_role_from_config, run_crew_with_tracking,
-    extract_raw_text, first_task_pydantic,
+    extract_raw_text, first_task_pydantic, with_modifier,
 )
 from ..ml_engeneer import MlEngineerResponse
 from app.services.ml_models import NO_MODEL_HISTORY
 from app.logs import get_logger
-from app.core.llm import llm
+from app.core.llm import get_llm_precise
 
 logger = get_logger(__name__)
 
@@ -34,9 +34,9 @@ class MLEngineerQuickCrew:
     @agent
     def ml_engineer_quick(self) -> Agent:
         return Agent(
-            config=self.agents_config["ml_engineer_quick"],  # type: ignore[index]
+            config=with_modifier(self.agents_config["ml_engineer_quick"]),  # type: ignore[index]
             verbose=True,
-            llm=llm,
+            llm=get_llm_precise(),
             tools=get_tools(AGENT_ROLE),
             allow_delegation=False,
             max_iter=8,

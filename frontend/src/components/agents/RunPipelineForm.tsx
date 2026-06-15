@@ -4,6 +4,7 @@ import { agentsService } from '../../services/agentsService';
 import { mlModelsService } from '../../services/mlModelsService';
 import type { Dataset } from '../../types/dataset';
 import type { MLModel } from '../../types/mlModels';
+import type { LlmModelInfo } from '../../types/llm';
 import { useNotification } from '../../contexts/NotificationContext';
 import Combobox from '../common/Combobox';
 import ChipListEditor from '../common/ChipListEditor';
@@ -56,6 +57,11 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   // Существующие модели — для выбора в режиме «продолжить существующую».
   const [models, setModels] = useState<MLModel[]>([]);
+  // Каталог LLM-моделей агентов (подсказки) и модель по умолчанию.
+  const [llmModels, setLlmModels] = useState<LlmModelInfo[]>([]);
+  const [llmDefaultModel, setLlmDefaultModel] = useState('');
+  // Модель на этот запуск. Пусто — используется модель по умолчанию.
+  const [llmModel, setLlmModel] = useState('');
 
   // Поля формы.
   const [workflow, setWorkflow] = useState<Workflow>('development');
@@ -101,7 +107,29 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
       }
     };
     fetchModels();
+
+    const fetchLlmSettings = async () => {
+      try {
+        const settings = await agentsService.getLlmSettings();
+        setLlmModels(settings.available);
+        // Поле оставляем пустым: пусто = модель по умолчанию (current_model).
+        setLlmDefaultModel(settings.current_model);
+      } catch (err) {
+        showNotification(
+          err instanceof Error ? err.message : 'Ошибка загрузки списка LLM-моделей',
+          'error',
+        );
+      }
+    };
+    fetchLlmSettings();
   }, [showNotification]);
+
+  // Подсказки для Combobox — id моделей из каталога. Ввод остаётся свободным:
+  // можно указать любую модель OpenRouter вручную.
+  const llmModelOptions = useMemo<string[]>(
+    () => llmModels.map(m => m.id),
+    [llmModels],
+  );
 
   // Датасет, совпавший по имени с введённым (для подсказок версий).
   const matchedDataset = useMemo(
@@ -157,6 +185,7 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
         deployment_constraints: deploymentConstraints.trim() || undefined,
         title: title.trim() || undefined,
         tags: tagList,
+        llm_model: llmModel.trim() || undefined,
       };
       const result = workflow === 'quick'
         ? await agentsService.startQuickTraining(commonPayload)
@@ -202,6 +231,28 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
               <span className="workflow-option-hint">{w.hint}</span>
             </button>
           ))}
+        </div>
+      </div>
+
+      <div className="form-section">
+        <div className="form-section-head">
+          <h3><i className={`fas ${ICONS.agentModel}`}></i> Модель агентов (LLM)</h3>
+          <p className="form-section-hint">Какая LLM управляет работой агентов в этом запуске. Можно переопределить глобальную настройку.</p>
+        </div>
+        <div className="form-grid">
+          <div className="form-field full-width">
+            <label htmlFor="run-llm-model">LLM-модель</label>
+            <Combobox
+              id="run-llm-model"
+              icon={`fas ${ICONS.agentModel}`}
+              placeholder={llmDefaultModel ? `По умолчанию: ${llmDefaultModel}` : 'Модель по умолчанию'}
+              value={llmModel}
+              options={llmModelOptions}
+              onChange={setLlmModel}
+              disabled={submitting}
+            />
+            <span className="field-hint">Можно выбрать из каталога или ввести любую модель OpenRouter вручную. Пусто — используется модель по умолчанию.</span>
+          </div>
         </div>
       </div>
 

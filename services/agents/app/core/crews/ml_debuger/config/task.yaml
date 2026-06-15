@@ -1,44 +1,44 @@
 ml_debuger_task:
   agent: ml_debuger
   description: |
-    Другой ML инженер запускал обучение и получил ошибку от сервиса тренировок.
+    Another ML engineer started training and got an error from the training service.
 
-    Ошибка: {error}
+    Error: {error}
 
-    Конфигурации обучения, которые он использовал: {config}
+    The training configuration they used: {config}
 
-    АЛГОРИТМ ТВОИХ ДЕЙСТВИЙ (строго по порядку):
+    YOUR ALGORITHM (strictly in order):
 
-    1. ПРОАНАЛИЗИРУЙ ОШИБКУ
-      - Определи тип ошибки (память, валидация, сеть, доступность данных)
-      - Найди конкретный параметр, который вызывает проблему
+    1. ANALYZE THE ERROR
+      - Determine the error type (memory, validation, network, data availability)
+      - Find the specific parameter that causes the problem
 
-    2. СОБЕРИ НЕОБХОДИМУЮ ИНФОРМАЦИЮ (вызови инструменты):
-      - GetDatasetDetails и ListAllDatasets — чтобы просмотреть наличие датасета и его id
-      - GetDeviceInfo — чтобы знать, на чём будем обучать
-      - GetAllAvailableModels — чтобы проверить существование модели
-      - GetExampleTrainingConfig — чтобы получить правильную структуру JSON
-       
-    3. ПРИМИ РЕШЕНИЕ:
-       
-      Если ошибка ИСПРАВЛЯЕТСЯ изменением конфигурации:
+    2. GATHER THE REQUIRED INFORMATION (call tools):
+      - GetDatasetDetails and ListAllDatasets — to check the dataset exists and its id
+      - GetDeviceInfo — to know what we will train on
+      - GetAllAvailableModels — to verify the model exists
+      - GetExampleTrainingConfig — to get the correct JSON structure
+
+    3. MAKE A DECISION:
+
+      If the error IS fixable by changing the configuration:
       - decision = true
-      - Измени ТОЛЬКО параметры в конфигурации, которые вызывают ошибку
-       
-      Если ошибка НЕ ИСПРАВЛЯЕТСЯ изменением конфигурации:
+      - Change ONLY the parameters in the configuration that cause the error
+
+      If the error is NOT fixable by changing the configuration:
       - decision = false
       - ml_model = null
-      - Чётко объясни, почему ты не можешь это исправить
+      - Clearly explain why you cannot fix it
 
-    4. ОБОСНУЙ РЕШЕНИЕ:
-      - Какая была ошибка
-      - Что именно ты изменил и почему
-      - Как это решит проблему
+    4. JUSTIFY THE DECISION:
+      - What the error was
+      - What exactly you changed and why
+      - How it solves the problem
 
-    КРИТИЧЕСКИ ВАЖНО:
-    - НЕ ИЗМЕНЯЙ параметры, которые не связаны с ошибкой!
-    - НЕ ВЫДУМЫВАЙ оптимизаторы и планировщики — только из инструментов!
-    - Если error пустой или неинформативный возвращай decision = false
+    CRITICALLY IMPORTANT:
+    - DO NOT change parameters unrelated to the error!
+    - DO NOT invent optimizers and schedulers — only from tools!
+    - If error is empty or uninformative, return decision = false
 
   expected_output: |
-    Твой ответ должен быть строго в формате JSON, соответствующем схеме MlDebugerOut.
+    Your answer must be strictly valid JSON matching the MlDebugerOut schema.

@@ -1,0 +1,10 @@
+[project]
+name = "kisinwi-benchmark"
+version = "0.1.0"
+description = "Benchmark качества платформы KiSinWi"
+requires-python = ">=3.12"
+dependencies = [
+    "datasets>=2.18",
+    "Pillow>=10.0",
+    "requests>=2.31",
+]

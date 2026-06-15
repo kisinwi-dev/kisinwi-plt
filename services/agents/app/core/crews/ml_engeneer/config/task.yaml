@@ -1,132 +1,134 @@
 ml_engineer_task:
   agent: ml_engineer
   description: |
-    Оцени предложение Researcher и прими решение.
+    Assess the Researcher's proposal and make a decision.
 
-    # ВХОДНЫЕ ДАННЫЕ:
+    # INPUT DATA:
 
-    ## Требования бизнеса к модели
+    ## Business requirements for the model
 
     {business_requirements}
-    
-    ## УСЛОВИЯ ЭКСПЛУАТАЦИИ (как и где будет работать модель после обучения)
 
-    - На каком оборудовании будет работать(не обучаться) модель (GPU/CPU)
-    - Требования к скорости работы
-    - Ограничения по памяти
-    
+    ## DEPLOYMENT CONSTRAINTS (how and where the model will run after training)
+
+    - What hardware the model will run on (not train on): GPU/CPU
+    - Inference speed requirements
+    - Memory limits
+
     {deployment_constraints}
 
-    Дополнительно: 
-    - Это НЕ требования к оборудованию для обучения!
-    - Это требования к тому, как модель будет использоваться в продакшене.
+    Note:
+    - These are NOT requirements for the training hardware!
+    - These describe how the model will be used in production.
 
-    ## Информация о датасете:
+    ## Dataset information:
 
     {dataset_info}
 
-    ## ID датасета и версии
+    ## Dataset and version IDs
 
-    Используй их и для вызова GetDatasetDetails, и для подстановки в конфигурацию
-    обучения (в поля, отвечающие за датасет и его версию).
+    Use them to call GetDatasetDetails / GetDatasetVersionDetails and confirm the
+    dataset is available. You do NOT need to put the real ids into the training
+    configuration — the platform writes the authoritative dataset/version ids into
+    the config itself. Keep the placeholder ids from the example as-is.
 
-    - ID датасета: {dataset_id}
-    - ID версии датасета: {dataset_version_id}
+    - Dataset ID: {dataset_id}
+    - Dataset version ID: {dataset_version_id}
 
-    ## Информация от resercher для запуска обучения:
+    ## Researcher's proposals for launching training:
 
     {researcher_proposals}
 
-    ## История предыдущих версий модели
+    ## History of previous model versions
 
     {model_history}
 
-    Если история не пуста — ты дообучаешь СУЩЕСТВУЮЩУЮ модель (создаётся новая
-    версия). Изучи прошлые конфигурации и метрики: не повторяй конфигурации
-    провальных версий, отталкивайся от лучшей версии и целенаправленно улучшай её.
+    If the history is not empty, you are continuing training of an EXISTING model
+    (a new version is created). Study the previous configurations and metrics: do
+    not repeat the configurations of failed versions, build on the best version and
+    deliberately improve it.
 
-    Это задача КЛАССИФИКАЦИИ ИЗОБРАЖЕНИЙ.
+    This is an IMAGE CLASSIFICATION task.
 
-    ## ПОЛИТИКА РЕШЕНИЯ
+    ## DECISION POLICY
 
-    Действуй по стандартному алгоритму. Ты вправе отказать (decision = false),
-    если обучение нецелесообразно: требования прода невыполнимы для доступных
-    архитектур, гипотезы исследователя неподходящи и т.п.
+    Follow the standard algorithm. You may refuse (decision = false) if training is
+    not worthwhile: production requirements are infeasible for the available
+    architectures, the researcher's hypotheses are unsuitable, etc.
 
-    ## АЛГОРИТМ твоих действий
+    ## YOUR ALGORITHM
 
-    1. Вызови GetDeviceInfo — это железо для ОБУЧЕНИЯ. Запомни устройство: его
-       значение пойдёт в конфиг как "cuda" (если есть GPU) или "cpu". НЕ используй
-       "cuda:0".
-    2. Вызови GetAllAvailableModels и проверь есть ли у нас предложенная архитектура
-    3. Учти требования прода (deployment_constraints) при ВЫБОРЕ архитектуры
-       (скорость, память, размер модели). Эти требования — про инференс в проде, они
-       влияют на ВЫБОР архитектуры, а не на устройство обучения. Сами по себе они НЕ
-       являются основанием для отказа — решение об отказе принимай только согласно
-       разделу «ПОЛИТИКА РЕШЕНИЯ».
-    4. Проверь, что датасет существует: вызови GetDatasetDetails по ID {dataset_id}.
-       Затем проверь, что нужная версия существует: вызови GetDatasetVersionDetails
-       с ID {dataset_id} и версией {dataset_version_id}.
-       Если датасет или версия не найдены (инструмент вернул ошибку) — обучение
-       запускать НЕЛЬЗЯ: верни decision = false и укажи в reason, чего именно нет.
-    5. Прими решение: запускать обучение или нет
-    6. Если да, то просмотри доступные метрики GetMetricsForTrainer
-    7. Если да, то создай конфигурацию через GetExampleTrainingConfig и заполни её:
-       - имя модели — из GetAllAvailableModels (timm);
-       - в поля датасета/версии подставь реальные {dataset_id} и {dataset_version_id}
-         (а не значения-заглушки из примера);
-       - устройство — из шага 1 ("cuda" или "cpu");
-       - оптимизаторы/планировщики/метрики — строго из ответов инструментов.
-    8. ОБЯЗАТЕЛЬНО проверь готовую конфигурацию инструментом ValidateTrainingConfig.
-       Если valid == false — исправь конфигурацию по списку errors и проверь снова.
-       Не отдавай конфигурацию, не прошедшую валидацию.
+    1. Call GetDeviceInfo — this is the TRAINING hardware. Remember the device: its
+       value goes into the config as "cuda" (if a GPU is available) or "cpu". Do NOT
+       use "cuda:0".
+    2. Call GetAllAvailableModels and check whether the proposed architecture exists.
+    3. Account for the production requirements (deployment_constraints) when CHOOSING
+       the architecture (speed, memory, model size). These requirements concern
+       inference in production; they affect the CHOICE of architecture, not the
+       training device. By themselves they are NOT grounds for refusal — make a
+       refusal decision only according to the "DECISION POLICY" section.
+    4. Check that the dataset exists: call GetDatasetDetails with ID {dataset_id}.
+       Then check that the required version exists: call GetDatasetVersionDetails with
+       ID {dataset_id} and version {dataset_version_id}.
+       If the dataset or version is not found (the tool returned an error), training
+       MUST NOT start: return decision = false and state in reason exactly what is missing.
+    5. Make the decision: start training or not.
+    6. If yes, review the available metrics with GetMetricsForTrainer.
+    7. If yes, create the configuration via GetExampleTrainingConfig and fill it in:
+       - model name — from GetAllAvailableModels (timm);
+       - leave the dataset/version id fields as the example placeholders — the
+         platform overwrites them with the real {dataset_id} and {dataset_version_id};
+       - device — from step 1 ("cuda" or "cpu");
+       - optimizers/schedulers/metrics — strictly from the tool responses.
+    8. You MUST validate the finished configuration with ValidateTrainingConfig.
+       If valid == false, fix the configuration according to the errors list and
+       validate again. Do not return a configuration that did not pass validation.
 
-    Названия всех оптимизаторов и планировщиков используй строго из полученных данных
-    из инструментов.
+    Use the names of all optimizers and schedulers strictly as returned by the tools.
 
   expected_output: |
-    Твой ответ должен быть строго в формате JSON, который соответствует схеме:
-      
+    Your answer must be strictly valid JSON matching this schema:
+
     {
       "decision": true/false,
-      "reason": "Развёрнутое обоснование решения",
+      "reason": "Detailed justification of the decision",
       "ml_model": {
-        "description_model": "Описание модели",
-        "type": "тип модели (например, CNN, ResNet, Transformer)",
-        "configuration": "JSON конфигурация для обучения"
+        "description_model": "Model description",
+        "type": "model type (e.g. CNN, ResNet, Transformer)",
+        "configuration": "JSON training configuration"
       },
-      "recommendations": "Рекомендации по улучшению"
+      "recommendations": "Recommendations for improvement"
     }
-    
-    ВАЖНО:
-    - Если decision == false, то ml_model должен быть null
-    - Если decision == true, ml_model обязателен
-    - configuration — это валидный JSON по структуре из GetExampleTrainingConfig
-      (структуру не придумывай — бери из ответа инструмента)
-    - configuration обязана пройти проверку ValidateTrainingConfig (valid == true)
-      до того, как ты отдашь ответ
-    - В configuration подставь реальные {dataset_id} и {dataset_version_id} в поля
-      датасета/версии, а устройство задай как "cuda" или "cpu" (не "cuda:0")
-    - Используй ТОЛЬКО те оптимизаторы и планировщики, которые вернули инструменты
-    - Не добавляй пояснений вне JSON — только чистый JSON объект
 
-    Пример ответа при успехе (configuration сокращён — у тебя он полный из инструмента):
+    IMPORTANT:
+    - If decision == false, ml_model must be null
+    - If decision == true, ml_model is required
+    - configuration is valid JSON following the structure from GetExampleTrainingConfig
+      (do not invent the structure — take it from the tool response)
+    - configuration must pass ValidateTrainingConfig (valid == true) before you return it
+    - In configuration keep the example placeholder dataset/version id fields (the
+      platform sets the real {dataset_id}/{dataset_version_id}); set the device to
+      "cuda" or "cpu" (not "cuda:0")
+    - Use ONLY the optimizers and schedulers returned by the tools
+    - Do not add any explanation outside the JSON — only a clean JSON object
+
+    Example of a success answer (configuration shortened — yours is the full one from the tool):
     {
       "decision": true,
-      "reason": "ResNet50 подходит по требованиям к памяти и скорости",
+      "reason": "ResNet50 fits the memory and speed requirements",
       "ml_model": {
-        "description_model": "ResNet50 для классификации изображений",
+        "description_model": "ResNet50 for image classification",
         "type": "CNN",
-        "configuration": "<полный JSON из GetExampleTrainingConfig с реальными dataset_id/version_id и device>"
+        "configuration": "<full JSON from GetExampleTrainingConfig with the example dataset/version ids kept and the real device>"
       },
-      "recommendations": "Использовать аугментацию данных"
+      "recommendations": "Use data augmentation"
     }
 
-    Пример ответа при отказе (только если это разрешено разделом «ПОЛИТИКА РЕШЕНИЯ» —
-    например, датасет/версия не найдены или обучение нецелесообразно):
+    Example of a refusal answer (only if allowed by the "DECISION POLICY" section —
+    e.g. the dataset/version is not found or training is not worthwhile):
     {
       "decision": false,
-      "reason": "Версия датасета не найдена — обучать нечего",
+      "reason": "The dataset version was not found — there is nothing to train",
       "ml_model": null,
-      "recommendations": "Проверьте корректность ID версии датасета"
+      "recommendations": "Check that the dataset version ID is correct"
     }

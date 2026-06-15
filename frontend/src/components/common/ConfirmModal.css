@@ -59,15 +59,6 @@
   gap: 1rem;
 }
 
-.button.danger {
-  background: var(--color-danger);
-  color: #fff;
-}
-
-.button.danger:hover {
-  background: var(--color-danger-light);
-}
-
 @keyframes confirm-fade {
   from { opacity: 0; }
   to { opacity: 1; }

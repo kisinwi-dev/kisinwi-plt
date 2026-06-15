@@ -1,6 +1,7 @@
 from typing import List, Tuple
 
 from app.logs import get_logger
+from app.core.cancellation import raise_if_cancelled
 from app.core.crews.researcher import run_researcher
 from app.core.crews.ml_engeneer import MlEngineerResponse, run_ml_engineering
 from app.services.ml_models import NO_MODEL_HISTORY
@@ -37,6 +38,7 @@ def reasoning(
     """
     
     for iteration in range(max_iterations):
+        raise_if_cancelled()
         logger.info(f"🔄 Итерация {iteration + 1}/{max_iterations}")
 
         # генерация гипотез
@@ -45,6 +47,7 @@ def reasoning(
             business_requirements=business_requirements,
             dataset_info=dataset_info,
             denied_hypotheses_info=denied_hypotheses_info,
+            deployment_constraints=deployment_constraints,
             model_history=model_history,
             verbose=verbose
         )
@@ -71,9 +74,17 @@ def reasoning(
 
         # логи
         logger.warning(f"\n\nОтказ на итерации {iteration + 1}: \n {ml_engineer_output.reason}...")
-        hypotheses_info = f"Гипотезы: {researcher_output.hypotheses_1} \n {researcher_output.hypotheses_2} \n {researcher_output.hypotheses_3}"
-        hypotheses_info += f"\nРешение ML Инженера: {ml_engineer_output.reason}"
-        hypotheses_info += f"\nРекомендация: {ml_engineer_output.recommendations}"
+        # Структурированный feedback: чёткие секции, чтобы на следующей итерации
+        # researcher точечно исправлял отклонённое, а не повторял его.
+        hypotheses_info = "\n".join([
+            f"### Итерация {iteration + 1} (отклонена ML-инженером)",
+            "**Отклонённые гипотезы:**",
+            f"1. {researcher_output.hypotheses_1}",
+            f"2. {researcher_output.hypotheses_2}",
+            f"3. {researcher_output.hypotheses_3}",
+            f"**Причина отказа ML-инженера:** {ml_engineer_output.reason}",
+            f"**Что изменить (рекомендация инженера):** {ml_engineer_output.recommendations}",
+        ])
         denied_hypotheses_info.append(hypotheses_info)
     
     # Если не удалось найти решение

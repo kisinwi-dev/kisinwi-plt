@@ -72,7 +72,9 @@ class DiscussionStorage(BaseStorage):
         if update.agent_roles is not None:
             meta.agent_roles = update.agent_roles
 
-        if meta.finished_at is None and meta.status in (DiscussionStatus.COMPLETED, DiscussionStatus.FAILED):
+        if meta.finished_at is None and meta.status in (
+            DiscussionStatus.COMPLETED, DiscussionStatus.FAILED, DiscussionStatus.CANCELLED
+        ):
             meta.finished_at = datetime.now()
         await self._write_meta(discussion_id, meta)
         return meta
@@ -130,6 +132,37 @@ class DiscussionStorage(BaseStorage):
 
         return responses_count, tool_calls_count, role_models
 
+    @staticmethod
+    def _build_agents(
+        agent_roles: list[str], role_models: dict[str, list[str]]
+    ) -> list[AgentModelInfo]:
+        """Собрать агентов с моделями: заявленные в meta роли идут первыми
+        (дополняясь моделями из ответов), затем — реально отвечавшие, но не
+        объявленные роли."""
+        agents: list[AgentModelInfo] = []
+        seen_roles: set[str] = set()
+        for role in agent_roles:
+            agents.append(AgentModelInfo(role=role, models=role_models.get(role, [])))
+            seen_roles.add(role)
+        for role, models in role_models.items():
+            if role not in seen_roles:
+                agents.append(AgentModelInfo(role=role, models=models))
+        return agents
+
+    async def get_meta_read(self, discussion_id: str) -> Optional[DiscussionMetaRead]:
+        """Метаданные одной дискуссии с агрегатами (счётчики, агенты с моделями)."""
+        meta = await self.get_meta(discussion_id)
+        if meta is None:
+            return None
+
+        responses_count, tool_calls_count, role_models = await self._aggregate(discussion_id)
+        return DiscussionMetaRead(
+            **meta.model_dump(),
+            responses_count=responses_count,
+            tool_calls_count=tool_calls_count,
+            agents=self._build_agents(meta.agent_roles, role_models),
+        )
+
     async def get_all(
         self,
         status: Optional[DiscussionStatus] = None,
@@ -150,22 +183,11 @@ class DiscussionStorage(BaseStorage):
                 continue
             responses_count, tool_calls_count, role_models = await self._aggregate(d.name)
 
-            # Заявленные роли (из meta) идут первыми, дополняются моделями из ответов;
-            # затем добавляются роли, реально отвечавшие, но не объявленные в meta.
-            agents: list[AgentModelInfo] = []
-            seen_roles: set[str] = set()
-            for role in meta.agent_roles:
-                agents.append(AgentModelInfo(role=role, models=role_models.get(role, [])))
-                seen_roles.add(role)
-            for role, models in role_models.items():
-                if role not in seen_roles:
-                    agents.append(AgentModelInfo(role=role, models=models))
-
             result.append(DiscussionMetaRead(
                 **meta.model_dump(),
                 responses_count=responses_count,
                 tool_calls_count=tool_calls_count,
-                agents=agents,
+                agents=self._build_agents(meta.agent_roles, role_models),
             ))
         result.sort(key=lambda x: x.created_at, reverse=True)
         return result[skip : skip + limit]

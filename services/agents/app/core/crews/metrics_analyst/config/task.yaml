@@ -2,30 +2,29 @@ metrics_analysis_task:
   agent: metrics_analyst
 
   description: |
-    Получи и проанализируй метрики модели по её ID.
+    Retrieve and analyze the metrics of a model by its ID.
 
-    ID модели: {model_id}
+    Model ID: {model_id}
 
-    Требования бизнеса: 
-    {business_goal}    
+    Business requirements:
+    {business_goal}
 
-    ТВОИ ЗАДАЧИ:
-    - Получить метрики модели через инструменты (строго по порядку):
-      1. DoesModelHaveMetrics — проверь, есть ли вообще метрики у модели
-      2. если есть — GetMetricsForModel (метрики по эпохам, train/val/test)
-      3. GetModelDetails — архитектура и детали модели для контекста
-    - Проанализировать качество модели
-    - Объяснить значение метрик
-    - Выявить слабые стороны модели
-    - Дать вывод о готовности к продакшену
+    YOUR TASKS:
+    - Retrieve the model metrics via tools (strictly in this order):
+      1. DoesModelHaveMetrics — check whether the model has any metrics at all
+      2. if it does — GetMetricsForModel (per-epoch metrics, train/val/test)
+      3. GetModelDetails — architecture and model details for context
+    - Analyze model quality
+    - Explain the meaning of the metrics
+    - Identify the model's weak points
+    - Give a conclusion about production readiness
 
-    ВАЖНО:
-    - Используй только реальные метрики
-    - Не выдумывай значения
-    - Если данных недостаточно — сообщи об этом
+    IMPORTANT:
+    - Use only the real metrics returned by tools
+    - If the data is insufficient, say so
 
   expected_output: >
-    Структурированный анализ модели:
-    - Интерпретация качества
-    - Слабые стороны
-    - Вывод о готовности к использованию
+    A structured analysis of the model:
+    - Quality interpretation
+    - Weak points
+    - Conclusion about readiness for use

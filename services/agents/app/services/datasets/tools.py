@@ -6,11 +6,28 @@ from ..utils import (
     get_json, tool_response
 )
 from app.config import config_url
+from app.core.memory import dataset_context
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 
 DATASETS_URL = config_url.DATASETS['url']
+
+
+def _authoritative_ids(dataset_id: str, version_id: str | None = None) -> tuple[str, str | None]:
+    """
+    Подменить id датасета/версии авторитетными значениями текущего прогона.
+
+    id прогона задаются платформой (dataset_context) и побеждают аргументы,
+    которые подставила LLM, — так инструмент гарантированно работает с тем
+    датасетом, ради которого запущен пайплайн. Вне прогона (контекст пуст)
+    используются переданные аргументы.
+    """
+    ctx_dataset = dataset_context.get_dataset_id()
+    ctx_version = dataset_context.get_version_id()
+    resolved_dataset = ctx_dataset or dataset_id
+    resolved_version = ctx_version or version_id if version_id is not None else None
+    return resolved_dataset, resolved_version
 
 class GetDatasetDetailsTool(BaseTool):
     """Инструмент для получения полной информации о датасете по его ID"""
@@ -38,6 +55,7 @@ class GetDatasetDetailsTool(BaseTool):
 
     @tool_response(DATASETS_URL)
     def _run(self, dataset_id: str) -> str:
+        dataset_id, _ = _authoritative_ids(dataset_id)
         url = f"{DATASETS_URL}/datasets/{dataset_id}"
         return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
@@ -72,6 +90,7 @@ class GetDatasetVersionDetailsTool(BaseTool):
 
     @tool_response(DATASETS_URL)
     def _run(self, dataset_id: str, version_id: str) -> str:
+        dataset_id, version_id = _authoritative_ids(dataset_id, version_id)
         url = f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}"
         return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
@@ -108,6 +127,7 @@ class GetDatasetSplitSizesTool(BaseTool):
 
     @tool_response(DATASETS_URL)
     def _run(self, dataset_id: str, version_id: str) -> str:
+        dataset_id, version_id = _authoritative_ids(dataset_id, version_id)
         url = f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}/splits"
         return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
@@ -142,6 +162,7 @@ class GetDatasetSplitCountsTool(BaseTool):
 
     @tool_response(DATASETS_URL)
     def _run(self, dataset_id: str, version_id: str) -> str:
+        dataset_id, version_id = _authoritative_ids(dataset_id, version_id)
         url = f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}/splits/count"
         return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
@@ -176,6 +197,7 @@ class GetDatasetSplitBalanceTool(BaseTool):
 
     @tool_response(DATASETS_URL)
     def _run(self, dataset_id: str, version_id: str) -> str:
+        dataset_id, version_id = _authoritative_ids(dataset_id, version_id)
         url = f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}/splits/balance"
         return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
@@ -210,6 +232,7 @@ class GetDatasetClassDistributionTool(BaseTool):
 
     @tool_response(DATASETS_URL)
     def _run(self, dataset_id: str, version_id: str) -> str:
+        dataset_id, version_id = _authoritative_ids(dataset_id, version_id)
         url = f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}/splits/distribution"
         return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 
@@ -244,6 +267,7 @@ class GetDatasetImageSizeStatsTool(BaseTool):
 
     @tool_response(DATASETS_URL)
     def _run(self, dataset_id: str, version_id: str) -> str:
+        dataset_id, version_id = _authoritative_ids(dataset_id, version_id)
         url = f"{DATASETS_URL}/datasets/{dataset_id}/versions/{version_id}/splits/size-stats"
         return get_json(url) # type: ignore[return-value]  Декоратор преобразет ответ в str
 

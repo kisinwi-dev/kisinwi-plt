@@ -1,5 +1,6 @@
 // Сервис для запуска пайплайнов агентов (сервис agents, порт 6400).
 import { handleResponse, serviceUrl } from './http';
+import type { LlmSettings } from '../types/llm';
 
 // Базовый URL сервиса агентов берётся из переменной окружения VITE_AGENTS,
 // если её нет – localhost:6400.
@@ -21,6 +22,8 @@ export interface StartDevelopmentPayload {
   max_iter?: number;
   title?: string;
   tags?: string[];
+  /** Модель LLM на этот запуск (override глобальной настройки). */
+  llm_model?: string;
 }
 
 /** Параметры запуска быстрого пайплайна (ML-инженер + аналитик метрик). */
@@ -37,6 +40,8 @@ export interface StartQuickPayload {
   business_requirements?: string;
   title?: string;
   tags?: string[];
+  /** Модель LLM на этот запуск (override глобальной настройки). */
+  llm_model?: string;
 }
 
 /** Ответ на запуск: id созданной дискуссии и её статус. */
@@ -75,5 +80,39 @@ export const agentsService = {
       body: JSON.stringify(payload),
     });
     return handleResponse<StartDevelopmentResult>(response);
+  },
+
+  /**
+   * Остановить работу агентов в запущенном пайплайне (development или quick).
+   * Остановка кооперативная: срабатывает в ближайшей безопасной точке,
+   * активная задача обучения отменяется. POST /pipeline/{discussionId}/stop
+   */
+  async stopPipeline(discussionId: string): Promise<StartDevelopmentResult> {
+    const response = await fetch(`${AGENTS_URL}/pipeline/${discussionId}/stop`, {
+      method: 'POST',
+    });
+    return handleResponse<StartDevelopmentResult>(response);
+  },
+
+  /**
+   * Получить текущую модель агентов и каталог доступных моделей.
+   * GET /settings/llm
+   */
+  async getLlmSettings(): Promise<LlmSettings> {
+    const response = await fetch(`${AGENTS_URL}/settings/llm`);
+    return handleResponse<LlmSettings>(response);
+  },
+
+  /**
+   * Сменить глобально выбранную модель агентов (применяется к новым запускам).
+   * PUT /settings/llm
+   */
+  async setLlmModel(model: string): Promise<LlmSettings> {
+    const response = await fetch(`${AGENTS_URL}/settings/llm`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model }),
+    });
+    return handleResponse<LlmSettings>(response);
   },
 };

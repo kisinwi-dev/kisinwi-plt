@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query, HTTPException, BackgroundTasks
 from pydantic import Field
 
 from app.core import development_models
-from app.core.memory import models_context
+from app.core.memory import models_context, llm_model_context
 from app.services.agent_history import track_discussion
 from app.core.crews.dataset_analyst import AGENT_ROLE as DATASET_ANALYST_ROLE
 from app.core.crews.researcher import AGENT_ROLE as RESEARCHER_ROLE
@@ -14,6 +14,7 @@ from app.core.crews.reporter import AGENT_ROLE as REPORTER_ROLE
 from app.logs import get_logger
 from ._pipeline_common import (
     BasePipelineRequest, StartResponse, resolve_model_name, start_pipeline,
+    stop_pipeline,
 )
 
 logger = get_logger(__name__)
@@ -48,9 +49,12 @@ def development(
     business_requirements: Optional[str] = Query(None, description="Описание бизнес требований. Если не указано — агенты сами максимизируют качество"),
     denied_hypotheses_info: List[str] = Query(default_factory=list, description="Гипотезы и практики, которые нужно избегать"),
     max_iter: int = Query(2, description="Количество попыток обучения"),
-    model_id: Optional[str] = Query(None, description="ID существующей модели — новые версии создаются под ней")
+    model_id: Optional[str] = Query(None, description="ID существующей модели — новые версии создаются под ней"),
+    llm_model: Optional[str] = Query(None, description="Модель LLM на этот запуск (override глобальной настройки)")
 ):
     discussion_id = str(uuid4())
+    if llm_model:
+        llm_model_context.set(llm_model)
     try:
         with track_discussion(discussion_id, "development", "Разработка модели", _DEVELOPMENT_AGENT_ROLES):
             result = development_models(
@@ -76,6 +80,7 @@ def development(
         )
     finally:
         models_context.clear()
+        llm_model_context.clear()
 
 
 @routers.post(
@@ -107,3 +112,15 @@ def start_development(req: DevelopmentRequest, background_tasks: BackgroundTasks
             max_iter=req.max_iter,
         ),
     )
+
+
+@routers.post(
+    "/pipeline/{discussion_id}/stop",
+    status_code=202,
+    response_model=StartResponse,
+    description="Остановить работу агентов в запущенном пайплайне (development или quick). "
+                "Остановка кооперативная: срабатывает в ближайшей безопасной точке; активная "
+                "задача обучения отменяется в tasker.",
+)
+def stop_pipeline_endpoint(discussion_id: str):
+    return stop_pipeline(discussion_id)

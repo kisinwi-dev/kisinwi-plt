@@ -424,6 +424,52 @@
   color: #fff;
 }
 
+/* Карточка агента, который сейчас работает: пульсирующая рамка + «дышащий» аватар. */
+.agent-card--active {
+  border-color: var(--color-info);
+  background: var(--color-info-soft);
+}
+
+.agent-card--active .agent-card-avatar {
+  background: var(--color-info);
+  color: #fff;
+  animation: agent-card-active-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes agent-card-active-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-info) 55%, transparent); }
+  70% { box-shadow: 0 0 0 0.5rem transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* Карточка сервиса обучения в секции исполнителей. */
+.agent-card--training .agent-card-avatar {
+  background: var(--color-info-soft);
+  color: var(--color-info);
+}
+
+/* Статус-строка обучения: цвет по состоянию (в духе .status-* из components.css). */
+.training-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.training-status i { font-size: 0.72rem; }
+.training-status--running { color: var(--color-info); }
+.training-status--completed { color: var(--color-success); }
+.training-status--failed { color: var(--color-danger); }
+.training-status--cancelled { color: var(--color-text-secondary); }
+
+.training-status-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .agent-card-body {
   display: flex;
   flex-direction: column;
@@ -496,45 +542,6 @@
   color: var(--color-accent);
   transform: none;
   box-shadow: none;
-}
-
-/* ── Детальный просмотр дискуссии ────────────────────────────────────────────── */
-.discussion-detail-title {
-  font-size: 1.8rem;
-  margin-bottom: 0;
-  word-break: break-word;
-}
-
-/* ── Инфо-панель дискуссии (детальный просмотр) ──────────────────────────────── */
-.discussion-info {
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-
-.discussion-info-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-}
-
-.discussion-info-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  font-size: 0.9rem;
-  color: var(--color-text-secondary);
-}
-
-.discussion-info-meta i {
-  margin-right: 0.3rem;
 }
 
 /* ── Лента диалога: вертикальный timeline ────────────────────────────────────── */
@@ -1125,43 +1132,8 @@
 .msg-warning .system-message { border-color: var(--color-warning-soft); }
 .msg-error .system-message { border-color: color-mix(in srgb, var(--color-danger) 30%, transparent); }
 
-/* ── Stat-чипы инфо-панели ───────────────────────────────────────────────────── */
-.discussion-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-}
-
-.stat-chip {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.4rem;
-  padding: 0.5rem 0.85rem;
-  background: var(--color-surface-faint);
-  border: 1px solid var(--color-border-soft);
-  border-radius: var(--radius-input);
-}
-
-.stat-chip i {
-  align-self: center;
-  color: var(--color-accent);
-  font-size: 0.85rem;
-}
-
-.stat-chip-value {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  line-height: 1;
-}
-
-.stat-chip-label {
-  font-size: 0.78rem;
-  color: var(--color-text-secondary);
-}
-
-/* ── Точка статуса в бейдже (инфо-панель) ────────────────────────────────────── */
-.discussion-info-header .status-badge {
+/* ── Точка статуса в бейдже (шапка детального просмотра) ──────────────────────── */
+.detail-title .status-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -1202,6 +1174,7 @@
   .timeline-node-pulse,
   .discussion-running,
   .status-dot--pulse,
+  .agent-card--active .agent-card-avatar,
   .fa-spin {
     animation: none !important;
   }

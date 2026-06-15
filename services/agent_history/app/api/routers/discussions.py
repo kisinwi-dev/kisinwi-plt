@@ -29,7 +29,9 @@ router = APIRouter(tags=["discussion"])
 KEEPALIVE_INTERVAL_S = 15.0
 
 # Статусы, после которых дискуссия не обновляется
-FINAL_DISCUSSION_STATUSES = (DiscussionStatus.COMPLETED, DiscussionStatus.FAILED)
+FINAL_DISCUSSION_STATUSES = (
+    DiscussionStatus.COMPLETED, DiscussionStatus.FAILED, DiscussionStatus.CANCELLED
+)
 
 
 @router.post(
@@ -82,17 +84,17 @@ async def list_discussions(
 @router.get(
     "/discussions/{discussion_id}/meta",
     summary="Получить метаданные дискуссии",
-    response_model=DiscussionMeta,
+    response_model=DiscussionMetaRead,
     status_code=200,
     responses={
-        200: {"description": "Метаданные дискуссии"},
+        200: {"description": "Метаданные дискуссии с агрегатами (счётчики, агенты с моделями)"},
         404: {"description": "Дискуссия не найдена"},
     }
 )
 async def get_discussion_meta(discussion_id: str):
-    """Получить метаданные одной дискуссии"""
+    """Получить метаданные одной дискуссии с агрегатами (агенты и их модели LLM)"""
     try:
-        meta = await discussion_storage.get_meta(discussion_id=discussion_id)
+        meta = await discussion_storage.get_meta_read(discussion_id=discussion_id)
 
         if meta is None:
             raise HTTPException(

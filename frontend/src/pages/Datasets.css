@@ -268,17 +268,6 @@
   flex-wrap: wrap;
 }
 
-/* Опасная кнопка (удаление) */
-.button.danger {
-  background: var(--color-danger);
-  color: #fff;
-}
-
-.button.danger:hover:not(:disabled) {
-  background: var(--color-danger);
-  filter: brightness(1.1);
-}
-
 .dataset-header {
   display: flex;
   justify-content: space-between;

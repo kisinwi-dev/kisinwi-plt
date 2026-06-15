@@ -6,6 +6,7 @@ from crewai import Crew, CrewOutput
 from app.services.agent_history import agent_history_client
 from app.services.metrics import add_agent_in_metrics
 from app.core.memory import agent_response_context, iteration_context, discussion_context
+from app.core.cancellation import raise_if_cancelled
 from app.logs import get_logger
 
 logger = get_logger(__name__)
@@ -56,6 +57,10 @@ def run_crew_with_tracking(
     Returns:
         CrewOutput или None если crew.kickoff вернул не CrewOutput
     """
+    # Точка кооперативной остановки: если пользователь остановил пайплайн,
+    # не начинаем новый крю (и не логируем его старт).
+    raise_if_cancelled()
+
     response_id = str(crew.id)
     agent_response_context.set(response_id)
     start_time = time.time()

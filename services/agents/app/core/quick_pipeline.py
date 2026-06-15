@@ -1,10 +1,10 @@
 import json
 
 from app.logs import get_logger
+from app.core.cancellation import raise_if_cancelled
 from app.core.crews.ml_engeneer_quick import run_quick_ml_engineering
 from app.core.crews.metrics_analyst import run_metrics_analyst
 from app.core.defaults import DEFAULT_BUSINESS_REQUIREMENTS, DEFAULT_DEPLOYMENT_CONSTRAINTS
-from app.core.memory import models_context
 from app.services.agent_history import agent_history_client
 from app.services.datasets import get_dataset_details, get_dataset_version_details
 from app.services.ml_models import load_model_history
@@ -54,6 +54,7 @@ def quick_training_models(
     business_requirements = (business_requirements or "").strip() or DEFAULT_BUSINESS_REQUIREMENTS
     deployment_constraints = (deployment_constraints or "").strip() or DEFAULT_DEPLOYMENT_CONSTRAINTS
 
+    raise_if_cancelled()
     logger.info("Получение метаданных датасета...")
     agent_history_client.info(
         "Запуск быстрого пайплайна (ML-инженер + аналитик метрик). Получение метаданных датасета..."
@@ -126,8 +127,7 @@ def quick_training_models(
     logger.info("✅ Модель успешно обучена.")
     agent_history_client.info("Модель успешно обучена. Анализ метрик...")
 
-    # training() при успехе кладёт version_id обученной модели в models_context
-    trained_version_id = models_context.get_models()[-1]
+    trained_version_id = training_res.version_id
     analysis = run_metrics_analyst(
         model_id=trained_version_id,
         business_goal=business_requirements,

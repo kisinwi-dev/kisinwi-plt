@@ -1,39 +1,37 @@
 ml_models_searcher_task:
   agent: ml_models_searcher
   description: |
-    Используй инструменты и получи информацию по моделям и их метрики.
-    
-    Параметры запросов:
-    - model_ids: {model_ids} (может быть пустым, тогда ты ищешь среди всех имеющихся моделей)
-    
-    Дополнительный контекст:
+    Use the tools to retrieve information about the models and their metrics.
+
+    Request parameters:
+    - model_ids: {model_ids} (may be empty, then you search among all available models)
+
+    Additional context:
     {context}
-    
-    Что нужно сделать:
-    1. Получи данные по каждому id, если id нету ищи среди всех доступных
-    2. Проанализируй полученные данные
-    3. Заполни MLModelsSearcherOutput
 
-    ЗАПРЕТЫ:
-    - Не отвечай без вызова GetModelDetails и GetMetricsForModel
-    - Не придумывай модели
-    - Не выдумывай метрики
-    - Если моделей нет, то не придумывай их
+    What to do:
+    1. Get the data for each id; if there is no id, search among all available models
+    2. Analyze the obtained data
+    3. Fill in MLModelsSearcherOutput
 
-    ЕСЛИ ПОЛУЧИШЬ ОШИБКУ ПРИ ПОЛУЧЕНИИ ИНФОРМАЦИИ КОНКРЕТНОЙ МОДЕЛИ УКАЖИ НА ЭТО И
-    ПРОДОЛЖАЙ РАЗБИРАТЬ МОДЕЛИ. В ОТВЕТЕ УКАЖИ, ЧТО БЫЛА ОШИБКА С ТАКОЙ МОДЕЛЬЮ.
-    
+    PROHIBITIONS:
+    - Do not answer without calling GetModelDetails and GetMetricsForModel
+    - If there are no models, do not invent them
+
+    IF YOU GET AN ERROR WHILE RETRIEVING A SPECIFIC MODEL, POINT IT OUT AND CONTINUE
+    ANALYZING THE OTHER MODELS. IN THE ANSWER, STATE THAT THERE WAS AN ERROR WITH THAT MODEL.
+
   expected_output: |
-    Результат должен быть строго в формате Pydantic модели MLModelsSearcherOutput:
+    The result must strictly match the MLModelsSearcherOutput Pydantic model:
     {
-        "text": "Подробный анализ каждой модели с метриками, сравнением и выводами",
-        "summary": "Краткий вывод о лучшей модели и рекомендация",
+        "text": "Detailed analysis of each model with metrics, comparison and conclusions",
+        "summary": "Short conclusion about the best model and a recommendation",
         "metrics_summary": [
             {
-                "model_name": "Имя модели и её версия",
-                "summary_metric_info": "Краткая информация о самых значимых метриках модели на тестовых данных"
+                "model_name": "Model name and its version",
+                "summary_metric_info": "Short info about the model's most significant metrics on the test data"
             }
         ]
     }
-    ВАЖНО: metrics_summary — это СПИСОК объектов с полями model_name и
-    summary_metric_info (по одному объекту на модель), а не словарь.
+    IMPORTANT: metrics_summary is a LIST of objects with the fields model_name and
+    summary_metric_info (one object per model), not a dictionary.

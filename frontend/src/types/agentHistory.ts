@@ -2,13 +2,14 @@
 // Зеркалят Pydantic-схемы бэкенда: services/agent_history/app/api/schemas/.
 
 // Статус дискуссии.
-export type DiscussionStatus = 'active' | 'completed' | 'failed';
+export type DiscussionStatus = 'active' | 'completed' | 'failed' | 'cancelled';
 
 // Человекочитаемые подписи статусов дискуссии.
 export const DISCUSSION_STATUS_LABELS: Record<DiscussionStatus, string> = {
   active: 'Активна',
   completed: 'Завершена',
   failed: 'Ошибка',
+  cancelled: 'Остановлена',
 };
 
 // Статус запуска агента / инструмента (значения как у бэкенда — строки с пробелом).

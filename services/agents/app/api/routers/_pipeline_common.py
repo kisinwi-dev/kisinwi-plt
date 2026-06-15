@@ -4,7 +4,11 @@ from typing import Callable, List, Optional
 from fastapi import BackgroundTasks, HTTPException
 from pydantic import BaseModel, Field, model_validator
 
-from app.core.memory import models_context, discussion_context
+from app.core.memory import (
+    models_context, discussion_context, llm_model_context, id_alias_context,
+    dataset_context,
+)
+from app.core.cancellation import cancellation_registry, PipelineCancelled
 from app.services.agent_history import agent_history_client
 from app.services.datasets import get_dataset_details, get_dataset_version_details
 from app.services.ml_models import ml_models_client
@@ -23,6 +27,7 @@ class BasePipelineRequest(BaseModel):
     business_requirements: Optional[str] = Field(None, description="Описание бизнес требований. Если не указано — агенты сами максимизируют качество")
     title: Optional[str] = Field(None, description="Название запуска (опционально)")
     tags: List[str] = Field(default_factory=list, description="Теги запуска (опционально)")
+    llm_model: Optional[str] = Field(None, description="Модель LLM на этот запуск (override глобальной настройки)")
 
     @model_validator(mode="after")
     def check_model_target(self):
@@ -63,20 +68,37 @@ def run_pipeline_background(
     discussion_id: str,
     pipeline: Callable[[], object],
     pipeline_label: str,
+    dataset_id: str,
+    version_id: str,
+    llm_model: Optional[str] = None,
+    id_aliases: Optional[dict] = None,
 ) -> None:
     """Фоновое выполнение пайплайна с финализацией статуса дискуссии."""
     discussion_context.set(discussion_id)
+    dataset_context.set(dataset_id, version_id)
+    if llm_model:
+        llm_model_context.set(llm_model)
+    if id_aliases:
+        id_alias_context.set_aliases(id_aliases)
     try:
         result = pipeline()
         agent_history_client.update_discussion_meta(
             discussion_id, "completed" if result is not None else "failed"
         )
+    except PipelineCancelled:
+        logger.warning(f"Пайплайн {pipeline_label} остановлен пользователем (discussion_id={discussion_id})")
+        agent_history_client.warning("Работа агентов остановлена пользователем.")
+        agent_history_client.update_discussion_meta(discussion_id, "cancelled")
     except Exception as e:
         logger.error(f"Пайплайн {pipeline_label} упал (discussion_id={discussion_id}): {e}")
         agent_history_client.update_discussion_meta(discussion_id, "failed")
     finally:
+        cancellation_registry.discard(discussion_id)
         discussion_context.clear()
+        dataset_context.clear()
         models_context.clear()
+        llm_model_context.clear()
+        id_alias_context.clear()
 
 
 def start_pipeline(
@@ -103,6 +125,15 @@ def start_pipeline(
         f"Версия: {version_name}",
     ]))
 
+    # Карта UUID → читаемое имя, чтобы скраб клиента истории не пропускал сырые
+    # идентификаторы датасета/версии/модели в историю агентов.
+    id_aliases = {
+        req.dataset_id: f"датасет «{dataset_name}»",
+        req.version_id: f"версия «{version_name}»",
+    }
+    if req.model_id:
+        id_aliases[req.model_id] = f"модель «{model_name}»"
+
     agent_history_client.create_discussion(
         discussion_id=discussion_id,
         pipeline=pipeline_name,
@@ -111,5 +142,24 @@ def start_pipeline(
         tags=tags,
     )
 
-    background_tasks.add_task(run_pipeline_background, discussion_id, pipeline, pipeline_name)
+    cancellation_registry.register(discussion_id)
+    background_tasks.add_task(
+        run_pipeline_background, discussion_id, pipeline, pipeline_name,
+        req.dataset_id, req.version_id, req.llm_model, id_aliases
+    )
     return StartResponse(discussion_id=discussion_id, status="started")
+
+
+def stop_pipeline(discussion_id: str) -> StartResponse:
+    """
+    Запросить кооперативную остановку запущенного пайплайна.
+
+    Остановка срабатывает в ближайшей безопасной точке (между крю/итерациями
+    или в polling-цикле обучения, который дополнительно отменяет задачу в tasker).
+    """
+    if not cancellation_registry.request_stop(discussion_id):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Активный пайплайн для дискуссии {discussion_id} не найден",
+        )
+    return StartResponse(discussion_id=discussion_id, status="stopping")

@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Dict
 from contextvars import ContextVar
 from app.logs import get_logger
 
@@ -111,7 +111,92 @@ class IterationContext:
         self._iteration.set(None)
 
 
+class LlmModelContext:
+    """
+    Override LLM-модели на конкретный запуск пайплайна.
+
+    Если установлен — имеет приоритет над глобально выбранной моделью.
+    Используется в app.core.llm.resolve_model_id().
+    """
+    def __init__(self):
+        self._model_id: ContextVar[Optional[str]] = ContextVar('llm_model', default=None)
+
+    def set(self, model_id: str) -> None:
+        self._model_id.set(model_id)
+        logger.info(f"LlmModelContext: установлен llm_model={model_id}")
+
+    def get(self) -> Optional[str]:
+        return self._model_id.get()
+
+    def clear(self) -> None:
+        self._model_id.set(None)
+
+    def is_set(self) -> bool:
+        return self._model_id.get() is not None
+
+
+class IdAliasContext:
+    """
+    Карта соответствий UUID → читаемое имя на текущий прогон пайплайна.
+
+    Используется скраб-слоем клиента истории (app.services.agent_history.sanitize),
+    чтобы заменять UUID датасета/версии/модели на человекочитаемые имена и не
+    допускать утечки сырых идентификаторов в историю агентов.
+    """
+    def __init__(self):
+        self._aliases: ContextVar[Optional[Dict[str, str]]] = ContextVar('id_aliases', default=None)
+
+    def set_aliases(self, mapping: Dict[str, str]) -> None:
+        """Задать карту {uuid: имя} на прогон."""
+        self._aliases.set(dict(mapping))
+        logger.debug(f"IdAliasContext: установлено алиасов: {len(mapping)}")
+
+    def add(self, uuid: str, name: str) -> None:
+        """Добавить одну пару uuid → имя."""
+        aliases = dict(self._aliases.get() or {})
+        aliases[uuid] = name
+        self._aliases.set(aliases)
+
+    def get(self) -> Dict[str, str]:
+        """Текущая карта алиасов (или пустой dict)."""
+        return self._aliases.get() or {}
+
+    def clear(self) -> None:
+        self._aliases.set(None)
+
+
+class DatasetContext:
+    """
+    Авторитетные id датасета и его версии на текущий прогон пайплайна.
+
+    Источник истины — параметры запроса (req.dataset_id / req.version_id).
+    Инструменты датасета берут id отсюда, а не из аргументов, которые подставляет
+    LLM, — чтобы галлюцинация модели не увела запрос на чужой/несуществующий датасет.
+    """
+    def __init__(self):
+        self._dataset_id: ContextVar[Optional[str]] = ContextVar('ds_dataset_id', default=None)
+        self._version_id: ContextVar[Optional[str]] = ContextVar('ds_version_id', default=None)
+
+    def set(self, dataset_id: str, version_id: str) -> None:
+        self._dataset_id.set(dataset_id)
+        self._version_id.set(version_id)
+        logger.info(f"DatasetContext: dataset_id={dataset_id}, version_id={version_id}")
+
+    def get_dataset_id(self) -> Optional[str]:
+        return self._dataset_id.get()
+
+    def get_version_id(self) -> Optional[str]:
+        return self._version_id.get()
+
+    def clear(self) -> None:
+        self._dataset_id.set(None)
+        self._version_id.set(None)
+
+
 models_context = ModelsContext()
 discussion_context = Discussion()
+dataset_context = DatasetContext()
 agent_response_context = AgentResponseContext()
 iteration_context = IterationContext()
+llm_model_context = LlmModelContext()
+id_alias_context = IdAliasContext()

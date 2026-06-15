@@ -1,28 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { agentHistoryService } from '../../services/agentHistoryService';
-import { taskerService } from '../../services/taskerService';
-import type { AgentResponse, SystemMessage, SystemMessageType } from '../../types/agentHistory';
-import type { TrainingTask } from '../../types/tasks';
-import { useNotification } from '../../contexts/NotificationContext';
-import { usePolling } from '../../hooks';
-import { POLL_INTERVAL_DISCUSSION_MS } from '../../constants';
-import { formatDateTime, parseBackendDate, statusClass } from '../../utils/format';
+import type { SystemMessageType } from '../../types/agentHistory';
+import { formatDateTime, statusClass } from '../../utils/format';
+import { prefersReducedMotion } from '../../utils/motion';
 import MessageBubble from './MessageBubble';
 import TrainingTaskCard from '../models/TrainingTaskCard';
+import type { FeedItem } from './discussionFeed';
 import { ICONS } from '../../constants/icons';
 
 interface Props {
   discussionId: string;
-  // Если дискуссия активна — лента периодически обновляется (polling прогресса).
+  // Лента дискуссии (грузится в DiscussionDetail — единый источник правды).
+  feed: FeedItem[];
+  // true, пока идёт первичная загрузка ленты (показываем скелетоны).
+  loading?: boolean;
+  // Если дискуссия активна — показываем индикатор «Агенты работают...».
   active?: boolean;
 }
-
-// Элемент единой ленты: ответ агента, системное сообщение или этап обучения.
-type FeedItem =
-  | { kind: 'response'; timestamp: string; data: AgentResponse }
-  | { kind: 'system'; timestamp: string; data: SystemMessage }
-  | { kind: 'training'; timestamp: string; data: TrainingTask };
 
 // Иконка системного сообщения по типу.
 const SYSTEM_ICONS: Record<SystemMessageType, string> = {
@@ -31,42 +25,11 @@ const SYSTEM_ICONS: Record<SystemMessageType, string> = {
   ERROR: ICONS.error,
 };
 
-const DiscussionView: React.FC<Props> = ({ discussionId, active = false }) => {
-  const { showNotification } = useNotification();
+// Насколько близко к низу страницы считаем, что пользователь «внизу», px.
+const SCROLL_BOTTOM_THRESHOLD = 120;
+
+const DiscussionView: React.FC<Props> = ({ discussionId, feed, loading = false, active = false }) => {
   const navigate = useNavigate();
-
-  const { data, loading } = usePolling<FeedItem[]>(
-    async () => {
-      // Задачи обучения дискуссии берём из tasker по discussion_id — это даёт
-      // живой прогресс этапа обучения и ссылку на модель прямо в ленте истории.
-      const [responses, systemMessages, { tasks }] = await Promise.all([
-        agentHistoryService.getResponses(discussionId),
-        agentHistoryService.getSystemMessages(discussionId),
-        taskerService.getTasks({ discussion_id: discussionId }),
-      ]);
-      const items: FeedItem[] = [
-        ...responses.map((data): FeedItem => ({ kind: 'response', timestamp: data.timestamp, data })),
-        ...systemMessages.map((data): FeedItem => ({ kind: 'system', timestamp: data.timestamp, data })),
-        ...tasks.map((data): FeedItem => ({ kind: 'training', timestamp: data.created_at, data })),
-      ];
-      items.sort(
-        (a, b) => (parseBackendDate(a.timestamp) ?? 0) - (parseBackendDate(b.timestamp) ?? 0),
-      );
-      return items;
-    },
-    {
-      intervalMs: POLL_INTERVAL_DISCUSSION_MS,
-      // Ленту грузим всегда хотя бы раз; повторяем опрос только пока дискуссия активна.
-      continueWhile: () => active,
-      onError: err =>
-        showNotification(err instanceof Error ? err.message : 'Ошибка загрузки диалога', 'error'),
-      // active в deps: когда статус дискуссии становится active (meta догрузилась),
-      // цикл опроса перезапускается, иначе он умер бы после первого запроса.
-      deps: [discussionId, active],
-    },
-  );
-
-  const feed = data ?? [];
 
   // Живой таймер длительности для активного этапа обучения: пока дискуссия
   // активна, «сейчас» тикает раз в секунду (карточка обучения считает elapsed).
@@ -77,6 +40,36 @@ const DiscussionView: React.FC<Props> = ({ discussionId, active = false }) => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [active]);
+
+  // Автоскролл: если пользователь у низа страницы, новая запись в ленте плавно
+  // спускает вьюпорт вниз, а не наращивает высоту под текущей позицией.
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const nearBottomRef = useRef(true);
+  const prevLenRef = useRef(feed.length);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const scrolledToBottom =
+        window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - SCROLL_BOTTOM_THRESHOLD;
+      nearBottomRef.current = scrolledToBottom;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    const grew = feed.length > prevLenRef.current;
+    prevLenRef.current = feed.length;
+    // Спускаем вниз только для живой дискуссии (новые записи приходят, пока active),
+    // чтобы при открытии завершённой не дёргать пользователя к низу.
+    if (active && grew && nearBottomRef.current) {
+      bottomRef.current?.scrollIntoView({
+        behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+        block: 'end',
+      });
+    }
+  }, [feed.length, active]);
 
   if (loading && feed.length === 0) {
     // Скелетоны вместо текстовой заглушки — лента ощущается живой ещё до прихода данных.
@@ -179,6 +172,9 @@ const DiscussionView: React.FC<Props> = ({ discussionId, active = false }) => {
           </div>
         </div>
       )}
+
+      {/* Якорь автоскролла: к нему подъезжаем при появлении новой записи. */}
+      <div ref={bottomRef} aria-hidden="true" />
     </div>
   );
 };

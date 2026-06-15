@@ -1,15 +1,15 @@
 praxis_search_task:
   agent: praxis_searcher
   description: |
-    Выполни поиск по запросу: 
+    Run a search for the query:
     {search_query}
-    
-    Дополнительный контекст:
+
+    Additional context:
     {context}
-    
-    Найди самые релевантные лучшие практики, статьи, репозитории и кейсы.
+
+    Find the most relevant best practices, articles, repositories and cases.
   expected_output: |
-    Верни результат строго в формате Pydantic модели PraxisSearchOutput:
-    - text: подробное описание найденных практик
-    - sources: список источников с url, title, short_description
-    - summary: краткий обзор самых важных находок
+    Return the result strictly in the PraxisSearchOutput Pydantic model format:
+    - text: a detailed description of the practices found
+    - sources: a list of sources with url, title, short_description
+    - summary: a short overview of the most important findings
