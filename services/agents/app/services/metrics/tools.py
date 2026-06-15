@@ -72,7 +72,7 @@ class DoesModelHaveMetricsTool(BaseTool):
     @tool_response(METRICS_URL)
     def _run(self, model_id: str) -> str:
         data = get_json(f"{METRICS_URL}/models/{model_id}/exists")
-        return data.get("exists", False)
+        return "true" if data.get("exists", False) else "false"
 
     async def _arun(self, model_id: str) -> str:
         return await asyncio.to_thread(self._run, model_id)

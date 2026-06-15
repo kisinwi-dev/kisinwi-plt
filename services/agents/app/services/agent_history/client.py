@@ -31,7 +31,7 @@ class AgentHistoryClient:
         возвращается False (без проброса исключения).
         """
         try:
-            response = requests.request(method, url, json=json)
+            response = requests.request(method, url, json=json, timeout=30)
             if response.status_code == ok_status:
                 logger.debug(success_msg)
                 return True

@@ -7,6 +7,8 @@ from app.logs import get_logger
 
 logger = get_logger(__name__)
 
+DEFAULT_TIMEOUT = 30
+
 def handle_errors(domain: str):
     """
     Декоратор для обработки ошибок API запросов
@@ -45,7 +47,8 @@ def handle_errors(domain: str):
 def get_json(url: str, params: dict | None = None) -> dict:
     resp = requests.get(
         url,
-        params=params
+        params=params,
+        timeout=DEFAULT_TIMEOUT
     )
     resp.raise_for_status()
     return resp.json()
@@ -54,7 +57,8 @@ def get_json(url: str, params: dict | None = None) -> dict:
 def post_json(url: str, data: dict | None = None) -> dict:
     resp = requests.post(
         url,
-        json=data
+        json=data,
+        timeout=DEFAULT_TIMEOUT
     )
     resp.raise_for_status()
     return resp.json()
