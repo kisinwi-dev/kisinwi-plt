@@ -1,0 +1,11 @@
+.env
+.venv/
+__pycache__/
+*.zip
+benchmark_run.log
+
+# локальный реестр id датасетов (UUID конкретной инсталляции) и артефакты прогона
+datasets_registry.json
+results.json
+shuffled_results.json
+report.md
