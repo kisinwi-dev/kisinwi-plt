@@ -118,7 +118,7 @@ def quick_training_models(
             verbose=verbose
         )
         agent_history_client.info("Быстрый пайплайн завершён (обучение остановлено пользователем).")
-        return analysis
+        return analysis.to_history_text()
 
     if not training_res.is_completed_successfully:
         logger.info(f"🟥 Обучение провалилось: {training_res.error}")
@@ -135,4 +135,4 @@ def quick_training_models(
     )
 
     agent_history_client.info("Быстрый пайплайн завершён.")
-    return analysis
+    return analysis.to_history_text()

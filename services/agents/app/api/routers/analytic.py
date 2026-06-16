@@ -52,7 +52,7 @@ def analyze_ml_metric(
                 model_id=model_id,
                 verbose=True
             )
-        return result
+        return result.to_history_text()
     except Exception as e:
         raise HTTPException(
             status_code=500,
