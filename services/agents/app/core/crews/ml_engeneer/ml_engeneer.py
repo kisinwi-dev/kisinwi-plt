@@ -74,7 +74,7 @@ class MLEngineerCrew:
             llm=get_llm_precise(),
             tools=get_tools(AGENT_ROLE),
             allow_delegation=False,
-            max_iter=8,
+            max_iter=5,
         )
 
     @task

@@ -111,7 +111,7 @@ class ConfigBaseLLM:
     LLM_TEMPERATURE_SUPPORTED = os.getenv("LLM_TEMPERATURE_SUPPORTED", "true").lower() != "false"
     # Таймаут одного LLM-запроса (сек). Без него litellm ждёт ответ бесконечно,
     # и подвисший запрос к провайдеру вешает весь шаг пайплайна.
-    LLM_REQUEST_TIMEOUT = _env_float("LLM_REQUEST_TIMEOUT", 600)
+    LLM_REQUEST_TIMEOUT = _env_float("LLM_REQUEST_TIMEOUT", 120)
     # Сколько раз litellm автоматически повторит запрос при таймауте/временной ошибке.
     LLM_NUM_RETRIES = _env_int("LLM_NUM_RETRIES", 2)
 
