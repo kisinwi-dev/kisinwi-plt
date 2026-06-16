@@ -1,14 +1,74 @@
 /* Стили, специфичные для главной. Общие примитивы — в styles/components.css. */
 
 .hero {
+  position: relative;
+  isolation: isolate;
   text-align: center;
+  padding: 3rem 1rem 1.5rem;
   margin-bottom: 3rem;
 }
 
-.hero h1 {
-  font-size: 3rem;
-  color: var(--color-text-primary);
+/* Атмосферный «aurora»-фон позади контента — мягкие размытые блобы в акцентных тонах. */
+.hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(760px, 110%);
+  height: 420px;
+  background:
+    radial-gradient(42% 55% at 32% 28%, var(--color-accent-glow-strong), transparent 70%),
+    radial-gradient(46% 50% at 72% 38%, var(--color-accent-glow), transparent 72%);
+  filter: blur(44px);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.hero-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  animation: hero-logo-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero-logo__mark {
+  filter: drop-shadow(0 14px 34px var(--color-accent-glow-strong));
+  animation: hero-logo-float 6s ease-in-out 0.7s infinite;
+}
+
+@keyframes hero-logo-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes hero-logo-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.hero-title {
+  font-size: 3.25rem;
   margin-bottom: 0.5rem;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-accent-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-logo,
+  .hero-logo__mark {
+    animation: none;
+  }
 }
 
 .tagline {

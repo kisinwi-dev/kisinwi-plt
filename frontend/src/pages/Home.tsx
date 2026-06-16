@@ -1,12 +1,16 @@
 import React from 'react';
 import './Home.css';
 import { ICONS } from '../constants/icons';
+import { LogoMark } from '../components/common/LogoMark';
 
 const Home: React.FC = () => {
   return (
     <div className="page home">
       <header className="hero">
-        <h1>KiSinWi</h1>
+        <div className="hero-logo">
+          <LogoMark size={120} className="hero-logo__mark" />
+        </div>
+        <h1 className="hero-title">KiSinWi</h1>
         <p className="tagline">
           Платформа, которая упрощает жизнь ML‑инженеров и открывает мир 
           машинного обучения для всех, кто далёк от кода.

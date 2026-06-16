@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="232" height="64" viewBox="0 0 232 64" role="img" aria-label="KiSinWi">
+  <defs>
+    <linearGradient id="kisinwiWordGrad" x1="0" y1="0" x2="232" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#b15e6b"/>
+      <stop offset="1" stop-color="#d08c96"/>
+    </linearGradient>
+  </defs>
+  <text x="4" y="46" font-family="'Clash Display','Poppins','Inter',system-ui,sans-serif" font-size="46" font-weight="600" letter-spacing="-1.4" fill="url(#kisinwiWordGrad)">KiSinWi</text>
+</svg>
