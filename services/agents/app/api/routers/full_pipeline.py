@@ -34,7 +34,7 @@ _DEVELOPMENT_AGENT_ROLES = [
 
 class DevelopmentRequest(BasePipelineRequest):
     denied_hypotheses_info: List[str] = Field(default_factory=list, description="Гипотезы и практики, которые нужно избегать")
-    max_iter: int = Field(2, description="Количество попыток обучения")
+    max_iter: int = Field(0, ge=0, description="Количество попыток обучения. 0 — агент определяет сам")
 
 
 @routers.get(
@@ -48,7 +48,7 @@ def development(
     deployment_constraints: Optional[str] = Query(None, description="Технические возможности прода. Если не указано — агенты сами минимизируют затраты"),
     business_requirements: Optional[str] = Query(None, description="Описание бизнес требований. Если не указано — агенты сами максимизируют качество"),
     denied_hypotheses_info: List[str] = Query(default_factory=list, description="Гипотезы и практики, которые нужно избегать"),
-    max_iter: int = Query(2, description="Количество попыток обучения"),
+    max_iter: int = Query(0, ge=0, description="Количество попыток обучения. 0 — агент определяет сам"),
     model_id: Optional[str] = Query(None, description="ID существующей модели — новые версии создаются под ней"),
     llm_model: Optional[str] = Query(None, description="Модель LLM на этот запуск (override глобальной настройки)")
 ):
