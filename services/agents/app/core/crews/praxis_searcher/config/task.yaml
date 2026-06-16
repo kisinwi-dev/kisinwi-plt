@@ -1,15 +1,21 @@
 praxis_search_task:
   agent: praxis_searcher
   description: |
-    Run a search for the query:
+    Search for the query (use English search terms):
     {search_query}
 
     Additional context:
     {context}
 
-    Find the most relevant best practices, articles, repositories and cases.
+    Steps:
+    1. Search the web and arXiv for relevant best practices, papers, repositories and cases.
+    2. Select the most relevant results and open the promising ones with the scraper to
+       extract concrete details (settings, numbers, code).
+    3. If the web search tool is unavailable, rely on arXiv search and on scraping the URLs
+       you find or that are given in the context.
   expected_output: |
     Return the result strictly in the PraxisSearchOutput Pydantic model format:
-    - text: a detailed description of the practices found
-    - sources: a list of sources with url, title, short_description
+    - text: a detailed description of the practices found, with concrete settings/examples
+    - sources: a list of sources you actually opened — url, title, short_description,
+      relevance_score (1-10)
     - summary: a short overview of the most important findings
