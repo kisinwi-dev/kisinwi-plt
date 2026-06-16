@@ -4,13 +4,16 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import { agentHistoryService } from '../../services/agentHistoryService';
 import type { AgentResponse, AgentStatus, Tool } from '../../types/agentHistory';
-import { formatDateTime, formatDuration, statusClass } from '../../utils/format';
+import type { AgentTokenMetrics } from '../../services/metricsService';
+import { formatDateTime, formatDuration, formatCompact, statusClass } from '../../utils/format';
 import { CollapseChevron, getDisclosureProps } from '../common/Collapse';
 import { ICONS } from '../../constants/icons';
 
 interface Props {
   discussionId: string;
   response: AgentResponse;
+  // Токены, потраченные этим агентом (из metrics-сервиса); может ещё не быть.
+  tokens?: AgentTokenMetrics;
 }
 
 // Подписи статусов запуска агента / инструмента.
@@ -97,7 +100,7 @@ const ToolItem: React.FC<{ tool: Tool; maxDuration: number }> = ({ tool, maxDura
   );
 };
 
-const MessageBubble: React.FC<Props> = ({ discussionId, response }) => {
+const MessageBubble: React.FC<Props> = ({ discussionId, response, tokens }) => {
   const [tools, setTools] = useState<Tool[] | 'loading' | 'error' | null>(null);
   const [collapsed, setCollapsed] = useState(true);
 
@@ -145,6 +148,11 @@ const MessageBubble: React.FC<Props> = ({ discussionId, response }) => {
             {response.task_name && <span><i className={`fas ${ICONS.task}`}></i> {response.task_name}</span>}
             {response.iteration != null && <span><i className={`fas ${ICONS.iteration}`}></i> итерация {response.iteration}</span>}
             {response.duration_ms != null && <span><i className={`fas ${ICONS.duration}`}></i> {formatDuration(response.duration_ms)}</span>}
+            {tokens?.total_tokens != null && tokens.total_tokens > 0 && (
+              <span title={`${tokens.total_tokens.toLocaleString('ru-RU')} токенов (prompt ${(tokens.prompt_tokens ?? 0).toLocaleString('ru-RU')} / completion ${(tokens.completion_tokens ?? 0).toLocaleString('ru-RU')})`}>
+                <i className={`fas ${ICONS.tokens}`}></i> {formatCompact(tokens.total_tokens)} токенов
+              </span>
+            )}
           </div>
 
           <div className="message-text markdown-body">

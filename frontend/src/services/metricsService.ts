@@ -85,6 +85,28 @@ export interface ModelsCompareResponse {
   missing: string[];
 }
 
+// Токены, потраченные агентом (crew.usage_metrics из CrewAI). Поля опциональны:
+// метрики появляются только после завершения crew, у незавершённых их нет.
+export interface AgentTokenMetrics {
+  available?: boolean;
+  total_tokens?: number;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  successful_requests?: number;
+}
+
+export interface AgentResponseMetrics {
+  response_id: string;
+  metrics: AgentTokenMetrics;
+}
+
+// Метрики всех агентов дискуссии + просуммированная сводка (summary).
+export interface AgentDiscussionMetrics {
+  discussion_id: string;
+  responses: AgentResponseMetrics[];
+  summary: AgentTokenMetrics & { responses_count?: number };
+}
+
 interface MetricsStreamHandlers {
   onMetrics: (metrics: ModelMetrics) => void;
   onEnd?: (event: StreamEndEvent) => void;
@@ -113,6 +135,12 @@ export const metricsService = {
     const response = await fetch(`${BASE}/models/${modelId}/class-report`);
     if (response.status === 404) return null;
     return handleResponse<ClassReport>(response);
+  },
+
+  /** Метрики токенов агентов дискуссии (per-response + сводка). */
+  async getAgentMetrics(discussionId: string): Promise<AgentDiscussionMetrics> {
+    const response = await fetch(`${BASE}/agents/discussions/${discussionId}`);
+    return handleResponse<AgentDiscussionMetrics>(response);
   },
 
   /**

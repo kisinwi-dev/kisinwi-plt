@@ -2,7 +2,8 @@ import React from 'react';
 import type { DiscussionMeta } from '../../types/agentHistory';
 import { DISCUSSION_STATUS_LABELS, getDiscussionTitle, getDiscussionAgents, getPipelineLabel } from '../../types/agentHistory';
 import type { TrainingState, TrainingSummary } from './discussionFeed';
-import { formatDateTime } from '../../utils/format';
+import type { AgentTokenMetrics } from '../../services/metricsService';
+import { formatDateTime, formatCompact } from '../../utils/format';
 import { ICONS } from '../../constants/icons';
 import { useCopyToClipboard } from '../../hooks';
 import { Tooltip } from '../common/Tooltip';
@@ -14,6 +15,8 @@ interface Props {
   activeAgentRole?: string | null;
   // Сводка обучения для карточки «Сервис обучения» в секции исполнителей.
   training?: TrainingSummary;
+  // Суммарные токены, потраченные агентами дискуссии.
+  tokenSummary?: AgentTokenMetrics & { responses_count?: number };
   actions?: React.ReactNode;
 }
 
@@ -47,6 +50,7 @@ const DiscussionInfo: React.FC<Props> = ({
   discussionId,
   activeAgentRole = null,
   training = { state: 'idle', total: 0, currentName: null },
+  tokenSummary,
   actions,
 }) => {
   const copyToClipboard = useCopyToClipboard();
@@ -107,6 +111,19 @@ const DiscussionInfo: React.FC<Props> = ({
                 <div className="detail-field">
                   <span className="detail-label"><i className={`fas ${ICONS.tools}`}></i> Вызовов инструментов</span>
                   <span>{discussion.tool_calls_count}</span>
+                </div>
+              )}
+              {tokenSummary?.total_tokens != null && tokenSummary.total_tokens > 0 && (
+                <div className="detail-field">
+                  <span className="detail-label"><i className={`fas ${ICONS.tokens}`}></i> Токенов потрачено</span>
+                  <span title={`${tokenSummary.total_tokens.toLocaleString('ru-RU')} токенов`}>
+                    {formatCompact(tokenSummary.total_tokens)}
+                  </span>
+                  {(tokenSummary.prompt_tokens != null || tokenSummary.completion_tokens != null) && (
+                    <span className="detail-subnote">
+                      prompt {formatCompact(tokenSummary.prompt_tokens ?? 0)} / completion {formatCompact(tokenSummary.completion_tokens ?? 0)}
+                    </span>
+                  )}
                 </div>
               )}
               {discussion.tags.length > 0 && (

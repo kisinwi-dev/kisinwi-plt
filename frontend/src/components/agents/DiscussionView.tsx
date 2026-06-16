@@ -6,6 +6,7 @@ import { prefersReducedMotion } from '../../utils/motion';
 import MessageBubble from './MessageBubble';
 import TrainingTaskCard from '../models/TrainingTaskCard';
 import type { FeedItem } from './discussionFeed';
+import type { AgentTokenMetrics } from '../../services/metricsService';
 import { ICONS } from '../../constants/icons';
 
 interface Props {
@@ -16,6 +17,8 @@ interface Props {
   loading?: boolean;
   // Если дискуссия активна — показываем индикатор «Агенты работают...».
   active?: boolean;
+  // Токены по response_id (из metrics-сервиса) — показываются на карточке ответа.
+  tokensByResponse?: Map<string, AgentTokenMetrics>;
 }
 
 // Иконка системного сообщения по типу.
@@ -28,7 +31,7 @@ const SYSTEM_ICONS: Record<SystemMessageType, string> = {
 // Насколько близко к низу страницы считаем, что пользователь «внизу», px.
 const SCROLL_BOTTOM_THRESHOLD = 120;
 
-const DiscussionView: React.FC<Props> = ({ discussionId, feed, loading = false, active = false }) => {
+const DiscussionView: React.FC<Props> = ({ discussionId, feed, loading = false, active = false, tokensByResponse }) => {
   const navigate = useNavigate();
 
   // Живой таймер длительности для активного этапа обучения: пока дискуссия
@@ -109,7 +112,7 @@ const DiscussionView: React.FC<Props> = ({ discussionId, feed, loading = false, 
                 <i className={`fas ${ICONS.agent}`}></i>
               </span>
               <div className="timeline-content">
-                <MessageBubble discussionId={discussionId} response={item.data} />
+                <MessageBubble discussionId={discussionId} response={item.data} tokens={tokensByResponse?.get(item.data.response_id)} />
               </div>
             </div>
           );
