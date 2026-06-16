@@ -16,6 +16,9 @@ from .pipeline import (
 
 logger = get_logger(__name__)
 
+# ponytail: предохранитель в авто-режиме (max_iter=0), поднять если мало
+AUTO_ATTEMPTS_CAP = 5
+
 def development_models(
     dataset_id: str,
     dataset_version_id: str,
@@ -23,7 +26,7 @@ def development_models(
     deployment_constraints: str | None = None,
     business_requirements: str | None = None,
     denied_hypotheses_info: List[str] = [],
-    max_iter: int = 2,
+    max_iter: int = 0,
     model_id: str | None = None,
     verbose: bool = False
 ):
@@ -39,7 +42,9 @@ def development_models(
         business_requirements: Требования бизнеса к модели
             (опционально; без них агенты максимизируют качество сами)
         denied_hypotheses_info: Какие гипотезы стоит откинуть сразу (опицонально)
-        max_iter: Количество версий разработанной модели (опицонально)
+        max_iter: Количество попыток обучения. >0 — ровно столько попыток (без
+            досрочного стопа). 0 (по умолчанию) — агент сам определяет количество:
+            цикл идёт до достижения требований, но не больше AUTO_ATTEMPTS_CAP.
         model_id: ID существующей модели — новые версии создаются под ней (опицонально)
         verbose: Логирование (опицонально)
     """
@@ -74,11 +79,17 @@ def development_models(
     logger.info("✅ Анализ датасета")
     agent_history_client.info("Анализ датасета завершён: данные готовы к обучению.")
 
-    for iter in range(1, max_iter+1):
+    # max_iter == 0 — агент сам решает: крутим до достижения требований, но не
+    # больше AUTO_ATTEMPTS_CAP. max_iter > 0 — ровно столько попыток без раннего стопа.
+    auto_mode = max_iter <= 0
+    effective_max = AUTO_ATTEMPTS_CAP if auto_mode else max_iter
+    total_display = f"авто (макс. {AUTO_ATTEMPTS_CAP})" if auto_mode else str(max_iter)
+
+    for iter in range(1, effective_max + 1):
         raise_if_cancelled()
         iteration_context.set(iter)
 
-        info_start_iter = f"Полный цикл обучения №{iter} из {max_iter}"
+        info_start_iter = f"Полный цикл обучения №{iter} из {total_display}"
         agent_history_client.info(f"{info_start_iter}. Этап рассуждения агентов.")
         logger.info(
             f"\n{'='*100}"
@@ -127,7 +138,7 @@ def development_models(
         logger.info("")
         training_res = train_and_debug(training_input)
 
-        info_final_iter_1_line = f"Полный цикл обучения №{iter} из {max_iter}"
+        info_final_iter_1_line = f"Полный цикл обучения №{iter} из {total_display}"
         info_final_iter_2_line =  "завершился с результатом:"
         if training_res.is_completed_successfully:
             logger.info(
@@ -137,7 +148,39 @@ def development_models(
                 f"\n{'✅ Модель успешно обучена':^100}"
                 f"\n{'='*100}"
             )
-            agent_history_client.info(f"Цикл обучения №{iter} из {max_iter} завершён: модель успешно обучена.")
+            agent_history_client.info(f"Цикл обучения №{iter} из {total_display} завершён: модель успешно обучена.")
+
+            # Аналитик метрик решает, достигнуты ли требования пользователя.
+            # В авто-режиме (max_iter=0) достигнутые требования = досрочный стоп.
+            # При фикс. количестве попыток цикл не прерываем (делаем ровно max_iter),
+            # но разбор всё равно отдаём следующей попытке как контекст для улучшения.
+            metrics_verdict = run_metrics_analyst(
+                model_id=training_res.version_id,
+                business_goal=business_requirements,
+                verbose=verbose
+            )
+            if metrics_verdict.requirements_met:
+                agent_history_client.info("Аналитик метрик: требования достигнуты.")
+                if auto_mode:
+                    logger.info("✅ Требования достигнуты — дальнейшие попытки не нужны.")
+                    agent_history_client.info(
+                        "Агент сам определил количество попыток — требования закрыты, "
+                        "останавливаем цикл."
+                    )
+                    break
+            else:
+                agent_history_client.warning(
+                    "Аналитик метрик: требования не достигнуты — нужен ещё этап обучения."
+                )
+                ml_model = ml_engin_out.ml_model
+                what_trained = f"{ml_model.type} — {ml_model.description_model}" if ml_model else "модель"
+                denied_hypotheses_info.append(
+                    "Модель успешно обучилась, но требования пользователя не достигнуты.\n"
+                    f"Что обучали: {what_trained}\n"
+                    f"Вердикт аналитика: {metrics_verdict.reason}\n"
+                    f"Разбор метрик:\n{metrics_verdict.analysis}\n"
+                    "Учти это и предложи конфигурацию, которая закроет слабые места."
+                )
 
         elif training_res.is_cancelled:
             # Человек вручную остановил обучение — это не сбой. Пайплайн не прерываем:
@@ -151,7 +194,7 @@ def development_models(
                 f"\n{'='*100}"
             )
             agent_history_client.warning(
-                f"Цикл обучения №{iter} из {max_iter}: обучение остановлено пользователем. "
+                f"Цикл обучения №{iter} из {total_display}: обучение остановлено пользователем. "
                 "Разбираем частичные метрики, чтобы понять причину."
             )
 
@@ -165,7 +208,7 @@ def development_models(
                     model_id=training_res.version_id,
                     business_goal=business_requirements,
                     verbose=verbose
-                )
+                ).to_history_text()
 
             denied_hypotheses_info.append(
                 "Человек вручную остановил обучение этой конфигурации (это не ошибка обучения).\n"
@@ -185,7 +228,7 @@ def development_models(
                 f"\n{'='*100}"
             )
             agent_history_client.warning(
-                f"Цикл обучения №{iter} из {max_iter} провалился: {training_res.error}"
+                f"Цикл обучения №{iter} из {total_display} провалился: {training_res.error}"
             )
             # Сообщаем следующей итерации о провале обучения, чтобы исследователь и
             # ML инженер не повторили то же решение.

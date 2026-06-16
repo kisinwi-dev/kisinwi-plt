@@ -17,14 +17,18 @@ metrics_analysis_task:
     - Analyze model quality
     - Explain the meaning of the metrics
     - Identify the model's weak points
-    - Give a conclusion about production readiness
+    - Compare the metrics against the Business requirements above and decide
+      whether the requirements are met — i.e. whether another training stage
+      is needed (requirements_met=false) or the model is good enough
+      (requirements_met=true)
 
     IMPORTANT:
     - Use only the real metrics returned by tools
-    - If the data is insufficient, say so
+    - If the data is insufficient, say so and set requirements_met=false
 
   expected_output: >
-    A structured analysis of the model:
-    - Quality interpretation
-    - Weak points
-    - Conclusion about readiness for use
+    A structured verdict with fields:
+    - requirements_met (bool): true if the model satisfies the business
+      requirements and no further training stage is needed; false otherwise
+    - reason (str): justification of the verdict against the requirements
+    - analysis (str): detailed interpretation of the metrics and weak points

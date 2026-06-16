@@ -57,7 +57,7 @@ class ResearcherCrew:
             verbose=True,
             llm=get_llm_creative(),
             allow_delegation=False,
-            max_iter=15,
+            max_iter=5,
             tools= get_tools(AGENT_ROLE)
         )
 

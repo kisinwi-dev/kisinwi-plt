@@ -71,7 +71,7 @@ class PraxisSearcherCrew:
             verbose=True,
             llm=get_llm_precise(),
             allow_delegation=False,
-            max_iter=15,
+            max_iter=5,
             tools=get_tools(AGENT_ROLE)
         )
 

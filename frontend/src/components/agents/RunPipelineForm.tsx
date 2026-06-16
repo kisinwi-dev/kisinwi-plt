@@ -77,7 +77,7 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
   const [tagList, setTagList] = useState<string[]>([]);
   // Запрещённые гипотезы добавляются по одной в список.
   const [deniedList, setDeniedList] = useState<string[]>([]);
-  const [maxIter, setMaxIter] = useState(2);
+  const [maxIter, setMaxIter] = useState(0);
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -340,14 +340,14 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
           )}
           {workflow === 'development' && (
             <div className="form-field">
-              <label htmlFor="run-max-iter">Попыток обучения</label>
+              <label htmlFor="run-max-iter">Попыток обучения (0 = агент решает сам)</label>
               <input
                 id="run-max-iter"
                 className="no-spinner"
                 type="number"
-                min={1}
+                min={0}
                 value={maxIter}
-                onChange={(e) => setMaxIter(Math.max(1, Number(e.target.value) || 1))}
+                onChange={(e) => setMaxIter(Math.max(0, Number(e.target.value) || 0))}
                 disabled={submitting}
               />
             </div>
