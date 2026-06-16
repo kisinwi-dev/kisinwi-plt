@@ -36,6 +36,10 @@ export const pluralRu = (n: number, [one, few, many]: [string, string, string]):
 export const formatMetricValue = (v: number): string =>
   Number.isInteger(v) ? String(v) : v.toFixed(4);
 
+// Компактное число: 297699 → «297,7K», 850 → «850». Для счётчиков (токены и т.п.).
+const compactFormatter = new Intl.NumberFormat('ru-RU', { notation: 'compact', maximumFractionDigits: 1 });
+export const formatCompact = (n: number): string => compactFormatter.format(n);
+
 // Форматирование длительности в мс/с (>= 1 с показываем в секундах).
 export const formatDuration = (ms: number): string =>
   ms >= 1000 ? `${(ms / 1000).toFixed(2)} с` : `${ms.toFixed(0)} мс`;

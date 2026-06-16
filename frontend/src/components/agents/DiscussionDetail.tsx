@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { agentHistoryService } from '../../services/agentHistoryService';
 import { agentsService } from '../../services/agentsService';
+import { metricsService } from '../../services/metricsService';
 import { useNotification } from '../../contexts/NotificationContext';
 import { usePolling } from '../../hooks';
 import { POLL_INTERVAL_DISCUSSION_MS } from '../../constants';
@@ -54,6 +55,24 @@ const DiscussionDetail: React.FC<Props> = ({ discussionId, onBack }) => {
     },
   );
 
+  // Токены агентов из metrics-сервиса. Метрики копятся по мере завершения crew,
+  // поэтому опрашиваем их пока дискуссия активна (как и ленту).
+  const { data: agentMetrics } = usePolling(
+    () => metricsService.getAgentMetrics(discussionId),
+    {
+      intervalMs: POLL_INTERVAL_DISCUSSION_MS,
+      continueWhile: () => isActive,
+      // Метрик может ещё не быть — не шумим уведомлениями об ошибке.
+      deps: [discussionId, isActive],
+    },
+  );
+
+  const tokenSummary = agentMetrics?.summary;
+  const tokensByResponse = useMemo(
+    () => new Map((agentMetrics?.responses ?? []).map(r => [r.response_id, r.metrics])),
+    [agentMetrics],
+  );
+
   const feed = useMemo(() => feedData ?? [], [feedData]);
   // Активный агент значим только пока дискуссия активна.
   const activeAgentRole = isActive ? deriveActiveAgentRole(feed) : null;
@@ -83,6 +102,7 @@ const DiscussionDetail: React.FC<Props> = ({ discussionId, onBack }) => {
         discussionId={discussionId}
         activeAgentRole={activeAgentRole}
         training={training}
+        tokenSummary={tokenSummary}
         actions={isActive ? (
           <button className="button danger small" onClick={handleStop} disabled={stopping}>
             <i className={`fas ${stopping ? `${ICONS.loading} fa-spin` : ICONS.cancelled}`}></i>
@@ -95,6 +115,7 @@ const DiscussionDetail: React.FC<Props> = ({ discussionId, onBack }) => {
         feed={feed}
         loading={feedLoading}
         active={isActive}
+        tokensByResponse={tokensByResponse}
       />
     </div>
   );

@@ -573,6 +573,12 @@ button:disabled,
   word-break: break-all;
 }
 
+/* Уточняющая подпись под значением поля (например, разбивка токенов prompt/completion) */
+.detail-subnote {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
 /* Поле, занимающее всю ширину сетки (например, классы) */
 .detail-field--full {
   grid-column: 1 / -1;
