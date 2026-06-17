@@ -53,3 +53,5 @@ reporter_task:
 
   expected_output: |
     Your answer must be strictly valid JSON matching the ReporterOut schema.
+
+    {output_format}

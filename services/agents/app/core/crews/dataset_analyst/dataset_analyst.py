@@ -6,7 +6,8 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 
 from .tools import get_tools
-from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput, extract_raw_text, with_modifier
+from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput, with_modifier
+from app.config import config_base_llm
 from app.logs import get_logger
 from app.core.llm import get_llm_precise
 
@@ -58,13 +59,13 @@ class DatasetAnalystCrew:
             tools=get_tools(AGENT_ROLE),
             allow_delegation=False,
             max_iter=5,
+            max_execution_time=config_base_llm.AGENT_MAX_EXECUTION_TIME,
         )
 
     @task
     def dataset_analyst_task(self) -> Task:
         return Task(
             config=self.tasks_config["dataset_analyst_task"], # type: ignore[index]
-            output_pydantic=DatasetAnalystOut
         )
 
     @crew
@@ -94,30 +95,19 @@ def run_dataset_analyst(
     """
     crew = DatasetAnalystCrew().crew(verbose=verbose)
 
-    crew_output = run_crew_with_tracking(
+    result, raw = run_crew_with_tracking(
         crew=crew,
         agent_role=AGENT_ROLE,
         inputs={
             "dataset_id": dataset_id,
             "dataset_version_id": dataset_version_id,
         },
+        output_model=DatasetAnalystOut,
     )
 
-    if crew_output is None:
-        return DatasetAnalystOut(
-            brief_description="Не получилось обработать результат ответа агента.",
-            quality_assessment="",
-            found_issues=[],
-            recommendations=["Попробуйте перезагрузить систему"],
-            readiness_assessment=False
-        )
-
-    try:
-        result = crew_output.tasks_output[0].pydantic  # type: ignore[index]
-    except Exception as e:
-        logger.warning(f"Не удалось получить pydantic output: {e}. Используем fallback.")
+    if result is None:
         result = DatasetAnalystOut(
-            brief_description=extract_raw_text(crew_output),
+            brief_description=raw or "Не получилось обработать результат ответа агента.",
             quality_assessment="",
             found_issues=[],
             recommendations=["Не удалось обработать ответ агента в 'pydantic' схему"],

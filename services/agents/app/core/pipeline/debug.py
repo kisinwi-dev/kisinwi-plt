@@ -85,6 +85,11 @@ def debugging(
             train_input
         )
 
+        # Отмену человеком не дебажим даже внутри цикла: это не сбой конфигурации.
+        if training_res.is_cancelled:
+            logger.info("[ДЕБАГ] Обучение остановлено пользователем — дебаг прерван")
+            return training_res
+
         # Проверяем результат
         if training_res.is_completed_successfully:
             logger.info(f"[ДЕБАГ] ✅ Обучение успешно на итерации {iteration}!")
