@@ -1,61 +1,42 @@
-"""Подготовка benchmark-датасета: скачать с HuggingFace, разложить в формат
-платформы (train/val/test/<class>/*.jpg), упаковать в zip и загрузить в datasets.
+"""Подготовка HF-датасета: скачать с HuggingFace, разложить в формат платформы
+(train/val/test/<class>/*.jpg), упаковать в zip и загрузить в datasets.
 
-Запуск:
-    python prepare_dataset.py <key> [--workdir DIR] [--no-upload]
-
-<key> — ключ из config.DATASETS (beans, imagenette, ...).
+Точка входа - prepare_hf(key); управление через benchmark.py.
+<key> - ключ source="huggingface" из config.DATASETS (beans, cifar10, ...).
 """
-import argparse
 import io
 import os
 import random
 import shutil
-import zipfile
 from collections import defaultdict
 from pathlib import Path
 
-def _load_env():
-    """Подхватить .env рядом со скриптом и настроить HF до импорта datasets.
+from bench import load_env
 
-    HF_TOKEN huggingface_hub читает из окружения сам — достаточно его выставить.
-    Xet-backend виснет на скачивании, поэтому отключаем; таймаут поднимаем,
-    чтобы крупные parquet не рвались на дефолтных 10s.
-    """
-    env_path = Path(__file__).resolve().parent / ".env"
-    if env_path.exists():
-        for line in env_path.read_text().splitlines():
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, _, val = line.partition("=")
-            os.environ.setdefault(key.strip(), val.strip().strip("'\""))
-    os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
-    os.environ.setdefault("HF_HUB_DOWNLOAD_TIMEOUT", "60")
-
-
-_load_env()
+# .env и HF-настройки до импорта datasets: Xet-backend виснет на скачивании,
+# дефолтный таймаут 10s рвёт крупные parquet.
+load_env()
+os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
+os.environ.setdefault("HF_HUB_DOWNLOAD_TIMEOUT", "60")
 
 from datasets import load_dataset
 from PIL import Image
 
-from config import DATASETS
-from common import (
+from bench.config import DATASETS
+from bench.common import (
     upload_archive, create_dataset, find_dataset_by_name,
-    load_registry, save_registry,
+    load_registry, save_registry, zip_folder,
 )
 
 
 def _class_names(ds, label_col):
-    # Требуем ClassLabel: тогда метки — индексы 0..n-1, и classes[label] корректно
-    # резолвит имя класса в build_dataset_folder. Произвольные метки сюда не лезут.
+    # ClassLabel даёт метки-индексы 0..n-1, иначе classes[label] не резолвится.
     feat = ds.features[label_col]
     names = getattr(feat, "names", None)
     if not names:
         raise RuntimeError(
-            f"колонка '{label_col}' не ClassLabel — добавьте явный список классов"
+            f"колонка '{label_col}' не ClassLabel - добавьте явный список классов"
         )
-    # безопасные имена папок
     return [str(n).replace("/", "_").replace(" ", "_") for n in names]
 
 
@@ -63,9 +44,8 @@ def _save_image(img, dst: Path):
     if not isinstance(img, Image.Image):
         img = Image.open(io.BytesIO(img["bytes"])) if isinstance(img, dict) else img
     img = img.convert("RGB")
-    # quality=95 + subsampling=0 (4:4:4) минимизируют артефакты повторного сжатия,
-    # критично для уже мелких источников (напр. CIFAR 32x32), где лоссовый JPEG
-    # заметно бьёт по accuracy. Расширение остаётся .jpg для совместимости.
+    # quality=95 + subsampling=0 (4:4:4): меньше артефактов пересжатия, важно для
+    # мелких источников (CIFAR 32x32).
     img.save(dst, format="JPEG", quality=95, subsampling=0)
 
 
@@ -85,30 +65,27 @@ def _stratified_split(indices_by_class: dict, fraction: float, seed: int):
 def build_dataset_folder(key: str, out_root: Path) -> Path:
     cfg = DATASETS[key]
     image_col, label_col = cfg["image_col"], cfg["label_col"]
-    cfg_name = cfg.get("hf_config")
 
-    print(f"[{key}] загрузка с HuggingFace: {cfg['hf_id']}"
-          + (f" ({cfg_name})" if cfg_name else ""))
+    print(f"[{key}] загрузка с HuggingFace: {cfg['hf_id']}")
     hf_splits = {}
     needed = set(cfg["split_map"].values())
     for hf_split in needed:
         if hf_split == "@from_train":
             continue
-        hf_splits[hf_split] = load_dataset(cfg["hf_id"], cfg_name, split=hf_split)
+        hf_splits[hf_split] = load_dataset(cfg["hf_id"], split=hf_split)
 
     train_hf_name = cfg["split_map"]["train"]
     classes = _class_names(hf_splits[train_hf_name], label_col)
     print(f"[{key}] классов: {len(classes)}")
 
-    # Индексы train по классам — нужны для выделения val/test из train
+    # индексы train по классам - для выделения val/test
     def indices_by_class(ds):
         by = defaultdict(list)
         for i, lab in enumerate(ds[label_col]):
             by[lab].append(i)
         return by
 
-    # Резолвим источник для каждого целевого сплита платформы
-    # plan[split] = (hf_dataset, list_of_indices)
+    # источник для каждого целевого сплита: plan[split] = (hf_dataset, indices)
     plan = {}
     train_ds = hf_splits[train_hf_name]
     train_idx_by_cls = indices_by_class(train_ds)
@@ -129,8 +106,7 @@ def build_dataset_folder(key: str, out_root: Path) -> Path:
         ds = hf_splits[hf_name]
         plan[split] = (ds, indices_by_class(ds))
 
-    # Если у train не было @from_train сплитов, plan["train"] = remaining (полный)
-    # Применяем max_per_class и раскладываем
+    # max_per_class и раскладка по папкам
     max_pc = cfg.get("max_per_class")
     rng = random.Random(123)
 
@@ -154,29 +130,15 @@ def build_dataset_folder(key: str, out_root: Path) -> Path:
     return out_dir
 
 
-def zip_folder(folder: Path) -> Path:
-    zip_path = folder.with_suffix(".zip")
-    if zip_path.exists():
-        zip_path.unlink()
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_STORED) as zf:
-        for root, _, files in os.walk(folder):
-            for fn in files:
-                fp = Path(root) / fn
-                zf.write(fp, fp.relative_to(folder))
-    size_mb = zip_path.stat().st_size / 1e6
-    print(f"[zip] {zip_path.name}: {size_mb:.1f} MB")
-    return zip_path
-
-
 def upload_to_platform(key: str, zip_path: Path):
     cfg = DATASETS[key]
     id_data = key
-    # Уникальное имя с ключом — платформа выдаёт UUID, находим датасет по имени.
+    # имя с ключом: id платформа выдаёт как UUID, ищем датасет по имени
     platform_name = f"{cfg['name']} [{key}]"
 
     reg = load_registry()
     if key in reg and find_dataset_by_name(platform_name):
-        print(f"[{key}] уже зарегистрирован ({reg[key]['dataset_id']}) — пропуск")
+        print(f"[{key}] уже зарегистрирован ({reg[key]['dataset_id']}) - пропуск")
         return reg[key]
 
     print(f"[{key}] upload архива...")
@@ -213,24 +175,19 @@ def upload_to_platform(key: str, zip_path: Path):
     return reg[key]
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("key", choices=list(DATASETS.keys()))
-    ap.add_argument("--workdir", default="/tmp/kisinwi_bench")
-    ap.add_argument("--no-upload", action="store_true")
-    args = ap.parse_args()
+def prepare_hf(key: str, workdir: str = "/tmp/kisinwi_bench",
+               upload: bool = True) -> dict | None:
+    """Подготовить HF-датасет и (опц.) загрузить в платформу.
 
-    out_root = Path(args.workdir)
+    Возвращает запись реестра (dataset_id/version_id/...) при upload, иначе None.
+    """
+    out_root = Path(workdir)
     out_root.mkdir(parents=True, exist_ok=True)
 
-    folder = build_dataset_folder(args.key, out_root)
+    folder = build_dataset_folder(key, out_root)
     zip_path = zip_folder(folder)
-    if not args.no_upload:
-        upload_to_platform(args.key, zip_path)
-    # папку с распакованными изображениями чистим, zip оставляем
+    entry = upload_to_platform(key, zip_path) if upload else None
+    # распакованные изображения удаляем, zip оставляем
     shutil.rmtree(folder, ignore_errors=True)
-    print(f"[{args.key}] готово")
-
-
-if __name__ == "__main__":
-    main()
+    print(f"[{key}] готово")
+    return entry

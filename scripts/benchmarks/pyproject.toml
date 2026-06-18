@@ -6,5 +6,8 @@ requires-python = ">=3.12"
 dependencies = [
     "datasets>=2.18",
     "Pillow>=10.0",
+    "kaggle>=1.6",
     "requests>=2.31",
+    "requests-toolbelt>=1.0",
+    "python-dotenv>=1.0",
 ]
