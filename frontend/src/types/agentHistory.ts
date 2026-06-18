@@ -13,7 +13,7 @@ export const DISCUSSION_STATUS_LABELS: Record<DiscussionStatus, string> = {
 };
 
 // Статус запуска агента / инструмента (значения как у бэкенда — строки с пробелом).
-export type AgentStatus = 'IN PROGRESS' | 'SUCCEED' | 'ERROR';
+export type AgentStatus = 'IN PROGRESS' | 'SUCCEED' | 'ERROR' | 'CANCELLED';
 export type ToolStatus = 'IN PROGRESS' | 'SUCCEED' | 'ERROR';
 
 // Тип системного сообщения.

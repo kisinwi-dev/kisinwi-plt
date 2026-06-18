@@ -21,6 +21,7 @@ const STATUS_LABELS: Record<AgentStatus, string> = {
   'IN PROGRESS': 'В процессе',
   SUCCEED: 'Успешно',
   ERROR: 'Ошибка',
+  CANCELLED: 'Остановлен',
 };
 
 // Превью текста ответа для свёрнутой карточки: грубая зачистка markdown до плоской строки.
