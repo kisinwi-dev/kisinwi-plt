@@ -132,3 +132,5 @@ ml_engineer_quick_task:
       "ml_model": null,
       "recommendations": "Check that the dataset version ID is correct"
     }
+
+    {output_format}

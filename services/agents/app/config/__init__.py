@@ -107,13 +107,18 @@ class ConfigBaseLLM:
     OPENAI_API_BASE = os.getenv("OPENAI_API_BASE")
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
     # Некоторые модели (напр. gpt-5*) принимают только temperature=1.
-    # Если модель не поддерживает кастомный temperature — выставить в "false".
+    # Если модель не поддерживает кастомный temperature выставить в "false".
     LLM_TEMPERATURE_SUPPORTED = os.getenv("LLM_TEMPERATURE_SUPPORTED", "true").lower() != "false"
     # Таймаут одного LLM-запроса (сек). Без него litellm ждёт ответ бесконечно,
     # и подвисший запрос к провайдеру вешает весь шаг пайплайна.
     LLM_REQUEST_TIMEOUT = _env_float("LLM_REQUEST_TIMEOUT", 120)
     # Сколько раз litellm автоматически повторит запрос при таймауте/временной ошибке.
     LLM_NUM_RETRIES = _env_int("LLM_NUM_RETRIES", 2)
+    # Жёсткий потолок на работу одного агента (сек). Сверху ограничивает чтобы зависший агент не висел вечно.
+    AGENT_MAX_EXECUTION_TIME = _env_int("AGENT_MAX_EXECUTION_TIME", 600)
+    # Сколько подряд сетевых ошибок при опросе статуса обучения терпим, прежде чем
+    # сдаться. Единичный blip к tasker не должен ронять многочасовое обучение.
+    TRAINING_POLL_MAX_CONSEC_ERRORS = _env_int("TRAINING_POLL_MAX_CONSEC_ERRORS", 5)
 
 config_url = ConfigServices()
 config_base_llm = ConfigBaseLLM()

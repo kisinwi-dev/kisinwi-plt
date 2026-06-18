@@ -29,3 +29,5 @@ dataset_analyst_task:
     - readiness_assessment: true if the dataset is ready for training, false otherwise
     - found_issues and recommendations are ARRAYS of strings: one item per point
       (do not merge them into a single string and do not number them manually)
+
+    {output_format}

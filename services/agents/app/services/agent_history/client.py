@@ -85,7 +85,8 @@ class AgentHistoryClient:
     def _make_discussion_request(
         self,
         endpoint: str,
-        data: Dict[str, Any]
+        data: Dict[str, Any],
+        discussion_id: Optional[str] = None,
     ) -> bool:
         """
         Метод отправки запросов
@@ -93,12 +94,16 @@ class AgentHistoryClient:
         Args:
             endpoint: Endpoint для запроса
             data: Данные для отправки
+            discussion_id: id дискуссии; по умолчанию берётся из contextvar
+                (в процессе-родителе при остановке контекст не выставлен —
+                тогда передаётся явно).
 
         Returns:
             bool: Успешность операции
         """
 
-        discussion_id = discussion_context.get()
+        if discussion_id is None:
+            discussion_id = discussion_context.get()
 
         url = f"{self.base_url}/discussions/{discussion_id}/{endpoint}"
 
@@ -179,6 +184,22 @@ class AgentHistoryClient:
         """Отметить ответ агента как завершившийся с ошибкой (перезаписывает IN PROGRESS)."""
         return self._add_agent(
             response_id, agent_role, text, status="ERROR",
+            duration_ms=duration_ms, model=model, task_name=task_name, iteration=iteration,
+        )
+
+    def agent_cancelled(
+        self,
+        response_id: str,
+        agent_role: str,
+        text: str,
+        duration_ms: Optional[float] = None,
+        model: Optional[str] = None,
+        task_name: Optional[str] = None,
+        iteration: Optional[int] = None,
+    ) -> bool:
+        """Отметить ответ агента как остановленный пользователем (не сбой)."""
+        return self._add_agent(
+            response_id, agent_role, text, status="CANCELLED",
             duration_ms=duration_ms, model=model, task_name=task_name, iteration=iteration,
         )
 
@@ -292,6 +313,7 @@ class AgentHistoryClient:
         self,
         type_: str,
         message: str,
+        discussion_id: Optional[str] = None,
     ) -> bool:
         """
         Добавление системного сообщения в историю
@@ -299,21 +321,22 @@ class AgentHistoryClient:
         Args:
             type_: Тип сообщения
             message: Текст сообщения
+            discussion_id: id дискуссии (по умолчанию — из contextvar)
         """
         data = {
             "type_": type_,
             "message": scrub(message)
         }
 
-        return self._make_discussion_request("system_messages", data)
+        return self._make_discussion_request("system_messages", data, discussion_id)
 
     def info(self, message: str) -> bool:
         """Добавить информационное сообщение"""
         return self._add_system_message("INFO", message)
 
-    def warning(self, message: str) -> bool:
+    def warning(self, message: str, discussion_id: Optional[str] = None) -> bool:
         """Добавить предупреждение"""
-        return self._add_system_message("WARNING", message)
+        return self._add_system_message("WARNING", message, discussion_id)
 
     def error(self, message: str) -> bool:
         """Добавить ошибку"""

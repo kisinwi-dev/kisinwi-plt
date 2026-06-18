@@ -8,6 +8,7 @@ class AgentStatus(Enum):
     IN_PROGRESS = "IN PROGRESS"
     SUCCEEDED = "SUCCEED"
     ERROR = "ERROR"
+    CANCELLED = "CANCELLED"
 
 
 class AgentResponse(BaseModel):

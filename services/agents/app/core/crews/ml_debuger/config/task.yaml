@@ -42,3 +42,5 @@ ml_debuger_task:
 
   expected_output: |
     Your answer must be strictly valid JSON matching the MlDebugerOut schema.
+
+    {output_format}

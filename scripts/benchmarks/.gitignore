@@ -1,0 +1,7 @@
+.env
+.venv/
+__pycache__/
+benchmark_run.log
+
+# артефакты прогона: датасеты, zip, реестр id, результаты
+data/

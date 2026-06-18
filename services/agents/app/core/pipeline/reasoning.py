@@ -1,7 +1,6 @@
 from typing import List, Tuple
 
 from app.logs import get_logger
-from app.core.cancellation import raise_if_cancelled
 from app.core.crews.researcher import run_researcher
 from app.core.crews.ml_engeneer import MlEngineerResponse, run_ml_engineering
 from app.services.ml_models import NO_MODEL_HISTORY
@@ -38,7 +37,6 @@ def reasoning(
     """
     
     for iteration in range(max_iterations):
-        raise_if_cancelled()
         logger.info(f"🔄 Итерация {iteration + 1}/{max_iterations}")
 
         # генерация гипотез

@@ -1,72 +1,38 @@
 import threading
+from multiprocessing import Process
+from typing import Optional
 
-from app.core.memory import discussion_context
 from app.logs import get_logger
 
 logger = get_logger(__name__)
 
 
-class PipelineCancelled(Exception):
-    """Пайплайн остановлен пользователем (это не сбой)."""
-
-
-class CancellationRegistry:
+class ProcessRegistry:
     """
-    Реестр флагов отмены пайплайнов, общий между потоками.
+    Реестр запущенных пайплайнов: discussion_id → дочерний Process.
 
-    Запрос на остановку приходит из отдельного HTTP-запроса (свой поток), а
-    проверка флага идёт в фоновом потоке пайплайна — поэтому contextvars не
-    подходят (они потоко-локальны). Храним модульный dict из threading.Event
-    под Lock, ключ — discussion_id.
+    Пайплайн выполняется в отдельном процессе, чтобы отмену можно было сделать
+    мгновенной — просто убить процесс (рвутся сокеты текущего LLM-запроса, нет
+    ретраев и последующих вызовов). Запрос на остановку приходит из отдельного
+    HTTP-потока, поэтому доступ к реестру под Lock.
     """
 
     def __init__(self) -> None:
-        self._flags: dict[str, threading.Event] = {}
+        self._procs: dict[str, Process] = {}
         self._lock = threading.Lock()
 
-    def register(self, discussion_id: str) -> None:
-        """Зарегистрировать пайплайн как запускаемый (создать флаг)."""
+    def register(self, discussion_id: str, proc: Process) -> None:
         with self._lock:
-            self._flags[discussion_id] = threading.Event()
+            self._procs[discussion_id] = proc
 
-    def request_stop(self, discussion_id: str) -> bool:
-        """
-        Запросить остановку пайплайна.
-
-        Returns:
-            True, если пайплайн зарегистрирован (остановка принята),
-            False — если такого активного пайплайна нет.
-        """
+    def get(self, discussion_id: str) -> Optional[Process]:
         with self._lock:
-            event = self._flags.get(discussion_id)
-        if event is None:
-            return False
-        event.set()
-        logger.info(f"CancellationRegistry: запрошена остановка discussion_id={discussion_id}")
-        return True
-
-    def is_stop_requested(self, discussion_id: str) -> bool:
-        with self._lock:
-            event = self._flags.get(discussion_id)
-        return event is not None and event.is_set()
+            return self._procs.get(discussion_id)
 
     def discard(self, discussion_id: str) -> None:
-        """Убрать флаг после завершения пайплайна."""
+        """Убрать процесс из реестра после его завершения."""
         with self._lock:
-            self._flags.pop(discussion_id, None)
+            self._procs.pop(discussion_id, None)
 
 
-cancellation_registry = CancellationRegistry()
-
-
-def raise_if_cancelled() -> None:
-    """
-    Бросить PipelineCancelled, если для текущей дискуссии запрошена остановка.
-
-    discussion_id берётся из discussion_context (установлен в фоновом раннере).
-    """
-    if not discussion_context.is_set():
-        return
-    discussion_id = discussion_context.get()
-    if cancellation_registry.is_stop_requested(discussion_id):
-        raise PipelineCancelled(f"Пайплайн дискуссии {discussion_id} остановлен пользователем")
+process_registry = ProcessRegistry()

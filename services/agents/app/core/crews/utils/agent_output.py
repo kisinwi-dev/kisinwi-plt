@@ -1,6 +1,7 @@
-from typing import Optional
+import json
+from typing import Optional, Type, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 
 class AgentOutput(BaseModel):
@@ -29,11 +30,105 @@ def extract_raw_text(crew_output) -> str:
     return str(crew_output)
 
 
-def first_task_pydantic(crew_output) -> Optional[BaseModel]:
-    """Pydantic-вывод первой задачи или None (crew_output пуст / нет pydantic)."""
-    if crew_output is None:
+def extract_json_objects(text: str) -> List[str]:
+    """
+    Top-level сбалансированные {...} блоки из текста.
+
+    Агент при форс-финале (max_iter reached) клеит в ответ вывод инструментов
+    перед настоящим JSON-объектом — нельзя парсить весь текст одним куском.
+    Сканируем посимвольно с учётом строк и экранирования.
+    """
+    objects: List[str] = []
+    depth = 0
+    start = -1
+    in_string = False
+    escape = False
+
+    for i, ch in enumerate(text):
+        if in_string:
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == '"':
+                in_string = False
+            continue
+
+        if ch == '"':
+            in_string = True
+        elif ch == "{":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "}":
+            if depth > 0:
+                depth -= 1
+                if depth == 0 and start != -1:
+                    objects.append(text[start:i + 1])
+                    start = -1
+
+    return objects
+
+
+def parse_agent_output(raw: str, model: Type[BaseModel]) -> Optional[BaseModel]:
+    """
+    Валидирует raw в model, устойчиво к «грязному» выводу агента.
+
+    Настоящий ответ агента — последний top-level JSON-объект, поэтому пробуем
+    блоки с конца. None, если ни один не валиден (caller делает свой fallback).
+    """
+    if not raw:
         return None
-    try:
-        return crew_output.tasks_output[0].pydantic
-    except Exception:
-        return None
+    for block in reversed(extract_json_objects(raw)):
+        try:
+            return model.model_validate_json(block)
+        except ValidationError:
+            continue
+    return None
+
+
+def output_format_hint(model: Type[BaseModel]) -> str:
+    """
+    Подсказка формата ответа для промпта (JSON Schema модели).
+
+    Заменяет авто-инъекцию схемы, которую раньше давал output_pydantic.
+    """
+    schema = json.dumps(model.model_json_schema(), ensure_ascii=False, indent=2)
+    return (
+        "Return ONLY a single valid JSON object matching this JSON Schema "
+        "(no extra text, no tool output, no markdown fences):\n"
+        f"{schema}"
+    )
+
+
+def _demo() -> None:
+    """Self-check: грязный raw -> берём последний валидный объект."""
+    class M(BaseModel):
+        decision: bool
+        reason: str
+
+    dirty = (
+        '{"configuration":"x"}{}{"validate": true, "errors": []}'
+        '{"decision": true, "reason": "ok"}'
+    )
+    parsed = parse_agent_output(dirty, M)
+    assert parsed is not None and parsed.decision is True and parsed.reason == "ok"
+
+    clean = '{"decision": false, "reason": "no"}'
+    assert parse_agent_output(clean, M).decision is False
+
+    # строка с фигурными скобками внутри значения не ломает баланс
+    nested = '{"decision": true, "reason": "a } b { c"}'
+    assert parse_agent_output(nested, M).reason == "a } b { c"
+
+    assert parse_agent_output("no json here", M) is None
+    assert parse_agent_output("", M) is None
+
+    # пустых top-level объектов недостаточно -> None (не падаем)
+    assert parse_agent_output("{} {}", M) is None
+
+    print("agent_output self-check OK")
+
+
+if __name__ == "__main__":
+    _demo()

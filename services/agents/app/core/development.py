@@ -6,7 +6,6 @@ from app.core.crews.metrics_analyst import run_metrics_analyst
 from app.core.crews.reporter import run_reporter
 from app.core.defaults import DEFAULT_BUSINESS_REQUIREMENTS, DEFAULT_DEPLOYMENT_CONSTRAINTS
 from app.core.memory import iteration_context
-from app.core.cancellation import raise_if_cancelled
 from app.services.agent_history import agent_history_client
 from app.services.ml_models import load_model_history
 from .pipeline import (
@@ -28,6 +27,7 @@ def development_models(
     denied_hypotheses_info: List[str] = [],
     max_iter: int = 0,
     model_id: str | None = None,
+    skip_dataset_check: bool = False,
     verbose: bool = False
 ):
     """
@@ -46,6 +46,8 @@ def development_models(
             досрочного стопа). 0 (по умолчанию) — агент сам определяет количество:
             цикл идёт до достижения требований, но не больше AUTO_ATTEMPTS_CAP.
         model_id: ID существующей модели — новые версии создаются под ней (опицонально)
+        skip_dataset_check: Продолжать обучение, даже если аналитик данных забраковал
+            датасет (readiness_assessment=False). По умолчанию False.
         verbose: Логирование (опицонально)
     """
     business_requirements = (business_requirements or "").strip() or DEFAULT_BUSINESS_REQUIREMENTS
@@ -71,13 +73,31 @@ def development_models(
         dataset_version_id=dataset_version_id,
         verbose=verbose
     )
+    dataset_info = dataset_analyst_out.to_history_text()
     if not dataset_analyst_out.readiness_assessment:
-        logger.info("🟥 Анализ датасета показал, что данные не готовы к обучению")
-        agent_history_client.error("Анализ датасета показал, что данные не готовы к обучению. Пайплайн остановлен.")
-        return None
-
-    logger.info("✅ Анализ датасета")
-    agent_history_client.info("Анализ датасета завершён: данные готовы к обучению.")
+        if not skip_dataset_check:
+            logger.info("🟥 Анализ датасета показал, что данные не готовы к обучению")
+            agent_history_client.error("Анализ датасета показал, что данные не готовы к обучению. Пайплайн остановлен.")
+            return None
+        logger.warning("⚠️ Датасет не готов к обучению, но skip_dataset_check=True — продолжаем")
+        agent_history_client.warning(
+            "Аналитик данных забраковал датасет, но проверка отключена при запуске. "
+            "Продолжаем обучение на свой риск."
+        )
+        # Явный сигнал downstream-агентам (researcher, ml_engineer): датасет
+        # забракован, но пользователь настоял именно на нём — не отказываться от
+        # обучения, а компенсировать изъяны подбором конфигурации.
+        dataset_info += (
+            "\n\n## ⚠️ Решение пользователя: обучать на этом датасете\n"
+            "Аналитик данных признал датасет НЕ готовым к обучению (проблемы выше). "
+            "Пользователь осознанно настоял на обучении именно на этом датасете и принимает риски. "
+            "НЕ отказывайтесь от обучения из-за качества данных вместо этого подберите "
+            "конфигурацию, которая максимально компенсирует выявленные изъяны "
+            "(аугментация, регуляризация, борьба с дисбалансом классов, очистка на лету и т.п.)."
+        )
+    else:
+        logger.info("✅ Анализ датасета")
+        agent_history_client.info("Анализ датасета завершён: данные готовы к обучению.")
 
     # max_iter == 0 — агент сам решает: крутим до достижения требований, но не
     # больше AUTO_ATTEMPTS_CAP. max_iter > 0 — ровно столько попыток без раннего стопа.
@@ -86,7 +106,6 @@ def development_models(
     total_display = f"авто (макс. {AUTO_ATTEMPTS_CAP})" if auto_mode else str(max_iter)
 
     for iter in range(1, effective_max + 1):
-        raise_if_cancelled()
         iteration_context.set(iter)
 
         info_start_iter = f"Полный цикл обучения №{iter} из {total_display}"
@@ -100,7 +119,7 @@ def development_models(
         # Старт рассуждений агентов над задачей
         # Получаем ответ ML инженера и список не верных гипотезы
         ml_engin_out, denied_hypotheses_info = reasoning(
-            dataset_info=dataset_analyst_out.to_history_text(),
+            dataset_info=dataset_info,
             business_requirements=business_requirements,
             denied_hypotheses_info=denied_hypotheses_info,
             verbose=verbose,
@@ -242,7 +261,6 @@ def development_models(
             )
 
     # Подводим итоги обучений
-    raise_if_cancelled()
     agent_history_client.info("Все циклы обучения завершены. Формирование итогового отчёта...")
     result = run_reporter(
         business_requirements=business_requirements,

@@ -68,3 +68,5 @@ researcher_task:
     hypothesis text (description, justification, expected gain). Do NOT start the value
     with a prefix like "Hypothesis 1:", "Hypothesis 2:", etc. — the numbering is added
     automatically, otherwise it will be duplicated.
+
+    {output_format}

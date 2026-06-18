@@ -2,28 +2,25 @@ metrics_analysis_task:
   agent: metrics_analyst
 
   description: |
-    Retrieve and analyze the metrics of a model by its ID.
-
-    Model ID: {model_id}
+    Analyze the metrics of a trained model and decide whether the business
+    requirements are met.
 
     Business requirements:
     {business_goal}
 
+    Model metrics and details:
+    {metrics_data}
+
     YOUR TASKS:
-    - Retrieve the model metrics via tools (strictly in this order):
-      1. DoesModelHaveMetrics — check whether the model has any metrics at all
-      2. if it does — GetMetricsForModel (per-epoch metrics, train/val/test)
-      3. GetModelDetails — architecture and model details for context
-    - Analyze model quality
+    - Analyze model quality from the metrics above
     - Explain the meaning of the metrics
     - Identify the model's weak points
-    - Compare the metrics against the Business requirements above and decide
-      whether the requirements are met — i.e. whether another training stage
-      is needed (requirements_met=false) or the model is good enough
-      (requirements_met=true)
+    - Compare the metrics against the Business requirements and decide whether
+      the requirements are met — i.e. whether another training stage is needed
+      (requirements_met=false) or the model is good enough (requirements_met=true)
 
     IMPORTANT:
-    - Use only the real metrics returned by tools
+    - Use only the metrics provided above; do not invent numbers
     - If the data is insufficient, say so and set requirements_met=false
 
   expected_output: >
@@ -32,3 +29,5 @@ metrics_analysis_task:
       requirements and no further training stage is needed; false otherwise
     - reason (str): justification of the verdict against the requirements
     - analysis (str): detailed interpretation of the metrics and weak points
+
+    {output_format}

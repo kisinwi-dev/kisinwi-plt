@@ -78,6 +78,8 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
   // Запрещённые гипотезы добавляются по одной в список.
   const [deniedList, setDeniedList] = useState<string[]>([]);
   const [maxIter, setMaxIter] = useState(0);
+  // Игнорировать вердикт аналитика данных, если он забраковал датасет.
+  const [skipDatasetCheck, setSkipDatasetCheck] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -193,6 +195,7 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
             ...commonPayload,
             denied_hypotheses_info: deniedList,
             max_iter: maxIter,
+            skip_dataset_check: skipDatasetCheck,
           });
       showNotification('Пайплайн запущен', 'success');
       onStarted(result.discussion_id);
@@ -286,6 +289,25 @@ const RunPipelineForm: React.FC<Props> = ({ onStarted }) => {
               disabled={submitting}
             />
           </div>
+          {workflow === 'development' && (
+            <label className={`form-field full-width skip-check-toggle${skipDatasetCheck ? ' active' : ''}`}>
+              <span className="skip-check-text">
+                <span className="skip-check-label">
+                  <i className={`fas ${ICONS.warning}`}></i> Обучать даже при изъянах в датасете
+                </span>
+                <span className="skip-check-hint">Игнорировать вердикт аналитика данных, если он забраковал датасет.</span>
+              </span>
+              <span className="skip-check-switch">
+                <input
+                  type="checkbox"
+                  checked={skipDatasetCheck}
+                  onChange={(e) => setSkipDatasetCheck(e.target.checked)}
+                  disabled={submitting}
+                />
+                <span className="skip-check-track"><span className="skip-check-thumb" /></span>
+              </span>
+            </label>
+          )}
           <div className="form-field full-width">
             <label>Модель <span className="required-star">*</span></label>
             <div className="model-mode-selector" role="radiogroup" aria-label="Модель">

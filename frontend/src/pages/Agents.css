@@ -66,6 +66,104 @@
   color: var(--color-accent-light);
 }
 
+/* Переключатель «обучать на забракованном датасете» — рискованное действие,
+   поэтому в активном состоянии подсвечивается warning-акцентом. */
+.run-pipeline-form .skip-check-toggle {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0.95rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition);
+}
+
+.run-pipeline-form .skip-check-toggle:hover {
+  border-color: var(--color-warning);
+}
+
+.run-pipeline-form .skip-check-toggle.active {
+  border-color: var(--color-warning);
+  background: var(--color-warning-soft);
+}
+
+.skip-check-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.skip-check-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+}
+
+.skip-check-toggle.active .skip-check-label i {
+  color: var(--color-warning);
+}
+
+.skip-check-hint {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+/* iOS-style switch: нативный checkbox скрыт, рисуем track + thumb. */
+.skip-check-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 42px;
+  height: 24px;
+}
+
+.run-pipeline-form .skip-check-switch input {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.skip-check-track {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--color-border-emphasis);
+  border-radius: 999px;
+  transition: var(--transition);
+}
+
+.skip-check-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  transition: var(--transition);
+}
+
+.skip-check-switch input:checked ~ .skip-check-track {
+  background: var(--color-warning);
+}
+
+.skip-check-switch input:checked ~ .skip-check-track .skip-check-thumb {
+  transform: translateX(18px);
+}
+
+.skip-check-switch input:disabled {
+  cursor: not-allowed;
+}
+
 .run-pipeline-form input,
 .run-pipeline-form textarea {
   width: 100%;

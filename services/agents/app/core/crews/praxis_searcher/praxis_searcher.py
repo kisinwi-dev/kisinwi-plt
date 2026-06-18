@@ -6,7 +6,8 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 from crewai.tools import tool
 
-from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput, extract_raw_text, with_modifier
+from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput, with_modifier
+from app.config import config_base_llm
 from app.logs import get_logger
 from app.core.llm import get_llm_precise
 from .tools import get_tools
@@ -72,6 +73,7 @@ class PraxisSearcherCrew:
             llm=get_llm_precise(),
             allow_delegation=False,
             max_iter=5,
+            max_execution_time=config_base_llm.AGENT_MAX_EXECUTION_TIME,
             tools=get_tools(AGENT_ROLE)
         )
 
@@ -79,7 +81,6 @@ class PraxisSearcherCrew:
     def praxis_search_task(self) -> Task:
         return Task(
             config=self.tasks_config["praxis_search_task"],  # type: ignore[index]
-            output_pydantic=PraxisSearchOutput
         )
 
     @crew
@@ -105,25 +106,16 @@ def run_praxis_searcher(
     """
     crew = PraxisSearcherCrew().crew(verbose=verbose)
 
-    crew_output = run_crew_with_tracking(
+    result, raw = run_crew_with_tracking(
         crew=crew,
         agent_role=AGENT_ROLE,
         inputs={"search_query": search_query, "context": context},
+        output_model=PraxisSearchOutput,
     )
 
-    if crew_output is None:
-        return PraxisSearchOutput(
-            text="В процессе работы была получена ошибка с типизацией",
-            sources=[],
-            summary="ошибка"
-        )
-
-    try:
-        result = crew_output.tasks_output[0].pydantic  # type: ignore[index]
-    except Exception as e:
-        logger.warning(f"Не удалось получить pydantic output: {e}. Используем fallback.")
+    if result is None:
         result = PraxisSearchOutput(
-            text=extract_raw_text(crew_output),
+            text=raw or "В процессе работы была получена ошибка с типизацией",
             sources=[],
             summary="Не удалось структурировать вывод. Используйте сырой текст выше."
         )

@@ -7,8 +7,9 @@ from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 
 from .tools import get_tools
-from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput, extract_raw_text, with_modifier
+from ..utils import get_agent_role_from_config, run_crew_with_tracking, AgentOutput, with_modifier
 from app.services.ml_models import NO_MODEL_HISTORY
+from app.config import config_base_llm
 from app.logs import get_logger
 from app.core.llm import get_llm_creative
 
@@ -58,6 +59,7 @@ class ResearcherCrew:
             llm=get_llm_creative(),
             allow_delegation=False,
             max_iter=5,
+            max_execution_time=config_base_llm.AGENT_MAX_EXECUTION_TIME,
             tools= get_tools(AGENT_ROLE)
         )
 
@@ -65,7 +67,6 @@ class ResearcherCrew:
     def researcher_task(self) -> Task:
         return Task(
             config=self.tasks_config["researcher_task"],  # type: ignore[index]
-            output_pydantic=ResearcherOutput
         )
 
     @crew
@@ -101,7 +102,7 @@ def run_researcher(
         denied_hypotheses_info_str += f"\nОтвергнутая гипотеза:\n{denied_hypothesis}"
 
     logger.debug('Запуск ResearcherCrew')
-    crew_output = run_crew_with_tracking(
+    result, raw = run_crew_with_tracking(
         crew=crew,
         agent_role=AGENT_ROLE,
         inputs={
@@ -111,22 +112,12 @@ def run_researcher(
             "deployment_constraints": deployment_constraints,
             "model_history": model_history,
         },
+        output_model=ResearcherOutput,
     )
 
-    if crew_output is None:
-        return ResearcherOutput(
-            analysis_summary="В процессе работы была получена ошибка с типизацией",
-            hypotheses_1="",
-            hypotheses_2="",
-            hypotheses_3=""
-        )
-
-    try:
-        result = crew_output.tasks_output[0].pydantic  # type: ignore[index]
-    except Exception as e:
-        logger.warning(f"Не удалось получить pydantic output: {e}. Используем fallback.")
+    if result is None:
         result = ResearcherOutput(
-            analysis_summary=extract_raw_text(crew_output),
+            analysis_summary=raw or "В процессе работы была получена ошибка с типизацией",
             hypotheses_1="",
             hypotheses_2="",
             hypotheses_3=""

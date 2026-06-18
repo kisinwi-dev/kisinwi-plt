@@ -19,3 +19,5 @@ praxis_search_task:
     - sources: a list of sources you actually opened — url, title, short_description,
       relevance_score (1-10)
     - summary: a short overview of the most important findings
+
+    {output_format}

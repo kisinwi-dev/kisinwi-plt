@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter
 
 from app.core.quick_pipeline import quick_training_models
 from app.core.crews.ml_engeneer_quick import AGENT_ROLE as ML_ENGINEER_ROLE
@@ -32,18 +32,18 @@ class QuickRequest(BasePipelineRequest):
                 "Один проход без итераций: конфигурация обучения, обучение, анализ метрик. "
                 "Возвращает discussion_id сразу, пайплайн выполняется в фоне."
 )
-def start_quick_training(req: QuickRequest, background_tasks: BackgroundTasks):
+def start_quick_training(req: QuickRequest):
     model_name = resolve_model_name(req.model_id, req.model_name)
     title = req.title or f"Быстрое обучение «{model_name}»"
 
     return start_pipeline(
         req=req,
-        background_tasks=background_tasks,
         pipeline_name="quick_training",
         agent_roles=_QUICK_AGENT_ROLES,
         title=title,
         model_name=model_name,
-        pipeline=lambda: quick_training_models(
+        pipeline_func=quick_training_models,
+        pipeline_kwargs=dict(
             dataset_id=req.dataset_id,
             dataset_version_id=req.version_id,
             model_name=model_name,

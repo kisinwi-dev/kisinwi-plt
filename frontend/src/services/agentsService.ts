@@ -20,6 +20,8 @@ export interface StartDevelopmentPayload {
   business_requirements?: string;
   denied_hypotheses_info?: string[];
   max_iter?: number;
+  /** Обучать даже если аналитик данных забраковал датасет. */
+  skip_dataset_check?: boolean;
   title?: string;
   tags?: string[];
   /** Модель LLM на этот запуск (override глобальной настройки). */

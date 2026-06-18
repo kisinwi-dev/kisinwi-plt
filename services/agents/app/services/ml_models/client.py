@@ -123,18 +123,37 @@ class MLModelsClient(BaseServiceClient):
         logger.debug(f"Модель '{name}' создана, id={model_id}")
         return model_id
 
+    def get_version(self, version_id: str) -> dict | None:
+        """
+        Получить версию модели по id. None — если версия не найдена.
+        """
+        response = self.session.get(
+            f"{self.URL}/versions/{version_id}",
+            timeout=30
+        )
+        if response.status_code == 404:
+            return None
+        response.raise_for_status()
+        return response.json()
+
     @handle_errors(ML_MODELS_URL)
     def update_version(
         self,
         version_id: str,
-        train_params: dict | str
+        train_params: dict | str | None = None,
+        metrics_report: str | None = None,
     ):
         """
-        Обновление параметров обучения версии модели
+        Обновление версии модели: параметры обучения и/или описание метрик.
+        Передаём в PATCH только реально заданные поля.
         """
-        # Парсим JSON если это строка
-        params = {}
-        params["train_params"] = parse_in_json(train_params)
+        params: dict = {}
+        if train_params is not None:
+            params["train_params"] = parse_in_json(train_params)
+        if metrics_report is not None:
+            params["metrics_report"] = metrics_report
+        if not params:
+            return
 
         logger.debug(f"Jsons отправляемый в сервис моделей: \n{params}")
 

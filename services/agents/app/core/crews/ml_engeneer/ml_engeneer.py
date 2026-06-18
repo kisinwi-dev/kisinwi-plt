@@ -9,9 +9,10 @@ from crewai.project import CrewBase, agent, crew, task
 from .tools import get_tools
 from ..utils import (
     get_agent_role_from_config, run_crew_with_tracking, AgentOutput,
-    extract_raw_text, first_task_pydantic, with_modifier,
+    with_modifier,
 )
 from app.services.ml_models import NO_MODEL_HISTORY
+from app.config import config_base_llm
 from app.logs import get_logger
 from app.core.llm import get_llm_precise
 
@@ -74,14 +75,14 @@ class MLEngineerCrew:
             llm=get_llm_precise(),
             tools=get_tools(AGENT_ROLE),
             allow_delegation=False,
-            max_iter=5,
+            max_iter=15,
+            max_execution_time=config_base_llm.AGENT_MAX_EXECUTION_TIME,
         )
 
     @task
     def ml_engineer_task(self) -> Task:
         return Task(
             config=self.tasks_config["ml_engineer_task"], # type: ignore[index]
-            output_pydantic=MlEngineerResponse
         )
 
     @crew
@@ -121,7 +122,7 @@ def run_ml_engineering(
     """
     crew = MLEngineerCrew().crew(verbose=verbose)
 
-    crew_output = run_crew_with_tracking(
+    result, raw = run_crew_with_tracking(
         crew=crew,
         agent_role=AGENT_ROLE,
         inputs={
@@ -133,13 +134,13 @@ def run_ml_engineering(
             "dataset_version_id": dataset_version_id,
             "model_history": model_history,
         },
+        output_model=MlEngineerResponse,
     )
 
-    result = first_task_pydantic(crew_output)
     if result is None:
         result = MlEngineerResponse(
             decision=False,
-            reason=extract_raw_text(crew_output),
+            reason=raw,
             recommendations="Ошибка при обработке ответа ML Enginner, предупреди пользователя"
         )
 

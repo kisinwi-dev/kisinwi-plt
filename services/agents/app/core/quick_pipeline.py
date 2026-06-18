@@ -1,7 +1,6 @@
 import json
 
 from app.logs import get_logger
-from app.core.cancellation import raise_if_cancelled
 from app.core.crews.ml_engeneer_quick import run_quick_ml_engineering
 from app.core.crews.metrics_analyst import run_metrics_analyst
 from app.core.defaults import DEFAULT_BUSINESS_REQUIREMENTS, DEFAULT_DEPLOYMENT_CONSTRAINTS
@@ -54,7 +53,6 @@ def quick_training_models(
     business_requirements = (business_requirements or "").strip() or DEFAULT_BUSINESS_REQUIREMENTS
     deployment_constraints = (deployment_constraints or "").strip() or DEFAULT_DEPLOYMENT_CONSTRAINTS
 
-    raise_if_cancelled()
     logger.info("Получение метаданных датасета...")
     agent_history_client.info(
         "Запуск быстрого пайплайна (ML-инженер + аналитик метрик). Получение метаданных датасета..."

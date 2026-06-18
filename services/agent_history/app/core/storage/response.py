@@ -3,7 +3,7 @@ import aiofiles
 from pydantic import ValidationError
 from typing import List
 
-from app.api.schemas import AgentResponse
+from app.api.schemas import AgentResponse, AgentStatus
 from app.logs import get_logger
 from .base import BaseStorage
 
@@ -21,6 +21,25 @@ class ResponseStorage(BaseStorage):
             await f.write(response.model_dump_json(indent=2, ensure_ascii=False))
 
         return str(filepath)
+
+    async def cancel_in_progress(self, discussion_id: str) -> int:
+        """
+        Пометить все ещё выполняющиеся (IN_PROGRESS) ответы как CANCELLED.
+
+        Нужно при остановке пайплайна: процесс агентов убит снаружи и сам не
+        успел финализировать текущего агента, иначе он навсегда завис бы
+        IN_PROGRESS. Возвращает число помеченных ответов.
+        """
+        responses = await self.get_all(discussion_id)
+        if not responses:
+            return 0
+        count = 0
+        for response in responses:
+            if response.status == AgentStatus.IN_PROGRESS:
+                response.status = AgentStatus.CANCELLED
+                await self.save(discussion_id, response)
+                count += 1
+        return count
 
     async def get_all(self, discussion_id: str) -> List[AgentResponse] | None:
         discussion_dir = self.base_path / discussion_id

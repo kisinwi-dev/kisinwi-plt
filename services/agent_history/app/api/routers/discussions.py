@@ -131,6 +131,14 @@ async def update_discussion_meta(discussion_id: str, update: DiscussionMetaUpdat
                 detail=f"Метаданные дискуссии '{discussion_id}' не найдены"
             )
 
+        # При отмене дискуссии процесс агентов убит снаружи и не успел
+        # финализировать текущего агента — каскадно помечаем зависшие
+        # IN_PROGRESS ответы как CANCELLED, чтобы они не висели вечно.
+        if meta.status == DiscussionStatus.CANCELLED:
+            cancelled = await response_storage.cancel_in_progress(discussion_id)
+            if cancelled:
+                logger.info(f"Дискуссия {discussion_id}: помечено CANCELLED ответов: {cancelled}")
+
         # Смена статуса на completed/failed доставит подписчикам SSE событие end
         discussion_stream_broker.publish(discussion_id)
         return meta
