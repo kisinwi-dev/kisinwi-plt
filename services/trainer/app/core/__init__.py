@@ -1,3 +1,5 @@
+import asyncio
+
 from app.api.schemas import TaskParams
 from app.service.tasker import tasker_service
 from app.service.metrices import MetricesClient, send_checkpoint_info
@@ -47,7 +49,10 @@ async def training_model(config: TaskParams, model_id: str):
 
     # Загружаем данные
     await tasker_service.update_status_task(percentages=PROGRESS_DATA_LOADING, status_info="Загрузка данных...")
-    train_loader, val_loader, test_loader, classes = create_dataloaders(config.data_loader_params)
+    train_loader, val_loader, test_loader, classes = await asyncio.to_thread(
+        create_dataloaders,
+        config.data_loader_params
+    )
     await tasker_service.update_status_task(percentages=PROGRESS_DATA_READY, status_info="Данные загружены.")
 
     # Предзагрузка весов pretrained-модели в кэш (отдельный этап с видимым прогрессом)
@@ -61,10 +66,12 @@ async def training_model(config: TaskParams, model_id: str):
 
     # Загружаем модель (веса берутся из кэша мгновенно)
     await tasker_service.update_status_task(percentages=PROGRESS_MODEL_LOADING, status_info="Загрузка модели...")
-    model = get_model(
-        config.model_params,
-        num_classes = len(classes)
-    ).to(device)
+    model = await asyncio.to_thread(
+        lambda: get_model(
+            config.model_params,
+            num_classes = len(classes)
+        ).to(device)
+    )
     await tasker_service.update_status_task(percentages=PROGRESS_MODEL_READY, status_info=f"Модель {config.model_params.type} загружена.")
 
     await tasker_service.update_status_task(percentages=PROGRESS_METRICS_SETUP, status_info="Настройка метрик...")
