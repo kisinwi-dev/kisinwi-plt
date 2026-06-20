@@ -45,9 +45,13 @@ const TrainingTaskProgress: React.FC<TrainingTaskProgressProps> = ({ modelId }) 
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!active) return;
-    setNow(Date.now());
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
+    const tick = () => setNow(Date.now());
+    const first = setTimeout(tick, 0); // освежить «сейчас» при активации, но не синхронно в эффекте
+    const timer = setInterval(tick, 1000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(timer);
+    };
   }, [active]);
 
   const handleCancel = async () => {

@@ -90,7 +90,10 @@ const CurveTooltip: React.FC<{
  * Отрисовка одного графика кривых; используется и в сетке,
  * и в увеличенном оверлее (там выше порог точек и высота контейнера).
  */
-export const CurveChartView: React.FC<{
+// Обёрнут в React.memo: один график recharts — дорогая отрисовка, а в сетке props
+// стабильны (из мемоизированного gridItems), так что несвязанные ре-рендеры родителя
+// (reportOpen, zoom, polling) не перерисовывают сетку.
+export const CurveChartView = React.memo(({ chart, series, checkpoints, height, dotLimit, large, highlightKey }: {
   chart: EpochChart;
   /** Серии графика — только те, у которых есть значения в rows. */
   series: CurveSeries[];
@@ -103,7 +106,7 @@ export const CurveChartView: React.FC<{
   large?: boolean;
   /** Ключ выделенной серии (hover по легенде): остальные кривые приглушаются. */
   highlightKey?: string | null;
-}> = ({ chart, series, checkpoints, height, dotLimit, large, highlightKey }) => {
+}) => {
   // Цвета сетки/осей — через CSS-класс (mcmp-chart-themed), чтобы следовали теме.
   const dim = (key: string) => (highlightKey == null || highlightKey === key ? 1 : 0.18);
   const meta = getMetricMeta(chart.name);
@@ -204,7 +207,7 @@ export const CurveChartView: React.FC<{
       </LineChart>
     </ResponsiveContainer>
   );
-};
+});
 
 /**
  * Сетка графиков с пользовательским порядком (drag and drop за ручку

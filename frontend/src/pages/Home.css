@@ -36,6 +36,10 @@
 .hero-logo__mark {
   filter: drop-shadow(0 14px 34px var(--color-accent-glow-strong));
   animation: hero-logo-float 6s ease-in-out 0.7s infinite;
+  /* Удерживаем элемент на собственном GPU-слое: при возврате на вкладку браузера
+     слой не пересоздаётся и drop-shadow/градиенты SVG не мерцают. */
+  backface-visibility: hidden;
+  will-change: transform, filter;
 }
 
 @keyframes hero-logo-in {
