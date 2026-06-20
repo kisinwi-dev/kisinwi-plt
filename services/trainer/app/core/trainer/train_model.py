@@ -176,7 +176,7 @@ class Trainer:
 
         self.model.train()
 
-        for batch in self._tqdm_loader(self.train_loader, "Тренировка"):
+        for batch in self._iter_with_progress(self.train_loader, "Тренировка"):
 
             inputs, labels = batch
 
@@ -235,7 +235,7 @@ class Trainer:
         self.model.eval()
 
         with torch.no_grad():
-            for batch in self._tqdm_loader(self.val_loader, "Валидация"):
+            for batch in self._iter_with_progress(self.val_loader, "Валидация"):
                 inputs, labels = batch
 
                 inputs = inputs.to(self.device)
@@ -284,6 +284,15 @@ class Trainer:
 
         self._metric_service.compute('test')
         self._metric_service.send_class_report()
+
+    def _iter_with_progress(self, data_loader: DataLoader, desc: str):
+        """Итерация по батчам с логом прогресса каждые ~5% (tqdm не виден в контейнере)"""
+        total = len(data_loader)
+        step = max(1, total // 20)  # 5% = 1/20; при <20 батчах — каждый батч
+        for i, batch in enumerate(self._tqdm_loader(data_loader, desc), start=1):
+            yield batch
+            if i % step == 0 or i == total:
+                logger.info(f"{desc}: {round(i * 100 / total)}% ({i}/{total} батчей)")
 
     def _tqdm_loader(self, data_loader: DataLoader, desc: str = "process") -> tqdm:
         """Получение обьекта tqdm"""
