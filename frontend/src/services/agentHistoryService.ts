@@ -1,4 +1,3 @@
-// Импортируем типы для дискуссий, ответов агентов, системных сообщений и инструментов.
 import type {
   AgentResponse,
   DiscussionListParams,
@@ -6,10 +5,8 @@ import type {
   SystemMessage,
   Tool,
 } from '../types/agentHistory';
-import { handleResponse, serviceUrl } from './http';
+import { handleResponse, serviceUrl, buildUrl } from './http';
 
-// Базовый URL сервиса истории агентов берётся из переменной окружения
-// VITE_AGENT_HISTORY, если её нет – localhost:6410.
 const AGENT_HISTORY_URL = serviceUrl(import.meta.env.VITE_AGENT_HISTORY, 'localhost:6410');
 
 /**
@@ -21,12 +18,13 @@ export const agentHistoryService = {
    * GET /discussions?status=&pipeline=&skip=&limit=
    */
   async getDiscussions(params: DiscussionListParams = {}): Promise<DiscussionMeta[]> {
-    const url = new URL(`${AGENT_HISTORY_URL}/discussions`);
-    if (params.status) url.searchParams.append('status', params.status);
-    if (params.pipeline) url.searchParams.append('pipeline', params.pipeline);
-    if (params.skip !== undefined) url.searchParams.append('skip', String(params.skip));
-    if (params.limit !== undefined) url.searchParams.append('limit', String(params.limit));
-    const response = await fetch(url.toString());
+    const url = buildUrl(`${AGENT_HISTORY_URL}/discussions`, {
+      status: params.status,
+      pipeline: params.pipeline,
+      skip: params.skip,
+      limit: params.limit,
+    });
+    const response = await fetch(url);
     return handleResponse<DiscussionMeta[]>(response);
   },
 

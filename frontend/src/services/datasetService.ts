@@ -1,7 +1,7 @@
 // Импортируем типы для датасетов, новых датасетов, новых версий и существующих версий.
 import type { Dataset, NewDataset, NewVersion, Version, VersionSplitsResponse } from '../types/dataset';
 import type { FilesDiffResponse, VersionComparisonResponse } from '../types/datasetComparison';
-import { handleResponse, serviceUrl } from './http';
+import { handleResponse, serviceUrl, buildUrl } from './http';
 
 // Базовый URL сервиса datasets берётся из переменной окружения VITE_DMS, по умолчанию localhost:6500.
 const DMS_URL = serviceUrl(import.meta.env.VITE_DMS, 'localhost:6500');
@@ -65,9 +65,10 @@ export const datasetService = {
    * POST /datasets/{datasetId}/default_version?default_version={versionId}
    */
   async setDefaultVersion(datasetId: string, versionId: string): Promise<boolean> {
-    const url = new URL(`${DMS_URL}/datasets/${datasetId}/default_version`);
-    url.searchParams.append('default_version', versionId);
-    const response = await fetch(url.toString(), { method: 'POST' });
+    const url = buildUrl(`${DMS_URL}/datasets/${datasetId}/default_version`, {
+      default_version: versionId,
+    });
+    const response = await fetch(url, { method: 'POST' });
     return handleResponse<boolean>(response);
   },
 
