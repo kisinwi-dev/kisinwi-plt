@@ -9,6 +9,22 @@ export const serviceUrl = (envValue: string | undefined, fallback: string): stri
   `http://${envValue ?? fallback}`;
 
 /**
+ * Собирает URL с query-параметрами, пропуская пустые (null/undefined/'').
+ * @param base базовый URL без query, напр. `${ML_MODELS_URL}/models`
+ * @param params пары имя→значение; пустые значения не добавляются
+ */
+export const buildUrl = (
+  base: string,
+  params: Record<string, string | number | undefined | null>,
+): string => {
+  const url = new URL(base);
+  for (const [k, v] of Object.entries(params)) {
+    if (v != null && v !== '') url.searchParams.append(k, String(v));
+  }
+  return url.toString();
+};
+
+/**
  * Универсальная обработка HTTP-ответа.
  * @returns данные типа T; для пустых ответов (например, 204) — true.
  * @throws Error с текстом из тела ответа (FastAPI: detail/message) или статусом.

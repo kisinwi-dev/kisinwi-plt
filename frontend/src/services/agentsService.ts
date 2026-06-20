@@ -2,8 +2,6 @@
 import { handleResponse, serviceUrl } from './http';
 import type { LlmSettings } from '../types/llm';
 
-// Базовый URL сервиса агентов берётся из переменной окружения VITE_AGENTS,
-// если её нет – localhost:6400.
 const AGENTS_URL = serviceUrl(import.meta.env.VITE_AGENTS, 'localhost:6400');
 
 /** Параметры запуска пайплайна development. */

@@ -1,4 +1,3 @@
-// Импортируем типы для моделей, версий, файлов и параметров запроса.
 import type {
   MLModel,
   MLModels,
@@ -9,9 +8,8 @@ import type {
   ModelsQuery,
   VersionsQuery,
 } from '../types/mlModels';
-import { handleResponse, serviceUrl } from './http';
+import { handleResponse, serviceUrl, buildUrl } from './http';
 
-// Базовый URL сервиса ml_models берётся из VITE_ML_MODELS, по умолчанию localhost:6300.
 const ML_MODELS_URL = serviceUrl(import.meta.env.VITE_ML_MODELS, 'localhost:6300');
 
 /**
@@ -23,13 +21,14 @@ export const mlModelsService = {
    * GET /models?dataset_id&status&name&limit&offset
    */
   async getModels(query: ModelsQuery = {}): Promise<MLModels> {
-    const url = new URL(`${ML_MODELS_URL}/models`);
-    if (query.dataset_id) url.searchParams.append('dataset_id', query.dataset_id);
-    if (query.status) url.searchParams.append('status', query.status);
-    if (query.name) url.searchParams.append('name', query.name);
-    if (query.limit != null) url.searchParams.append('limit', String(query.limit));
-    if (query.offset != null) url.searchParams.append('offset', String(query.offset));
-    const response = await fetch(url.toString());
+    const url = buildUrl(`${ML_MODELS_URL}/models`, {
+      dataset_id: query.dataset_id,
+      status: query.status,
+      name: query.name,
+      limit: query.limit,
+      offset: query.offset,
+    });
+    const response = await fetch(url);
     return handleResponse<MLModels>(response);
   },
 
@@ -38,14 +37,15 @@ export const mlModelsService = {
    * GET /versions?dataset_id&status&name&model_id&limit&offset
    */
   async getVersions(query: VersionsQuery = {}): Promise<MLModelVersions> {
-    const url = new URL(`${ML_MODELS_URL}/versions`);
-    if (query.dataset_id) url.searchParams.append('dataset_id', query.dataset_id);
-    if (query.status) url.searchParams.append('status', query.status);
-    if (query.name) url.searchParams.append('name', query.name);
-    if (query.model_id) url.searchParams.append('model_id', query.model_id);
-    if (query.limit != null) url.searchParams.append('limit', String(query.limit));
-    if (query.offset != null) url.searchParams.append('offset', String(query.offset));
-    const response = await fetch(url.toString());
+    const url = buildUrl(`${ML_MODELS_URL}/versions`, {
+      dataset_id: query.dataset_id,
+      status: query.status,
+      name: query.name,
+      model_id: query.model_id,
+      limit: query.limit,
+      offset: query.offset,
+    });
+    const response = await fetch(url);
     return handleResponse<MLModelVersions>(response);
   },
 
