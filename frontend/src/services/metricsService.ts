@@ -154,10 +154,20 @@ export const metricsService = {
   subscribeModelMetrics(modelId: string, handlers: MetricsStreamHandlers): () => void {
     const source = new EventSource(`${BASE}/models/${modelId}/stream`);
     source.addEventListener('metrics', (event: MessageEvent) => {
-      handlers.onMetrics(JSON.parse(event.data) as ModelMetrics);
+      try {
+        handlers.onMetrics(JSON.parse(event.data) as ModelMetrics);
+      } catch (error) {
+        console.error('Битый JSON в SSE-событии metrics:', error);
+        handlers.onError?.(event);
+      }
     });
     source.addEventListener('end', (event: MessageEvent) => {
-      handlers.onEnd?.(JSON.parse(event.data) as StreamEndEvent);
+      try {
+        handlers.onEnd?.(JSON.parse(event.data) as StreamEndEvent);
+      } catch (error) {
+        console.error('Битый JSON в SSE-событии end:', error);
+        handlers.onError?.(event);
+      }
     });
     source.onerror = (event) => handlers.onError?.(event);
     return () => source.close();
