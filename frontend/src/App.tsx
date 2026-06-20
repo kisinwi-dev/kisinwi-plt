@@ -1,42 +1,37 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-// BrowserRouter — обёртка для приложения, которая обеспечивает работу маршрутизации
-// Routes и Route — компоненты для декларативного описания маршрутов.
-
+import { lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { NotificationProvider } from './contexts/NotificationContext';
-// Провайдер контекста уведомлений. Он хранит глобальное состояние списка уведомлений
-// и предоставляет функции для показа/скрытия.
-
 import NotificationToast from './components/notification/NotificationToast';
-// Компонент, который отображает всплывающие уведомления (тосты) в правом верхнем углу.
-// Он подписывается на контекст уведомлений и рисует все активные уведомления.
-
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
-import Home from './pages/Home';
-import Datasets from './pages/Datasets';
-import DatasetDetail from './pages/DatasetDetail';
-import DatasetCompare from './pages/DatasetCompare';
-import Models from './pages/Models';
-import ModelDetail from './pages/ModelDetail';
-import ModelCompare from './pages/ModelCompare';
-import Agents from './pages/Agents';
-import AgentDiscussion from './pages/AgentDiscussion';
+// Страницы грузятся лениво: каждая — отдельный чанк, тяжёлые либы (antd, recharts,
+// react-markdown) не попадают в начальный бандл, а подтягиваются при переходе на роут.
+const Home = lazy(() => import('./pages/Home'));
+const Datasets = lazy(() => import('./pages/Datasets'));
+const DatasetDetail = lazy(() => import('./pages/DatasetDetail'));
+const DatasetCompare = lazy(() => import('./pages/DatasetCompare'));
+const Models = lazy(() => import('./pages/Models'));
+const ModelDetail = lazy(() => import('./pages/ModelDetail'));
+const ModelCompare = lazy(() => import('./pages/ModelCompare'));
+const Agents = lazy(() => import('./pages/Agents'));
+const AgentDiscussion = lazy(() => import('./pages/AgentDiscussion'));
 
 import './styles/App.css';
 
-function App() {
+// Содержимое внутри роутера: отдельный компонент, чтобы вызвать useLocation.
+// key={pathname} перемонтирует ErrorBoundary при смене роута — иначе после краша
+// рендера hasError остаётся true навсегда и навигация по ссылкам не спасает.
+function Layout() {
+  const { pathname } = useLocation();
   return (
-    <NotificationProvider>
-      <BrowserRouter>
-        <div className="app-wrapper">
-          <Header />
-          <main id="main-content" className="main-content">
+    <div className="app-wrapper">
+      <Header />
+      <main id="main-content" className="main-content">
+        <ErrorBoundary key={pathname}>
+          <Suspense fallback={<div className="route-loading">Загрузка…</div>}>
             <Routes>
-              {/*
-                Route определяет соответствие между путём URL и компонентом,
-                который должен отображаться.
-              */}
               <Route path="/" element={<Home />} />
               <Route path="/datasets" element={<Datasets />} />
               <Route path="/datasets/:id" element={<DatasetDetail />} />
@@ -47,10 +42,20 @@ function App() {
               <Route path="/agents" element={<Agents />} />
               <Route path="/agents/discussion/:discussionId" element={<AgentDiscussion />} />
             </Routes>
-          </main>
-          <Footer />
-          <NotificationToast />
-        </div>
+          </Suspense>
+        </ErrorBoundary>
+      </main>
+      <Footer />
+      <NotificationToast />
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <NotificationProvider>
+      <BrowserRouter>
+        <Layout />
       </BrowserRouter>
     </NotificationProvider>
   );
